@@ -1,0 +1,8 @@
+{
+  "{nodemon,tsconfig}.json": ["git add"],
+  "*.ts": [
+    "yarn run format-ts",
+    "yarn run lint",
+    "git add"
+  ]
+}
