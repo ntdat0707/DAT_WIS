@@ -2,22 +2,59 @@ import * as nodemailer from 'nodemailer';
 import mailgun from 'nodemailer-mailgun-transport';
 require('dotenv').config();
 
+import { emit, EQueueNames } from '../event-queues';
+
 interface IEmailOptions {
   receivers: string | string[];
   subject: string;
   type: 'text' | 'html';
   message: string;
   cc?: string | string[];
-  bcc?: string | string[];
+}
+
+function isEmailOptions(options: object): options is IEmailOptions {
+  return (
+    (options as IEmailOptions).receivers &&
+    (typeof (options as IEmailOptions).receivers === 'string' || Array.isArray((options as IEmailOptions).receivers)) &&
+    (options as IEmailOptions).subject &&
+    typeof (options as IEmailOptions).subject === 'string' &&
+    (options as IEmailOptions).type &&
+    ['text', 'html'].includes((options as IEmailOptions).type) &&
+    (options as IEmailOptions).message &&
+    typeof (options as IEmailOptions).message === 'string' &&
+    (!(options as IEmailOptions).cc ||
+      ((options as IEmailOptions).cc &&
+        (typeof (options as IEmailOptions).cc === 'string' || Array.isArray((options as IEmailOptions).cc))))
+  );
 }
 
 /**
- * Send an email from process.env.EMAIL_USER to options.receivers
+ * Push Email data <IEmailOptions> to messgae queue
+ * return true if send push successful, return false if options is not IEmailOptions
+ *
+ * @param {IEmailOptions} options
+ * @returns {Promise<boolean>}
+ */
+const sendEmail = async (options: IEmailOptions): Promise<boolean> => {
+  try {
+    if (isEmailOptions(options)) {
+      await emit(EQueueNames.EMAIL, options);
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Send Email
  *
  * @param {IEmailOptions} options
  * @returns {Promise<any>}
  */
-const sendEmail = async (options: IEmailOptions): Promise<any> => {
+const exuteSendingEmail = async (options: IEmailOptions): Promise<any> => {
   try {
     const info = await sendEmailViaNodemailer(options);
     return info;
@@ -30,8 +67,6 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
     const receivers: string = Array.isArray(options.receivers) ? options.receivers.join(',') : options.receivers;
     let cc: string = null;
     if (options.cc) cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc;
-    let bcc: string = null;
-    if (options.bcc) bcc = Array.isArray(options.bcc) ? options.bcc.join(',') : options.bcc;
 
     const auth = {
       auth: {
@@ -61,7 +96,6 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
       sendEmailOptions.text = options.message;
     }
     if (cc) sendEmailOptions.cc = cc;
-    if (bcc) sendEmailOptions.bcc = bcc;
 
     //send
     const info = await nodemailerMailgun.sendMail(sendEmailOptions);
@@ -71,4 +105,4 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
   }
 };
 
-export { sendEmail, IEmailOptions };
+export { sendEmail, IEmailOptions, exuteSendingEmail };

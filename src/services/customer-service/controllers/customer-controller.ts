@@ -61,14 +61,20 @@ export class CustomerController {
    */
   public register = async (req: Request, res: Response, next: NextFunction) => {
     let transaction: any = null;
-    const cc = await sendEmail({
-      receivers: 'emospa02@gmail.com', //'huy@bookoke.com',
-      subject: 'Thông báo nhận khuyến mãi từ Bookoke nhân dịp lễ gì đó',
-      type: 'text',
-      message:
-        'Xin chào quý khách, Cảm ơn quý khách đã đăng ký tài khoản trong hệ thống của chúng tôi, mã khuyến mãi là A123123 '
-    });
-    console.log(cc);
+    /*for (let i = 0; i < 2; i++) {
+      const cc = await sendEmail({
+        receivers: 'lvtrong19931@gmail.com', //'huy@bookoke.com',
+        subject: 'Thông báo nhận khuyến mãi từ Bookoke nhân dịp lễ gì đó ' + new Date() + 'time ' + i,
+        type: 'text',
+        message:
+          'Xin chào quý khách, Cảm ơn quý khách đã đăng ký tài khoản trong hệ thống của chúng tôi, mã khuyến mãi là A6969-9 ' +
+          new Date() +
+          ' Test send mail gun from Notification Service - time ' +
+          i,
+        cc: ['emospa02@gmail.com']
+      });
+      console.log('push email =========================', cc);
+    }*/
     try {
       let data = (({ name, email, age, password }) => ({
         name,
@@ -77,14 +83,14 @@ export class CustomerController {
         password
       }))(req.body);
       //test token
-      const token = await createAccessToken({
-        userId: 'aaa',
-        userName: 'Trọng lv',
-        userType: 'customer',
-        refreshToken: 'asdasd'
-      });
-      const ensc = await verifyAcessToken(token);
-      console.log(token, '------------------------------', ensc);
+      // const token = await createAccessToken({
+      //   userId: 'aaa',
+      //   userName: 'Trọng lv',
+      //   userType: 'customer',
+      //   refreshToken: 'asdasd'
+      // });
+      // const ensc = await verifyAcessToken(token);
+      // console.log(token, '------------------------------', ensc);
 
       const validateErrors = validate(data, registerSchema);
       if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
