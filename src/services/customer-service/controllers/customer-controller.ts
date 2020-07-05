@@ -8,6 +8,7 @@ import { registerSchema, loginSchema } from '../configs/validate-schemas';
 import { CustomError } from '../../../ultils/error-handlers';
 import { MockCustomerModel } from '../../../repositories/postresql/models';
 import { NODE_NAME } from '../configs/consts';
+import { sendEmail } from '../../../ultils/emailer';
 require('dotenv').config();
 
 export class CustomerController {
@@ -57,7 +58,14 @@ export class CustomerController {
    */
   public register = async (req: Request, res: Response, next: NextFunction) => {
     let transaction: any = null;
-
+    const cc = await sendEmail({
+      receivers: 'emospa02@gmail.com', //'huy@bookoke.com',
+      subject: 'Thông báo nhận khuyến mãi từ Bookoke nhân dịp lễ gì đó',
+      type: 'text',
+      message:
+        'Xin chào quý khách, Cảm ơn quý khách đã đăng ký tài khoản trong hệ thống của chúng tôi, mã khuyến mãi là A123123 '
+    });
+    console.log(cc);
     try {
       let data = (({ name, email, age, password }) => ({
         name,
