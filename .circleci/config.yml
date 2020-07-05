@@ -2,6 +2,7 @@ version: 2.1
 jobs:
   test:
     machine:
+      image: ubuntu-1604:201903-01
       # docker_layer_caching: true
     working_directory: ~/wsr
     steps:
@@ -33,17 +34,17 @@ jobs:
             - node_modules
 
       - run:
-        name: setting environemnt variables
-        command: |
-          export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
-          echo "export MYIP=$MYIP" >> $BASH_ENV
-          source $BASH_ENV
+          name: setting environemnt variables
+          command: |
+            export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
+            echo "export MYIP=$MYIP" >> $BASH_ENV
+            source $BASH_ENV
 
       - run:
-        name: launch docker container
-        working_directory: ./
-        command: |
-          yarn run start-docker
+          name: launch docker container
+          working_directory: ./
+          command: |
+            yarn run start-docker
 
 workflows:
   version: 2
