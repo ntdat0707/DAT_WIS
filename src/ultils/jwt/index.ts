@@ -91,7 +91,7 @@ async function createRefreshToken(data: IRefreshTokenData): Promise<string> {
     const token = jwt.sign(data, REFRESH_TOKEN_PRIVATE_KEY, signOptions);
     await redis.setData(`${EKeys.REFRESH_TOKEN}-${token}`, JSON.stringify(data), {
       key: 'EX',
-      value: accessTokenExpiresIn
+      value: refreshTokenExpiresIn
     });
     return token;
   } catch (error) {
@@ -109,7 +109,7 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
   try {
     return new Promise((resolve, _reject) => {
       const verifyOptions: jwt.SignOptions = {
-        expiresIn: accessTokenExpiresIn,
+        expiresIn: refreshTokenExpiresIn,
         algorithm
       };
       jwt.verify(
