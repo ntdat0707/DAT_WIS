@@ -67,7 +67,7 @@ export class CustomerController {
         subject: 'Thông báo nhận khuyến mãi từ Bookoke nhân dịp lễ gì đó ' + new Date() + 'time ' + i,
         type: 'text',
         message:
-          'Xin chào quý khách, Cảm ơn quý khách đã đăng ký tài khoản trong hệ thống của chúng tôi, mã khuyến mãi là A6969-9 ' +
+          'Xin chào quý khách, Cảm ơn quý khách đã đăng ký tài khoản trong hệ thống của chúng tôi, mã khuyến mãi là A6969-9-9 ' +
           new Date() +
           ' Test send mail gun from Notification Service - time ' +
           i,
