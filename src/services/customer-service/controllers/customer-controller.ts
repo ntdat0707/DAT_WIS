@@ -1,12 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
+require('dotenv').config();
+
 // import { CustomerModel, sequelize } from '../../../repositories/models';
 import { validate } from '../../../ultils/validator';
 import { buildSuccessMessage } from '../../../ultils/response-messages';
-import { registerSchema, loginSchema } from '../configs/validate-schemas';
-// import { customerErrorDetails as _ } from '../../../ultils/response-messages/error-details';
 import { CustomError } from '../../../ultils/error-handlers';
 import { MockCustomerModel } from '../../../repositories/postresql/models';
+import { createAccessToken, verifyAcessToken } from '../../../ultils/jwt';
+
+import { registerSchema, loginSchema } from '../configs/validate-schemas';
 import { NODE_NAME } from '../configs/consts';
 import { sendEmail } from '../../../ultils/emailer';
 require('dotenv').config();
@@ -73,6 +76,16 @@ export class CustomerController {
         age,
         password
       }))(req.body);
+      //test token
+      const token = await createAccessToken({
+        userId: 'aaa',
+        userName: 'Trọng lv',
+        userType: 'customer',
+        refreshToken: 'asdasd'
+      });
+      const ensc = await verifyAcessToken(token);
+      console.log(token, '------------------------------', ensc);
+
       const validateErrors = validate(data, registerSchema);
       if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
       const customer = await MockCustomerModel.create(data);
