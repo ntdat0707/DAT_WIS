@@ -51,7 +51,7 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
       cc?: string;
       bcc?: string;
     } = {
-      from: `BookOke Support Mail <${process.env.MAIL_GUN_SENDING_EMAIL}>`,
+      from: `${process.env.MAILGUN_SENDER_NAME} <${process.env.MAIL_GUN_SENDING_EMAIL}>`,
       to: receivers,
       subject: options.subject
     };
