@@ -53,7 +53,7 @@ const generalErrorDetails = {
    * @returns {IErrorDetail}
    */
   E_005(detail: string = 'Invalid refresh token', source: ISourceError = null): IErrorDetail {
-    return buildErrorDetail('004', 'Unauthorized', detail, source);
+    return buildErrorDetail('005', 'Unauthorized', detail, source);
   }
 };
 
