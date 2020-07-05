@@ -1,7 +1,7 @@
 import amqp from 'amqplib';
 const rabbitmqURL = `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
 import { EQueueNames } from '../../../ultils/event-queues';
-import { ecuteSendingEmail, IEmailOptions } from '../../../ultils/emailer';
+import { excuteSendingEmail, IEmailOptions } from '../../../ultils/emailer';
 
 export const sendEmail = async () => {
   try {
@@ -14,7 +14,7 @@ export const sendEmail = async () => {
         // mail send here
         const msg = messageObj.content.toString();
         const data: IEmailOptions = JSON.parse(msg);
-        await ecuteSendingEmail(data);
+        await excuteSendingEmail(data);
         // ch.ack(messageObj);
       },
       { noAck: true }

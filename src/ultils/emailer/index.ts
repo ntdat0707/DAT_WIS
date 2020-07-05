@@ -54,7 +54,7 @@ const sendEmail = async (options: IEmailOptions): Promise<boolean> => {
  * @param {IEmailOptions} options
  * @returns {Promise<any>}
  */
-const ecuteSendingEmail = async (options: IEmailOptions): Promise<any> => {
+const excuteSendingEmail = async (options: IEmailOptions): Promise<any> => {
   try {
     const info = await sendEmailViaNodemailer(options);
     return info;
@@ -105,4 +105,4 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
   }
 };
 
-export { sendEmail, IEmailOptions, ecuteSendingEmail };
+export { sendEmail, IEmailOptions, excuteSendingEmail };
