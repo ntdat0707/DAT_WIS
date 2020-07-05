@@ -1,4 +1,5 @@
 import * as nodemailer from 'nodemailer';
+import mailgun from 'nodemailer-mailgun-transport';
 require('dotenv').config();
 
 interface IEmailOptions {
@@ -6,6 +7,8 @@ interface IEmailOptions {
   subject: string;
   type: 'text' | 'html';
   message: string;
+  cc?: string | string[];
+  bcc?: string | string[];
 }
 
 /**
@@ -25,16 +28,30 @@ const sendEmail = async (options: IEmailOptions): Promise<any> => {
 const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
   try {
     const receivers: string = Array.isArray(options.receivers) ? options.receivers.join(',') : options.receivers;
-    var transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
+    let cc: string = null;
+    if (options.cc) cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc;
+    let bcc: string = null;
+    if (options.bcc) bcc = Array.isArray(options.bcc) ? options.bcc.join(',') : options.bcc;
 
-    const sendEmailOptions: { from: string; to: string; subject: string; html?: string; text?: string } = {
-      from: process.env.EMAIL_USER,
+    const auth = {
+      auth: {
+        api_key: process.env.MAIL_GUN_API_KEY,
+        domain: process.env.MAIL_GUN_DOMAIN
+      }
+      // proxy: 'http://user:pass@localhost:8080' // optional proxy, default is false
+    };
+    const nodemailerMailgun = nodemailer.createTransport(mailgun(auth));
+
+    const sendEmailOptions: {
+      from: string;
+      to: string;
+      subject: string;
+      html?: string;
+      text?: string;
+      cc?: string;
+      bcc?: string;
+    } = {
+      from: `${process.env.MAILGUN_SENDER_NAME} <${process.env.MAIL_GUN_SENDING_EMAIL}>`,
       to: receivers,
       subject: options.subject
     };
@@ -43,9 +60,11 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
     } else {
       sendEmailOptions.text = options.message;
     }
+    if (cc) sendEmailOptions.cc = cc;
+    if (bcc) sendEmailOptions.bcc = bcc;
 
     //send
-    const info = await transporter.sendMail(sendEmailOptions);
+    const info = await nodemailerMailgun.sendMail(sendEmailOptions);
     return info;
   } catch (error) {
     throw error;
