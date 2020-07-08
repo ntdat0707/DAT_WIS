@@ -49,9 +49,10 @@ jobs:
             yarn run start-docker -d
 
   build:
-    executor: doctl/default
+    executor: doctl
     working_directory: ~/wsr
     steps:
+      -
       - run: doctl -v
 
   deploy:
