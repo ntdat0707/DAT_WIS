@@ -62,6 +62,7 @@ services:
   #     - network
   customer-service:
     container_name: ${SVC_CUSTOMER_HOST}
+    image: 'customer-service'
     build:
       context: .
     restart: always

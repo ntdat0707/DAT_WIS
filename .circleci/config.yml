@@ -68,7 +68,8 @@ jobs:
           command: docker-compose up -d --build customer-service
       - run:
           command: |
-            docker tag backend_customer-service registry.digitalocean.com/wisere/backend_customer-service
+            docker images
+            docker tag customer-service registry.digitalocean.com/wisere/customer-service
       - run:
           command: |
             docker images
@@ -76,7 +77,7 @@ jobs:
             doctl registry login
       - run:
           command: |
-            docker push registry.digitalocean.com/wisere/backend_customer-service
+            docker push registry.digitalocean.com/wisere/customer-service
 
   deploy:
     machine:
