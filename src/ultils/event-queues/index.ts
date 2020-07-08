@@ -1,2 +1,2 @@
-export * from './channels';
+export * from './queues';
 export * from './actions';

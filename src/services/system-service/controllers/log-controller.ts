@@ -1,6 +1,6 @@
 import amqp from 'amqplib';
 const rabbitmqURL = `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
-import { EChannels } from '../../../ultils/event-queues/channels';
+import { EQueueNames } from '../../../ultils/event-queues';
 import { LoggerModel, ILogger } from '../../../repositories/mongo/models';
 
 // (async () => {
@@ -25,22 +25,21 @@ export const writelog = async () => {
   try {
     var open = await amqp.connect(rabbitmqURL);
     const ch = await open.createChannel();
-    await ch.assertQueue(EChannels.LOG, { durable: false });
-    await ch.consume(EChannels.LOG, async messageObj => {
-      // mail send here
-      const msg = messageObj.content.toString();
-      const data = JSON.parse(msg);
-      //write to mongoDB here
-      const logData: ILogger = {
-        ...data
-        //actor data
-      };
-      // console.log('log from system-service', logData);
-      const loggerModel = new LoggerModel(logData);
-      await loggerModel.save();
-      // console.log('log from system-service', data);
-      ch.ack(messageObj);
-    });
+    await ch.assertQueue(EQueueNames.LOG, { durable: false });
+    await ch.consume(
+      EQueueNames.LOG,
+      async messageObj => {
+        // mail send here
+        const msg = messageObj.content.toString();
+        const data: ILogger = JSON.parse(msg);
+        //write to mongoDB here
+        const loggerModel = new LoggerModel(data);
+        await loggerModel.save();
+        // console.log('log from system-service', data);
+        // ch.ack(messageObj);
+      },
+      { noAck: true }
+    );
   } catch (error) {
     console.log(error);
   }
