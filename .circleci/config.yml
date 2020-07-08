@@ -52,6 +52,7 @@ jobs:
     executor: doctl/default
     working_directory: ~/wsr
     steps:
+      - doctl/install
       - run: doctl -v
 
   deploy:
