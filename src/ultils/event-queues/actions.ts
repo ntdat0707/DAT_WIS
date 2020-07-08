@@ -1,6 +1,7 @@
 import amqp from 'amqplib';
 // const rabbitmqURL = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
 const rabbitmqURL = `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
+console.log(rabbitmqURL);
 import { EQueueNames } from './queues';
 
 const emit = async (channel: EQueueNames, message: object) => {
@@ -14,4 +15,4 @@ const emit = async (channel: EQueueNames, message: object) => {
   }
 };
 
-export { emit };
+export { emit, rabbitmqURL };

@@ -1,6 +1,7 @@
 import { IErrorDetail, ISourceError } from '../responses';
 import { generalErrorDetails } from './general';
 import { customerErrorDetails } from './customer';
+import { staffErrorDetails } from './staff';
 
 const buildErrorDetail = (
   code: string,
@@ -17,4 +18,4 @@ const buildErrorDetail = (
   return e;
 };
 
-export { buildErrorDetail, generalErrorDetails, customerErrorDetails };
+export { buildErrorDetail, generalErrorDetails, customerErrorDetails, staffErrorDetails };
