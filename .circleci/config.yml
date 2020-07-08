@@ -54,13 +54,12 @@ jobs:
     steps:
       - add_ssh_keys
       - run: |
-          ssh root@159.65.137.118 <<'ENDSSH'
-          ls /
-          ENDSSH
+          ssh root@159.65.137.118 'docker ps'
 
 workflows:
   version: 2
   btd:
     jobs:
-      - test
+      # - test
+
       - deploy
