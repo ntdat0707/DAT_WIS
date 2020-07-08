@@ -65,10 +65,17 @@ jobs:
       - run: doctl -v
       - run:
           name: Build image
-          command: docker-compose up  customer-service
+          command: docker-compose up  customer-service -d
       - run:
           command: |
             docker tag backend_customer-service registry.digitalocean.com/wisere/backend_customer-service
+      - run:
+          command: |
+            doctl auth init -t $DO_KEY
+            doctl registry login
+      - run:
+          command: |
+            docker push registry.digitalocean.com/wisere/backend_customer-service
 
   deploy:
     machine:
