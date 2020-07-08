@@ -71,6 +71,7 @@ jobs:
             docker tag backend_customer-service registry.digitalocean.com/wisere/backend_customer-service
       - run:
           command: |
+            docker images
             doctl auth init -t $DO_KEY
             doctl registry login
       - run:
