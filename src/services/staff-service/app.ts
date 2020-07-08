@@ -5,7 +5,7 @@ import { handleCustomError, handleException } from '../../ultils/error-handlers'
 import { mainRoutes } from './routes/index';
 require('dotenv').config();
 
-export default class CustomerService {
+export default class StaffService {
   public app: express.Application;
 
   constructor() {
