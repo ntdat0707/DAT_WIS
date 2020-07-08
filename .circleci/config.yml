@@ -69,5 +69,5 @@ workflows:
   btd:
     jobs:
       # - test
-
+      - build
       - deploy
