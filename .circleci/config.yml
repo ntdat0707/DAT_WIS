@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  doctl: digitalocean/cli@1.0.0
 jobs:
   test:
     machine:
@@ -47,6 +49,8 @@ jobs:
             yarn run start-docker -d
 
   build:
+    context: myContext
+    executor: doctl/default
     machine:
       docker_layer_caching: true
     working_directory: ~/wsr
