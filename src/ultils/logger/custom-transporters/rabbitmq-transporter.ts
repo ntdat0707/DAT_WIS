@@ -1,5 +1,5 @@
 import Transport from 'winston-transport';
-import { emit, EChannels } from '../../event-queues';
+import { emit, EQueueNames } from '../../event-queues';
 import { isLoggerData } from '../common';
 class RabbitMQTransport extends Transport {
   constructor() {
@@ -15,7 +15,7 @@ class RabbitMQTransport extends Transport {
 
   async log(info: any, callback: any) {
     if (isLoggerData(info)) {
-      await emit(EChannels.LOG, info);
+      await emit(EQueueNames.LOG, info);
       callback();
     } else {
       console.log('log data must be ILogger');
