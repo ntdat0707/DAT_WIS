@@ -54,6 +54,12 @@ jobs:
     steps:
       - doctl/install
       - run: doctl -v
+      - run:
+          name: Build image
+          command: docker-compose up  customer-service
+      - run:
+          command: |
+            docker tag backend_customer-service registry.digitalocean.com/wisere/backend_customer-service
 
   deploy:
     machine:
