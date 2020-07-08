@@ -9,14 +9,15 @@ const { parsed: env } = dotenv.config();
 const opts: ClientOpts = {
   host: env!.REDIS_HOST || '127.0.0.1',
   port: parseInt(env!.REDIS_PORT) || 6379,
-  password: env!.REDIS_PASSWORD || ''
+  password: env!.REDIS_PASSWORD || '',
+  tls: process.env.REDIS_TLS === 'true'
 };
 
 const redisClient: RedisClient = createClient(opts);
 redisClient.on('error', _err => {
   logger.error({
     label: 'Redis',
-    message: `Redis connect to ${opts.host} failed`
+    message: `Redis connect to ${opts.host} failed ${_err}`
   });
 });
 

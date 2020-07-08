@@ -1,7 +1,7 @@
 import * as express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { buildingEnvs } from '../../../ultils/consts';
-import { customerServiceConfigs } from './configs';
+import { customerServiceConfigs, staffServiceConfigs } from './configs';
 import { API_BASE_PATH } from '../configs';
 
 require('dotenv').config();
@@ -37,6 +37,8 @@ class ServiceRoutes {
   private getServiceBasePath = (originalUrl: string): string => {
     if (originalUrl.startsWith(`${API_BASE_PATH}${customerServiceConfigs.route}`))
       return `${API_BASE_PATH}${customerServiceConfigs.route}`;
+    if (originalUrl.startsWith(`${API_BASE_PATH}${staffServiceConfigs.route}`))
+      return `${API_BASE_PATH}${staffServiceConfigs.route}`;
     else return '';
   };
 
@@ -53,6 +55,15 @@ class ServiceRoutes {
       customerServiceConfigs.route,
       createProxyMiddleware({
         ...customerServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq }
+      })
+    );
+
+    // STAFF SERVICE
+    this.router.use(
+      staffServiceConfigs.route,
+      createProxyMiddleware({
+        ...staffServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq }
       })
     );
