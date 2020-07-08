@@ -68,8 +68,8 @@ services:
     ports:
       - '${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}'
     environment:
-      - NODE_NAME=${SVC_CUSTOMER_HOST}
-      - APP_PORT: '3000'
+      NODE_NAME: ${SVC_CUSTOMER_HOST}
+      APP_PORT: '3000'
     networks:
       - network
 
