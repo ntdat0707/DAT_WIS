@@ -49,11 +49,19 @@ jobs:
             yarn run start-docker -d
 
   build:
-    executor: doctl/default
+    machine:
+      # image: ubuntu-1604:201903-0
+      docker_layer_caching: true
     working_directory: ~/wsr
     steps:
-      - doctl/install
       - checkout
+      - run:
+          name: Install doctl
+          command: |
+            cd ~
+            wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
+            tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
+            mv ~/doctl /usr/local/bin
       - run: doctl -v
       - run:
           name: Build image
