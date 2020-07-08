@@ -1,5 +1,4 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
-import { GroupStaffModel } from './group-staff-model';
 import sequelize from '../configs/db-connector';
 class StaffModel extends Model {
   public staffId: string;
@@ -56,7 +55,5 @@ StaffModel.init(
     }
   }
 );
-
-StaffModel.belongsTo(GroupStaffModel, { foreignKey: 'groupStaffId', targetKey: 'groupStaffId' });
 
 export { StaffModel };

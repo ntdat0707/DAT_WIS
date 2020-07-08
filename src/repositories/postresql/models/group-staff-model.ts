@@ -1,7 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 
-import { StaffModel } from './staff-model';
-
 import sequelize from '../configs/db-connector';
 class GroupStaffModel extends Model {
   public groupStaffId: string;
@@ -42,7 +40,5 @@ GroupStaffModel.init(
     tableName: 'group_staff'
   }
 );
-
-GroupStaffModel.hasMany(StaffModel, { foreignKey: 'goupStaffId', sourceKey: 'goupStaffId', as: 'staffs' });
 
 export { GroupStaffModel };
