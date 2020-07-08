@@ -42,4 +42,4 @@ COPY yarn.lock .
 COPY --from=builder /builder/app/dist/ ./dist/
 COPY --from=builder /prod_dep/node_modules ./node_modules
 
-EXPOSE $APP_PORT
+EXPOSE 3000
