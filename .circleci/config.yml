@@ -53,6 +53,7 @@ jobs:
     working_directory: ~/wsr
     steps:
       - doctl/install
+      - checkout
       - run: doctl -v
       - run:
           name: Build image
