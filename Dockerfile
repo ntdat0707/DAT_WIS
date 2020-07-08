@@ -2,7 +2,7 @@
 # Alpine Linux is much smaller than most distribution base images, 
 # and thus leads to much slimmer images in general.
 # For detail: https://github.com/nodejs/docker-node#nodealpine
-FROM node:14.0.8-alpine as builder
+FROM node:12.18-alpine as builder
 
 # Create app directory
 
@@ -32,7 +32,7 @@ RUN yarn run build
 
 
 #============================== BUILD IMAGE FOR PRODUCTION==========================
-FROM node:13.10.1-alpine as production
+FROM node:12.18-alpine as production
 ENV HOME=/home/app
 WORKDIR /home/app
 COPY package*.json ./

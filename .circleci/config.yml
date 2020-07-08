@@ -46,6 +46,14 @@ jobs:
           command: |
             yarn run start-docker -d
 
+  build:
+    machine:
+      docker_layer_caching: true
+    working_directory: ~/wsr
+    steps:
+      - doctl/install
+      - run: doctl -v
+
   deploy:
     machine:
       # image: ubuntu-1604:201903-01
