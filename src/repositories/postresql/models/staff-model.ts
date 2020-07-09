@@ -18,19 +18,49 @@ class StaffModel extends Model {
 StaffModel.init(
   {
     staffId: {
-      field: 'staff_id',
+      field: 'id',
       type: DataTypes.UUIDV4,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    password: { type: DataTypes.STRING, allowNull: true },
-    fullName: { type: DataTypes.STRING, allowNull: false },
-    gender: { type: DataTypes.TINYINT },
-    phone: { type: DataTypes.STRING, allowNull: false },
-    email: { type: DataTypes.STRING, unique: true, allowNull: false },
-    birthDate: { type: DataTypes.DATE },
-    passportNumber: { type: DataTypes.STRING },
-    groupStaffId: { type: DataTypes.UUIDV4, allowNull: false },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'password'
+    },
+    fullName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: 'full_name'
+    },
+    gender: {
+      type: DataTypes.TINYINT,
+      field: 'gender'
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: 'phone'
+    },
+    email: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+      field: 'email'
+    },
+    birthDate: {
+      type: DataTypes.DATE,
+      field: 'birth_date'
+    },
+    passportNumber: {
+      type: DataTypes.STRING,
+      field: 'passport_number'
+    },
+    groupStaffId: {
+      type: DataTypes.UUIDV4,
+      allowNull: false,
+      field: 'group_staff_id'
+    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
@@ -40,6 +70,11 @@ StaffModel.init(
       field: 'updated_at',
       type: 'TIMESTAMP',
       defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    },
+    deletedAt: {
+      field: 'deleted_at',
+      type: 'TIMESTAMP',
+      defaultValue: null
     }
   },
   {
@@ -52,7 +87,9 @@ StaffModel.init(
           exclude: ['password']
         }
       }
-    }
+    },
+    timestamps: true,
+    paranoid: true
   }
 );
 

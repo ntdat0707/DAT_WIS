@@ -54,9 +54,11 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
       break;
     case 'staff-service':
       const staffService = new StaffService().app;
-      logger.info({
-        label: 'notification-service',
-        message: `App is running in mode ${staffService.get('env')} `
+      staffService.listen(staffService.get('port'), (): void => {
+        logger.info({
+          label: 'customer-service',
+          message: `App is running at http://localhost:${staffService.get('port')} in mode ${staffService.get('env')} `
+        });
       });
       break;
   }
@@ -84,9 +86,11 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
   });
 
   const staffService = new StaffService().app;
-  logger.info({
-    label: 'staff-service',
-    message: `App is running at http://localhost:${staffService.get('port')} in mode ${staffService.get('env')} `
+  staffService.listen(staffService.get('port'), (): void => {
+    logger.info({
+      label: 'customer-service',
+      message: `App is running at http://localhost:${staffService.get('port')} in mode ${staffService.get('env')} `
+    });
   });
 
   customerService.listen(customerService.get('port'), (): void => {
