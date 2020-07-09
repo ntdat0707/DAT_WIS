@@ -1,6 +1,6 @@
 //declare sequelize ts connection
 import { Sequelize } from 'sequelize';
-import { logger } from '../../../ultils/logger';
+import { logger } from '../../../utils/logger';
 require('dotenv').config();
 const sequelize = new Sequelize(
   process.env.POSTGRESQL_NAME,

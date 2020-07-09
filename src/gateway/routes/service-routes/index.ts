@@ -1,6 +1,6 @@
 import * as express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import { buildingEnvs } from '../../../ultils/consts';
+import { buildingEnvs } from '../../../utils/consts';
 import { customerServiceConfigs, staffServiceConfigs } from './configs';
 import { API_BASE_PATH } from '../configs';
 

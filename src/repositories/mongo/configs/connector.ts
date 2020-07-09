@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { logger } from '../../../ultils/logger';
+import { logger } from '../../../utils/logger';
 require('dotenv').config();
 export default async (): Promise<typeof mongoose> => {
   const mongoURL = 'mongodb://' + process.env.MONGO_HOST + ':' + process.env.MONGO_PORT + '/' + process.env.MONGO_NAME;

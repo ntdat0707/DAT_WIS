@@ -1,5 +1,5 @@
 import * as express from 'express';
-import { EEnvironments } from '../../ultils/consts';
+import { EEnvironments } from '../../utils/consts';
 import { serviceRoutes } from './service-routes';
 import { docsRoutes } from './docs-route';
 import { API_BASE_PATH, DOCS_BASE_PATH } from './configs';
