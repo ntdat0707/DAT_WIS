@@ -1,7 +1,7 @@
 import express from 'express';
 import * as bodyParser from 'body-parser';
 import cors from 'cors';
-import { handleCustomError, handleException } from '../../ultils/error-handlers';
+import { handleCustomError, handleException } from '../../utils/error-handlers';
 import { mainRoutes } from './routes/index';
 require('dotenv').config();
 

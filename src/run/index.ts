@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
-import { logger } from '../ultils/logger';
-import { EEnvironments } from '../ultils/consts';
+import { logger } from '../utils/logger';
+import { EEnvironments } from '../utils/consts';
 import Gateway from '../gateway/app';
 import CustomerService from '../services/customer-service/app';
 import SystemService from '../services/system-service/app';

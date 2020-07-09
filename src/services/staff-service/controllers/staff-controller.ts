@@ -4,11 +4,11 @@ import HttpStatus from 'http-status-codes';
 import { FindOptions } from 'sequelize';
 require('dotenv').config();
 
-import { validate, baseValidateSchemas } from '../../../ultils/validator';
-import { CustomError } from '../../../ultils/error-handlers';
-import { staffErrorDetails } from '../../../ultils/response-messages/error-details';
-import { buildSuccessMessage } from '../../../ultils/response-messages';
-import { paginate } from '../../../ultils/paginator';
+import { validate, baseValidateSchemas } from '../../../utils/validator';
+import { CustomError } from '../../../utils/error-handlers';
+import { staffErrorDetails } from '../../../utils/response-messages/error-details';
+import { buildSuccessMessage } from '../../../utils/response-messages';
+import { paginate } from '../../../utils/paginator';
 import { StaffModel } from '../../../repositories/postresql/models';
 
 import { NODE_NAME } from '../configs/consts';

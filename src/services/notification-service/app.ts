@@ -3,7 +3,7 @@ import { sendEmail } from './controllers/email-controller';
 import express from 'express';
 import * as bodyParser from 'body-parser';
 import cors from 'cors';
-import { handleCustomError, handleException } from '../../ultils/error-handlers';
+import { handleCustomError, handleException } from '../../utils/error-handlers';
 require('dotenv').config();
 
 export default class SystemService {

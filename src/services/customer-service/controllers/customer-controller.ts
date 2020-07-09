@@ -3,15 +3,15 @@ import HttpStatus from 'http-status-codes';
 require('dotenv').config();
 
 // import { CustomerModel, sequelize } from '../../../repositories/models';
-import { validate } from '../../../ultils/validator';
-import { buildSuccessMessage } from '../../../ultils/response-messages';
-import { CustomError } from '../../../ultils/error-handlers';
+import { validate } from '../../../utils/validator';
+import { buildSuccessMessage } from '../../../utils/response-messages';
+import { CustomError } from '../../../utils/error-handlers';
 import { MockCustomerModel } from '../../../repositories/postresql/models';
-import { createAccessToken, verifyAcessToken } from '../../../ultils/jwt';
+import { createAccessToken, verifyAcessToken } from '../../../utils/jwt';
 
 import { registerSchema, loginSchema } from '../configs/validate-schemas';
 import { NODE_NAME } from '../configs/consts';
-import { sendEmail } from '../../../ultils/emailer';
+import { sendEmail } from '../../../utils/emailer';
 require('dotenv').config();
 
 export class CustomerController {
