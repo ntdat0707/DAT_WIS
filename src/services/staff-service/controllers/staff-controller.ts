@@ -12,7 +12,7 @@ import { paginate } from '../../../utils/paginator';
 import { StaffModel } from '../../../repositories/postresql/models';
 
 import { NODE_NAME } from '../configs/consts';
-import { staffIdSchema } from '../configs/validate-schemas';
+import { staffIdSchema, createStaffSchema } from '../configs/validate-schemas';
 
 export class StaffController {
   constructor() {}
@@ -95,6 +95,70 @@ export class StaffController {
         fullPath
       );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * definitions:
+   *   staffCreate:
+   *       required:
+   *           - orderId
+   *       properties:
+   *           groupStaffId:
+   *               type: string
+   *           fullName:
+   *               type: integer
+   *           gender:
+   *               type: integer
+   *           phone:
+   *               type: string
+   *           birthDate:
+   *               type: string
+   *           passportNumber:
+   *               type: string
+   *           address:
+   *               type: string
+   *
+   *
+   */
+
+  /**
+   * @swagger
+   * /staff/create:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: updateStatus
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/staffCreate'
+   *     responses:
+   *       200:
+   *         description:
+   *       400:
+   *         description:
+   *       404:
+   *         description:
+   *       500:
+   *         description:
+   */
+  public async createStaff(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validateErrors = validate(req.body, createStaffSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      }
+
+      const staff = await StaffModel.create(req.body);
+      return res.status(HttpStatus.OK).send(staff);
     } catch (error) {
       return next(error);
     }

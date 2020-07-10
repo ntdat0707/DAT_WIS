@@ -13,5 +13,6 @@ export class StaffRoutes {
   private config(): void {
     this.router.post('/get-staff/:staffId?', this.staffController.getStaff);
     this.router.post('/get-staffs', this.staffController.getStaffs);
+    this.router.post('/create', this.staffController.createStaff);
   }
 }
