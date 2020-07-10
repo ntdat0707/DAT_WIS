@@ -45,7 +45,7 @@ StaffModel.init(
     email: {
       type: DataTypes.STRING,
       unique: true,
-      allowNull: false,
+      allowNull: true,
       field: 'email'
     },
     birthDate: {
