@@ -71,7 +71,7 @@ export class AuthController {
 
       //endscrypt password
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
-      await StaffModel.create({ ...data, ...{ isBusinessAccount: false } });
+      await StaffModel.create({ ...data, ...{ isBusinessAccount: true } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
