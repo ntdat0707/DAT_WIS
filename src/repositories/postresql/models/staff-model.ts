@@ -4,12 +4,13 @@ class StaffModel extends Model {
   public staffId: string;
   public fullName!: string;
   public gender: number;
-  public phone!: string;
+  public phone: string;
   public password: string;
   public email: string;
   public birthDate: Date;
   public passportNumber: string;
   public groupStaffId: string;
+  public isBusinessAccount: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -39,7 +40,7 @@ StaffModel.init(
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       field: 'phone'
     },
     email: {
@@ -58,8 +59,14 @@ StaffModel.init(
     },
     groupStaffId: {
       type: DataTypes.UUIDV4,
-      allowNull: false,
+      allowNull: true,
       field: 'group_staff_id'
+    },
+    isBusinessAccount: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'is_business_account'
     },
     createdAt: {
       field: 'created_at',
