@@ -19,7 +19,7 @@ export class StaffController {
   /**
    * @swagger
    * /staff/get-staff/{staffId}:
-   *   post:
+   *   get:
    *     tags:
    *       - Staff
    *     name: get-staff
@@ -44,7 +44,7 @@ export class StaffController {
       const staff = await StaffModel.findOne({ where: { id: staffId } });
       if (!staff)
         return next(
-          new CustomError(staffErrorDetails.E_4OO(`staffId ${staffId} not found`), NODE_NAME, HttpStatus.NOT_FOUND)
+          new CustomError(staffErrorDetails.E_400(`staffId ${staffId} not found`), NODE_NAME, HttpStatus.NOT_FOUND)
         );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
@@ -55,7 +55,7 @@ export class StaffController {
   /**
    * @swagger
    * /staff/get-staffs:
-   *   post:
+   *   get:
    *     tags:
    *       - Staff
    *     name: get-staffs

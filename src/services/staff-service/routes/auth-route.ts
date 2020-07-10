@@ -10,5 +10,6 @@ export class AuthRoutes {
   }
   private config(): void {
     this.router.post('/register-business-account', this.authController.registerBusinessAccount);
+    this.router.post('/login', this.authController.login);
   }
 }
