@@ -27,7 +27,6 @@ interface IRefreshTokenData {
 const algorithm: jwt.Algorithm = 'RS256';
 const accessTokenExpiresIn = process.env.ACCESS_TOKEN_EXPIRES_IN;
 const refreshTokenExpiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN;
-const logLabel = process.env.NODE_NAME || 'Auth';
 
 /**
  * Creat an access token and save it to Redis
@@ -70,9 +69,9 @@ async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData |
         ACCESS_TOKEN_PUBLIC_KEY,
         verifyOptions,
         async (err, accessTokenData: IAccessTokenData) => {
-          if (err) return resolve(new CustomError(generalErrorDetails.E_003(), logLabel));
+          if (err) return resolve(new CustomError(generalErrorDetails.E_003()));
           const tokenStoraged = await redis.getData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
-          if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_003(), logLabel));
+          if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_003()));
           resolve(accessTokenData);
         }
       );
@@ -123,9 +122,9 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
         REFRESH_TOKEN_PUBLIC_KEY,
         verifyOptions,
         async (err, refreshTokenData: IRefreshTokenData) => {
-          if (err) return resolve(new CustomError(generalErrorDetails.E_005(), logLabel));
+          if (err) return resolve(new CustomError(generalErrorDetails.E_005()));
           const tokenStoraged = await redis.getData(`${EKeys.REFRESH_TOKEN}-${refreshToken}`);
-          if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_005(), logLabel));
+          if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_005()));
           resolve(refreshTokenData);
         }
       );
@@ -146,7 +145,7 @@ async function destroyTokens(accessToken: string): Promise<boolean | CustomError
     const accessTokenData = await verifyAcessToken(accessToken);
     if (accessTokenData instanceof CustomError) return accessTokenData;
     const accessTokenStoraged = await redis.getData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
-    if (!accessTokenStoraged) return new CustomError(generalErrorDetails.E_003(), logLabel);
+    if (!accessTokenStoraged) return new CustomError(generalErrorDetails.E_003());
     const refreshToken = accessTokenStoraged.refreshToken;
     await redis.deleteData(`${EKeys.REFRESH_TOKEN}-${refreshToken}`);
     await redis.deleteData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
