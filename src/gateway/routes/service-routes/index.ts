@@ -9,7 +9,8 @@ require('dotenv').config();
 class ServiceRoutes {
   public router: express.Router = express.Router();
   private nodeName = process.env.NODE_NAME;
-  private gatewayHost = process.env.GTW_HOST;
+  // private gatewayHost = process.env.GTW_HOST;
+  private gatewayHost = 'gateway';
 
   private onProxyReq = (proxyReq: any, req: express.Request, _res: express.Response) => {
     const serviceBasePath = this.getServiceBasePath(req.originalUrl);
