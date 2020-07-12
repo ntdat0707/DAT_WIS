@@ -1,7 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 class StaffModel extends Model {
-  public staffId: string;
+  public id: string;
   public fullName!: string;
   public gender: number;
   public phone: string;
@@ -18,7 +18,7 @@ class StaffModel extends Model {
 
 StaffModel.init(
   {
-    staffId: {
+    id: {
       field: 'id',
       type: DataTypes.UUIDV4,
       defaultValue: DataTypes.UUIDV4,

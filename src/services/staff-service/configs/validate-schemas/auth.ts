@@ -13,5 +13,15 @@ const createBusinessAccountSchema = Joi.object({
     .min(6)
     .label('password')
 });
+const loginSchema = Joi.object({
+  email: Joi.string()
+    .required()
+    .email()
+    .label('email'),
+  password: Joi.string()
+    .required()
+    .min(6)
+    .label('password')
+});
 
-export { createBusinessAccountSchema };
+export { createBusinessAccountSchema, loginSchema };

@@ -11,7 +11,7 @@ import {
   REFRESH_TOKEN_PUBLIC_KEY
 } from './certificates';
 
-interface IAcessTokenData {
+interface IAccessTokenData {
   userId: string;
   userName: string;
   userType: 'staff' | 'customer';
@@ -34,7 +34,7 @@ const logLabel = 'Auth';
  * @param {IAcessTokenData} data
  * @returns {Promise<string>}
  */
-async function createAccessToken(data: IAcessTokenData): Promise<string> {
+async function createAccessToken(data: IAccessTokenData): Promise<string> {
   try {
     const signOptions: jwt.SignOptions = {
       expiresIn: accessTokenExpiresIn,
@@ -57,19 +57,24 @@ async function createAccessToken(data: IAcessTokenData): Promise<string> {
  * @param {string} accessToken
  * @returns {(Promise<IAcessTokenData | CustomError>)}
  */
-async function verifyAcessToken(accessToken: string): Promise<IAcessTokenData | CustomError> {
+async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData | CustomError> {
   try {
     return new Promise((resolve, _reject) => {
       const verifyOptions: jwt.SignOptions = {
         expiresIn: accessTokenExpiresIn,
         algorithm
       };
-      jwt.verify(accessToken, ACCESS_TOKEN_PUBLIC_KEY, verifyOptions, async (err, accessTokenData: IAcessTokenData) => {
-        if (err) return resolve(new CustomError(generalErrorDetails.E_003(), logLabel));
-        const tokenStoraged = await redis.getData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
-        if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_003(), logLabel));
-        resolve(accessTokenData);
-      });
+      jwt.verify(
+        accessToken,
+        ACCESS_TOKEN_PUBLIC_KEY,
+        verifyOptions,
+        async (err, accessTokenData: IAccessTokenData) => {
+          if (err) return resolve(new CustomError(generalErrorDetails.E_003(), logLabel));
+          const tokenStoraged = await redis.getData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
+          if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_003(), logLabel));
+          resolve(accessTokenData);
+        }
+      );
     });
   } catch (error) {
     throw error;
@@ -149,4 +154,12 @@ async function destroyTokens(accessToken: string): Promise<boolean | CustomError
     throw error;
   }
 }
-export { createAccessToken, verifyAcessToken, createRefreshToken, verifyRefreshToken, destroyTokens };
+export {
+  createAccessToken,
+  verifyAcessToken,
+  createRefreshToken,
+  verifyRefreshToken,
+  destroyTokens,
+  IAccessTokenData,
+  IRefreshTokenData
+};
