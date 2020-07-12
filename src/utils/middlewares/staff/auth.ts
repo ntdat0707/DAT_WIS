@@ -9,7 +9,7 @@ import { verifyAcessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
 import { StaffModel } from '../../../repositories/postresql/models';
 
-const LOG_LABEL = process.env.NODE_NAME || 'Auth';
+const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
 /**
  * Check staff logined

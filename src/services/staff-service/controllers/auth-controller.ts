@@ -10,7 +10,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createAccessToken, createRefreshToken, IAccessTokenData, IRefreshTokenData } from '../../../utils/jwt';
 import { StaffModel } from '../../../repositories/postresql/models';
 
-import { NODE_NAME, PASSWORD_SALT_ROUNDS } from '../configs/consts';
+import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import { createBusinessAccountSchema, loginSchema } from '../configs/validate-schemas';
 
 export class AuthController {
@@ -64,10 +64,10 @@ export class AuthController {
       };
 
       const validateErrors = validate(data, createBusinessAccountSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
       const checkEmailExists = await StaffModel.findOne({ where: { email: data.email } });
-      if (checkEmailExists) return next(new CustomError(staffErrorDetails.E_401(), NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (checkEmailExists) return next(new CustomError(staffErrorDetails.E_401(), HttpStatus.BAD_REQUEST));
 
       //endscrypt password
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
@@ -121,17 +121,13 @@ export class AuthController {
         password: req.body.password
       };
       const validateErrors = validate(data, loginSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff)
-        return next(
-          new CustomError(staffErrorDetails.E_402('Email or password invalid'), NODE_NAME, HttpStatus.NOT_FOUND)
-        );
+        return next(new CustomError(staffErrorDetails.E_402('Email or password invalid'), HttpStatus.NOT_FOUND));
       const match = await compare(data.password, staff.password);
       if (!match)
-        return next(
-          new CustomError(staffErrorDetails.E_402('Email or password invalid'), NODE_NAME, HttpStatus.NOT_FOUND)
-        );
+        return next(new CustomError(staffErrorDetails.E_402('Email or password invalid'), HttpStatus.NOT_FOUND));
       //create tokens
       const refreshTokenData: IRefreshTokenData = {
         userId: staff.id,

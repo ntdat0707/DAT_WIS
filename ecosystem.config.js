@@ -10,7 +10,7 @@ module.exports = {
       instances: 1,
 
       autorestart: true,
-      watch: true,
+      watch: false,
       // max_memory_restart: '1G',
       env: {
         NODE_NAME: 'gateway'
@@ -23,35 +23,49 @@ module.exports = {
       instances: 1,
 
       autorestart: true,
-      watch: true,
+      watch: false,
       // max_memory_restart: '1G',
       env: {
         NODE_NAME: 'customer-service'
       }
     },
     {
-      name: 'product-service',
+      name: 'staff-service',
       script: 'dist/run/index.js',
       // args: 'one two',
       instances: 1,
 
       autorestart: true,
-      watch: true,
+      watch: false,
       // max_memory_restart: '1G',
       env: {
-        NODE_NAME: 'product-service'
+        NODE_NAME: 'staff-service'
       }
     },
     {
-      name: 'order-service',
+      name: 'notification-service',
       script: 'dist/run/index.js',
       // args: 'one two',
       instances: 1,
 
       autorestart: true,
-      watch: true,
+      watch: false,
+      // max_memory_restart: '1G',
       env: {
-        NODE_NAME: 'order-service'
+        NODE_NAME: 'notification-service'
+      }
+    },
+    {
+      name: 'system-service',
+      script: 'dist/run/index.js',
+      // args: 'one two',
+      instances: 1,
+
+      autorestart: true,
+      watch: false,
+      // max_memory_restart: '1G',
+      env: {
+        NODE_NAME: 'system-service'
       }
     }
   ]

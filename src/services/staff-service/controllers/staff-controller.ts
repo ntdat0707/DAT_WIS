@@ -11,7 +11,6 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
 import { StaffModel } from '../../../repositories/postresql/models';
 
-import { NODE_NAME } from '../configs/consts';
 import { staffIdSchema, createStaffSchema } from '../configs/validate-schemas';
 
 export class StaffController {
@@ -40,12 +39,10 @@ export class StaffController {
     try {
       const staffId = req.params.staffId;
       const validateErrors = validate(staffId, staffIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const staff = await StaffModel.findOne({ where: { id: staffId } });
       if (!staff)
-        return next(
-          new CustomError(staffErrorDetails.E_400(`staffId ${staffId} not found`), NODE_NAME, HttpStatus.NOT_FOUND)
-        );
+        return next(new CustomError(staffErrorDetails.E_400(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);
@@ -86,7 +83,7 @@ export class StaffController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = {};
       const staffs = await paginate(
         StaffModel.scope('safe'),
@@ -154,7 +151,7 @@ export class StaffController {
     try {
       const validateErrors = validate(req.body, createStaffSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
       const staff = await StaffModel.create(req.body);

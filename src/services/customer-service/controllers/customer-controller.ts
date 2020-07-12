@@ -10,7 +10,6 @@ import { MockCustomerModel } from '../../../repositories/postresql/models';
 import { createAccessToken, verifyAcessToken } from '../../../utils/jwt';
 
 import { registerSchema, loginSchema } from '../configs/validate-schemas';
-import { NODE_NAME } from '../configs/consts';
 import { sendEmail } from '../../../utils/emailer';
 require('dotenv').config();
 
@@ -93,7 +92,7 @@ export class CustomerController {
       // console.log(token, '------------------------------', ensc);
 
       const validateErrors = validate(data, registerSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const customer = await MockCustomerModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
@@ -146,7 +145,7 @@ export class CustomerController {
         password
       }))(req.body);
       const validateErrors = validate(profile, loginSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       return res.status(HttpStatus.OK).send({});
     } catch (error) {
       return next(error);
