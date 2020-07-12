@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+require('dotenv').config();
 
 import { redis, EKeys } from '../../repositories/redis';
 import { CustomError } from '../error-handlers';
@@ -26,7 +27,7 @@ interface IRefreshTokenData {
 const algorithm: jwt.Algorithm = 'RS256';
 const accessTokenExpiresIn = process.env.ACCESS_TOKEN_EXPIRES_IN;
 const refreshTokenExpiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN;
-const logLabel = 'Auth';
+const logLabel = process.env.NODE_NAME || 'Auth';
 
 /**
  * Creat an access token and save it to Redis
