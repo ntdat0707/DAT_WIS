@@ -87,7 +87,9 @@ jobs:
     steps:
       - add_ssh_keys
       - run: |
-          ssh root@159.65.137.118 'docker ps'
+          ssh root@159.65.137.118 'doctl version  
+          echo 'hi'
+          '
 
 workflows:
   version: 2
