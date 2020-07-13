@@ -26,8 +26,9 @@ const swaggerDefinition = {
 
 const swaggerOptions = {
   swaggerDefinition,
-  apis: ['**/*.ts']
+  apis: [process.cwd() + '/**/*.ts']
 };
+console.log(process.cwd() + '/**/*.js');
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 
 class DocsRoutes {

@@ -40,6 +40,9 @@ COPY yarn.lock .
 
 
 COPY --from=builder /builder/app/dist/ ./dist/
+COPY .env .
 COPY --from=builder /prod_dep/node_modules ./node_modules
 
-EXPOSE 3000
+
+EXPOSE 7000
+CMD [ "yarn", "js-start-server" ]

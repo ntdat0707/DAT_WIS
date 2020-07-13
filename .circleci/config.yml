@@ -87,8 +87,8 @@ jobs:
     steps:
       - add_ssh_keys
       - run: |
-          ssh root@159.65.137.118 'doctl version  
-          echo 'hi'
+          ssh root@128.199.111.189 'doctl version  
+          docker pull registry.digitalocean.com/wisere/customer-service
           '
 
 workflows:

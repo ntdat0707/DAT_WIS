@@ -68,6 +68,7 @@ services:
     restart: always
     ports:
       - '${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}'
+      - '7000:7000'
     environment:
       NODE_NAME: ${SVC_CUSTOMER_HOST}
       APP_PORT: '3000'
