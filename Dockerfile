@@ -41,6 +41,7 @@ COPY yarn.lock .
 
 COPY --from=builder /builder/app/dist/ ./dist/
 COPY .env .
+COPY ./src ./src
 COPY --from=builder /prod_dep/node_modules ./node_modules
 
 
