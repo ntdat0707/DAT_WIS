@@ -1,13 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
+require('dotenv').config();
+
 // import { CustomerModel, sequelize } from '../../../repositories/models';
-import { validate } from '../../../ultils/validator';
-import { buildSuccessMessage } from '../../../ultils/response-messages';
-import { registerSchema, loginSchema } from '../configs/validate-schemas';
-// import { customerErrorDetails as _ } from '../../../ultils/response-messages/error-details';
-import { CustomError } from '../../../ultils/error-handlers';
+import { validate } from '../../../utils/validator';
+import { buildSuccessMessage } from '../../../utils/response-messages';
+import { CustomError } from '../../../utils/error-handlers';
 import { MockCustomerModel } from '../../../repositories/postresql/models';
-import { NODE_NAME } from '../configs/consts';
+import { createAccessToken, verifyAcessToken } from '../../../utils/jwt';
+
+import { registerSchema, loginSchema } from '../configs/validate-schemas';
+import { sendEmail } from '../../../utils/emailer';
 require('dotenv').config();
 
 export class CustomerController {
@@ -57,7 +60,20 @@ export class CustomerController {
    */
   public register = async (req: Request, res: Response, next: NextFunction) => {
     let transaction: any = null;
-
+    /*for (let i = 0; i < 2; i++) {
+      const cc = await sendEmail({
+        receivers: 'lvtrong19931@gmail.com', //'huy@bookoke.com',
+        subject: 'Thông báo nhận khuyến mãi từ Bookoke nhân dịp lễ gì đó ' + new Date() + 'time ' + i,
+        type: 'text',
+        message:
+          'Xin chào quý khách, Cảm ơn quý khách đã đăng ký tài khoản trong hệ thống của chúng tôi, mã khuyến mãi là A6969-9-9-8 ' +
+          new Date() +
+          ' Test send mail gun from Notification Service - time ' +
+          i,
+        cc: ['emospa02@gmail.com']
+      });
+      console.log('push email =========================', cc);
+    }*/
     try {
       let data = (({ name, email, age, password }) => ({
         name,
@@ -65,8 +81,18 @@ export class CustomerController {
         age,
         password
       }))(req.body);
+      //test token
+      // const token = await createAccessToken({
+      //   userId: 'aaa',
+      //   userName: 'Trọng lv',
+      //   userType: 'customer',
+      //   refreshToken: 'asdasd'
+      // });
+      // const ensc = await verifyAcessToken(token);
+      // console.log(token, '------------------------------', ensc);
+
       const validateErrors = validate(data, registerSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const customer = await MockCustomerModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
@@ -119,7 +145,7 @@ export class CustomerController {
         password
       }))(req.body);
       const validateErrors = validate(profile, loginSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, NODE_NAME, HttpStatus.BAD_REQUEST));
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       return res.status(HttpStatus.OK).send({});
     } catch (error) {
       return next(error);

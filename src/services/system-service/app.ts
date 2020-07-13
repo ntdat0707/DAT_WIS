@@ -3,7 +3,7 @@ import { writelog } from './controllers/log-controller';
 import express from 'express';
 import * as bodyParser from 'body-parser';
 import cors from 'cors';
-import { handleCustomError, handleException } from '../../ultils/error-handlers';
+import { handleCustomError, handleException } from '../../utils/error-handlers';
 import connectMongoDB from '../../repositories/mongo/configs/connector';
 require('dotenv').config();
 

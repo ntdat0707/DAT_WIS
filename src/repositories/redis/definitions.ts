@@ -6,7 +6,7 @@ const setASync = promisify(redisClient.set).bind(redisClient);
 const getAsync = promisify(redisClient.get).bind(redisClient);
 const delAsync = promisify(redisClient.del).bind(redisClient);
 
-const setData = async (key: EKeys, data: any, options: any = null) => {
+const setData = async (key: EKeys | string, data: any, options: { key: string; value: string } = null) => {
   try {
     if (options != null) {
       await setASync(key, data, options.key, options.value);
@@ -20,7 +20,7 @@ const setData = async (key: EKeys, data: any, options: any = null) => {
   }
 };
 
-const getData = async (key: EKeys) => {
+const getData = async (key: EKeys | string) => {
   try {
     const data = await getAsync(key);
     return data;
@@ -29,7 +29,7 @@ const getData = async (key: EKeys) => {
   }
 };
 
-const deleteData = async (key: EKeys) => {
+const deleteData = async (key: EKeys | string) => {
   try {
     await delAsync(key);
   } catch (error) {
@@ -38,9 +38,9 @@ const deleteData = async (key: EKeys) => {
 };
 
 interface IRedisActions {
-  setData(key: EKeys, data: any, options: any): Promise<any>;
-  getData(key: EKeys): Promise<any>;
-  deleteData(key: EKeys): Promise<void>;
+  setData(key: EKeys | string, data: any, options: { key: string; value: string }): Promise<any>;
+  getData(key: EKeys | string): Promise<any>;
+  deleteData(key: EKeys | string): Promise<void>;
 }
 
 const redis: IRedisActions = { setData, getData, deleteData };

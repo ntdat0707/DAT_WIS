@@ -7,7 +7,8 @@ function format(error: ValidationError): IErrorDetail[] {
   errDetail.forEach(element => {
     errResponse.push({
       title: element.message,
-      source: { parameter: element.path.join('/') }
+      source: { pointer: element.path.join('/') },
+      code: '000'
     });
   });
   return errResponse;
