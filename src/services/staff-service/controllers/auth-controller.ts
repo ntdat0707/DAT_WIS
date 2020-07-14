@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { hash, compare } from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
@@ -8,7 +9,7 @@ import { CustomError } from '../../../utils/error-handlers';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createAccessToken, createRefreshToken, IAccessTokenData, IRefreshTokenData } from '../../../utils/jwt';
-import { StaffModel } from '../../../repositories/postresql/models';
+import { sequelize, StaffModel, CompanyModel } from '../../../repositories/postresql/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import { createBusinessAccountSchema, loginSchema } from '../configs/validate-schemas';
@@ -56,7 +57,10 @@ export class AuthController {
    *         description: Internal server errors
    */
   public async registerBusinessAccount(req: Request, res: Response, next: NextFunction) {
+    let transaction = null;
     try {
+      // start transaction
+      transaction = await sequelize.transaction();
       const data = {
         email: req.body.email,
         fullName: req.body.fullName,
@@ -71,9 +75,16 @@ export class AuthController {
 
       //endscrypt password
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
-      await StaffModel.create({ ...data, ...{ isBusinessAccount: true } });
+      const staffId = uuidv4();
+      const companyId = uuidv4();
+      await StaffModel.create({ ...data, ...{ isBusinessAccount: true, id: staffId } }, { transaction });
+      await CompanyModel.create({ id: companyId, ownerId: staffId }, { transaction });
+      //commit transaction
+      await transaction.commit();
       return res.status(HttpStatus.OK).send();
     } catch (error) {
+      //rollback transaction
+      if (transaction) await transaction.rollback();
       return next(error);
     }
   }
