@@ -56,29 +56,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install doctl
-          command: |
-            cd ~
-            wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
-            tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
-            sudo mv ~/doctl /usr/local/bin
-      - run: doctl -v
-      - run:
           name: Build image
           command: docker-compose up -d --build customer-service
-      - run:
-          command: |
-            docker images
-            docker tag customer-service registry.digitalocean.com/wisere/customer-service
-      - run:
-          command: |
-            docker images
-            doctl auth init -t $DO_KEY
-            doctl registry login
-      - run:
-          command: |
-            docker push registry.digitalocean.com/wisere/customer-service
-
   deploy:
     machine:
       # image: ubuntu-1604:201903-01
@@ -86,7 +65,30 @@ jobs:
     working_directory: ~/wsr
     steps:
       - add_ssh_keys
-      - run: |
+      - run:
+        name: Install doctl
+        command: |
+          cd ~
+          wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
+          tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
+          sudo mv ~/doctl /usr/local/bin
+    - run: doctl -v
+    - run:
+        command: |
+          docker images
+          docker tag customer-service registry.digitalocean.com/wisere/customer-service
+    - run:
+        command: |
+          docker images
+          doctl auth init -t $DO_KEY
+          doctl registry login
+    - run:
+        command: |
+          docker push registry.digitalocean.com/wisere/customer-service
+
+      - run: 
+          name: Deploy
+          command: |
           ssh root@128.199.111.189 'doctl version  
           docker pull registry.digitalocean.com/wisere/customer-service
           docker rm wisere -f
