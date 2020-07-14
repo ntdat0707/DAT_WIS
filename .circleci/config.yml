@@ -94,12 +94,12 @@ workflows:
   btd:
     jobs:
       # - test
-      - build_and_deploy
-        # filters:
-        #   branches:
-        #     only:
-        #       - develop
-        #       - staging
-        #       - production
+      - build_and_deploy:
+        filters:
+          branches:
+            only:
+              - develop
+              - staging
+              - production
         # requires:
         #   - build
