@@ -21,7 +21,7 @@ public/css/main.css
 coverage
 
 # API keys and secrets
-.env
+# .env
 
 # Dependency directory
 node_modules
@@ -50,3 +50,4 @@ public
 
 .docker-volumes
 local.env
+.env

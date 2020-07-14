@@ -18,34 +18,34 @@ services:
   #     - network
   # command: echo ${DB_HOST}
 
-  rabbitmq:
-    image: rabbitmq:3.7.5-management
-    container_name: rabbitmq
-    restart: always
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    ports:
-      - '5672:5672'
-      - '15672:15672'
-    volumes:
-      - ./.docker-volumes/rabbitmq-data:/var/lib/rabbitmq
+  # rabbitmq:
+  #   image: rabbitmq:3.7.5-management
+  #   container_name: rabbitmq
+  #   restart: always
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+  #     RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+  #   ports:
+  #     - '5672:5672'
+  #     - '15672:15672'
+  #   volumes:
+  #     - ./.docker-volumes/rabbitmq-data:/var/lib/rabbitmq
 
-  bookoke-mongo:
-    container_name: mongodb
-    image: mongo
-    build: ./docker/mongoDB
-    restart: always
-    ports:
-      - '27017:27017'
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_NAME}
-    networks:
-      - network
-    volumes:
-      - ./.docker-volumes/mongo-data:/data/db
+  # bookoke-mongo:
+  #   container_name: mongodb
+  #   image: mongo
+  #   build: ./docker/mongoDB
+  #   restart: always
+  #   ports:
+  #     - '27017:27017'
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+  #     MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+  #     MONGO_INITDB_DATABASE: ${MONGO_NAME}
+  #   networks:
+  #     - network
+  #   volumes:
+  #     - ./.docker-volumes/mongo-data:/data/db
   # gateway:
   #   container_name: ${GTW_HOST}
   #   build:
@@ -60,18 +60,20 @@ services:
   #     - rabbitmq
   #   networks:
   #     - network
-  # customer-service:
-  #   container_name: ${SVC_CUSTOMER_HOST}
-  #   build:
-  #     context: .
-  #     dockerfile: ./docker/base/Dockerfile
-  #   restart: always
-  #   ports:
-  #     - "${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}"
-  #   environment:
-  #     - NODE_NAME=${SVC_CUSTOMER_HOST}
-  #   networks:
-  #     - network
+  customer-service:
+    container_name: ${SVC_CUSTOMER_HOST}
+    image: 'customer-service'
+    build:
+      context: .
+    restart: always
+    ports:
+      - '${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}'
+      - '7000:7000'
+    environment:
+      NODE_NAME: ${SVC_CUSTOMER_HOST}
+      APP_PORT: '3000'
+    networks:
+      - network
 
 networks:
   network:

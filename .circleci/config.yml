@@ -1,13 +1,111 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
-# Use a package of configuration called an orb.
 orbs:
-  # Declare a dependency on the welcome-orb
-  welcome: circleci/welcome-orb@0.4.1
-# Orchestrate or schedule a set of jobs
+  doctl: digitalocean/cli@0.1.1
+jobs:
+  test:
+    machine:
+      # image: ubuntu-1604:201903-0
+      docker_layer_caching: true
+    working_directory: ~/wsr
+    steps:
+      - checkout
+      - run:
+          name: Setup Nodejs and Yarn
+          command: |
+            # Install Nodejs
+            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
+            source ~/.bash_profile
+            nvm install v13.8.0
+            nvm alias default  v13.8.0
+
+            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+            echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
+
+            # Install Yarn
+            npm install -g yarn@1.22.4
+
+      - restore_cache:
+          key: dep-{{ checksum "yarn.lock" }}
+      - run:
+          name: Install package
+          command: yarn
+          working_directory: ./
+      - save_cache:
+          key: dep-{{ checksum "yarn.lock" }}
+          paths:
+            - node_modules
+
+      - run:
+          name: setting environemnt variables
+          command: |
+            export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
+            echo "export MYIP=$MYIP" >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
+          name: launch docker container
+          working_directory: ./
+          command: |
+            yarn run start-docker -d
+
+  build_and_deploy:
+    machine:
+      # image: ubuntu-1604:201903-0
+      docker_layer_caching: true
+    working_directory: ~/wsr
+    steps:
+      - checkout
+      - add_ssh_keys
+      - run:
+          name: Install doctl
+          command: |
+            cd ~
+            wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
+            tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
+            sudo mv ~/doctl /usr/local/bin
+      - run:
+          name: Environment setup
+          command: |
+            if [ $CIRCLE_BRANCH = 'develop' ]; then
+              cp ./staging.env ./.env
+            fi
+      - run:
+          name: Build image
+          command: docker-compose up -d --build customer-service
+      - run:
+          command: |
+            docker images
+            docker tag customer-service registry.digitalocean.com/wisere/customer-service
+      - run:
+          command: |
+            docker images
+            doctl auth init -t $DO_KEY
+            doctl registry login
+      - run:
+          name: Push image to container-registry
+          command: |
+            docker push registry.digitalocean.com/wisere/customer-service
+      - run:
+          name: Deploy
+          command: |
+            ssh root@128.199.111.189 'doctl version  
+            docker pull registry.digitalocean.com/wisere/customer-service
+            docker rm wisere -f
+            docker run -d -p 7000:7000 --name wisere registry.digitalocean.com/wisere/customer-service
+            # docker rmi $(docker images -f dangling=true -q) 
+            '
+
 workflows:
-  # Name the workflow "welcome"
-  welcome:
-    # Run the welcome/run job in its own container
+  version: 2
+  btd:
     jobs:
-      - welcome/run
+      # - test
+      - build_and_deploy:
+          filters:
+            branches:
+              only:
+                - develop
+                - staging
+                - production
+        # requires:
+        #   - build
