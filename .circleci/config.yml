@@ -66,35 +66,34 @@ jobs:
     steps:
       - add_ssh_keys
       - run:
-        name: Install doctl
-        command: |
-          cd ~
-          wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
-          tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
-          sudo mv ~/doctl /usr/local/bin
-    - run: doctl -v
-    - run:
-        command: |
-          docker images
-          docker tag customer-service registry.digitalocean.com/wisere/customer-service
-    - run:
-        command: |
-          docker images
-          doctl auth init -t $DO_KEY
-          doctl registry login
-    - run:
-        command: |
-          docker push registry.digitalocean.com/wisere/customer-service
-
-      - run: 
+          name: Install doctl
+          command: |
+            cd ~
+            wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
+            tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
+            sudo mv ~/doctl /usr/local/bin
+      - run: doctl -v
+      - run:
+          command: |
+            docker images
+            docker tag customer-service registry.digitalocean.com/wisere/customer-service
+      - run:
+          command: |
+            docker images
+            doctl auth init -t $DO_KEY
+            doctl registry login
+      - run:
+          command: |
+            docker push registry.digitalocean.com/wisere/customer-service
+      - run:
           name: Deploy
           command: |
-          ssh root@128.199.111.189 'doctl version  
-          docker pull registry.digitalocean.com/wisere/customer-service
-          docker rm wisere -f
-          docker run -d -p 7000:7000 --name wisere registry.digitalocean.com/wisere/customer-service
-          docker rmi $(docker images -f "dangling=true" -q) --force
-          '
+            ssh root@128.199.111.189 'doctl version  
+            docker pull registry.digitalocean.com/wisere/customer-service
+            docker rm wisere -f
+            docker run -d -p 7000:7000 --name wisere registry.digitalocean.com/wisere/customer-service
+            docker rmi $(docker images -f "dangling=true" -q) --force
+            '
 
 workflows:
   version: 2
