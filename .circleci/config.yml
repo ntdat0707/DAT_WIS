@@ -48,22 +48,13 @@ jobs:
           command: |
             yarn run start-docker -d
 
-  build:
+  build_and_deploy:
     machine:
       # image: ubuntu-1604:201903-0
       docker_layer_caching: true
     working_directory: ~/wsr
     steps:
       - checkout
-      - run:
-          name: Build image
-          command: docker-compose up -d --build customer-service
-  deploy:
-    machine:
-      # image: ubuntu-1604:201903-01
-      docker_layer_caching: true
-    working_directory: ~/wsr
-    steps:
       - add_ssh_keys
       - run:
           name: Install doctl
@@ -72,7 +63,9 @@ jobs:
             wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
             tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
             sudo mv ~/doctl /usr/local/bin
-      - run: doctl -v
+      - run:
+          name: Build image
+          command: docker-compose up -d --build customer-service
       - run:
           command: |
             docker images
@@ -83,6 +76,7 @@ jobs:
             doctl auth init -t $DO_KEY
             doctl registry login
       - run:
+          name: Push image to container-registry
           command: |
             docker push registry.digitalocean.com/wisere/customer-service
       - run:
@@ -100,13 +94,12 @@ workflows:
   btd:
     jobs:
       # - test
-      - build
-      - deploy:
-          # filters:
-          #   branches:
-          #     only:
-          #       - develop
-          #       - staging
-          #       - production
-          requires:
-            - build
+      - build_and_deploy
+        # filters:
+        #   branches:
+        #     only:
+        #       - develop
+        #       - staging
+        #       - production
+        # requires:
+        #   - build
