@@ -102,11 +102,11 @@ workflows:
       # - test
       - build
       - deploy:
-          filters:
-            branches:
-              only:
-                - develop
-                - staging
-                - production
+          # filters:
+          #   branches:
+          #     only:
+          #       - develop
+          #       - staging
+          #       - production
           requires:
             - build
