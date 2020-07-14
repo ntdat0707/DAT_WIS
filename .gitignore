@@ -50,3 +50,4 @@ public
 
 .docker-volumes
 local.env
+.env

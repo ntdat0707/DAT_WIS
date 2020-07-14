@@ -64,6 +64,12 @@ jobs:
             tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
             sudo mv ~/doctl /usr/local/bin
       - run:
+          name: Environment setup
+          command: |
+            if [ $CIRCLE_BRANCH = 'develop' ]; then
+              cp ./staging.env ./.env
+            fi
+      - run:
           name: Build image
           command: docker-compose up -d --build customer-service
       - run:
