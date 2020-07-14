@@ -1,5 +1,9 @@
 // import sequelize from '../configs/db-connector';
-// export * from './customer-model';
+import sequelize from '../configs/db-connector';
 import { StaffModel } from './staff-model';
+import { CompanyModel } from './company-model';
 
-export { StaffModel };
+StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
+CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
+
+export { sequelize, StaffModel, CompanyModel };
