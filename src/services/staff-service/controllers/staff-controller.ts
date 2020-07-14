@@ -71,7 +71,7 @@ export class StaffController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
