@@ -86,7 +86,7 @@ jobs:
             docker pull registry.digitalocean.com/wisere/customer-service
             docker rm wisere -f
             docker run -d -p 7000:7000 --name wisere registry.digitalocean.com/wisere/customer-service
-            docker rmi $(docker images -f "dangling=true" -q) --force
+            # docker rmi $(docker images -f dangling=true -q) 
             '
 
 workflows:
