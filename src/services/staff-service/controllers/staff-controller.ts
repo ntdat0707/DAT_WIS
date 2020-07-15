@@ -155,7 +155,7 @@ export class StaffController {
       }
 
       const staff = await StaffModel.create(req.body);
-      return res.status(HttpStatus.OK).send(staff);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);
     }

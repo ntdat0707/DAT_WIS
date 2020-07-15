@@ -1,6 +1,5 @@
 import * as express from 'express';
 import { StaffController } from '../controllers/staff-controller';
-
 require('dotenv').config();
 
 export class StaffRoutes {
