@@ -9,6 +9,7 @@ class CustomerModel extends Model {
   public birthDate: Date;
   public passportNumber: string;
   public address: string;
+  public companyId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -29,11 +30,12 @@ CustomerModel.init(
     },
     gender: {
       type: DataTypes.TINYINT,
-      field: 'gender'
+      field: 'gender',
+      allowNull: false
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
       field: 'phone'
     },
     email: {
@@ -50,10 +52,15 @@ CustomerModel.init(
       type: DataTypes.STRING,
       field: 'passport_number'
     },
-    adress: {
+    address: {
       type: DataTypes.STRING,
       allowNull: true,
-      field: 'adress'
+      field: 'address'
+    },
+    companyId: {
+      field: 'company_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
@@ -74,7 +81,7 @@ CustomerModel.init(
   {
     sequelize: sequelize,
     freezeTableName: true,
-    tableName: 'staff',
+    tableName: 'customer',
     // scopes: {},
     timestamps: true,
     paranoid: true

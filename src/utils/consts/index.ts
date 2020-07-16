@@ -12,4 +12,10 @@ enum EEnvironments {
   PRODUCTION = 'production'
 }
 
-export { buildingEnvs, ELocales, EEnvironments };
+enum EGender {
+  FEMALE = 0,
+  MALE = 1,
+  UNISEX = 3
+}
+
+export { buildingEnvs, ELocales, EEnvironments, EGender };

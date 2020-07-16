@@ -7,7 +7,7 @@ import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
 import { logger } from '../../logger';
 import { verifyAcessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
-import { StaffModel } from '../../../repositories/postresql/models';
+import { StaffModel, CompanyModel } from '../../../repositories/postresql/models';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
@@ -40,12 +40,20 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_003()) });
       return res.status(HttpStatus.UNAUTHORIZED).send(buildErrorMessage(generalErrorDetails.E_003()));
     } else {
-      const staff = await StaffModel.scope('safe').findOne({ where: { id: accessTokenData.userId } });
+      const staff = await StaffModel.scope('safe').findOne({
+        where: { id: accessTokenData.userId },
+        include: [{ model: CompanyModel, as: 'hasCompany', required: false }]
+      });
       if (!staff) {
         logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_003()) });
         return res.status(HttpStatus.UNAUTHORIZED).send(buildErrorMessage(generalErrorDetails.E_003()));
       } else {
-        req.body.staffPayload = staff;
+        req.body.staffPayload = {
+          id: staff.id,
+          fullName: staff.fullName,
+          isBusinessAccount: staff.isBusinessAccount,
+          companyId: (staff as any)['hasCompany']?.id
+        };
       }
     }
     next();
