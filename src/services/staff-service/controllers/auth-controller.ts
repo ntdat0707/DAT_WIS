@@ -71,7 +71,7 @@ export class AuthController {
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
       const checkEmailExists = await StaffModel.findOne({ where: { email: data.email } });
-      if (checkEmailExists) return next(new CustomError(staffErrorDetails.E_401(), HttpStatus.BAD_REQUEST));
+      if (checkEmailExists) return next(new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST));
 
       //endscrypt password
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
@@ -135,10 +135,10 @@ export class AuthController {
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff)
-        return next(new CustomError(staffErrorDetails.E_402('Email or password invalid'), HttpStatus.NOT_FOUND));
+        return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
       const match = await compare(data.password, staff.password);
       if (!match)
-        return next(new CustomError(staffErrorDetails.E_402('Email or password invalid'), HttpStatus.NOT_FOUND));
+        return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
       //create tokens
       const refreshTokenData: IRefreshTokenData = {
         userId: staff.id,

@@ -42,7 +42,7 @@ export class StaffController {
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const staff = await StaffModel.findOne({ where: { id: staffId } });
       if (!staff)
-        return next(new CustomError(staffErrorDetails.E_400(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
+        return next(new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);

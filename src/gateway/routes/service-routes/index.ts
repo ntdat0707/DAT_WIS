@@ -1,7 +1,7 @@
 import * as express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { buildingEnvs } from '../../../utils/consts';
-import { customerServiceConfigs, staffServiceConfigs } from './configs';
+import { customerServiceConfigs, staffServiceConfigs, branchServiceConfigs } from './configs';
 import { API_BASE_PATH } from '../configs';
 
 require('dotenv').config();
@@ -40,6 +40,8 @@ class ServiceRoutes {
       return `${API_BASE_PATH}${customerServiceConfigs.route}`;
     if (originalUrl.startsWith(`${API_BASE_PATH}${staffServiceConfigs.route}`))
       return `${API_BASE_PATH}${staffServiceConfigs.route}`;
+    if (originalUrl.startsWith(`${API_BASE_PATH}${branchServiceConfigs.route}`))
+      return `${API_BASE_PATH}${branchServiceConfigs.route}`;
     else return '';
   };
 
@@ -65,6 +67,15 @@ class ServiceRoutes {
       staffServiceConfigs.route,
       createProxyMiddleware({
         ...staffServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq }
+      })
+    );
+
+    // LOCATION SERVICE
+    this.router.use(
+      branchServiceConfigs.route,
+      createProxyMiddleware({
+        ...branchServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq }
       })
     );
