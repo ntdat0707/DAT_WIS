@@ -69,7 +69,6 @@ export class CustomerController {
    */
   public async createCustomer(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('zoooooooo');
       const data: any = {
         fullName: req.body.fullName,
         gender: req.body.gender,

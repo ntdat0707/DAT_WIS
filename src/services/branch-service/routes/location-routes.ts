@@ -1,16 +1,16 @@
 import * as express from 'express';
-// import { CustomerController } from '../controllers/customer-controller';
 require('dotenv').config();
 
-// import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
+import { LocationController } from '../controllers/location-controller';
+import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
 export class LocationRoutes {
   public router: express.Router = express.Router();
-  //   private customerController = new CustomerController();
+  private locationController = new LocationController();
 
   constructor() {
     this.config();
   }
   private config(): void {
-    // this.router.post('/create', isAuthenticated, this.customerController.createCustomer);
+    this.router.post('/create-location', isAuthenticated, this.locationController.createLocation);
   }
 }
