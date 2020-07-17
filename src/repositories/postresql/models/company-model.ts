@@ -1,6 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 class CompanyModel extends Model {
+  public id: string;
   public ownerId: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
@@ -40,13 +41,6 @@ CompanyModel.init(
     sequelize: sequelize,
     freezeTableName: true,
     tableName: 'company',
-    scopes: {
-      safe: {
-        attributes: {
-          exclude: ['password']
-        }
-      }
-    },
     timestamps: true,
     paranoid: true
   }

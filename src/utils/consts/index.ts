@@ -18,4 +18,9 @@ enum EGender {
   UNISEX = 3
 }
 
-export { buildingEnvs, ELocales, EEnvironments, EGender };
+enum ELocationStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
+}
+
+export { buildingEnvs, ELocales, EEnvironments, EGender, ELocationStatus };
