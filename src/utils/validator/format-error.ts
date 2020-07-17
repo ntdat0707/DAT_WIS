@@ -8,7 +8,7 @@ function format(error: ValidationError): IErrorDetail[] {
     errResponse.push({
       title: element.message,
       source: { pointer: element.path.join('/') },
-      code: '000'
+      code: '0000'
     });
   });
   return errResponse;

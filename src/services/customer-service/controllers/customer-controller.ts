@@ -85,7 +85,7 @@ export class CustomerController {
       }
       data.companyId = req.body.staffPayload.companyId;
       const customer = await CustomerModel.findOne({ where: { email: data.email } });
-      if (customer) return next(new CustomError(customerErrorDetails.E_3OO(), HttpStatus.BAD_REQUEST));
+      if (customer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       await CustomerModel.create(data);
       return res.status(HttpStatus.OK).send();
     } catch (error) {

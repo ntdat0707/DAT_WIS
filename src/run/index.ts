@@ -6,6 +6,7 @@ import CustomerService from '../services/customer-service/app';
 import SystemService from '../services/system-service/app';
 import NotificationService from '../services/notification-service/app';
 import StaffService from '../services/staff-service/app';
+import BranchService from '../services/branch-service/app';
 
 require('dotenv').config();
 const nodeName = process.env.NODE_NAME;
@@ -61,6 +62,17 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
         });
       });
       break;
+    case 'branch-service':
+      const branchService = new BranchService().app;
+      branchService.listen(branchService.get('port'), (): void => {
+        logger.info({
+          label: 'customer-service',
+          message: `App is running at http://localhost:${branchService.get('port')} in mode ${branchService.get(
+            'env'
+          )} `
+        });
+      });
+      break;
   }
 } else {
   // develop mode
@@ -88,7 +100,7 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
   const staffService = new StaffService().app;
   staffService.listen(staffService.get('port'), (): void => {
     logger.info({
-      label: 'customer-service',
+      label: 'staff-service',
       message: `App is running at http://localhost:${staffService.get('port')} in mode ${staffService.get('env')} `
     });
   });
@@ -99,6 +111,14 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
       message: `App is running at http://localhost:${customerService.get('port')} in mode ${customerService.get(
         'env'
       )} `
+    });
+  });
+
+  const branchService = new BranchService().app;
+  branchService.listen(branchService.get('port'), (): void => {
+    logger.info({
+      label: 'branch-service',
+      message: `App is running at http://localhost:${branchService.get('port')} in mode ${branchService.get('env')} `
     });
   });
 }

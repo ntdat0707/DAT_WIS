@@ -2,6 +2,7 @@ import { IErrorDetail, ISourceError } from '../responses';
 import { generalErrorDetails } from './general';
 import { customerErrorDetails } from './customer';
 import { staffErrorDetails } from './staff';
+import { branchErrorDetails } from './branch';
 
 const buildErrorDetail = (
   code: string,
@@ -18,4 +19,4 @@ const buildErrorDetail = (
   return e;
 };
 
-export { buildErrorDetail, generalErrorDetails, customerErrorDetails, staffErrorDetails };
+export { buildErrorDetail, generalErrorDetails, customerErrorDetails, staffErrorDetails, branchErrorDetails };

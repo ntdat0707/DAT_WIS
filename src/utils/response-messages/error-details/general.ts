@@ -4,11 +4,11 @@ import { buildingEnvs } from '../../consts';
 
 const generalErrorDetails = {
   /** Internal server error, detail should be null if you cannot detect error */
-  E_OO1(error: any = null, detail: string = null): IErrorDetail {
+  E_0001(error: any = null, detail: string = null): IErrorDetail {
     if (error && buildingEnvs.includes(process.env.NODE_ENV)) {
       console.log(error);
     }
-    const e = buildErrorDetail('001', 'Internal server error', detail);
+    const e = buildErrorDetail('0001', 'Internal server error', detail);
     return e;
   },
 
@@ -19,8 +19,8 @@ const generalErrorDetails = {
    * @param {ISourceError} [source=null]
    * @returns {IErrorDetail}
    */
-  E_002(detail: string = 'Missing access token', source: ISourceError = null): IErrorDetail {
-    return buildErrorDetail('002', 'Unauthorized', detail, source);
+  E_0002(detail: string = 'Missing access token', source: ISourceError = null): IErrorDetail {
+    return buildErrorDetail('0002', 'Unauthorized', detail, source);
   },
 
   /**
@@ -30,8 +30,8 @@ const generalErrorDetails = {
    * @param {ISourceError} [source=null]
    * @returns {IErrorDetail}
    */
-  E_003(detail: string = 'Invalid access token', source: ISourceError = null): IErrorDetail {
-    return buildErrorDetail('003', 'Unauthorized', detail, source);
+  E_0003(detail: string = 'Invalid access token', source: ISourceError = null): IErrorDetail {
+    return buildErrorDetail('0003', 'Unauthorized', detail, source);
   },
 
   /**
@@ -41,8 +41,8 @@ const generalErrorDetails = {
    * @param {ISourceError} [source=null]
    * @returns {IErrorDetail}
    */
-  E_004(detail: string = 'Missing refresh token', source: ISourceError = null): IErrorDetail {
-    return buildErrorDetail('004', 'Unauthorized', detail, source);
+  E_0004(detail: string = 'Missing refresh token', source: ISourceError = null): IErrorDetail {
+    return buildErrorDetail('0004', 'Unauthorized', detail, source);
   },
 
   /**
@@ -52,8 +52,8 @@ const generalErrorDetails = {
    * @param {ISourceError} [source=null]
    * @returns {IErrorDetail}
    */
-  E_005(detail: string = 'Invalid refresh token', source: ISourceError = null): IErrorDetail {
-    return buildErrorDetail('005', 'Unauthorized', detail, source);
+  E_0005(detail: string = 'Invalid refresh token', source: ISourceError = null): IErrorDetail {
+    return buildErrorDetail('0005', 'Unauthorized', detail, source);
   }
 };
 

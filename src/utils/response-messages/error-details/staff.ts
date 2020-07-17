@@ -9,8 +9,8 @@ const staffErrorDetails = {
    * @param {string} [detail=null]
    * @returns {IErrorDetail}
    */
-  E_400(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('400', 'Staff not found', detail);
+  E_4000(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4000', 'Staff not found', detail);
     return e;
   },
   /**
@@ -19,8 +19,8 @@ const staffErrorDetails = {
    * @param {string} [detail=null]
    * @returns {IErrorDetail}
    */
-  E_401(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('401', 'Staff email is exists', detail);
+  E_4001(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4001', 'Staff email is exists', detail);
     return e;
   },
 
@@ -30,8 +30,8 @@ const staffErrorDetails = {
    * @param {string} [detail=null]
    * @returns {IErrorDetail}
    */
-  E_402(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('402', 'Liogin info invalid', detail);
+  E_4002(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4002', 'Liogin info invalid', detail);
     return e;
   }
 };

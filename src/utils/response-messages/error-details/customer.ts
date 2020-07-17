@@ -4,8 +4,8 @@ import { buildErrorDetail } from './index';
 
 const customerErrorDetails = {
   // All order items must same seller
-  E_3OO(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('300', 'Email already exists ', detail);
+  E_3000(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3000', 'Email already exists ', detail);
     return e;
   }
 };
