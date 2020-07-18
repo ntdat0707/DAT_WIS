@@ -97,4 +97,33 @@ export class LocationController {
       return next(error);
     }
   }
+
+  /**
+   * @swagger
+   * /branch/location/get-all-locations:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getAllLocations
+   *     responses:
+   *       200:
+   *         description:
+   *       400:
+   *         description:
+   *       404:
+   *         description:
+   *       500:
+   *         description:
+   */
+  public async getAllLocations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const companyId = req.body.staffPayload.companyId;
+      const locations = await LocationModel.findAll({ where: { companyId } });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
