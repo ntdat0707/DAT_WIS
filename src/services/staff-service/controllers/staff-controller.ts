@@ -35,7 +35,7 @@ export class StaffController {
    *       500:
    *         description: Internal server errors
    */
-  public async getStaff(req: Request, res: Response, next: NextFunction) {
+  public getStaff = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const staffId = req.params.staffId;
       const validateErrors = validate(staffId, staffIdSchema);
@@ -47,7 +47,7 @@ export class StaffController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 
   /**
    * @swagger
@@ -75,7 +75,7 @@ export class StaffController {
    *       500:
    *         description: Internal server errors
    */
-  public async getStaffs(req: Request, res: Response, next: NextFunction) {
+  public getStaffs = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
@@ -95,7 +95,7 @@ export class StaffController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 
   /**
    * @swagger
@@ -139,15 +139,13 @@ export class StaffController {
    *         $ref: '#/definitions/staffCreate'
    *     responses:
    *       200:
-   *         description:
+   *         description: success
    *       400:
-   *         description:
-   *       404:
-   *         description:
+   *         description: bad request
    *       500:
-   *         description:
+   *         description: Server internal error
    */
-  public async createStaff(req: Request, res: Response, next: NextFunction) {
+  public createStaff = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validateErrors = validate(req.body, createStaffSchema);
       if (validateErrors) {
@@ -159,5 +157,5 @@ export class StaffController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 }

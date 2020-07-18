@@ -56,7 +56,7 @@ export class AuthController {
    *       500:
    *         description: Internal server errors
    */
-  public async registerBusinessAccount(req: Request, res: Response, next: NextFunction) {
+  public registerBusinessAccount = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
       // start transaction
@@ -87,7 +87,7 @@ export class AuthController {
       if (transaction) await transaction.rollback();
       return next(error);
     }
-  }
+  };
 
   /**
    * @swagger
@@ -125,7 +125,7 @@ export class AuthController {
    *         description: Internal server errors
    */
 
-  public async login(req: Request, res: Response, next: NextFunction) {
+  public login = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = {
         email: req.body.email,
@@ -157,5 +157,5 @@ export class AuthController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 }
