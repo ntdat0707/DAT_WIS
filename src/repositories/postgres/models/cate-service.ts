@@ -4,6 +4,8 @@ import sequelize from '../configs/db-connector';
 class CateServiceModel extends Model {
   public id: string;
   public companyId!: string;
+  public name!: string;
+  public excerpt!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -20,6 +22,16 @@ CateServiceModel.init(
     companyId: {
       field: 'company_id',
       type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    name: {
+      field: 'name',
+      type: DataTypes.STRING(255),
+      allowNull: false
+    },
+    excerpt: {
+      field: 'excerpt',
+      type: DataTypes.STRING(255),
       allowNull: false
     },
     createdAt: {
