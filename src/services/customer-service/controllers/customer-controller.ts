@@ -59,15 +59,13 @@ export class CustomerController {
    *         $ref: '#/definitions/customerCreate'
    *     responses:
    *       200:
-   *         description:
+   *         description: success
    *       400:
-   *         description:
-   *       404:
-   *         description:
+   *         description: bad request
    *       500:
    *         description:
    */
-  public async createCustomer(req: Request, res: Response, next: NextFunction) {
+  public createCustomer = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data: any = {
         fullName: req.body.fullName,
@@ -90,5 +88,5 @@ export class CustomerController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 }

@@ -73,7 +73,7 @@ export class LocationController {
    *       500:
    *         description:
    */
-  public async createLocation(req: Request, res: Response, next: NextFunction) {
+  public createLocation = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data: any = {
         name: req.body.name,
@@ -96,7 +96,7 @@ export class LocationController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 
   /**
    * @swagger
@@ -109,15 +109,11 @@ export class LocationController {
    *     name: getAllLocations
    *     responses:
    *       200:
-   *         description:
-   *       400:
-   *         description:
-   *       404:
-   *         description:
+   *         description: success
    *       500:
-   *         description:
+   *         description: Server internal error
    */
-  public async getAllLocations(req: Request, res: Response, next: NextFunction) {
+  public getAllLocations = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = req.body.staffPayload.companyId;
       const locations = await LocationModel.findAll({ where: { companyId } });
@@ -125,5 +121,5 @@ export class LocationController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 }
