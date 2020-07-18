@@ -7,7 +7,7 @@ import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { createResourceSchema } from '../configs/validate-schemas/resource';
-import { ResourceModel } from '../../../repositories/postresql/models/resource';
+import { ResourceModel } from '../../../repositories/postgres/models/resource';
 
 export class ResourceController {
   constructor() {}
