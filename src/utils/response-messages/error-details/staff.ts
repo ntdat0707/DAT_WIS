@@ -1,4 +1,4 @@
-//100 => 199
+//4000 => 4999
 import { IErrorDetail } from '../responses';
 import { buildErrorDetail } from './index';
 

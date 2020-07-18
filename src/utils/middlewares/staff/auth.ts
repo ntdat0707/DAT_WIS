@@ -7,17 +7,74 @@ import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
 import { logger } from '../../logger';
 import { verifyAcessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
-import { StaffModel, CompanyModel } from '../../../repositories/postresql/models';
+import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/postresql/models';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
-interface IStaffPayload {
+/*interface IStaffPayload {
   id: string;
   fullName: string;
   isBusinessAccount: boolean;
   companyId: string;
   locationIds: string[];
-}
+}*/
+
+/**
+ * get working branchs of staff.
+ *
+ * @param {string} companyId
+ * @param {string} staffId
+ * @param {boolean} isOwner
+ * @returns
+ */
+const getWorkingLocations = async (companyId: string, staffId: string, isOwner: boolean) => {
+  try {
+    if (isOwner === true) {
+      const locations = await LocationModel.findAll({ where: { companyId } });
+      return locations;
+    } else {
+      const locations = await LocationModel.findAll({
+        include: [
+          {
+            model: StaffModel,
+            required: true,
+            where: { id: staffId },
+            through: { attributes: [], where: { staffId } }
+          }
+        ]
+      });
+      return locations;
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getCompany = async (staffId: string) => {
+  try {
+    const company = await CompanyModel.findOne({
+      include: [
+        {
+          model: LocationModel,
+          as: 'locations',
+          required: true,
+          include: [
+            {
+              model: StaffModel,
+              as: 'staffs',
+              required: true,
+              where: { id: staffId },
+              through: { attributes: [], where: { staffId: staffId } }
+            }
+          ]
+        }
+      ]
+    });
+    return company;
+  } catch (error) {
+    throw error;
+  }
+};
 
 /**
  * Check staff logined
@@ -56,16 +113,28 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
         logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
         return res.status(HttpStatus.UNAUTHORIZED).send(buildErrorMessage(generalErrorDetails.E_0003()));
       } else {
-        const staffPayload: IStaffPayload = {
+        const staffPayload: any = {
           id: staff.id,
           fullName: staff.fullName,
-          isBusinessAccount: staff.isBusinessAccount,
-          companyId:
-            (staff as any)['hasCompany'] && (staff as any)['hasCompany'].id
-              ? (staff as any)['hasCompany'].id
-              : 'TODO_Call_function_find_company',
-          locationIds: ['mock_location_id_1', 'mock_location_id_2']
+          isBusinessAccount: staff.isBusinessAccount
         };
+
+        //companyId
+        let companyId = null;
+        if ((staff as any)['hasCompany'] && (staff as any)['hasCompany'].id) {
+          companyId = (staff as any)['hasCompany'].id;
+        } else {
+          const company = await getCompany(staff.id);
+          companyId = company.id;
+        }
+
+        staffPayload.companyId = companyId;
+
+        // working location ids
+        const workingLocations = await getWorkingLocations(companyId, staffPayload.id, staffPayload.isBusinessAccount);
+        const workingLocationIds = workingLocations.map(location => location.id);
+        staffPayload.workingLocationIds = workingLocationIds;
+
         req.body.staffPayload = staffPayload;
       }
     }
