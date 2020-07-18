@@ -47,7 +47,7 @@ ResourceModel.init(
   {
     sequelize: sequelize,
     freezeTableName: true,
-    tableName: 'service_staff',
+    tableName: 'resource',
     timestamps: true,
     paranoid: true
   }
