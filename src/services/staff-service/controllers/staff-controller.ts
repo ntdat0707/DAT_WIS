@@ -6,10 +6,10 @@ require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { staffErrorDetails } from '../../../utils/response-messages/error-details';
+import { staffErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
-import { StaffModel } from '../../../repositories/postresql/models';
+import { StaffModel, LocationModel } from '../../../repositories/postresql/models';
 
 import { staffIdSchema, createStaffSchema } from '../configs/validate-schemas';
 
@@ -151,9 +151,65 @@ export class StaffController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-
       const staff = await StaffModel.create(req.body);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
+    } catch (error) {
+      return next(error);
+    }
+  };
+  /**
+   * @swagger
+   * /staff/get-all-staffs:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: getAllLocations
+   *     parameters:
+   *     - in: query
+   *       name: locationId
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal error
+   */
+  public getAllStaffs = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { workingLocationIds } = req.body.staffPayload;
+      const locationId = req.query.locationId;
+      const query: FindOptions = {
+        where: {}
+      };
+      if (locationId) {
+        if (!workingLocationIds.includes(locationId))
+          return next(new CustomError(branchErrorDetails.E_1001(), HttpStatus.FORBIDDEN));
+        (query.where as any).locationId = locationId;
+        (query as any).include = [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            through: {
+              attributes: []
+            },
+            where: { id: locationId }
+          }
+        ];
+      } else {
+        (query as any).include = [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            through: {
+              attributes: []
+            }
+          }
+        ];
+      }
+
+      const staffs = await StaffModel.scope('safe').findAll(query);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return next(error);
     }

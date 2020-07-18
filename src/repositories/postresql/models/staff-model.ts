@@ -11,6 +11,7 @@ class StaffModel extends Model {
   public passportNumber: string;
   public groupStaffId: string;
   public isBusinessAccount: boolean;
+  public locationId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -67,6 +68,11 @@ StaffModel.init(
       allowNull: false,
       defaultValue: false,
       field: 'is_business_account'
+    },
+    locationId: {
+      field: 'location_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
