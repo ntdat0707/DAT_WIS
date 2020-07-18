@@ -6,6 +6,8 @@ import { LocationModel } from './location';
 import { StaffLocationModel } from './staff-location-model';
 import { ServiceModel } from './service';
 import { ServiceStaffModel } from './service-staff';
+import { ResourceModel } from './resource';
+import { ServiceResourceModel } from './service-resource';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -18,4 +20,7 @@ LocationModel.belongsToMany(StaffModel, { through: StaffLocationModel, as: 'staf
 
 ServiceModel.belongsToMany(StaffModel, { through: ServiceStaffModel, as: 'staffs', foreignKey: 'service_id' });
 StaffModel.belongsToMany(ServiceModel, { through: ServiceStaffModel, as: 'services', foreignKey: 'staff_id' });
+
+ResourceModel.belongsToMany(ServiceModel, { through: ServiceResourceModel, as: 'services', foreignKey: 'resource_id' });
+ServiceModel.belongsToMany(ResourceModel, { through: ServiceResourceModel, as: 'resources', foreignKey: 'service_id' });
 export { sequelize, StaffModel, CompanyModel, CustomerModel, LocationModel };
