@@ -9,7 +9,7 @@ import { CustomError } from '../../../utils/error-handlers';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
-import { StaffModel } from '../../../repositories/postresql/models';
+import { StaffModel } from '../../../repositories/postgres/models';
 
 import { staffIdSchema, createStaffSchema } from '../configs/validate-schemas';
 

@@ -7,7 +7,7 @@ import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 // import { customerErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { LocationModel } from '../../../repositories/postresql/models';
+import { LocationModel } from '../../../repositories/postgres/models';
 
 import { createLocationSchema } from '../configs/validate-schemas';
 
