@@ -6,42 +6,42 @@ import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
-import { createResourceSchema } from '../configs/validate-schemas';
-import { ResourceModel } from '../../../repositories/postgres/models/resource';
+import { createCateServiceSchema } from '../configs/validate-schemas';
+import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 
-export class ServiceController {
+export class CateServiceController {
   constructor() {}
 
   /**
    * @swagger
    * definitions:
-   *   createService:
+   *   createCateService:
    *       required:
-   *           - locationId
-   *           - description
+   *           - name
+   *           - excerpt
    *       properties:
-   *           locationId:
+   *           name:
    *               type: string
-   *           description:
+   *           excerpt:
    *               type: string
    *
    */
 
   /**
    * @swagger
-   * /branch/service/create-service:
+   * /branch/cate-service/create:
    *   post:
    *     tags:
    *       - Branch
    *     security:
    *       - Bearer: []
-   *     name: createService
+   *     name: createCateService
    *     parameters:
    *     - in: "body"
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/createService'
+   *         $ref: '#/definitions/createCateService'
    *     responses:
    *       200:
    *         description:
@@ -52,18 +52,20 @@ export class ServiceController {
    *       500:
    *         description:
    */
-  public createService = async ({ body }: Request, res: Response, next: NextFunction) => {
+  public createCateService = async ({ body }: Request, res: Response, next: NextFunction) => {
     try {
       const data: any = {
-        locationId: body.locationId,
-        description: body.description
+        name: body.name,
+        excerpt: body.excerpt,
+        companyId: res.locals.staffPayload.companyId
       };
-      const validateErrors = validate(data, createResourceSchema);
+      const validateErrors = validate(data, createCateServiceSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const location = await ResourceModel.create(data);
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+
+      const cateService = await CateServiceModel.create(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateService));
     } catch (error) {
       return next(error);
     }
