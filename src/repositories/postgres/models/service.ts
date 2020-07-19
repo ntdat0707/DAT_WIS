@@ -5,7 +5,7 @@ class ServiceModel extends Model {
   public id: string;
   public status!: string;
   public categoryServiceId!: string;
-  public branchId!: string;
+  public locationId!: string;
   public description: string;
   public salePrice: number;
   public duration: number;
@@ -28,13 +28,13 @@ ServiceModel.init(
       type: DataTypes.TINYINT,
       allowNull: false
     },
-    categoryServiceId: {
-      field: 'category_service_id',
+    cateServiceId: {
+      field: 'cate_service_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    branchId: {
-      field: 'branch_id',
+    locationId: {
+      field: 'location_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
