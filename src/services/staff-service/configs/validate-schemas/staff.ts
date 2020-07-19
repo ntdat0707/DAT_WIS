@@ -18,4 +18,17 @@ export const createStaffSchema = Joi.object({
   passportNumber: Joi.string().required(),
   address: Joi.string()
 });
-export { staffIdSchema };
+
+const filterStaffSchema = Joi.object({
+  locationId: Joi.string().guid({
+    version: ['uuidv4']
+  }),
+  serviceIds: Joi.array()
+    .min(1)
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+});
+export { staffIdSchema, filterStaffSchema };
