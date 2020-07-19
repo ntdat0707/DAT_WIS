@@ -4,7 +4,7 @@ import sequelize from '../configs/db-connector';
 class ServiceModel extends Model {
   public id: string;
   public status!: string;
-  public categoryServiceId!: string;
+  public cateServiceId!: string;
   public locationId!: string;
   public description: string;
   public salePrice: number;

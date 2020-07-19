@@ -2,7 +2,7 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 
 import sequelize from '../configs/db-connector';
 
-class StaffLocationModel extends Model {
+class LocationStaffModel extends Model {
   public id: string;
   public staffId!: string;
   public locationId!: string;
@@ -11,7 +11,7 @@ class StaffLocationModel extends Model {
   public readonly deletedAt: Date;
 }
 
-StaffLocationModel.init(
+LocationStaffModel.init(
   {
     id: {
       field: 'id',
@@ -48,8 +48,8 @@ StaffLocationModel.init(
   {
     sequelize: sequelize,
     freezeTableName: true,
-    tableName: 'staff_location'
+    tableName: 'location_staff'
   }
 );
 
-export { StaffLocationModel };
+export { LocationStaffModel };
