@@ -1,17 +1,21 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
-
 import sequelize from '../configs/db-connector';
 
-class StaffLocationModel extends Model {
+class ServiceModel extends Model {
   public id: string;
-  public staffId!: string;
+  public status!: string;
+  public cateServiceId!: string;
   public locationId!: string;
+  public description: string;
+  public salePrice: number;
+  public duration: number;
+  public color: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-StaffLocationModel.init(
+ServiceModel.init(
   {
     id: {
       field: 'id',
@@ -19,14 +23,39 @@ StaffLocationModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    staffId: {
-      field: 'staff_id',
+    status: {
+      field: 'status',
+      type: DataTypes.TINYINT,
+      allowNull: false
+    },
+    cateServiceId: {
+      field: 'cate_service_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
     locationId: {
       field: 'location_id',
       type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    description: {
+      field: 'description',
+      type: DataTypes.STRING(5000),
+      allowNull: false
+    },
+    salePrice: {
+      field: 'sale_price',
+      type: DataTypes.DOUBLE,
+      allowNull: false
+    },
+    duration: {
+      field: 'duration',
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    color: {
+      field: 'color',
+      type: DataTypes.STRING(100),
       allowNull: false
     },
     createdAt: {
@@ -48,8 +77,10 @@ StaffLocationModel.init(
   {
     sequelize: sequelize,
     freezeTableName: true,
-    tableName: 'staff_location'
+    tableName: 'service',
+    timestamps: true,
+    paranoid: true
   }
 );
 
-export { StaffLocationModel };
+export { ServiceModel };

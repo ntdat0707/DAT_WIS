@@ -1,15 +1,17 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+
 import sequelize from '../configs/db-connector';
 
-class CateServiceModel extends Model {
+class LocationStaffModel extends Model {
   public id: string;
-  public companyId!: string;
+  public staffId!: string;
+  public locationId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-CateServiceModel.init(
+LocationStaffModel.init(
   {
     id: {
       field: 'id',
@@ -17,8 +19,13 @@ CateServiceModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    companyId: {
-      field: 'company_id',
+    staffId: {
+      field: 'staff_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    locationId: {
+      field: 'location_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
@@ -41,10 +48,8 @@ CateServiceModel.init(
   {
     sequelize: sequelize,
     freezeTableName: true,
-    tableName: 'cate_service',
-    timestamps: true,
-    paranoid: true
+    tableName: 'location_staff'
   }
 );
 
-export { CateServiceModel };
+export { LocationStaffModel };

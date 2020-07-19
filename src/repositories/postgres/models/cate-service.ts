@@ -1,21 +1,17 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class ServiceModel extends Model {
+class CateServiceModel extends Model {
   public id: string;
-  public status!: string;
-  public categoryServiceId!: string;
-  public branchId!: string;
-  public description: string;
-  public salePrice: number;
-  public duration: number;
-  public color: string;
+  public companyId!: string;
+  public name!: string;
+  public excerpt!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-ServiceModel.init(
+CateServiceModel.init(
   {
     id: {
       field: 'id',
@@ -23,39 +19,19 @@ ServiceModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    status: {
-      field: 'status',
-      type: DataTypes.TINYINT,
-      allowNull: false
-    },
-    categoryServiceId: {
-      field: 'category_service_id',
+    companyId: {
+      field: 'company_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    branchId: {
-      field: 'branch_id',
-      type: DataTypes.UUIDV4,
+    name: {
+      field: 'name',
+      type: DataTypes.STRING(255),
       allowNull: false
     },
-    description: {
-      field: 'description',
-      type: DataTypes.STRING(5000),
-      allowNull: false
-    },
-    salePrice: {
-      field: 'sale_price',
-      type: DataTypes.DOUBLE,
-      allowNull: false
-    },
-    duration: {
-      field: 'duration',
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    color: {
-      field: 'color',
-      type: DataTypes.STRING(100),
+    excerpt: {
+      field: 'excerpt',
+      type: DataTypes.STRING(255),
       allowNull: false
     },
     createdAt: {
@@ -77,10 +53,10 @@ ServiceModel.init(
   {
     sequelize: sequelize,
     freezeTableName: true,
-    tableName: 'service',
+    tableName: 'cate_service',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { ServiceModel };
+export { CateServiceModel };

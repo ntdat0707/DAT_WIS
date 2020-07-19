@@ -1,4 +1,6 @@
 import * as express from 'express';
+
+import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
 import { StaffController } from '../controllers/staff-controller';
 require('dotenv').config();
 
@@ -13,5 +15,6 @@ export class StaffRoutes {
     this.router.get('/get-staff/:staffId?', this.staffController.getStaff);
     this.router.get('/get-staffs', this.staffController.getStaffs);
     this.router.post('/create', this.staffController.createStaff);
+    this.router.get('/get-all-staffs', isAuthenticated, this.staffController.getAllStaffs);
   }
 }

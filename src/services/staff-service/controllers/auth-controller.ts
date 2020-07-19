@@ -9,7 +9,7 @@ import { CustomError } from '../../../utils/error-handlers';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createAccessToken, createRefreshToken, IAccessTokenData, IRefreshTokenData } from '../../../utils/jwt';
-import { sequelize, StaffModel, CompanyModel } from '../../../repositories/postresql/models';
+import { sequelize, StaffModel, CompanyModel } from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import { createBusinessAccountSchema, loginSchema } from '../configs/validate-schemas';

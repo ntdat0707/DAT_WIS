@@ -7,7 +7,7 @@ import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
 import { logger } from '../../logger';
 import { verifyAcessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
-import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/postresql/models';
+import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/postgres/models';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 

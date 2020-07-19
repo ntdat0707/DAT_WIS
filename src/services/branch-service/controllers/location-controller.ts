@@ -7,7 +7,7 @@ import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 // import { customerErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { LocationModel } from '../../../repositories/postresql/models';
+import { sequelize, LocationModel, LocationStaffModel, CompanyModel } from '../../../repositories/postgres/models';
 
 import { createLocationSchema } from '../configs/validate-schemas';
 
@@ -74,7 +74,10 @@ export class LocationController {
    *         description:
    */
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
+      // start transaction
+      transaction = await sequelize.transaction();
       const data: any = {
         name: req.body.name,
         phone: req.body.phone,
@@ -90,10 +93,16 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      data.companyId = req.body.staffPayload.companyId;
-      const location = await LocationModel.create(data);
+      data.companyId = res.locals.staffPayload.companyId;
+      const company = await CompanyModel.findOne({ where: { id: data.companyId } });
+      const location = await LocationModel.create(data, { transaction });
+      await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
+      //commit transaction
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
+      //rollback transaction
+      if (transaction) await transaction.rollback();
       return next(error);
     }
   };
@@ -115,7 +124,7 @@ export class LocationController {
    */
   public getAllLocations = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const companyId = req.body.staffPayload.companyId;
+      const companyId = res.locals.staffPayload.companyId;
       const locations = await LocationModel.findAll({ where: { companyId } });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
