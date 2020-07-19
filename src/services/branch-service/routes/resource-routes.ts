@@ -10,6 +10,6 @@ export class ResourceRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post('/create-resource', isAuthenticated, this.resourceController.createResource);
+    this.router.post('/create', isAuthenticated, this.resourceController.createResource);
   }
 }

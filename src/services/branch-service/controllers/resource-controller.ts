@@ -7,7 +7,8 @@ import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { createResourceSchema } from '../configs/validate-schemas/resource';
-import { ResourceModel } from '../../../repositories/postgres/models/resource';
+import { ResourceModel } from '../../../repositories/postgres/models';
+import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 
 export class ResourceController {
   constructor() {}
@@ -24,12 +25,16 @@ export class ResourceController {
    *               type: string
    *           description:
    *               type: string
+   *           serviceIds:
+   *               type: array
+   *               items:
+   *                  type: string
    *
    */
 
   /**
    * @swagger
-   * /branch/resource/create-resource:
+   * /branch/resource/create:
    *   post:
    *     tags:
    *       - Branch
@@ -55,16 +60,21 @@ export class ResourceController {
   public createResource = async ({ body }: Request, res: Response, next: NextFunction) => {
     try {
       console.log(res.locals.staffPayload);
+
+      const validateErrors = validate(body, createResourceSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const data: any = {
         locationId: body.locationId,
         description: body.description
       };
-      const validateErrors = validate(data, createResourceSchema);
-      if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      }
-      const location = await ResourceModel.create(data);
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+      const resource = await ResourceModel.create({ locationId: body.locationId, description: body.description });
+      const serviceResourceData = (body.serviceIds as []).map(x => ({ serviceId: x, resourceId: resource.id }));
+      console.log(serviceResourceData);
+      const resourceService = await ServiceResourceModel.bulkCreate(serviceResourceData);
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));
     } catch (error) {
       return next(error);
     }

@@ -7,7 +7,6 @@ class ServiceResourceModel extends Model {
   public descriptionId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
-  public readonly deletedAt: Date;
 }
 
 ServiceResourceModel.init(
@@ -18,8 +17,13 @@ ServiceResourceModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    locationId: {
-      field: 'location_id',
+    serviceId: {
+      field: 'service_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    resourceId: {
+      field: 'resource_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
@@ -35,11 +39,6 @@ ServiceResourceModel.init(
     },
     updatedAt: {
       field: 'updated_at',
-      type: 'TIMESTAMP',
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-    },
-    deletedAt: {
-      field: 'deleted_at',
       type: 'TIMESTAMP',
       defaultValue: null
     }
