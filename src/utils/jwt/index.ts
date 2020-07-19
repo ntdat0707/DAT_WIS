@@ -37,7 +37,7 @@ const refreshTokenExpiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN;
 async function createAccessToken(data: IAccessTokenData): Promise<string> {
   try {
     const signOptions: jwt.SignOptions = {
-      expiresIn: accessTokenExpiresIn,
+      expiresIn: Number(accessTokenExpiresIn),
       algorithm
     };
     const token = jwt.sign(data, ACCESS_TOKEN_PRIVATE_KEY, signOptions);
@@ -61,7 +61,7 @@ async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData |
   try {
     return new Promise((resolve, _reject) => {
       const verifyOptions: jwt.SignOptions = {
-        expiresIn: accessTokenExpiresIn,
+        expiresIn: Number(accessTokenExpiresIn),
         algorithm
       };
       jwt.verify(
@@ -90,7 +90,7 @@ async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData |
 async function createRefreshToken(data: IRefreshTokenData): Promise<string> {
   try {
     const signOptions: jwt.SignOptions = {
-      expiresIn: refreshTokenExpiresIn,
+      expiresIn: Number(refreshTokenExpiresIn),
       algorithm
     };
     const token = jwt.sign(data, REFRESH_TOKEN_PRIVATE_KEY, signOptions);
@@ -114,7 +114,7 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
   try {
     return new Promise((resolve, _reject) => {
       const verifyOptions: jwt.SignOptions = {
-        expiresIn: refreshTokenExpiresIn,
+        expiresIn: Number(refreshTokenExpiresIn),
         algorithm
       };
       jwt.verify(

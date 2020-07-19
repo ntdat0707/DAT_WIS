@@ -1,22 +1,37 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class ResourceModel extends Model {
+class ServiceModel extends Model {
   public id: string;
+  public status!: string;
+  public cateServiceId!: string;
   public locationId!: string;
-  public description!: string;
+  public description: string;
+  public salePrice: number;
+  public duration: number;
+  public color: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-ResourceModel.init(
+ServiceModel.init(
   {
     id: {
       field: 'id',
       type: DataTypes.UUIDV4,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
+    },
+    status: {
+      field: 'status',
+      type: DataTypes.TINYINT,
+      allowNull: false
+    },
+    cateServiceId: {
+      field: 'cate_service_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     locationId: {
       field: 'location_id',
@@ -26,6 +41,21 @@ ResourceModel.init(
     description: {
       field: 'description',
       type: DataTypes.STRING(5000),
+      allowNull: false
+    },
+    salePrice: {
+      field: 'sale_price',
+      type: DataTypes.DOUBLE,
+      allowNull: false
+    },
+    duration: {
+      field: 'duration',
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    color: {
+      field: 'color',
+      type: DataTypes.STRING(100),
       allowNull: false
     },
     createdAt: {
@@ -47,10 +77,10 @@ ResourceModel.init(
   {
     sequelize: sequelize,
     freezeTableName: true,
-    tableName: 'service_staff',
+    tableName: 'service',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { ResourceModel };
+export { ServiceModel };

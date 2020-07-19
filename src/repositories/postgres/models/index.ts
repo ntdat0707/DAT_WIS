@@ -18,9 +18,21 @@ LocationModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' }
 StaffModel.belongsToMany(LocationModel, { through: LocationStaffModel, as: 'workingLocations', foreignKey: 'staffId' });
 LocationModel.belongsToMany(StaffModel, { through: LocationStaffModel, as: 'staffs', foreignKey: 'locationId' });
 
-ServiceModel.belongsToMany(StaffModel, { through: ServiceStaffModel, as: 'staffs', foreignKey: 'service_id' });
-StaffModel.belongsToMany(ServiceModel, { through: ServiceStaffModel, as: 'services', foreignKey: 'staff_id' });
+ServiceModel.belongsToMany(StaffModel, { through: ServiceStaffModel, as: 'staffs', foreignKey: 'serviceId' });
+StaffModel.belongsToMany(ServiceModel, { through: ServiceStaffModel, as: 'services', foreignKey: 'staffId' });
 
-ResourceModel.belongsToMany(ServiceModel, { through: ServiceResourceModel, as: 'services', foreignKey: 'resource_id' });
-ServiceModel.belongsToMany(ResourceModel, { through: ServiceResourceModel, as: 'resources', foreignKey: 'service_id' });
-export { sequelize, StaffModel, CompanyModel, CustomerModel, LocationModel };
+ResourceModel.belongsToMany(ServiceModel, { through: ServiceResourceModel, as: 'services', foreignKey: 'resourceId' });
+ServiceModel.belongsToMany(ResourceModel, { through: ServiceResourceModel, as: 'resources', foreignKey: 'serviceId' });
+
+LocationModel.hasMany(ServiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'services' });
+ServiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+export {
+  sequelize,
+  StaffModel,
+  CompanyModel,
+  CustomerModel,
+  LocationModel,
+  ServiceModel,
+  ResourceModel,
+  LocationStaffModel
+};

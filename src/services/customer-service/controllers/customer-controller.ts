@@ -9,7 +9,7 @@ import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { customerErrorDetails } from '../../../utils/response-messages/error-details';
 // import { buildSuccessMessage } from '../../../utils/response-messages';
-import { CustomerModel } from '../../../repositories/postresql/models';
+import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
 

@@ -7,7 +7,7 @@ import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
 import { logger } from '../../logger';
 import { verifyAcessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
-import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/postresql/models';
+import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/postgres/models';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
@@ -20,7 +20,7 @@ const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 }*/
 
 /**
- * get working branchs of staff.
+ * get working branches  of staff.
  *
  * @param {string} companyId
  * @param {string} staffId
@@ -135,7 +135,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
         const workingLocationIds = workingLocations.map(location => location.id);
         staffPayload.workingLocationIds = workingLocationIds;
 
-        req.body.staffPayload = staffPayload;
+        res.locals.staffPayload = staffPayload;
       }
     }
     next();
