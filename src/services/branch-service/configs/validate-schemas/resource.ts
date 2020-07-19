@@ -6,7 +6,10 @@ const createResourceSchema = Joi.object({
     .label('locationId'),
   description: Joi.string()
     .required()
-    .label('description')
+    .label('description'),
+  serviceIds: Joi.array()
+    .items(Joi.string().required())
+    .required()
 });
 
 export { createResourceSchema };
