@@ -6,12 +6,11 @@ import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
-import { createResourceSchema } from '../configs/validate-schemas';
-import { ResourceModel } from '../../../repositories/postgres/models/resource';
+import { createServiceSchema } from '../configs/validate-schemas';
+import { ServiceModel } from '../../../repositories/postgres/models/service';
 
 export class ServiceController {
   constructor() {}
-
   /**
    * @swagger
    * definitions:
@@ -19,17 +18,29 @@ export class ServiceController {
    *       required:
    *           - locationId
    *           - description
+   *           - salePrice
+   *           - color
+   *           - duration
+   *           - cateServiceId
    *       properties:
    *           locationId:
    *               type: string
    *           description:
+   *               type: string
+   *           cateServiceId:
+   *               type: string
+   *           salePrice:
+   *               type: integer
+   *           duration:
+   *               type: integer
+   *           color:
    *               type: string
    *
    */
 
   /**
    * @swagger
-   * /branch/service/create-service:
+   * /branch/service/create:
    *   post:
    *     tags:
    *       - Branch
@@ -54,16 +65,21 @@ export class ServiceController {
    */
   public createService = async ({ body }: Request, res: Response, next: NextFunction) => {
     try {
-      const data: any = {
-        locationId: body.locationId,
-        description: body.description
-      };
-      const validateErrors = validate(data, createResourceSchema);
+      const validateErrors = validate(body, createServiceSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const location = await ResourceModel.create(data);
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+      const data: any = {
+        locationId: body.locationId,
+        description: body.description,
+        salePrice: body.salePrice,
+        duration: body.duration,
+        color: body.color,
+        status: 1,
+        cateServiceId: body.cateServiceId
+      };
+      const service = await ServiceModel.create(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       return next(error);
     }
