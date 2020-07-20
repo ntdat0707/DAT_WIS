@@ -11,7 +11,6 @@ const createLocationSchema = Joi.object({
     .label('phone'),
   email: Joi.string()
     .email()
-    .required()
     .label('email'),
   status: Joi.string()
     .valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE)

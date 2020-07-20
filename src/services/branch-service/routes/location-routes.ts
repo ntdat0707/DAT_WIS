@@ -3,6 +3,7 @@ require('dotenv').config();
 
 import { LocationController } from '../controllers/location-controller';
 import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
+import { uploadAsMiddleware } from '../../../utils/file-manager';
 export class LocationRoutes {
   public router: express.Router = express.Router();
   private locationController = new LocationController();
@@ -11,7 +12,12 @@ export class LocationRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post('/create-location', isAuthenticated, this.locationController.createLocation);
+    this.router.post(
+      '/create-location',
+      isAuthenticated,
+      uploadAsMiddleware('photo'),
+      this.locationController.createLocation
+    );
     this.router.get('/get-all-locations', isAuthenticated, this.locationController.getAllLocations);
   }
 }

@@ -54,6 +54,17 @@ const generalErrorDetails = {
    */
   E_0005(detail: string = 'Invalid refresh token', source: ISourceError = null): IErrorDetail {
     return buildErrorDetail('0005', 'Unauthorized', detail, source);
+  },
+
+  /**
+   * Invalid file extension
+   *
+   * @param {string} [detail='Invalid refresh token']
+   * @param {ISourceError} [source=null]
+   * @returns {IErrorDetail}
+   */
+  E_0006(detail: string = 'Invalid file extension', source: ISourceError = null): IErrorDetail {
+    return buildErrorDetail('0005', 'Invalid file extension', detail, source);
   }
 };
 

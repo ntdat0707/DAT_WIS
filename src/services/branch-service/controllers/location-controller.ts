@@ -16,40 +16,6 @@ export class LocationController {
 
   /**
    * @swagger
-   * definitions:
-   *   CreateLocation:
-   *       required:
-   *           - name
-   *           - phone
-   *           - status
-   *       properties:
-   *           name:
-   *               type: string
-   *           status:
-   *               type: string
-   *               enum: [active, inactive]
-   *           phone:
-   *               type: string
-   *           email:
-   *               type: string
-   *           city:
-   *               type: string
-   *           district:
-   *               type: string
-   *           ward:
-   *               type: string
-   *           address:
-   *               type: string
-   *           latitude:
-   *               type: number
-   *           longitude:
-   *               type: number
-   *
-   *
-   */
-
-  /**
-   * @swagger
    * /branch/location/create-location:
    *   post:
    *     tags:
@@ -57,12 +23,44 @@ export class LocationController {
    *     security:
    *       - Bearer: []
    *     name: createLocation
+   *     consumes:
+   *     - multipart/form-data
    *     parameters:
-   *     - in: "body"
-   *       name: "body"
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: "name"
    *       required: true
-   *       schema:
-   *         $ref: '#/definitions/CreateLocation'
+   *       type: string
+   *     - in: "formData"
+   *       name: "status"
+   *       required: true
+   *       type: string
+   *       enum: [active, inactive]
+   *     - in: "formData"
+   *       name: "phone"
+   *       required: true
+   *       type: string
+   *     - in: "formData"
+   *       name: "email"
+   *       type: string
+   *     - in: "formData"
+   *       name: "city"
+   *       type: string
+   *     - in: "formData"
+   *       name: "district"
+   *       type: string
+   *     - in: "formData"
+   *       name: "ward"
+   *       type: string
+   *     - in: "formData"
+   *       name: "latitude"
+   *       type: number
+   *     - in: "formData"
+   *       name: "longitude"
+   *       type: number
    *     responses:
    *       200:
    *         description:
@@ -94,6 +92,7 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
+      if (req.file) data.photo = (req.file as any).location;
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
       const location = await LocationModel.create(data, { transaction });
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
