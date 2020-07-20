@@ -261,4 +261,41 @@ export class StaffController {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /staff/delete-staff/{staffId}:
+   *   delete:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: delete-staff
+   *     parameters:
+   *     - in: path
+   *       name: staffId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public deleteStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const staffId = req.params.staffId;
+      const validateErrors = validate(staffId, staffIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const staff = await StaffModel.findOne({ where: { id: staffId } });
+      if (!staff)
+        return next(new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
+      await StaffModel.destroy({ where: { id: staffId } });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
