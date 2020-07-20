@@ -16,7 +16,13 @@ export const createStaffSchema = Joi.object({
     .isoDate()
     .required(),
   passportNumber: Joi.string().required(),
-  address: Joi.string()
+  address: Joi.string(),
+  mainLocationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('mainLocationId')
 });
 
 const filterStaffSchema = Joi.object({
