@@ -296,12 +296,21 @@ export class StaffController {
    */
   public deleteStaff = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { workingLocationIds } = res.locals.staffPayload;
       const staffId = req.params.staffId;
       const validateErrors = validate(staffId, staffIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const staff = await StaffModel.findOne({ where: { id: staffId } });
       if (!staff)
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
+      if (!workingLocationIds.includes(staff.mainLocationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${staff.mainLocationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
       await StaffModel.destroy({ where: { id: staffId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
