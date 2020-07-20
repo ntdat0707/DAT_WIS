@@ -102,12 +102,13 @@ export class StaffController {
    * definitions:
    *   staffCreate:
    *       required:
-   *           - orderId
+   *           - fullName
+   *           - mainLocationId
    *       properties:
-   *           groupStaffId:
+   *           mainLocationId:
    *               type: string
    *           fullName:
-   *               type: integer
+   *               type: string
    *           gender:
    *               type: integer
    *           phone:
@@ -142,6 +143,8 @@ export class StaffController {
    *         description: success
    *       400:
    *         description: bad request
+   *       403:
+   *         description: forbidden
    *       500:
    *         description: Server internal error
    */
@@ -151,8 +154,15 @@ export class StaffController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const staff = await StaffModel.create(req.body);
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
+      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.mainLocationId))
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${req.body.mainLocationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      await StaffModel.create(req.body);
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }

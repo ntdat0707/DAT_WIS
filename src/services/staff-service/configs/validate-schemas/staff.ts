@@ -8,7 +8,7 @@ const staffIdSchema = Joi.string()
   .label('staffId');
 
 export const createStaffSchema = Joi.object({
-  groupStaffId: Joi.string().required(),
+  // groupStaffId: Joi.string().required(),
   fullName: Joi.string().required(),
   gender: Joi.number().required(),
   phone: Joi.string().required(),
