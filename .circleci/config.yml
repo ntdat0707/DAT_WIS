@@ -66,6 +66,7 @@ jobs:
       - run:
           name: Environment setup
           command: |
+            cp ./env/staging.env ./.env
             if [ $CIRCLE_BRANCH = 'develop' ]; then
               cp ./env/staging.env ./.env
             fi
