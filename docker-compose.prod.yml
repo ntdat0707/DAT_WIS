@@ -46,32 +46,28 @@ services:
   #     - network
   #   volumes:
   #     - ./.docker-volumes/mongo-data:/data/db
-  # gateway:
-  #   container_name: ${GTW_HOST}
-  #   build:
-  #     context: .
-  #     dockerfile: ./docker/base/Dockerfile
-  #   restart: always
-  #   ports:
-  #     - "${GTW_PORT}:${GTW_PORT}"
-  #   environment:
-  #     - NODE_NAME=${GTW_HOST}
-  #   depends_on:
-  #     - rabbitmq
-  #   networks:
-  #     - network
-  wisere:
+  gateway:
+    container_name: ${GTW_HOST}
+    image: registry.digitalocean.com/wisere/wisere
+    restart: always
+    ports:
+      - '${GTW_PORT}:${GTW_PORT}'
+    environment:
+      NODE_ENV: 'staging'
+      NODE_NAME: 'gateway-service'
+    networks:
+      - network
+    depends_on:
+      - customer-service
+  customer-service:
     container_name: ${SVC_CUSTOMER_HOST}
-    image: 'wisere'
-    build:
-      context: .
+    image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
       - '${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}'
     environment:
-      NODE_NAME: 'customer-service'
       NODE_ENV: 'staging'
-      APP_PORT: '${SVC_CUSTOMER_PORT}'
+      NODE_NAME: 'customer-service'
     networks:
       - network
 

@@ -9,23 +9,33 @@ import StaffService from '../services/staff-service/app';
 import BranchService from '../services/branch-service/app';
 
 require('dotenv').config();
-const nodeName = process.env.NODE_NAME;
-
+const nodeName = 'gateway' || process.env.NODE_NAME;
+process.env.NODE_ENV = 'staging';
 /**
  * Start Express server.
  */
+
+console.log(process.env.NODE_ENV);
+console.log(nodeName);
 
 if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV === EEnvironments.STAGING) {
   switch (nodeName) {
     case 'gateway':
       // code block
       const gateway = new Gateway().app;
-      gateway.listen(gateway.get('port'), (): void => {
-        logger.info({
-          label: 'gateway',
-          message: `App is running at http://localhost:${gateway.get('port')} in mode ${gateway.get('env')} `
+      gateway
+        .listen(gateway.get('port'), (): void => {
+          logger.info({
+            label: 'gateway',
+            message: `App is running at http://localhost:${gateway.get('port')} in mode ${gateway.get('env')} `
+          });
+        })
+        .on('error', () => {
+          logger.error({
+            label: 'gateway',
+            message: `gateway start fail at http://localhost:${gateway.get('port')} in mode ${gateway.get('env')} `
+          });
         });
-      });
 
       break;
     case 'customer-service':

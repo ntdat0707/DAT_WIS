@@ -57,6 +57,15 @@ jobs:
       - checkout
       - add_ssh_keys
       - run:
+        name: setting environemnt variables
+        command: |
+          export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
+
+          if [ $CIRCLE_BRANCH = 'develop' ]; then
+            echo "export NODE_ENV=staging" >> $BASH_ENV
+          fi
+          source $BASH_ENV
+      - run:
           name: Install doctl
           command: |
             cd ~
@@ -87,13 +96,20 @@ jobs:
           command: |
             docker push registry.digitalocean.com/wisere/wisere
       - run:
+          name: Copy config docker
+          command: |
+            rsync -va --delete ./doker-composer.prod.yml root@128.199.111.189:/data/
+
+      - run:
           name: Deploy
           command: |
             ssh root@128.199.111.189 'doctl version  
             docker pull registry.digitalocean.com/wisere/wisere
             docker network create -d bridge wisere-network || true
             docker rm wisere -f
-            docker run -d -p 7000:7000 --name wisere registry.digitalocean.com/wisere/wisere
+            docker run -d -p 7000:7000 --network wisere-network --name wisere registry.digitalocean.com/wisere/wisere
+
+
             # docker rmi $(docker images -f dangling=true -q) 
             '
 
