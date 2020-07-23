@@ -98,7 +98,7 @@ jobs:
       - run:
           name: Copy config docker
           command: |
-            rsync -va --delete ./doker-composer.prod.yml root@128.199.111.189:/data/
+            rsync -va --delete ./docker-composer.prod.yml root@128.199.111.189:/data/
 
       - run:
           name: Deploy
