@@ -60,7 +60,7 @@ jobs:
           name: setting environemnt variables
           command: |
             export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
-
+            echo "export NODE_ENV=staging" >> $BASH_ENV
             if [ $CIRCLE_BRANCH = 'develop' ]; then
               echo "export NODE_ENV=staging" >> $BASH_ENV
             fi
