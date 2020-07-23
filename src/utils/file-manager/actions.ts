@@ -73,6 +73,24 @@ function isErrorDetail(data: object): data is IErrorDetail {
   );
 }
 
+function isUploadFields(data: any): data is UploadFields {
+  return (
+    (data as UploadFields).name &&
+    typeof (data as UploadFields).name === 'string' &&
+    (data as UploadFields).maxCount &&
+    typeof (data as UploadFields).maxCount === 'number'
+  );
+}
+
+function isArrayOfUploadFields(data: any): data is UploadFields[] {
+  if (!Array.isArray(data)) return false;
+  for (let i = 0; i < data.length; i++) {
+    let isValid = isUploadFields(data[i]);
+    if (!isValid) return false;
+  }
+  return true;
+}
+
 /**
  * Upload file to Digital Ocean Spaces
  *
@@ -98,12 +116,11 @@ const uploadAsMiddleware = (
     });
 
     let upload;
-    if (typeof file === 'object' && file.hasOwnProperty('name') && file.hasOwnProperty('maxCount')) {
-      let tmpFile = file as UploadFields;
-      upload = multerInstance.array(tmpFile.name, tmpFile.maxCount);
-    } else if (file instanceof Array) {
+    if (isUploadFields(file)) {
+      upload = multerInstance.array(file.name, file.maxCount);
+    } else if (isArrayOfUploadFields(file)) {
       upload = multerInstance.fields(file);
-    } else if (typeof file === 'string') {
+    } else {
       upload = multerInstance.single(file);
     }
 
