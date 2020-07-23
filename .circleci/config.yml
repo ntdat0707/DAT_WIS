@@ -71,11 +71,11 @@ jobs:
             fi
       - run:
           name: Build image
-          command: docker-compose up -d --build customer-service
+          command: docker-compose up -d --build wisere
       - run:
           command: |
             docker images
-            docker tag customer-service registry.digitalocean.com/wisere/customer-service
+            docker tag wisere registry.digitalocean.com/wisere/wisere
       - run:
           command: |
             docker images
@@ -84,14 +84,15 @@ jobs:
       - run:
           name: Push image to container-registry
           command: |
-            docker push registry.digitalocean.com/wisere/customer-service
+            docker push registry.digitalocean.com/wisere/wisere
       - run:
           name: Deploy
           command: |
             ssh root@128.199.111.189 'doctl version  
-            docker pull registry.digitalocean.com/wisere/customer-service
+            docker pull registry.digitalocean.com/wisere/wisere
+            docker network create -d bridge wisere-network || true
             docker rm wisere -f
-            docker run -d -p 7000:7000 --name wisere registry.digitalocean.com/wisere/customer-service
+            docker run -d -p 7000:7000 --name wisere registry.digitalocean.com/wisere/wisere
             # docker rmi $(docker images -f dangling=true -q) 
             '
 
@@ -107,5 +108,6 @@ workflows:
                 - develop
                 - staging
                 - production
+                - feature/*
         # requires:
         #   - build
