@@ -108,7 +108,7 @@ jobs:
             docker pull registry.digitalocean.com/wisere/wisere
             tar -xzvf /data/deployment.tar.gz /data/
             docker stop $(docker ps -aq) && docker rm $(docker ps -aq) || true
-            docker-compose -f /data/docker-compose.prod.yml up --build -d
+            cd /data && docker-compose -f /data/docker-compose.prod.yml up --build -d
 
 
             '

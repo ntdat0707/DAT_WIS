@@ -48,6 +48,7 @@ services:
   #     - ./.docker-volumes/mongo-data:/data/db
   gateway:
     container_name: ${GTW_HOST}
+    env_file: .env
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
@@ -60,6 +61,7 @@ services:
     depends_on:
       - customer-service
   customer-service:
+    env_file: .env
     container_name: ${SVC_CUSTOMER_HOST}
     image: registry.digitalocean.com/wisere/wisere
     restart: always
