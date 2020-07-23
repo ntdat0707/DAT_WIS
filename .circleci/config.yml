@@ -99,7 +99,7 @@ jobs:
           name: Copy config docker
           command: |
             tar -czvf deployment.tar.gz ./docker-compose.prod.yml .env
-            rsync -va --delete ./docker-compose.prod.yml root@128.199.111.189:/data/
+            rsync -va --delete deployment.tar.gz root@128.199.111.189:/data/
 
       - run:
           name: Deploy
