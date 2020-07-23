@@ -108,6 +108,6 @@ workflows:
                 - develop
                 - staging
                 - production
-                - feature/
+                - /feature/
         # requires:
         #   - build
