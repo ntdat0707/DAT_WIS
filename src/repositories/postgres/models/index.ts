@@ -26,6 +26,9 @@ ServiceModel.belongsToMany(ResourceModel, { through: ServiceResourceModel, as: '
 
 LocationModel.hasMany(ServiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'services' });
 ServiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+LocationModel.hasMany(ResourceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'resources' });
+ResourceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 export {
   sequelize,
   StaffModel,
