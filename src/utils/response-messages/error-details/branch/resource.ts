@@ -12,6 +12,17 @@ const resourceErrorDetails = {
   E_1100(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1100', 'Resource is not exists ', detail);
     return e;
+  },
+
+  /**
+   *
+   * Staff not found
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_1101(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1101', 'Resource not found', detail);
+    return e;
   }
 };
 

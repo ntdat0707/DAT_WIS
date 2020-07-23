@@ -11,5 +11,6 @@ export class ResourceRoutes {
   }
   private config(): void {
     this.router.post('/create', isAuthenticated, this.resourceController.createResource);
+    this.router.delete('/delete-resource/:resourceId?', isAuthenticated, this.resourceController.deleteResource);
   }
 }
