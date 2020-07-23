@@ -12,4 +12,11 @@ const createResourceSchema = Joi.object({
     .required()
 });
 
-export { createResourceSchema };
+const resourceIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('resourceId');
+
+export { createResourceSchema, resourceIdSchema };
