@@ -57,15 +57,6 @@ jobs:
       - checkout
       - add_ssh_keys
       - run:
-          name: setting environemnt variables
-          command: |
-            export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
-            echo "export NODE_ENV=staging" >> $BASH_ENV
-            if [ $CIRCLE_BRANCH = 'develop' ]; then
-              echo "export NODE_ENV=staging" >> $BASH_ENV
-            fi
-            source $BASH_ENV
-      - run:
           name: Install doctl
           command: |
             cd ~
@@ -75,17 +66,16 @@ jobs:
       - run:
           name: Environment setup
           command: |
-            cp ./env/staging.env ./.env
             if [ $CIRCLE_BRANCH = 'develop' ]; then
               cp ./env/staging.env ./.env
             fi
       - run:
           name: Build image
-          command: docker-compose up -d --build wisere
+          command: docker-compose up -d --build customer-service
       - run:
           command: |
             docker images
-            docker tag wisere registry.digitalocean.com/wisere/wisere
+            docker tag customer-service registry.digitalocean.com/wisere/customer-service
       - run:
           command: |
             docker images
@@ -125,6 +115,5 @@ workflows:
                 - develop
                 - staging
                 - production
-                - feature/wsr-105-multi-container
         # requires:
         #   - build
