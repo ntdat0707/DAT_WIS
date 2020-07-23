@@ -57,14 +57,14 @@ jobs:
       - checkout
       - add_ssh_keys
       - run:
-        name: setting environemnt variables
-        command: |
-          export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
+          name: setting environemnt variables
+          command: |
+            export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
 
-          if [ $CIRCLE_BRANCH = 'develop' ]; then
-            echo "export NODE_ENV=staging" >> $BASH_ENV
-          fi
-          source $BASH_ENV
+            if [ $CIRCLE_BRANCH = 'develop' ]; then
+              echo "export NODE_ENV=staging" >> $BASH_ENV
+            fi
+            source $BASH_ENV
       - run:
           name: Install doctl
           command: |
