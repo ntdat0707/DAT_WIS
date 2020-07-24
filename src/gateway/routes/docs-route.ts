@@ -4,6 +4,7 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import { VERSION, API_BASE_PATH } from './configs';
 
 const HOST = process.env.SERVER_HOST;
+console.log('HOST============================================', HOST);
 // const PORT = process.env.GTW_PORT;
 
 const swaggerDefinition = {
