@@ -10,7 +10,7 @@ services:
       - '${GTW_PORT}:${GTW_PORT}'
     environment:
       NODE_ENV: 'staging'
-      NODE_NAME: 'gateway-service'
+      NODE_NAME: 'gateway'
     networks:
       - network
     depends_on:
