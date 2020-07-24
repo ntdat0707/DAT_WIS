@@ -119,7 +119,7 @@ export class LocationController {
    *       200:
    *         description: success
    *       500:
-   *         description: Server internal error
+   *         description: Server internal errors
    */
   public getAllLocations = async (req: Request, res: Response, next: NextFunction) => {
     try {
