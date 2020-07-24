@@ -29,15 +29,15 @@ enum EAppointmentStatus {
   ARRIVED = 'arrived',
   IN_SERVICE = 'in_service',
   COMPLETED = 'completed',
-  CANCELED = 'canceled'
+  CANCEL = 'cancel'
 }
 const AppointmentStatusRules = {
-  new: { new: false, confirmed: true, arrived: true, in_service: true, completed: true, canceled: true },
-  confirmed: { new: true, confirmed: false, arrived: true, in_service: true, completed: true, canceled: true },
-  arrived: { new: true, confirmed: true, arrived: false, in_service: true, completed: true, canceled: true },
-  in_service: { new: true, confirmed: true, arrived: true, in_service: false, completed: true, canceled: true },
-  completed: { new: false, confirmed: false, arrived: false, in_service: false, completed: false, canceled: false },
-  canceled: { new: false, confirmed: false, arrived: false, in_service: false, completed: false, canceled: false }
+  new: { new: false, confirmed: true, arrived: true, in_service: true, completed: true, cancel: true },
+  confirmed: { new: true, confirmed: false, arrived: true, in_service: true, completed: true, cancel: true },
+  arrived: { new: true, confirmed: true, arrived: false, in_service: true, completed: true, cancel: true },
+  in_service: { new: true, confirmed: true, arrived: true, in_service: false, completed: true, cancel: true },
+  completed: { new: false, confirmed: false, arrived: false, in_service: false, completed: false, cancel: false },
+  cancel: { new: false, confirmed: false, arrived: false, in_service: false, completed: false, cancel: false }
 };
 
 export { buildingEnvs, ELocales, EEnvironments, EGender, ELocationStatus, EAppointmentStatus, AppointmentStatusRules };

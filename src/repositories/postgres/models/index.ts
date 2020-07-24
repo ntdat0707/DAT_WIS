@@ -8,6 +8,9 @@ import { ServiceModel } from './service';
 import { ServiceStaffModel } from './service-staff';
 import { ResourceModel } from './resource';
 import { ServiceResourceModel } from './service-resource';
+import { AppointmentModel } from './appointment-model';
+import { AppointmentDetailModel } from './appointment-detail-model';
+import { AppointmentDetailStaffModel } from './appointment-detail-staff-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -29,6 +32,39 @@ ServiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location'
 
 LocationModel.hasMany(ResourceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'resources' });
 ResourceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+// Appointment
+AppointmentModel.hasMany(AppointmentDetailModel, {
+  foreignKey: 'appointmentId',
+  sourceKey: 'id',
+  as: 'appointmentDetails'
+});
+AppointmentDetailModel.belongsTo(AppointmentModel, { foreignKey: 'appointmentId', as: 'appointment' });
+ServiceModel.hasMany(AppointmentDetailModel, {
+  foreignKey: 'serviceId',
+  sourceKey: 'id',
+  as: 'appointmentDetails'
+});
+AppointmentDetailModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
+
+ResourceModel.hasMany(AppointmentDetailModel, {
+  foreignKey: 'resourceId',
+  sourceKey: 'id',
+  as: 'appointmentDetails'
+});
+AppointmentDetailModel.belongsTo(ResourceModel, { foreignKey: 'resourceId', as: 'resource' });
+
+StaffModel.belongsToMany(AppointmentDetailModel, {
+  through: AppointmentDetailStaffModel,
+  as: 'staffs',
+  foreignKey: 'staffId'
+});
+AppointmentDetailModel.belongsToMany(StaffModel, {
+  through: AppointmentDetailStaffModel,
+  as: 'appointmentDetails',
+  foreignKey: 'appointmentDetailId'
+});
+
 export {
   sequelize,
   StaffModel,
@@ -37,5 +73,8 @@ export {
   LocationModel,
   ServiceModel,
   ResourceModel,
-  LocationStaffModel
+  LocationStaffModel,
+  AppointmentModel,
+  AppointmentDetailModel,
+  AppointmentDetailStaffModel
 };
