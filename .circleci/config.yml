@@ -107,7 +107,7 @@ jobs:
             ssh root@128.199.111.189 'doctl version  
             docker pull registry.digitalocean.com/wisere/wisere
             tar -xzvf /data/deployment.tar.gz -C /data/
-            docker stop $(docker ps -aq) && docker rm $(docker ps -aq) || true
+            docker-compose -f /data/docker-compose.prod.yml down 
             cd /data && docker-compose -f /data/docker-compose.prod.yml up --build -d
 
 
