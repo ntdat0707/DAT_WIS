@@ -26,13 +26,18 @@ enum ELocationStatus {
 enum EAppointmentStatus {
   NEW = 'new',
   CONFIRMED = 'confirmed',
+  ARRIVED = 'arrived',
+  IN_SERVICE = 'in_service',
+  COMPLETED = 'completed',
   CANCELED = 'canceled'
 }
-const AppointmentStatusMetric = {
-  // NEW: { CONFIRMED: { up: true, down: true }, CANCELED: { up: true, down: false } }
-  new: { confirmed: true, canceled: true },
-  confirmed: { new: true, canceled: true },
-  canceled: { new: false, canceled: false }
+const AppointmentStatusRules = {
+  new: { new: false, confirmed: true, arrived: true, in_service: true, completed: true, canceled: true },
+  confirmed: { new: true, confirmed: false, arrived: true, in_service: true, completed: true, canceled: true },
+  arrived: { new: true, confirmed: true, arrived: false, in_service: true, completed: true, canceled: true },
+  in_service: { new: true, confirmed: true, arrived: true, in_service: false, completed: true, canceled: true },
+  completed: { new: false, confirmed: false, arrived: false, in_service: false, completed: false, canceled: false },
+  canceled: { new: false, confirmed: false, arrived: false, in_service: false, completed: false, canceled: false }
 };
 
-export { buildingEnvs, ELocales, EEnvironments, EGender, ELocationStatus, EAppointmentStatus, AppointmentStatusMetric };
+export { buildingEnvs, ELocales, EEnvironments, EGender, ELocationStatus, EAppointmentStatus, AppointmentStatusRules };
