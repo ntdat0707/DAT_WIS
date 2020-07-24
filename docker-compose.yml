@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   # database:
@@ -60,18 +60,18 @@ services:
   #     - rabbitmq
   #   networks:
   #     - network
-  wisere:
+  customer-service:
     container_name: ${SVC_CUSTOMER_HOST}
-    image: 'wisere'
+    image: "customer-service"
     build:
       context: .
     restart: always
     ports:
-      - '${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}'
+      - "${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}"
+      - "7000:7000"
     environment:
-      NODE_NAME: 'customer-service'
-      NODE_ENV: 'staging'
-      APP_PORT: '${SVC_CUSTOMER_PORT}'
+      NODE_NAME: ${SVC_CUSTOMER_HOST}
+      APP_PORT: "3000"
     networks:
       - network
 

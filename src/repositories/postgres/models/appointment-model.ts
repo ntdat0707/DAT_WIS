@@ -46,7 +46,7 @@ AppointmentModel.init(
         EAppointmentStatus.ARRIVED,
         EAppointmentStatus.IN_SERVICE,
         EAppointmentStatus.COMPLETED,
-        EAppointmentStatus.CANCELED
+        EAppointmentStatus.CANCEL
       ),
       allowNull: false,
       defaultValue: EAppointmentStatus.NEW

@@ -71,11 +71,11 @@ jobs:
             fi
       - run:
           name: Build image
-          command: docker-compose up -d --build wisere
+          command: docker-compose up -d --build customer-service
       - run:
           command: |
             docker images
-            docker tag wisere registry.digitalocean.com/wisere/wisere
+            docker tag customer-service registry.digitalocean.com/wisere/customer-service
       - run:
           command: |
             docker images
@@ -84,7 +84,7 @@ jobs:
       - run:
           name: Push image to container-registry
           command: |
-            docker push registry.digitalocean.com/wisere/wisere
+            docker push registry.digitalocean.com/wisere/customer-service
       - run:
           name: Copy config docker
           command: |
