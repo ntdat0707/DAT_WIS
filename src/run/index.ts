@@ -9,14 +9,10 @@ import StaffService from '../services/staff-service/app';
 import BranchService from '../services/branch-service/app';
 
 require('dotenv').config();
-const nodeName = 'gateway' || process.env.NODE_NAME;
-process.env.NODE_ENV = 'staging';
+const nodeName = process.env.NODE_NAME;
 /**
  * Start Express server.
  */
-
-console.log(process.env.NODE_ENV);
-console.log(nodeName);
 
 if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV === EEnvironments.STAGING) {
   switch (nodeName) {
