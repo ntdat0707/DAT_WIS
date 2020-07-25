@@ -176,6 +176,8 @@ export class ServiceController {
    *   get:
    *     tags:
    *       - Branch
+   *     security:
+   *       - Bearer: []
    *     name: get-service
    *     parameters:
    *     - in: path
@@ -192,6 +194,7 @@ export class ServiceController {
    */
   public getService = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { workingLocationIds } = res.locals.staffPayload;
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -216,6 +219,14 @@ export class ServiceController {
         return next(
           new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
         );
+      if (!workingLocationIds.includes(service.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${service.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       return next(error);
