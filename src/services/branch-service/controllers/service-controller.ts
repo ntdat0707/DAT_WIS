@@ -12,6 +12,7 @@ import { StaffModel, LocationModel, LocationStaffModel, sequelize } from '../../
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
+import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 
 export class ServiceController {
   constructor() {}
@@ -164,6 +165,58 @@ export class ServiceController {
       }
       await ServiceModel.destroy({ where: { id: serviceId } });
       return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/get-service/{serviceId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: get-service
+   *     parameters:
+   *     - in: path
+   *       name: serviceId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const serviceId = req.params.serviceId;
+      const validateErrors = validate(serviceId, serviceIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const service = await ServiceModel.findOne({
+        where: {
+          id: serviceId
+        },
+        include: [
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
+          },
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: true
+          }
+        ]
+      });
+      if (!service)
+        return next(
+          new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
+        );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       return next(error);
     }
