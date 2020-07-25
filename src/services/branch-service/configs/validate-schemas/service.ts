@@ -1,4 +1,4 @@
-import Joi from '@hapi/joi';
+import Joi from 'joi';
 
 const createServiceSchema = Joi.object({
   cateServiceId: Joi.string()

@@ -1,4 +1,4 @@
-import Joi from '@hapi/joi';
+import Joi from 'joi';
 import { format } from './format-error';
 import { IErrorDetail } from '../response-messages/index';
 import { baseValidateSchemas } from './base-valdiate-schemas';
