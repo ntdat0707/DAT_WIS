@@ -15,7 +15,7 @@ services:
       - network
     depends_on:
       - system-service
-      - notification_service
+      - notification-service
       - customer-service
       - staff-service
       - branch-service
@@ -102,6 +102,19 @@ services:
     environment:
       NODE_ENV: 'staging'
       NODE_NAME: '${SVC_BRANCH_HOST}'
+    networks:
+      - network
+      - network
+  booking-service:
+    env_file: .env
+    container_name: ${SVC_BOOKING_HOST}
+    image: registry.digitalocean.com/wisere/wisere
+    restart: always
+    ports:
+      - '${SVC_BOOKING_PORT}:${SVC_BOOKING_PORT}'
+    environment:
+      NODE_ENV: 'staging'
+      NODE_NAME: '${SVC_BOOKING_HOST}'
     networks:
       - network
 
