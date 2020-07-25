@@ -45,5 +45,4 @@ COPY ./src ./src
 COPY --from=builder /prod_dep/node_modules ./node_modules
 
 
-EXPOSE 7000
 CMD [ "yarn", "js-start-server" ]
