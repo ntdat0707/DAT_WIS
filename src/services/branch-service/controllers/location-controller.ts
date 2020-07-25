@@ -119,9 +119,9 @@ export class LocationController {
    *       200:
    *         description: success
    *       500:
-   *         description: Server internal error
+   *         description: Server internal errors
    */
-  public getAllLocations = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllLocations = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
       const locations = await LocationModel.findAll({ where: { companyId } });

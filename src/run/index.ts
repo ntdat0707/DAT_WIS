@@ -7,6 +7,7 @@ import SystemService from '../services/system-service/app';
 import NotificationService from '../services/notification-service/app';
 import StaffService from '../services/staff-service/app';
 import BranchService from '../services/branch-service/app';
+import BookingService from '../services/booking-service/app';
 
 require('dotenv').config();
 const nodeName = process.env.NODE_NAME;
@@ -72,8 +73,19 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
       const branchService = new BranchService().app;
       branchService.listen(branchService.get('port'), (): void => {
         logger.info({
-          label: 'customer-service',
+          label: 'branch-service',
           message: `App is running at http://localhost:${branchService.get('port')} in mode ${branchService.get(
+            'env'
+          )} `
+        });
+      });
+      break;
+    case 'booking-service':
+      const bookingService = new BookingService().app;
+      bookingService.listen(bookingService.get('port'), (): void => {
+        logger.info({
+          label: 'booking-service',
+          message: `App is running at http://localhost:${bookingService.get('port')} in mode ${bookingService.get(
             'env'
           )} `
         });
@@ -125,6 +137,14 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
     logger.info({
       label: 'branch-service',
       message: `App is running at http://localhost:${branchService.get('port')} in mode ${branchService.get('env')} `
+    });
+  });
+
+  const bookingService = new BookingService().app;
+  bookingService.listen(bookingService.get('port'), (): void => {
+    logger.info({
+      label: 'booking-service',
+      message: `App is running at http://localhost:${bookingService.get('port')} in mode ${bookingService.get('env')} `
     });
   });
 }

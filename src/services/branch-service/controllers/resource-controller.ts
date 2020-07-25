@@ -75,7 +75,6 @@ export class ResourceController {
       };
       const resource = await ResourceModel.create({ locationId: body.locationId, description: body.description });
       const serviceResourceData = (body.serviceIds as []).map(x => ({ serviceId: x, resourceId: resource.id }));
-      console.log(serviceResourceData);
       const resourceService = await ServiceResourceModel.bulkCreate(serviceResourceData);
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));

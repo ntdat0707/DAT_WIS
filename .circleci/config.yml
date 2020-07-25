@@ -125,6 +125,6 @@ workflows:
                 - develop
                 - staging
                 - production
-                - feature/wsr-105-multi-container
+                - feature/wsr-109-init-models
         # requires:
         #   - build
