@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 require('dotenv').config();
 
-import { validate } from '../../../utils/validator';
+import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
@@ -13,6 +13,8 @@ import { ServiceStaffModel } from '../../../repositories/postgres/models/service
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
+import { FindOptions } from 'sequelize/types';
+import { paginate } from '../../../utils/paginator';
 
 export class ServiceController {
   constructor() {}
@@ -217,6 +219,61 @@ export class ServiceController {
           new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
         );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/get-services:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getServices
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getServices = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const { workingLocationIds } = res.locals.staffPayload;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const query: FindOptions = {
+        where: {
+          locationId: workingLocationIds
+        }
+      };
+      const services = await paginate(
+        ServiceModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
     } catch (error) {
       return next(error);
     }
