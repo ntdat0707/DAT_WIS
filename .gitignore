@@ -49,5 +49,4 @@ public
 *.code-workspace
 
 .docker-volumes
-local.env
 .env
