@@ -28,4 +28,11 @@ const createCateServiceSchema = Joi.object({
     .label('companyId')
 });
 
-export { createCateServiceSchema, createServiceSchema };
+const serviceIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('serviceId');
+
+export { createCateServiceSchema, createServiceSchema, serviceIdSchema };
