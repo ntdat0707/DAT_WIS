@@ -57,6 +57,15 @@ jobs:
       - checkout
       - add_ssh_keys
       - run:
+          name: setting environemnt variables
+          command: |
+            export MYIP=`ifconfig eth0 | awk '/inet / {print $2}' | awk -F: '{print $2}'`
+            echo "export NODE_ENV=staging" >> $BASH_ENV
+            if [ $CIRCLE_BRANCH = 'develop' ]; then
+              echo "export NODE_ENV=staging" >> $BASH_ENV
+            fi
+            source $BASH_ENV
+      - run:
           name: Install doctl
           command: |
             cd ~
@@ -66,16 +75,17 @@ jobs:
       - run:
           name: Environment setup
           command: |
+            cp ./env/staging.env ./.env
             if [ $CIRCLE_BRANCH = 'develop' ]; then
               cp ./env/staging.env ./.env
             fi
       - run:
           name: Build image
-          command: docker-compose up -d --build customer-service
+          command: docker-compose up -d --build wisere
       - run:
           command: |
             docker images
-            docker tag customer-service registry.digitalocean.com/wisere/customer-service
+            docker tag wisere registry.digitalocean.com/wisere/wisere
       - run:
           command: |
             docker images
@@ -84,15 +94,23 @@ jobs:
       - run:
           name: Push image to container-registry
           command: |
-            docker push registry.digitalocean.com/wisere/customer-service
+            docker push registry.digitalocean.com/wisere/wisere
+      - run:
+          name: Copy config docker
+          command: |
+            tar -czvf deployment.tar.gz ./docker-compose.prod.yml .env
+            rsync -va --delete deployment.tar.gz root@128.199.111.189:/data/
+
       - run:
           name: Deploy
           command: |
             ssh root@128.199.111.189 'doctl version  
-            docker pull registry.digitalocean.com/wisere/customer-service
-            docker rm wisere -f
-            docker run -d -p 7000:7000 --name wisere registry.digitalocean.com/wisere/customer-service
-            # docker rmi $(docker images -f dangling=true -q) 
+            docker pull registry.digitalocean.com/wisere/wisere
+            tar -xzvf /data/deployment.tar.gz -C /data/
+            cd /data && docker-compose -f docker-compose.prod.yml down 
+            cd /data && docker-compose -f docker-compose.prod.yml up --build -d
+
+
             '
 
 workflows:
@@ -107,5 +125,6 @@ workflows:
                 - develop
                 - staging
                 - production
+                - feature/wsr-105-multi-container
         # requires:
         #   - build

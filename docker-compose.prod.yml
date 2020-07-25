@@ -1,0 +1,59 @@
+version: '3'
+
+services:
+  gateway:
+    container_name: ${GTW_HOST}
+    env_file: .env
+    image: registry.digitalocean.com/wisere/wisere
+    restart: always
+    ports:
+      - '${GTW_PORT}:${GTW_PORT}'
+    environment:
+      NODE_ENV: 'staging'
+      NODE_NAME: 'gateway'
+    networks:
+      - network
+    depends_on:
+      - customer-service
+      - staff-service
+      - branch-service
+  customer-service:
+    env_file: .env
+    container_name: ${SVC_CUSTOMER_HOST}
+    image: registry.digitalocean.com/wisere/wisere
+    restart: always
+    ports:
+      - '${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}'
+    environment:
+      NODE_ENV: 'staging'
+      NODE_NAME: 'customer-service'
+    networks:
+      - network
+  staff-service:
+    env_file: .env
+    container_name: ${SVC_STAFF_HOST}
+    image: registry.digitalocean.com/wisere/wisere
+    restart: always
+    ports:
+      - '${SVC_STAFF_PORT}:${SVC_STAFF_PORT}'
+    environment:
+      NODE_ENV: 'staging'
+      NODE_NAME: '${SVC_STAFF_HOST}'
+    networks:
+      - network
+  branch-service:
+    env_file: .env
+    container_name: ${SVC_BRANCH_HOST}
+    image: registry.digitalocean.com/wisere/wisere
+    restart: always
+    ports:
+      - '${SVC_BRANCH_PORT}:${SVC_BRANCH_PORT}'
+    environment:
+      NODE_ENV: 'staging'
+      NODE_NAME: '${SVC_BRANCH_HOST}'
+    networks:
+      - network
+
+networks:
+  network:
+    driver: bridge
