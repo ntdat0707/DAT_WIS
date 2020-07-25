@@ -8,6 +8,9 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { createServiceSchema } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
+import { StaffModel, LocationModel, LocationStaffModel, sequelize } from '../../../repositories/postgres/models';
+import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
+import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 
 export class ServiceController {
   constructor() {}
@@ -35,6 +38,10 @@ export class ServiceController {
    *               type: integer
    *           color:
    *               type: string
+   *           staffIds:
+   *               type: array
+   *               items:
+   *                  type: string
    *
    */
 
@@ -69,6 +76,25 @@ export class ServiceController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
+      const staffIds = await StaffModel.findAll({
+        attributes: ['id'],
+        include: [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            where: {
+              id: body.locationId
+            },
+            through: {
+              attributes: ['id']
+            }
+          }
+        ]
+      }).then(staffs => staffs.map(staff => staff.id));
+
+      if (!(body.staffIds as []).every(x => staffIds.includes(x))) {
+        return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+      }
       const data: any = {
         locationId: body.locationId,
         description: body.description,
@@ -78,7 +104,16 @@ export class ServiceController {
         status: 1,
         cateServiceId: body.cateServiceId
       };
-      const service = await ServiceModel.create(data);
+
+      const transaction = await sequelize.transaction();
+      const service = await ServiceModel.create(data, { transaction: transaction });
+      const prepareServiceStaff = (body.staffIds as []).map(x => ({
+        serviceId: service.id,
+        staffId: x
+      }));
+      await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
+      await transaction.commit();
+
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       return next(error);
