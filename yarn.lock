@@ -502,13 +502,6 @@
     "@types/connect" "*"
     "@types/node" "*"
 
-"@types/braintree@^2.22.0":
-  version "2.22.4"
-  resolved "https://registry.yarnpkg.com/@types/braintree/-/braintree-2.22.4.tgz#a8eba7aa200e4ccad4cba5436351e2164d548a8f"
-  integrity sha512-VbJgnvzQwCEvbgTfYoPzHnGaveqFf9dlw+T88qgqm65aJKL34AUG+g6mP4/y3tFDI6SeqSdL0N8Fs9NgM2TVWg==
-  dependencies:
-    "@types/node" "*"
-
 "@types/bson@*":
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/@types/bson/-/bson-4.0.2.tgz#7accb85942fc39bbdb7515d4de437c04f698115f"

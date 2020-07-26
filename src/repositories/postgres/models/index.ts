@@ -56,12 +56,12 @@ AppointmentDetailModel.belongsTo(ResourceModel, { foreignKey: 'resourceId', as: 
 
 StaffModel.belongsToMany(AppointmentDetailModel, {
   through: AppointmentDetailStaffModel,
-  as: 'staffs',
+  as: 'appointmentDetails',
   foreignKey: 'staffId'
 });
 AppointmentDetailModel.belongsToMany(StaffModel, {
   through: AppointmentDetailStaffModel,
-  as: 'appointmentDetails',
+  as: 'staffs',
   foreignKey: 'appointmentDetailId'
 });
 
