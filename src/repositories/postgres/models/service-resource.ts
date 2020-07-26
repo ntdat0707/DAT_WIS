@@ -7,6 +7,7 @@ class ServiceResourceModel extends Model {
   public resourceId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
+  public readonly deletedAt: Date;
 }
 
 ServiceResourceModel.init(
