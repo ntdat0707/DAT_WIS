@@ -10,6 +10,7 @@ class AppointmentModel extends Model {
   public appointmentGroupId!: string;
   public status!: string;
   public date!: Date;
+  public isPrimary!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -37,6 +38,12 @@ AppointmentModel.init(
       field: 'appointment_group_id',
       type: DataTypes.UUIDV4,
       allowNull: true
+    },
+    isPrimary: {
+      field: 'is_primary',
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true
     },
     status: {
       field: 'status',

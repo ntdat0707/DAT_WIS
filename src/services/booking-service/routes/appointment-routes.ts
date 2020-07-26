@@ -12,5 +12,10 @@ export class AppointmentRoutes {
   }
   private config(): void {
     this.router.post('/create-appointment', isAuthenticated, this.appointmentController.createAppointment);
+    this.router.get(
+      '/get-all-appointment-details',
+      isAuthenticated,
+      this.appointmentController.getAllAppointmentDetails
+    );
   }
 }

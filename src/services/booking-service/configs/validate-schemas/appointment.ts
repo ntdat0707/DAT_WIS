@@ -52,4 +52,15 @@ const createAppointmentSchema = Joi.object({
     .label('appointmentDetails')
 });
 
-export { createAppointmentDetailSchema, createAppointmentSchema };
+const filterAppointmentDetailChema = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  startTime: Joi.string().isoDate(),
+  endTime: Joi.string().isoDate()
+});
+
+export { createAppointmentDetailSchema, createAppointmentSchema, filterAppointmentDetailChema };
