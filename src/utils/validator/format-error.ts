@@ -1,4 +1,4 @@
-import { ValidationError, ValidationErrorItem } from '@hapi/joi';
+import { ValidationError, ValidationErrorItem } from 'joi';
 import { IErrorDetail } from '../response-messages/index';
 
 function format(error: ValidationError): IErrorDetail[] {
