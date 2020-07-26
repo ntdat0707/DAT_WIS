@@ -104,7 +104,6 @@ export class ServiceController {
         salePrice: body.salePrice,
         duration: body.duration,
         color: body.color,
-        status: 1,
         cateServiceId: body.cateServiceId
       };
 
@@ -148,9 +147,6 @@ export class ServiceController {
    */
   public getAllService = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const fullPath = req.headers['x-base-url'] + req.originalUrl;
-      const { workingLocationIds } = res.locals.staffPayload;
-
       const validateErrors = validate(
         req.params,
         joi.object({
