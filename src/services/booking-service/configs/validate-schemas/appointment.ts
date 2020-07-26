@@ -1,5 +1,4 @@
-import Joi from '@hapi/joi';
-
+import Joi from 'joi';
 // import { EAppointmentStatus } from '../../../../utils/consts';
 
 const createAppointmentDetailSchema = Joi.object({

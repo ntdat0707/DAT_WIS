@@ -7,13 +7,14 @@ class ServiceResourceModel extends Model {
   public resourceId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
+  public readonly deletedAt: Date;
 }
 
 ServiceResourceModel.init(
   {
     id: {
       field: 'id',
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
@@ -27,7 +28,6 @@ ServiceResourceModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
@@ -35,6 +35,11 @@ ServiceResourceModel.init(
     },
     updatedAt: {
       field: 'updated_at',
+      type: 'TIMESTAMP',
+      defaultValue: null
+    },
+    deletedAt: {
+      field: 'deleted_at',
       type: 'TIMESTAMP',
       defaultValue: null
     }

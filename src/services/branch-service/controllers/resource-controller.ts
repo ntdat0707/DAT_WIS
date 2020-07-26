@@ -63,8 +63,6 @@ export class ResourceController {
    */
   public createResource = async ({ body }: Request, res: Response, next: NextFunction) => {
     try {
-      console.log(res.locals.staffPayload);
-
       const validateErrors = validate(body, createResourceSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));

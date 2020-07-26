@@ -1,4 +1,4 @@
-import Joi from '@hapi/joi';
+import Joi from 'joi';
 
 const createServiceSchema = Joi.object({
   cateServiceId: Joi.string()
@@ -10,7 +10,10 @@ const createServiceSchema = Joi.object({
   description: Joi.string().required(),
   salePrice: Joi.number().required(),
   color: Joi.string().required(),
-  duration: Joi.number().required()
+  duration: Joi.number().required(),
+  staffIds: Joi.array()
+    .items(Joi.string())
+    .required()
 });
 
 const createCateServiceSchema = Joi.object({

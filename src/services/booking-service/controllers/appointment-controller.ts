@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-// import { Sequelize } from 'sequelize';
+import { FindOptions } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
 
@@ -21,7 +21,8 @@ import {
   CustomerModel,
   AppointmentDetailModel,
   AppointmentModel,
-  LocationModel
+  LocationModel,
+  AppointmentDetailStaffModel
 } from '../../../repositories/postgres/models';
 
 import { createAppointmentSchema } from '../configs/validate-schemas';
@@ -286,14 +287,29 @@ export class AppointmentController {
 
       await AppointmentModel.create(appointmentData, { transaction });
 
-      const appointmentDetailData = (appointmentDetails as IAppointmentDetailInput[]).map(detail => ({
-        ...detail,
-        appointmentId
-      }));
+      const appointmentDetailData: any[] = [];
+      const appointmentDetailStaffData = [];
+      for (let i = 0; i < appointmentDetails.length; i++) {
+        const appointmentDetailId = uuidv4();
+        appointmentDetailData.push({
+          id: appointmentDetailId,
+          appointmentId,
+          serviceId: appointmentDetails[i].serviceId,
+          resourceId: appointmentDetails[i].resourceId,
+          startTime: appointmentDetails[i].startTime
+        });
+        for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
+          appointmentDetailStaffData.push({
+            appointmentDetailId,
+            staffId: appointmentDetails[i].staffIds[j]
+          });
+        }
+      }
       await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
         transaction
       });
-      const appointmentStoraged = await AppointmentModel.findOne({
+      await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      const findQuery: FindOptions = {
         where: { id: appointmentId },
         include: [
           {
@@ -309,7 +325,7 @@ export class AppointmentController {
                 as: 'resource'
               },
               {
-                model: StaffModel,
+                model: StaffModel.scope('safe'),
                 as: 'staffs',
                 through: { attributes: [] }
               }
@@ -317,7 +333,13 @@ export class AppointmentController {
           }
         ],
         transaction
-      });
+      };
+      if (dataInput.customerId)
+        findQuery.include.push({
+          model: CustomerModel,
+          as: 'customer'
+        });
+      const appointmentStoraged = await AppointmentModel.findOne(findQuery);
 
       //commit transaction
       await transaction.commit();
