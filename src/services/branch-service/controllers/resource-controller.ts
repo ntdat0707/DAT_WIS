@@ -1,13 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-require('dotenv').config();
-
+import * as joi from 'joi';
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { createResourceSchema, resourceIdSchema } from '../configs/validate-schemas/resource';
-import { ResourceModel, LocationModel } from '../../../repositories/postgres/models';
+import { ResourceModel, LocationModel, ServiceModel, sequelize } from '../../../repositories/postgres/models';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { resourceErrorDetails } from '../../../utils/response-messages/error-details/branch/resource';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
@@ -25,6 +24,10 @@ export class ResourceController {
    *           - locationId
    *           - description
    *       properties:
+   *           name:
+   *               type: string
+   *           excerpt:
+   *               type: string
    *           locationId:
    *               type: string
    *           description:
@@ -69,11 +72,15 @@ export class ResourceController {
       }
       const data: any = {
         locationId: body.locationId,
-        description: body.description
+        description: body.description,
+        excerpt: body.excerpt,
+        name: body.name
       };
-      const resource = await ResourceModel.create({ locationId: body.locationId, description: body.description });
+      const transaction = await sequelize.transaction();
+      const resource = await ResourceModel.create(data, { transaction: transaction });
       const serviceResourceData = (body.serviceIds as []).map(x => ({ serviceId: x, resourceId: resource.id }));
-      const resourceService = await ServiceResourceModel.bulkCreate(serviceResourceData);
+      await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction: transaction });
+      await transaction.commit();
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));
     } catch (error) {
@@ -186,6 +193,61 @@ export class ResourceController {
         fullPath
       );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resources));
+    } catch (error) {
+      return next(error);
+    }
+  };
+  /**
+   * @swagger
+   * /branch/resource/{serviceId}/all:
+   *   get:
+   *     summary: Get all resource of one service.
+   *     description: Get all resource of one service.
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getResourcesInService
+   *     parameters:
+   *     - in: path
+   *       name: serviceId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getResourcesInService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(
+        req.params,
+        joi.object({
+          serviceId: joi.string().required()
+        })
+      );
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const resourcesInService = await ResourceModel.findAll({
+        include: [
+          {
+            model: ServiceModel,
+            as: 'services',
+            attributes: [],
+            where: {
+              id: req.params.serviceId
+            },
+            through: {
+              attributes: []
+            }
+          }
+        ]
+      });
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(resourcesInService));
     } catch (error) {
       return next(error);
     }

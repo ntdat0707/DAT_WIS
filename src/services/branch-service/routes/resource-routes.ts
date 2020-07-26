@@ -13,5 +13,6 @@ export class ResourceRoutes {
     this.router.get('/get-resources', isAuthenticated, this.resourceController.getResources);
     this.router.post('/create', isAuthenticated, this.resourceController.createResource);
     this.router.delete('/delete-resource/:resourceId?', isAuthenticated, this.resourceController.deleteResource);
+    this.router.get('/:serviceId/all', isAuthenticated, this.resourceController.getResourcesInService);
   }
 }
