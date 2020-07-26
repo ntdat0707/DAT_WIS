@@ -2,6 +2,7 @@ import * as Joi from 'joi';
 import { format } from './format-error';
 import { IErrorDetail } from '../response-messages/index';
 import { baseValidateSchemas } from './base-validate-schemas';
+
 function validate(
   data: any,
   schema: Joi.Schema,
