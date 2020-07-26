@@ -16,7 +16,9 @@ const myTransports = [];
 let configChannels = {};
 try {
   configChannels = JSON.parse(process.env.LOG_CHANNELS);
-} catch (e) {}
+} catch (e) {
+  throw e;
+}
 // console.log(x);
 if (!isEmpty(configChannels)) {
   const logChannels = configChannels as ILogChannel;
