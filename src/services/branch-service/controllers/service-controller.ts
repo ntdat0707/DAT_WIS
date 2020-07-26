@@ -11,6 +11,9 @@ import { ServiceModel } from '../../../repositories/postgres/models/service';
 import { StaffModel, LocationModel, LocationStaffModel, sequelize } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
+import { FindOptions } from 'sequelize/types';
+import { paginate } from '../../../utils/paginator';
+import * as joi from 'joi';
 
 export class ServiceController {
   constructor() {}
@@ -101,7 +104,6 @@ export class ServiceController {
         salePrice: body.salePrice,
         duration: body.duration,
         color: body.color,
-        status: 1,
         cateServiceId: body.cateServiceId
       };
 
@@ -115,6 +117,47 @@ export class ServiceController {
       await transaction.commit();
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/{locationId}/all:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getAllService
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAllService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(
+        req.params,
+        joi.object({
+          locationId: joi.string().required()
+        })
+      );
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const servicesInLocation = await ServiceModel.findAll({
+        where: { locationId: req.params.locationId }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(servicesInLocation));
     } catch (error) {
       return next(error);
     }

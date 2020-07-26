@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
+import { EServiceStatus } from '../../../utils/consts';
 
 class ServiceModel extends Model {
   public id: string;
@@ -25,7 +26,9 @@ ServiceModel.init(
     },
     status: {
       field: 'status',
-      type: DataTypes.TINYINT,
+      type: DataTypes.ENUM(EServiceStatus.ACTIVE, EServiceStatus.IN_ACTIVE),
+      defaultValue: EServiceStatus.ACTIVE,
+
       allowNull: false
     },
     cateServiceId: {
