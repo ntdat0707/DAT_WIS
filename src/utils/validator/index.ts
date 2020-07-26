@@ -1,14 +1,15 @@
-import Joi from 'joi';
+import * as Joi from 'joi';
 import { format } from './format-error';
 import { IErrorDetail } from '../response-messages/index';
-import { baseValidateSchemas } from './base-valdiate-schemas';
+import { baseValidateSchemas } from './base-validate-schemas';
+
 function validate(
-  req: any,
-  schema: Joi.SchemaLike,
+  data: any,
+  schema: Joi.Schema,
   validateOption: Joi.ValidationOptions = { abortEarly: false }
 ): IErrorDetail[] {
   if (schema) {
-    const { error } = Joi.validate(req, schema || {}, validateOption);
+    const { error } = schema.validate(data, validateOption);
     if (error) {
       const e = format(error);
       return e;
