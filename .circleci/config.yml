@@ -109,8 +109,6 @@ jobs:
             tar -xzvf /data/deployment.tar.gz -C /data/
             cd /data && docker-compose -f docker-compose.prod.yml down 
             cd /data && docker-compose -f docker-compose.prod.yml up --build -d
-
-
             '
 
 workflows:

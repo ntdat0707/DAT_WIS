@@ -12,6 +12,7 @@ import { customerErrorDetails } from '../../../utils/response-messages/error-det
 import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
+import { buildSuccessMessage } from '../../../utils/response-messages';
 
 export class CustomerController {
   constructor() {}
@@ -85,6 +86,40 @@ export class CustomerController {
       if (customer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       await CustomerModel.create(data);
       return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/all:
+   *   get:
+   *     summary: Get all customer in a company
+   *     description: Get all customer in a company
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: getAllCustomerInCompany
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAllCustomerInCompany = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { companyId } = res.locals.staffPayload;
+      const customers = await CustomerModel.findAll({
+        where: {
+          companyId: companyId
+        }
+      });
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customers));
     } catch (error) {
       return next(error);
     }
