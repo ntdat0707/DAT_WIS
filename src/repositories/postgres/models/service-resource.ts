@@ -49,7 +49,7 @@ ServiceResourceModel.init(
     freezeTableName: true,
     tableName: 'service_resource',
     timestamps: true,
-    paranoid: false
+    paranoid: true
   }
 );
 
