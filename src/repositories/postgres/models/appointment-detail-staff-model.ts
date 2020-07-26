@@ -45,7 +45,7 @@ AppointmentDetailStaffModel.init(
     }
   },
   {
-    sequelize: sequelize,
+    sequelize,
     freezeTableName: true,
     tableName: 'appointment_detail_staff',
     timestamps: true,

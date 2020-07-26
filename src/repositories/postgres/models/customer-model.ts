@@ -79,7 +79,7 @@ CustomerModel.init(
     }
   },
   {
-    sequelize: sequelize,
+    sequelize,
     freezeTableName: true,
     tableName: 'customer',
     // scopes: {},
