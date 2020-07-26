@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
 
@@ -25,7 +25,7 @@ import {
   AppointmentDetailStaffModel
 } from '../../../repositories/postgres/models';
 
-import { createAppointmentSchema } from '../configs/validate-schemas';
+import { createAppointmentSchema, filterAppointmentDetailChema } from '../configs/validate-schemas';
 import { IAppointmentDetailInput } from '../configs/interfaces';
 
 export class AppointmentController {
@@ -169,10 +169,12 @@ export class AppointmentController {
    *               type: string
    *           staffIds:
    *               type: array
-   *               items: integer
+   *               items:
+   *                   type: string
    *           startTime:
    *               type: string
    *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
    *
    */
 
@@ -192,6 +194,7 @@ export class AppointmentController {
    *           date:
    *               type: string
    *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
    *           appointmentDetails:
    *               type: array
    *               items:
@@ -347,6 +350,117 @@ export class AppointmentController {
     } catch (error) {
       //rollback transaction
       if (transaction) await transaction.rollback();
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /booking/appointment/get-all-appointment-details:
+   *   get:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAllAppointmentDetails
+   *     parameters:
+   *     - in: query
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: startTime
+   *       description: YYY-MM-DD HH:mm:ss
+   *       schema:
+   *          type: string
+   *          format: date-time
+   *     - in: query
+   *       name: endTime
+   *       description: YYY-MM-DD HH:mm:ss
+   *       schema:
+   *          type: string
+   *          format: date-time
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public getAllAppointmentDetails = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const conditions = {
+        locationId: req.query.locationId,
+        startTime: req.query.startTime,
+        endTime: req.query.endTime
+      };
+      const validateErrors = validate(conditions, filterAppointmentDetailChema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(conditions.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${conditions.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      const query: FindOptions = {
+        where: { id: { [Op.ne]: null } },
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { locationId: conditions.locationId },
+            include: [
+              {
+                model: LocationModel,
+                as: 'location',
+                required: true
+              },
+              {
+                model: CustomerModel,
+                as: 'customer',
+                required: false
+              }
+            ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: true
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          }
+        ]
+      };
+
+      let conditionStartTime = {};
+      if (conditions.startTime) conditionStartTime = { ...conditionStartTime, ...{ [Op.gte]: conditions.startTime } };
+      if (conditions.endTime) conditionStartTime = { ...conditionStartTime, ...{ [Op.lte]: conditions.endTime } };
+      if (conditionStartTime.constructor === Object && Object.keys(conditionStartTime).length > 0) {
+        query.where = {
+          ...query.where,
+          ...{ startTime: conditionStartTime }
+        };
+      }
+      const appointmentDetails = await AppointmentDetailModel.findAll(query);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetails));
+    } catch (error) {
       return next(error);
     }
   };

@@ -65,6 +65,11 @@ AppointmentDetailModel.belongsToMany(StaffModel, {
   foreignKey: 'appointmentDetailId'
 });
 
+LocationModel.hasMany(AppointmentModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'appointments' });
+AppointmentModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+CustomerModel.hasMany(AppointmentModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'appointments' });
+AppointmentModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
 export {
   sequelize,
   StaffModel,
