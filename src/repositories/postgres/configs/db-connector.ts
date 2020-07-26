@@ -14,15 +14,15 @@ const sequelize = new Sequelize(
       max: 10,
       min: 0,
       acquire: 30000,
-      idle: 10000,
+      idle: 10000
     },
     logging: false,
     dialectOptions: {
       ssl: {
         require: process.env.POSTGRESQL_TLS === 'true',
-        rejectUnauthorized: false,
-      },
-    },
+        rejectUnauthorized: false
+      }
+    }
   }
 );
 

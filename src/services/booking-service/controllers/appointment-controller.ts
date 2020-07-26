@@ -9,7 +9,7 @@ import { CustomError } from '../../../utils/error-handlers';
 import {
   branchErrorDetails,
   customerErrorDetails,
-  bookingErrorDetails,
+  bookingErrorDetails
 } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { EAppointmentStatus } from '../../../utils/consts';
@@ -22,7 +22,7 @@ import {
   AppointmentDetailModel,
   AppointmentModel,
   LocationModel,
-  AppointmentDetailStaffModel,
+  AppointmentDetailStaffModel
 } from '../../../repositories/postgres/models';
 
 import { createAppointmentSchema, filterAppointmentDetailChema } from '../configs/validate-schemas';
@@ -45,7 +45,7 @@ export class AppointmentController {
             // attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('id')), 'id']],
             where: {
               id: appointmentDetails[i].serviceId,
-              locationId,
+              locationId
             },
             include: [
               {
@@ -53,16 +53,16 @@ export class AppointmentController {
                 as: 'staffs',
                 required: true,
                 where: { id: appointmentDetails[i].staffIds },
-                through: { attributes: [] },
+                through: { attributes: [] }
               },
               {
                 model: ResourceModel,
                 as: 'resources',
                 required: true,
                 where: { id: appointmentDetails[i].resourceId },
-                through: { attributes: [] },
-              },
-            ],
+                through: { attributes: [] }
+              }
+            ]
           })
         );
         // resource
@@ -70,16 +70,16 @@ export class AppointmentController {
           ResourceModel.findOne({
             where: {
               id: appointmentDetails[i].serviceId,
-              locationId,
+              locationId
             },
             include: [
               {
                 model: ServiceModel,
                 as: 'services',
                 required: true,
-                where: { id: appointmentDetails[i].serviceId },
-              },
-            ],
+                where: { id: appointmentDetails[i].serviceId }
+              }
+            ]
           })
         );
         // staff
@@ -91,15 +91,15 @@ export class AppointmentController {
                 model: LocationModel,
                 as: 'workingLocations',
                 required: true,
-                where: { id: locationId },
+                where: { id: locationId }
               },
               {
                 model: ServiceModel,
                 as: 'services',
                 required: true,
-                where: { id: appointmentDetails[i].serviceId },
-              },
-            ],
+                where: { id: appointmentDetails[i].serviceId }
+              }
+            ]
           })
         );
       }
@@ -241,7 +241,7 @@ export class AppointmentController {
         locationId: req.body.locationId,
         customerId: req.body.customerId,
         date: req.body.date,
-        appointmentDetails: req.body.appointmentDetails,
+        appointmentDetails: req.body.appointmentDetails
       };
       //validate req.body
       const validateErrors = validate(dataInput, createAppointmentSchema);
@@ -283,7 +283,7 @@ export class AppointmentController {
         id: appointmentId,
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
-        customerId: dataInput.customerId ? dataInput.customerId : null,
+        customerId: dataInput.customerId ? dataInput.customerId : null
       };
 
       await AppointmentModel.create(appointmentData, { transaction });
@@ -297,17 +297,17 @@ export class AppointmentController {
           appointmentId,
           serviceId: appointmentDetails[i].serviceId,
           resourceId: appointmentDetails[i].resourceId,
-          startTime: appointmentDetails[i].startTime,
+          startTime: appointmentDetails[i].startTime
         });
         for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
           appointmentDetailStaffData.push({
             appointmentDetailId,
-            staffId: appointmentDetails[i].staffIds[j],
+            staffId: appointmentDetails[i].staffIds[j]
           });
         }
       }
       await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
-        transaction,
+        transaction
       });
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       const findQuery: FindOptions = {
@@ -319,26 +319,26 @@ export class AppointmentController {
             include: [
               {
                 model: ServiceModel,
-                as: 'service',
+                as: 'service'
               },
               {
                 model: ResourceModel,
-                as: 'resource',
+                as: 'resource'
               },
               {
                 model: StaffModel.scope('safe'),
                 as: 'staffs',
-                through: { attributes: [] },
-              },
-            ],
-          },
+                through: { attributes: [] }
+              }
+            ]
+          }
         ],
-        transaction,
+        transaction
       };
       if (dataInput.customerId)
         findQuery.include.push({
           model: CustomerModel,
-          as: 'customer',
+          as: 'customer'
         });
       const appointmentStoraged = await AppointmentModel.findOne(findQuery);
 
@@ -392,7 +392,7 @@ export class AppointmentController {
       const conditions = {
         locationId: req.query.locationId,
         startTime: req.query.startTime,
-        endTime: req.query.endTime,
+        endTime: req.query.endTime
       };
       const validateErrors = validate(conditions, filterAppointmentDetailChema);
       if (validateErrors) {
@@ -419,32 +419,32 @@ export class AppointmentController {
               {
                 model: LocationModel,
                 as: 'location',
-                required: true,
+                required: true
               },
               {
                 model: CustomerModel,
                 as: 'customer',
-                required: false,
-              },
-            ],
+                required: false
+              }
+            ]
           },
           {
             model: ServiceModel,
             as: 'service',
-            required: true,
+            required: true
           },
           {
             model: ResourceModel,
             as: 'resource',
-            required: true,
+            required: true
           },
           {
             model: StaffModel,
             as: 'staffs',
             required: true,
-            through: { attributes: [] },
-          },
-        ],
+            through: { attributes: [] }
+          }
+        ]
       };
 
       let conditionStartTime = {};
@@ -453,7 +453,7 @@ export class AppointmentController {
       if (conditionStartTime.constructor === Object && Object.keys(conditionStartTime).length > 0) {
         query.where = {
           ...query.where,
-          ...{ startTime: conditionStartTime },
+          ...{ startTime: conditionStartTime }
         };
       }
       const appointmentDetails = await AppointmentDetailModel.findAll(query);

@@ -72,7 +72,7 @@ export class ResourceController {
         locationId: body.locationId,
         description: body.description,
         excerpt: body.excerpt,
-        name: body.name,
+        name: body.name
       };
       const transaction = await sequelize.transaction();
       const resource = await ResourceModel.create(data, { transaction });
@@ -168,7 +168,7 @@ export class ResourceController {
       const { workingLocationIds } = res.locals.staffPayload;
       const paginateOptions = {
         pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize,
+        pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -177,12 +177,12 @@ export class ResourceController {
           {
             model: LocationModel,
             as: 'location',
-            required: true,
-          },
+            required: true
+          }
         ],
         where: {
-          locationId: workingLocationIds,
-        },
+          locationId: workingLocationIds
+        }
       };
       const resources = await paginate(
         ResourceModel,
@@ -225,7 +225,7 @@ export class ResourceController {
       const validateErrors = validate(
         req.params,
         joi.object({
-          serviceId: joi.string().required(),
+          serviceId: joi.string().required()
         })
       );
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -236,13 +236,13 @@ export class ResourceController {
             as: 'services',
             attributes: [],
             where: {
-              id: req.params.serviceId,
+              id: req.params.serviceId
             },
             through: {
-              attributes: [],
-            },
-          },
-        ],
+              attributes: []
+            }
+          }
+        ]
       });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resourcesInService));

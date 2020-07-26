@@ -90,7 +90,7 @@ const paginate = async <T extends Model<T>>(
     const result: IPagination = {
       meta: {
         totalPages,
-        totalRecords,
+        totalRecords
       },
       data,
       links: {
@@ -98,9 +98,9 @@ const paginate = async <T extends Model<T>>(
         first: firstURL ? firstURL.href : null,
         prev: prevURL ? prevURL.href : null,
         next: nextURL ? nextURL.href : null,
-        last: lastURL ? lastURL.href : null,
+        last: lastURL ? lastURL.href : null
       },
-      _isPagination: true,
+      _isPagination: true
     };
     return result;
   } catch (error) {

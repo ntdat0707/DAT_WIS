@@ -55,7 +55,7 @@ export class CateServiceController {
       const data: any = {
         name: body.name,
         excerpt: body.excerpt,
-        companyId: res.locals.staffPayload.companyId,
+        companyId: res.locals.staffPayload.companyId
       };
       const validateErrors = validate(data, createCateServiceSchema);
       if (validateErrors) {

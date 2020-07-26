@@ -81,13 +81,13 @@ export class ServiceController {
             model: LocationModel,
             as: 'workingLocations',
             where: {
-              id: body.locationId,
+              id: body.locationId
             },
             through: {
-              attributes: ['id'],
-            },
-          },
-        ],
+              attributes: ['id']
+            }
+          }
+        ]
       }).then((staffs) => staffs.map((staff) => staff.id));
 
       if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
@@ -99,14 +99,14 @@ export class ServiceController {
         salePrice: body.salePrice,
         duration: body.duration,
         color: body.color,
-        cateServiceId: body.cateServiceId,
+        cateServiceId: body.cateServiceId
       };
 
       const transaction = await sequelize.transaction();
       const service = await ServiceModel.create(data, { transaction });
       const prepareServiceStaff = (body.staffIds as []).map((x) => ({
         serviceId: service.id,
-        staffId: x,
+        staffId: x
       }));
       await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
       await transaction.commit();
@@ -145,12 +145,12 @@ export class ServiceController {
       const validateErrors = validate(
         req.params,
         joi.object({
-          locationId: joi.string().required(),
+          locationId: joi.string().required()
         })
       );
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const servicesInLocation = await ServiceModel.findAll({
-        where: { locationId: req.params.locationId },
+        where: { locationId: req.params.locationId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(servicesInLocation));
     } catch (error) {

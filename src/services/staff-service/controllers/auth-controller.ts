@@ -62,7 +62,7 @@ export class AuthController {
       const data = {
         email: req.body.email,
         fullName: req.body.fullName,
-        password: req.body.password,
+        password: req.body.password
       };
 
       const validateErrors = validate(data, createBusinessAccountSchema);
@@ -127,7 +127,7 @@ export class AuthController {
     try {
       const data = {
         email: req.body.email,
-        password: req.body.password,
+        password: req.body.password
       };
       const validateErrors = validate(data, loginSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -141,14 +141,14 @@ export class AuthController {
       const refreshTokenData: IRefreshTokenData = {
         userId: staff.id,
         userName: staff.fullName,
-        userType: 'staff',
+        userType: 'staff'
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
       const accessTokenData: IAccessTokenData = {
         userId: staff.id,
         userName: staff.fullName,
         userType: 'staff',
-        refreshToken,
+        refreshToken
       };
       const accessToken = await createAccessToken(accessTokenData);
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken }));

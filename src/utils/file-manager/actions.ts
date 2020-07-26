@@ -21,7 +21,7 @@ const makeStorage = (permission: EFileACL) => {
   const s3 = new S3({
     endpoint: process.env.DO_SPACES_END_POINT,
     accessKeyId: process.env.DO_SPACES_ACESS_KEY_ID,
-    secretAccessKey: process.env.DO_SPACES_SECRET_ACCESS_KEY,
+    secretAccessKey: process.env.DO_SPACES_SECRET_ACCESS_KEY
   });
   const multerS3 = s3Storage({
     s3,
@@ -30,7 +30,7 @@ const makeStorage = (permission: EFileACL) => {
     key(_request, file, cb) {
       //   console.log(file);
       cb(null, shortid.generate() + shortid.generate() + '-' + file.originalname);
-    },
+    }
   });
   return multerS3;
 };
@@ -106,7 +106,7 @@ const uploadAsMiddleware = (
       fileFilter(_req, file, cb) {
         checkFile(file, fileType, cb as any);
       },
-      limits: { fileSize },
+      limits: { fileSize }
     });
 
     let upload;

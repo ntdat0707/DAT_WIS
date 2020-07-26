@@ -10,7 +10,7 @@ export const sendEmail = async () => {
     await ch.assertQueue(EQueueNames.EMAIL, { durable: false });
     await ch.consume(
       EQueueNames.EMAIL,
-      async messageObj => {
+      async (messageObj) => {
         // mail send here
         const msg = messageObj.content.toString();
         const data: IEmailOptions = JSON.parse(msg);

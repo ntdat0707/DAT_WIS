@@ -10,14 +10,14 @@ const opts: ClientOpts = {
   host: env!.REDIS_HOST || '127.0.0.1',
   port: parseInt(env!.REDIS_PORT, 10) || 6379,
   password: env!.REDIS_PASSWORD || '',
-  tls: process.env.REDIS_TLS === 'true',
+  tls: process.env.REDIS_TLS === 'true'
 };
 
 const redisClient: RedisClient = createClient(opts);
 redisClient.on('error', (_err) => {
   logger.error({
     label: 'Redis',
-    message: `Redis connect to ${opts.host} failed ${_err}`,
+    message: `Redis connect to ${opts.host} failed ${_err}`
   });
 });
 
@@ -25,7 +25,7 @@ redisClient.on('error', (_err) => {
 redisClient.on('connect', () => {
   logger.info({
     label: 'Redis',
-    message: `Redis connected to ${opts.host}`,
+    message: `Redis connected to ${opts.host}`
   });
 });
 

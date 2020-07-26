@@ -132,7 +132,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
 
         // working location ids
         const workingLocations = await getWorkingLocations(companyId, staffPayload.id, staffPayload.isBusinessAccount);
-        const workingLocationIds = workingLocations.map(location => location.id);
+        const workingLocationIds = workingLocations.map((location) => location.id);
         staffPayload.workingLocationIds = workingLocationIds;
 
         res.locals.staffPayload = staffPayload;

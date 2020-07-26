@@ -19,7 +19,8 @@
     "ts-start-server-docker": "ts-node -r dotenv/config ./src/run/index.ts",
     "js-start-server": "node ./dist/run/index.js",
     "js-start-server-watch": "nodemon ./dist/run/server.js",
-    "test": "jest --forceExit --coverage --verbose --runInBand --colors --no-env"
+    "test": "jest --forceExit --coverage --verbose --runInBand --colors --no-env",
+    "prettier": "prettier --write 'src/**/*.ts' --config ./.prettierrc"
   },
   "dependencies": {
     "@types/nodemailer-mailgun-transport": "^1.4.1",

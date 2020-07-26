@@ -25,7 +25,7 @@ if (!isEmpty(configChannels)) {
   if (logChannels.console !== undefined && logChannels.console === true)
     myTransports.push(
       new transports.Console({
-        format: format.combine(format.colorize(), format.simple(), format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' })),
+        format: format.combine(format.colorize(), format.simple(), format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }))
       })
     );
 
@@ -63,7 +63,7 @@ const options: LoggerOptions = {
     format.errors({ stack: true }),
     myFormat
   ),
-  silent: isDisableLog,
+  silent: isDisableLog
 };
 
 const logger = createLogger(options);

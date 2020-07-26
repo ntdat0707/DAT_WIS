@@ -79,7 +79,7 @@ export class StaffController {
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
         pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize,
+        pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -200,7 +200,7 @@ export class StaffController {
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = {
         include: [],
-        where: {},
+        where: {}
       };
       if (req.query.locationId) {
         if (!workingLocationIds.includes(req.query.locationId))
@@ -218,11 +218,11 @@ export class StaffController {
               as: 'workingLocations',
               required: true,
               through: {
-                attributes: [],
+                attributes: []
               },
-              where: { id: req.query.locationId },
-            },
-          ],
+              where: { id: req.query.locationId }
+            }
+          ]
         ];
       } else {
         query.include = [
@@ -232,9 +232,9 @@ export class StaffController {
               model: LocationModel,
               as: 'workingLocations',
               required: true,
-              where: { id: workingLocationIds },
-            },
-          ],
+              where: { id: workingLocationIds }
+            }
+          ]
         ];
       }
       if (req.query.serviceIds) {
@@ -246,11 +246,11 @@ export class StaffController {
               as: 'services',
               required: true,
               through: {
-                attributes: [],
+                attributes: []
               },
-              where: { id: req.query.serviceIds },
-            },
-          ],
+              where: { id: req.query.serviceIds }
+            }
+          ]
         ];
       } else {
         query.include = [
@@ -258,9 +258,9 @@ export class StaffController {
           ...[
             {
               model: ServiceModel,
-              as: 'services',
-            },
-          ],
+              as: 'services'
+            }
+          ]
         ];
       }
 
