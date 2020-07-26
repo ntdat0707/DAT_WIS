@@ -3,6 +3,7 @@ import { generalErrorDetails } from './general';
 import { customerErrorDetails } from './customer';
 import { staffErrorDetails } from './staff';
 import { branchErrorDetails } from './branch';
+import { bookingErrorDetails } from './booking';
 
 const buildErrorDetail = (
   code: string,
@@ -19,4 +20,11 @@ const buildErrorDetail = (
   return e;
 };
 
-export { buildErrorDetail, generalErrorDetails, customerErrorDetails, staffErrorDetails, branchErrorDetails };
+export {
+  buildErrorDetail,
+  generalErrorDetails,
+  customerErrorDetails,
+  staffErrorDetails,
+  branchErrorDetails,
+  bookingErrorDetails
+};
