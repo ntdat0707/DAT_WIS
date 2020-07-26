@@ -12,22 +12,30 @@ export default class SystemService {
 
   constructor() {
     this.app = express();
-    this.config();
-    connectMongoDB();
+    this.config().catch((e) => {
+      throw e;
+    });
+    connectMongoDB().catch((e) => {
+      throw e;
+    });
   }
 
   private async config(): Promise<void> {
-    // this.app.set('port', process.env.SVC_SYSTEM_PORT);
+    try {
+      // this.app.set('port', process.env.SVC_SYSTEM_PORT);
 
-    this.app.use(bodyParser.json());
-    this.app.use(bodyParser.urlencoded({ extended: false }));
+      this.app.use(bodyParser.json());
+      this.app.use(bodyParser.urlencoded({ extended: false }));
 
-    this.app.use(cors());
-    // this.app.use(passport.session());
-    await writelog();
+      this.app.use(cors());
+      // this.app.use(passport.session());
+      await writelog();
 
-    //https://expressjs.com/en/guide/error-handling.html
-    this.app.use(handleCustomError);
-    this.app.use(handleException);
+      //https://expressjs.com/en/guide/error-handling.html
+      this.app.use(handleCustomError);
+      this.app.use(handleException);
+    } catch (error) {
+      throw error;
+    }
   }
 }

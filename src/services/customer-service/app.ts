@@ -10,7 +10,9 @@ export default class CustomerService {
 
   constructor() {
     this.app = express();
-    this.config();
+    this.config().catch((e) => {
+      throw e;
+    });
   }
 
   private async config(): Promise<void> {

@@ -13,7 +13,7 @@ export default class Gateway {
     this.config();
   }
 
-  private async config(): Promise<void> {
+  private config() {
     // console.log(process.env.SVC_USER_HOST, process.env.SVC_USER_PORT);
     this.app.set('port', process.env.GTW_PORT || 4000);
 

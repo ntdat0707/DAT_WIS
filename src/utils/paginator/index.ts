@@ -49,11 +49,11 @@ const paginate = async <T extends Model<T>>(
     // const dataFinds = await model.findAndCountAll({ ...queryFindData, ...{ distinct: true } });
     // const data = dataFinds.rows;
 
-    // caculate links
-    let firstURL: URL = null,
-      prevURL: URL = null,
-      nextURL: URL = null,
-      lastURL: URL = null;
+    // calculate links
+    let firstURL: URL = null;
+    let prevURL: URL = null;
+    let nextURL: URL = null;
+    let lastURL: URL = null;
 
     if (Array.isArray(data) && data.length > 0) {
       //first
@@ -80,7 +80,7 @@ const paginate = async <T extends Model<T>>(
       if (paginateOptions.pageNum < totalPages) {
         nextURL = new URL(currentUrl);
         const nextPageNum = paginateOptions.pageNum + 1;
-        const nextPageSize = nextPageNum == totalPages ? lastPageSize : paginateOptions.pageSize;
+        const nextPageSize = nextPageNum === totalPages ? lastPageSize : paginateOptions.pageSize;
         nextURL.searchParams.set('pageNum', nextPageNum.toString());
         nextURL.searchParams.set('pageSize', nextPageSize.toString());
       }
@@ -90,7 +90,7 @@ const paginate = async <T extends Model<T>>(
     const result: IPagination = {
       meta: {
         totalPages,
-        totalRecords
+        totalRecords,
       },
       data,
       links: {
@@ -98,9 +98,9 @@ const paginate = async <T extends Model<T>>(
         first: firstURL ? firstURL.href : null,
         prev: prevURL ? prevURL.href : null,
         next: nextURL ? nextURL.href : null,
-        last: lastURL ? lastURL.href : null
+        last: lastURL ? lastURL.href : null,
       },
-      _isPagination: true
+      _isPagination: true,
     };
     return result;
   } catch (error) {

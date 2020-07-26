@@ -13,7 +13,7 @@ export default class BranchService {
     this.config();
   }
 
-  private async config(): Promise<void> {
+  private config() {
     this.app.set('port', process.env.SVC_BRANCH_PORT);
 
     this.app.use(bodyParser.json());

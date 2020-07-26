@@ -12,8 +12,6 @@ import { sequelize, LocationModel, LocationStaffModel, CompanyModel } from '../.
 import { createLocationSchema } from '../configs/validate-schemas';
 
 export class LocationController {
-  constructor() {}
-
   /**
    * @swagger
    * /branch/location/create-location:
@@ -85,7 +83,7 @@ export class LocationController {
         district: req.body.district,
         ward: req.body.ward,
         latitude: req.body.latitude,
-        longitude: req.body.longitude
+        longitude: req.body.longitude,
       };
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {

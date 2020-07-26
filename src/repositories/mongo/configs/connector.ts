@@ -6,19 +6,19 @@ export default async (): Promise<typeof mongoose> => {
   const options = {
     user: process.env.MONGO_USERNAME,
     pass: process.env.MONGO_PASSWORD,
-    useNewUrlParser: true
+    useNewUrlParser: true,
   };
   try {
     const rs = await mongoose.connect(mongoURL, options);
     logger.info({
       message: 'Connect to database successfull',
-      label: 'MongoDB'
+      label: 'MongoDB',
     });
     return rs;
   } catch (error) {
     logger.info({
       message: 'Connect to database failed' + error,
-      label: 'MongoDB'
+      label: 'MongoDB',
     });
   }
 };

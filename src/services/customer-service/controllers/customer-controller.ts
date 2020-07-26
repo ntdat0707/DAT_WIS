@@ -15,8 +15,6 @@ import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 export class CustomerController {
-  constructor() {}
-
   /**
    * @swagger
    * definitions:
@@ -75,7 +73,7 @@ export class CustomerController {
         email: req.body.email,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
-        address: req.body.address
+        address: req.body.address,
       };
       const validateErrors = validate(data, createCustomerSchema);
       if (validateErrors) {
@@ -115,8 +113,8 @@ export class CustomerController {
       const { companyId } = res.locals.staffPayload;
       const customers = await CustomerModel.findAll({
         where: {
-          companyId: companyId
-        }
+          companyId,
+        },
       });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customers));

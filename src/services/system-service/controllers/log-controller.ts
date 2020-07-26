@@ -28,7 +28,7 @@ export const writelog = async () => {
     await ch.assertQueue(EQueueNames.LOG, { durable: false });
     await ch.consume(
       EQueueNames.LOG,
-      async messageObj => {
+      async (messageObj) => {
         // mail send here
         const msg = messageObj.content.toString();
         const data: ILogger = JSON.parse(msg);
@@ -42,5 +42,6 @@ export const writelog = async () => {
     );
   } catch (error) {
     console.log(error);
+    throw error;
   }
 };

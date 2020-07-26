@@ -10,8 +10,6 @@ import { createCateServiceSchema } from '../configs/validate-schemas';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 
 export class CateServiceController {
-  constructor() {}
-
   /**
    * @swagger
    * definitions:
@@ -57,7 +55,7 @@ export class CateServiceController {
       const data: any = {
         name: body.name,
         excerpt: body.excerpt,
-        companyId: res.locals.staffPayload.companyId
+        companyId: res.locals.staffPayload.companyId,
       };
       const validateErrors = validate(data, createCateServiceSchema);
       if (validateErrors) {
