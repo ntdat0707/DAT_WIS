@@ -1,22 +1,17 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import HttpStatus from 'http-status-codes';
-require('dotenv').config();
-
-import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
+import { validate } from '../../../utils/validator';
 
-import { createServiceSchema } from '../configs/validate-schemas';
+import * as joi from 'joi';
+import { LocationModel, sequelize, StaffModel } from '../../../repositories/postgres/models';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
-import { StaffModel, LocationModel, LocationStaffModel, sequelize } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
-import { FindOptions } from 'sequelize/types';
-import { paginate } from '../../../utils/paginator';
-import * as joi from 'joi';
+import { createServiceSchema } from '../configs/validate-schemas';
 
 export class ServiceController {
-  constructor() {}
   /**
    * @swagger
    * definitions:
@@ -86,16 +81,16 @@ export class ServiceController {
             model: LocationModel,
             as: 'workingLocations',
             where: {
-              id: body.locationId
+              id: body.locationId,
             },
             through: {
-              attributes: ['id']
-            }
-          }
-        ]
-      }).then(staffs => staffs.map(staff => staff.id));
+              attributes: ['id'],
+            },
+          },
+        ],
+      }).then((staffs) => staffs.map((staff) => staff.id));
 
-      if (!(body.staffIds as []).every(x => staffIds.includes(x))) {
+      if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
         return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
       }
       const data: any = {
@@ -104,14 +99,14 @@ export class ServiceController {
         salePrice: body.salePrice,
         duration: body.duration,
         color: body.color,
-        cateServiceId: body.cateServiceId
+        cateServiceId: body.cateServiceId,
       };
 
       const transaction = await sequelize.transaction();
-      const service = await ServiceModel.create(data, { transaction: transaction });
-      const prepareServiceStaff = (body.staffIds as []).map(x => ({
+      const service = await ServiceModel.create(data, { transaction });
+      const prepareServiceStaff = (body.staffIds as []).map((x) => ({
         serviceId: service.id,
-        staffId: x
+        staffId: x,
       }));
       await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
       await transaction.commit();
@@ -150,12 +145,12 @@ export class ServiceController {
       const validateErrors = validate(
         req.params,
         joi.object({
-          locationId: joi.string().required()
+          locationId: joi.string().required(),
         })
       );
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const servicesInLocation = await ServiceModel.findAll({
-        where: { locationId: req.params.locationId }
+        where: { locationId: req.params.locationId },
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(servicesInLocation));
     } catch (error) {

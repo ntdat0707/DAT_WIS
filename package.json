@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "build-check": "npm run build-ts && npm run lint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "rm -rf dist && tsc --noUnusedLocals",
+    "lint": "tslint --project tsconfig.json -c tslint.commit.json --fix",
     "ts-start-server": "export NODE_ENV=development&&nodemon --exec ts-node -r dotenv/config ./src/run/index.ts",
     "start-docker": "docker-compose -f docker-compose.yml up --build",
     "stop-docker": "docker-compose -f ./docker-compose.yml down --rmi local",
@@ -106,15 +107,29 @@
     "@typescript-eslint/eslint-plugin": "^1.12.0",
     "@typescript-eslint/parser": "^1.12.0",
     "eslint": "^5.0.0",
-    "husky": "^3.0.3",
+    "husky": "^4.2.5",
     "jest": "^24.9.0",
     "js-yaml": "^3.13.1",
-    "lint-staged": "^9.2.3",
+    "lint-staged": "^10.2.11",
     "nodemon": "^1.19.1",
-    "prettier": "1.18.2",
+    "prettier": "^2.0.5",
     "shelljs": "^0.8.3",
     "ts-jest": "^24.0.2",
     "ts-node": "^8.3.0",
+    "tslint": "^6.1.2",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-etc": "^1.13.0",
     "typescript": "^3.5.2"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "tslint --project tsconfig.json -c tslint.commit.json --fix",
+      "prettier --write"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged && yarn run typecheck"
+    }
   }
 }
