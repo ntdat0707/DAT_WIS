@@ -3,8 +3,8 @@ import sequelize from '../configs/db-connector';
 
 class ServiceResourceModel extends Model {
   public id: string;
-  public locationId!: string;
-  public descriptionId!: string;
+  public serviceId!: string;
+  public resourceId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
 }
@@ -27,11 +27,6 @@ ServiceResourceModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    description: {
-      field: 'description',
-      type: DataTypes.STRING(5000),
-      allowNull: false
-    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
@@ -39,6 +34,11 @@ ServiceResourceModel.init(
     },
     updatedAt: {
       field: 'updated_at',
+      type: 'TIMESTAMP',
+      defaultValue: null
+    },
+    deletedAt: {
+      field: 'deleted_at',
       type: 'TIMESTAMP',
       defaultValue: null
     }
