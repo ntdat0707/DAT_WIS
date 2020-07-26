@@ -38,7 +38,7 @@ jobs:
       - run:
           name: lint
           command: |
-            yarn run lint-staged && yarn run typecheck
+            yarn run typecheck && yarn run lint
   test:
     machine:
       # image: ubuntu-1604:201903-0
