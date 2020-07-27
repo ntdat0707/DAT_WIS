@@ -115,7 +115,7 @@ export class CustomerController {
       const { companyId } = res.locals.staffPayload;
       const customers = await CustomerModel.findAll({
         where: {
-          companyId: companyId
+          companyId
         }
       });
 

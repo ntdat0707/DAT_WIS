@@ -92,7 +92,7 @@ const paginate = async <T extends Model<T>>(
         totalPages,
         totalRecords
       },
-      data: data,
+      data,
       links: {
         self: currentUrl,
         first: firstURL ? firstURL.href : null,

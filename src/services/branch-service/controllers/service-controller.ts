@@ -8,11 +8,9 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { createServiceSchema } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
-import { StaffModel, LocationModel, LocationStaffModel, sequelize } from '../../../repositories/postgres/models';
+import { StaffModel, LocationModel, sequelize } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
-import { FindOptions } from 'sequelize/types';
-import { paginate } from '../../../utils/paginator';
 import * as joi from 'joi';
 
 export class ServiceController {
@@ -108,7 +106,7 @@ export class ServiceController {
       };
 
       const transaction = await sequelize.transaction();
-      const service = await ServiceModel.create(data, { transaction: transaction });
+      const service = await ServiceModel.create(data, { transaction });
       const prepareServiceStaff = (body.staffIds as []).map(x => ({
         serviceId: service.id,
         staffId: x

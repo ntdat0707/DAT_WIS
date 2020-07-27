@@ -150,7 +150,7 @@ export class AuthController {
         userId: staff.id,
         userName: staff.fullName,
         userType: 'staff',
-        refreshToken: refreshToken
+        refreshToken
       };
       const accessToken = await createAccessToken(accessTokenData);
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken }));

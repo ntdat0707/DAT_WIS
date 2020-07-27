@@ -77,9 +77,9 @@ export class ResourceController {
         name: body.name
       };
       const transaction = await sequelize.transaction();
-      const resource = await ResourceModel.create(data, { transaction: transaction });
+      const resource = await ResourceModel.create(data, { transaction });
       const serviceResourceData = (body.serviceIds as []).map(x => ({ serviceId: x, resourceId: resource.id }));
-      await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction: transaction });
+      await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       await transaction.commit();
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));

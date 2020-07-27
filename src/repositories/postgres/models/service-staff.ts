@@ -45,7 +45,7 @@ ServiceStaffModel.init(
     }
   },
   {
-    sequelize: sequelize,
+    sequelize,
     freezeTableName: true,
     tableName: 'service_staff',
     timestamps: true,

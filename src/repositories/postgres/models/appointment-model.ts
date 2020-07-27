@@ -81,7 +81,7 @@ AppointmentModel.init(
     }
   },
   {
-    sequelize: sequelize,
+    sequelize,
     freezeTableName: true,
     tableName: 'appointment',
     timestamps: true,

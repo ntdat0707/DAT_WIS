@@ -64,7 +64,7 @@ const getCompany = async (staffId: string) => {
               as: 'staffs',
               required: true,
               where: { id: staffId },
-              through: { attributes: [], where: { staffId: staffId } }
+              through: { attributes: [], where: { staffId } }
             }
           ]
         }
@@ -86,7 +86,7 @@ const getCompany = async (staffId: string) => {
  */
 const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const accessTokenBearer = req.headers['authorization'] as string;
+    const accessTokenBearer = req.headers.authorization as string;
     //missing token
     if (!accessTokenBearer) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0002()) });
@@ -121,8 +121,8 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
 
         //companyId
         let companyId = null;
-        if ((staff as any)['hasCompany'] && (staff as any)['hasCompany'].id) {
-          companyId = (staff as any)['hasCompany'].id;
+        if ((staff as any).hasCompany && (staff as any).hasCompany.id) {
+          companyId = (staff as any).hasCompany.id;
         } else {
           const company = await getCompany(staff.id);
           companyId = company.id;

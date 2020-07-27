@@ -138,7 +138,7 @@ export class AppointmentController {
         );
       }
       for (let j = 0; j < appointmentDetails.length; j++) {
-        let tmpStaffIds: string[] = [];
+        const tmpStaffIds: string[] = [];
         staffs[j].forEach(e => {
           if (e) tmpStaffIds.push(e.id);
         });
