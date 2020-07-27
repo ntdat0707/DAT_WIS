@@ -2,18 +2,21 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 require('dotenv').config();
 
-import { validate } from '../../../utils/validator';
+import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
-import { createServiceSchema } from '../configs/validate-schemas';
+import { createServiceSchema, serviceIdSchema } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
 import { StaffModel, LocationModel, LocationStaffModel, sequelize } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
+import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
+import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import * as joi from 'joi';
+import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 
 export class ServiceController {
   constructor() {}
@@ -117,6 +120,177 @@ export class ServiceController {
       await transaction.commit();
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/delete-service/{serviceId}:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: deleteService
+   *     parameters:
+   *     - in: path
+   *       name: serviceId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public deleteService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { workingLocationIds } = res.locals.staffPayload;
+      const serviceId = req.params.serviceId;
+      const validateErrors = validate(serviceId, serviceIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const service = await ServiceModel.findOne({ where: { id: serviceId } });
+      if (!service)
+        return next(
+          new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
+        );
+      if (!workingLocationIds.includes(service.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${service.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      await ServiceModel.destroy({ where: { id: serviceId } });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/get-service/{serviceId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: get-service
+   *     parameters:
+   *     - in: path
+   *       name: serviceId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { workingLocationIds } = res.locals.staffPayload;
+      const serviceId = req.params.serviceId;
+      const validateErrors = validate(serviceId, serviceIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const service = await ServiceModel.findOne({
+        where: {
+          id: serviceId
+        },
+        include: [
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
+          },
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: true
+          },
+          {
+            model: ServiceResourceModel,
+            as: 'serviceResources',
+            required: false
+          }
+        ]
+      });
+      if (!service)
+        return next(
+          new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
+        );
+      if (!workingLocationIds.includes(service.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${service.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/get-services:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getServices
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getServices = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const { workingLocationIds } = res.locals.staffPayload;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const query: FindOptions = {
+        where: {
+          locationId: workingLocationIds
+        }
+      };
+      const services = await paginate(
+        ServiceModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
     } catch (error) {
       return next(error);
     }

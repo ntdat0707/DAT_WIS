@@ -13,6 +13,7 @@
     "build-check": "npm run build-ts && npm run lint",
     "typecheck": "tsc --noEmit",
     "ts-start-server": "export NODE_ENV=development&&nodemon --exec ts-node -r dotenv/config ./src/run/index.ts",
+    "ts-start-server-windows": "set NODE_ENV=development&&nodemon --exec ts-node -r dotenv/config ./src/run/index.ts",
     "start-docker": "docker-compose -f docker-compose.yml up --build",
     "stop-docker": "docker-compose -f ./docker-compose.yml down --rmi local",
     "ts-start-server-docker": "ts-node -r dotenv/config ./src/run/index.ts",
