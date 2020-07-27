@@ -23,6 +23,11 @@ AppointmentDetailStaffModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
+    staffId: {
+      field: 'staff_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',

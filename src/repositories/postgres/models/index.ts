@@ -63,15 +63,20 @@ AppointmentDetailModel.belongsTo(ResourceModel, { foreignKey: 'resourceId', as: 
 
 StaffModel.belongsToMany(AppointmentDetailModel, {
   through: AppointmentDetailStaffModel,
-  as: 'staffs',
+  as: 'appointmentDetails',
   foreignKey: 'staffId'
 });
 AppointmentDetailModel.belongsToMany(StaffModel, {
   through: AppointmentDetailStaffModel,
-  as: 'appointmentDetails',
+  as: 'staffs',
   foreignKey: 'appointmentDetailId'
 });
 
+LocationModel.hasMany(AppointmentModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'appointments' });
+AppointmentModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+CustomerModel.hasMany(AppointmentModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'appointments' });
+AppointmentModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
 export {
   sequelize,
   StaffModel,

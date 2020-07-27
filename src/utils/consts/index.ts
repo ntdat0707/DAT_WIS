@@ -22,6 +22,10 @@ enum ELocationStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive'
 }
+enum EServiceStatus {
+  ACTIVE = 'active',
+  IN_ACTIVE = 'in_active'
+}
 
 enum EAppointmentStatus {
   NEW = 'new',
@@ -40,4 +44,13 @@ const AppointmentStatusRules = {
   cancel: { new: false, confirmed: false, arrived: false, in_service: false, completed: false, cancel: false }
 };
 
-export { buildingEnvs, ELocales, EEnvironments, EGender, ELocationStatus, EAppointmentStatus, AppointmentStatusRules };
+export {
+  buildingEnvs,
+  EServiceStatus,
+  ELocales,
+  EEnvironments,
+  EGender,
+  ELocationStatus,
+  EAppointmentStatus,
+  AppointmentStatusRules
+};

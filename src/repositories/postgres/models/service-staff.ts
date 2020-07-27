@@ -14,9 +14,9 @@ ServiceStaffModel.init(
   {
     id: {
       field: 'id',
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
     },
     staffId: {
       field: 'staff_id',

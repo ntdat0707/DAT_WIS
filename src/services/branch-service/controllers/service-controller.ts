@@ -15,6 +15,8 @@ import { serviceErrorDetails } from '../../../utils/response-messages/error-deta
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
+import * as joi from 'joi';
+import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 
 export class ServiceController {
   constructor() {}
@@ -105,7 +107,6 @@ export class ServiceController {
         salePrice: body.salePrice,
         duration: body.duration,
         color: body.color,
-        status: 1,
         cateServiceId: body.cateServiceId
       };
 
@@ -214,6 +215,11 @@ export class ServiceController {
             model: CateServiceModel,
             as: 'cateService',
             required: true
+          },
+          {
+            model: ServiceResourceModel,
+            as: 'serviceResources',
+            required: false
           }
         ]
       });
@@ -285,6 +291,47 @@ export class ServiceController {
         fullPath
       );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/{locationId}/all:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getAllService
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAllService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(
+        req.params,
+        joi.object({
+          locationId: joi.string().required()
+        })
+      );
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const servicesInLocation = await ServiceModel.findAll({
+        where: { locationId: req.params.locationId }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(servicesInLocation));
     } catch (error) {
       return next(error);
     }

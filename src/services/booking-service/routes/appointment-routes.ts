@@ -1,7 +1,7 @@
 import * as express from 'express';
 require('dotenv').config();
 
-import { AppointmentController } from '../controllers/appointment-controlelr';
+import { AppointmentController } from '../controllers/appointment-controller';
 import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
 export class AppointmentRoutes {
   public router: express.Router = express.Router();
@@ -11,6 +11,11 @@ export class AppointmentRoutes {
     this.config();
   }
   private config(): void {
-    this.router.get('/test-api', isAuthenticated, this.appointmentController.testApi);
+    this.router.post('/create-appointment', isAuthenticated, this.appointmentController.createAppointment);
+    this.router.get(
+      '/get-all-appointment-details',
+      isAuthenticated,
+      this.appointmentController.getAllAppointmentDetails
+    );
   }
 }
