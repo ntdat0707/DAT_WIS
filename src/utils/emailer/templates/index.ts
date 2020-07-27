@@ -14,8 +14,8 @@ interface IBaseEmailTemplate {
  * @returns {string}
  */
 const buildEmailTemplate = (source: string, data: IBaseEmailTemplate): string => {
-  let template = handlebars.compile(source);
-  let result = template(data);
+  const template = handlebars.compile(source);
+  const result = template(data);
   return result;
 };
 

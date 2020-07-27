@@ -48,13 +48,7 @@ function checkFile(
   cb: (error: IErrorDetail | null, acceptFile: boolean) => void
 ): void {
   const fileTypes = FileExtensions[type];
-  const isValidType = fileTypes.includes(
-    path
-      .extname(file.originalname)
-      .toLowerCase()
-      .split('.')
-      .pop()
-  );
+  const isValidType = fileTypes.includes(path.extname(file.originalname).toLowerCase().split('.').pop());
   if (isValidType) {
     return cb(null, true);
   } else {
@@ -109,7 +103,8 @@ const uploadAsMiddleware = (
   return (req: Request, res: Response, next: NextFunction): void => {
     const multerInstance = multer({
       storage: makeStorage(permission),
-      fileFilter(_req, file, cb) {
+      //tslint:disable-next-line
+      fileFilter(_req, file: Express.Multer.File, cb) {
         checkFile(file, fileType, cb as any);
       },
       limits: { fileSize }
@@ -124,7 +119,7 @@ const uploadAsMiddleware = (
       upload = multerInstance.single(file);
     }
 
-    upload(req, res, function(err: any) {
+    upload(req, res, (err: any) => {
       if (err) {
         if (isErrorDetail(err)) {
           logger.error({ label: LOG_LABEL, message: JSON.stringify(err) });

@@ -3,7 +3,7 @@ import { logger } from '../../../utils/logger';
 require('dotenv').config();
 export default async (): Promise<typeof mongoose> => {
   const mongoURL = 'mongodb://' + process.env.MONGO_HOST + ':' + process.env.MONGO_PORT + '/' + process.env.MONGO_NAME;
-  let options = {
+  const options = {
     user: process.env.MONGO_USERNAME,
     pass: process.env.MONGO_PASSWORD,
     useNewUrlParser: true

@@ -6,10 +6,10 @@ import { EQueueNames } from './queues';
 
 const emit = async (channel: EQueueNames, message: object) => {
   try {
-    let open = await amqp.connect(rabbitmqURL);
+    const open = await amqp.connect(rabbitmqURL);
     const ch = await open.createChannel();
     await ch.assertQueue(channel, { durable: false });
-    await ch.sendToQueue(channel, Buffer.from(JSON.stringify(message), 'utf8'));
+    ch.sendToQueue(channel, Buffer.from(JSON.stringify(message), 'utf8'));
   } catch (error) {
     throw error;
   }

@@ -10,8 +10,6 @@ import { createCateServiceSchema } from '../configs/validate-schemas';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 
 export class CateServiceController {
-  constructor() {}
-
   /**
    * @swagger
    * definitions:

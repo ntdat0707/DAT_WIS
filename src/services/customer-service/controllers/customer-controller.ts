@@ -15,8 +15,6 @@ import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 export class CustomerController {
-  constructor() {}
-
   /**
    * @swagger
    * definitions:

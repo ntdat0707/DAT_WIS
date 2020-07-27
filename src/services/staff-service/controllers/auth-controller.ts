@@ -15,8 +15,6 @@ import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import { createBusinessAccountSchema, loginSchema } from '../configs/validate-schemas';
 
 export class AuthController {
-  constructor() {}
-
   /**
    * @swagger
    * definitions:

@@ -16,7 +16,9 @@ const myTransports = [];
 let configChannels = {};
 try {
   configChannels = JSON.parse(process.env.LOG_CHANNELS);
-} catch (e) {}
+} catch (e) {
+  throw e;
+}
 // console.log(x);
 if (!isEmpty(configChannels)) {
   const logChannels = configChannels as ILogChannel;
@@ -42,7 +44,7 @@ if (!isEmpty(configChannels)) {
 const isDisableLog: boolean = myTransports.length > 0 ? false : true;
 
 const myFormat = format.printf((info): string => {
-  if (info.level == 'error') {
+  if (info.level === 'error') {
     return `${info.timestamp} [${info.level}] [${info.label}]: ${info.message} \n ${info.stack}`;
   }
 
