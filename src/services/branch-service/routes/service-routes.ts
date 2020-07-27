@@ -9,6 +9,9 @@ export class ServiceRoutes {
   }
   private config(): void {
     this.router.post('/create', isAuthenticated, this.serviceController.createService);
+    this.router.delete('/delete-service/:serviceId?', isAuthenticated, this.serviceController.deleteService);
+    this.router.get('/get-service/:serviceId?', isAuthenticated, this.serviceController.getService);
+    this.router.get('/get-services', isAuthenticated, this.serviceController.getServices);
     this.router.get('/:locationId/all', isAuthenticated, this.serviceController.getAllService);
   }
 }

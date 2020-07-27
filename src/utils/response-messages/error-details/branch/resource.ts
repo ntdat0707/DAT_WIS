@@ -16,7 +16,7 @@ const resourceErrorDetails = {
 
   /**
    *
-   * Staff not found
+   * Resource not found
    * @param {string} [detail=null]
    * @returns {IErrorDetail}
    */
