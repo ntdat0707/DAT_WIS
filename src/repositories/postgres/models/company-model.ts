@@ -38,7 +38,7 @@ CompanyModel.init(
     }
   },
   {
-    sequelize,
+    sequelize: sequelize,
     freezeTableName: true,
     tableName: 'company',
     timestamps: true,

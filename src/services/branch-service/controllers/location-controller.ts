@@ -12,6 +12,8 @@ import { sequelize, LocationModel, LocationStaffModel, CompanyModel } from '../.
 import { createLocationSchema } from '../configs/validate-schemas';
 
 export class LocationController {
+  constructor() {}
+
   /**
    * @swagger
    * /branch/location/create-location:

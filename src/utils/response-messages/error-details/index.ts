@@ -11,9 +11,9 @@ const buildErrorDetail = (
   detail: string = null,
   source: ISourceError = null
 ): IErrorDetail => {
-  const e: IErrorDetail = {
-    code,
-    title
+  let e: IErrorDetail = {
+    code: code,
+    title: title
   };
   if (detail) e.detail = detail;
   if (source && (source.parameter || source.pointer)) e.source = source;

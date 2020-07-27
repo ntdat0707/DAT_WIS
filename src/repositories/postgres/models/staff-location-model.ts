@@ -46,7 +46,7 @@ LocationStaffModel.init(
     }
   },
   {
-    sequelize,
+    sequelize: sequelize,
     freezeTableName: true,
     tableName: 'location_staff'
   }

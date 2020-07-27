@@ -10,12 +10,10 @@ export default class BookingService {
 
   constructor() {
     this.app = express();
-    this.config().catch((e) => {
-      throw e;
-    });
+    this.config();
   }
 
-  private async config() {
+  private async config(): Promise<void> {
     this.app.set('port', process.env.SVC_BOOKING_PORT);
 
     this.app.use(bodyParser.json());

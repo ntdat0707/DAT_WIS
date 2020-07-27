@@ -45,7 +45,7 @@ ServiceResourceModel.init(
     }
   },
   {
-    sequelize,
+    sequelize: sequelize,
     freezeTableName: true,
     tableName: 'service_resource',
     timestamps: true,

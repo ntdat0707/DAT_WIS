@@ -25,7 +25,10 @@ const createAppointmentDetailSchema = Joi.object({
     })
     .required()
     .label('resourceId'),
-  startTime: Joi.string().isoDate().required().label('startTime')
+  startTime: Joi.string()
+    .isoDate()
+    .required()
+    .label('startTime')
 });
 
 const createAppointmentSchema = Joi.object({
@@ -40,8 +43,13 @@ const createAppointmentSchema = Joi.object({
       version: ['uuidv4']
     })
     .label('customerId'),
-  date: Joi.string().isoDate().required(),
-  appointmentDetails: Joi.array().min(1).items(createAppointmentDetailSchema).label('appointmentDetails')
+  date: Joi.string()
+    .isoDate()
+    .required(),
+  appointmentDetails: Joi.array()
+    .min(1)
+    .items(createAppointmentDetailSchema)
+    .label('appointmentDetails')
 });
 
 const filterAppointmentDetailChema = Joi.object({

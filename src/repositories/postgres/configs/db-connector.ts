@@ -8,7 +8,7 @@ const sequelize = new Sequelize(
   process.env.POSTGRESQL_PASSWORD,
   {
     host: process.env.POSTGRESQL_HOST,
-    port: parseInt(process.env.POSTGRESQL_PORT, 10),
+    port: parseInt(process.env.POSTGRESQL_PORT),
     dialect: 'postgres',
     pool: {
       max: 10,
@@ -31,7 +31,7 @@ sequelize
   .then(() => {
     logger.info({ label: 'Postgresql', message: 'Database connect' });
   })
-  .catch((_err) => {
+  .catch(_err => {
     logger.error({ label: 'Postgresql', message: 'Database cannot connect' + _err });
   });
 

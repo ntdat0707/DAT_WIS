@@ -10,9 +10,7 @@ export default class StaffService {
 
   constructor() {
     this.app = express();
-    this.config().catch((e) => {
-      throw e;
-    });
+    this.config();
   }
 
   private async config(): Promise<void> {

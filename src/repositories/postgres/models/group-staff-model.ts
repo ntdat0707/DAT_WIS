@@ -35,7 +35,7 @@ GroupStaffModel.init(
     }
   },
   {
-    sequelize,
+    sequelize: sequelize,
     freezeTableName: true,
     tableName: 'group_staff'
   }

@@ -57,7 +57,7 @@ ResourceModel.init(
     }
   },
   {
-    sequelize,
+    sequelize: sequelize,
     freezeTableName: true,
     tableName: 'resource',
     timestamps: true,

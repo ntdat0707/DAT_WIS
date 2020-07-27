@@ -59,7 +59,7 @@ AppointmentDetailModel.init(
     }
   },
   {
-    sequelize,
+    sequelize: sequelize,
     freezeTableName: true,
     tableName: 'appointment_detail',
     timestamps: true,

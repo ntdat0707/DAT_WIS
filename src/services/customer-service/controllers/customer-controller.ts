@@ -15,6 +15,8 @@ import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 export class CustomerController {
+  constructor() {}
+
   /**
    * @swagger
    * definitions:
@@ -113,7 +115,7 @@ export class CustomerController {
       const { companyId } = res.locals.staffPayload;
       const customers = await CustomerModel.findAll({
         where: {
-          companyId
+          companyId: companyId
         }
       });
 

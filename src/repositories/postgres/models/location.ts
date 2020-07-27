@@ -73,7 +73,7 @@ LocationModel.init(
     }
   },
   {
-    sequelize,
+    sequelize: sequelize,
     freezeTableName: true,
     tableName: 'location',
     timestamps: true,

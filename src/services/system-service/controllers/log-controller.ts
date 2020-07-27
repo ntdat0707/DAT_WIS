@@ -23,12 +23,12 @@ import { LoggerModel, ILogger } from '../../../repositories/mongo/models';
 
 export const writelog = async () => {
   try {
-    const open = await amqp.connect(rabbitmqURL);
+    var open = await amqp.connect(rabbitmqURL);
     const ch = await open.createChannel();
     await ch.assertQueue(EQueueNames.LOG, { durable: false });
     await ch.consume(
       EQueueNames.LOG,
-      async (messageObj) => {
+      async messageObj => {
         // mail send here
         const msg = messageObj.content.toString();
         const data: ILogger = JSON.parse(msg);
@@ -42,6 +42,5 @@ export const writelog = async () => {
     );
   } catch (error) {
     console.log(error);
-    throw error;
   }
 };

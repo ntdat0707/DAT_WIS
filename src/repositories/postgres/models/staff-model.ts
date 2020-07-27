@@ -90,7 +90,7 @@ StaffModel.init(
     }
   },
   {
-    sequelize,
+    sequelize: sequelize,
     freezeTableName: true,
     tableName: 'staff',
     scopes: {
