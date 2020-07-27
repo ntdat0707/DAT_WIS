@@ -27,57 +27,88 @@ LocationModel.init(
       field: 'id',
       type: DataTypes.UUIDV4,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
     companyId: {
       field: 'company_id',
       type: DataTypes.UUIDV4,
-      allowNull: false
+      allowNull: false,
     },
     name: {
       field: 'name',
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     phone: {
       field: 'phone',
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     email: {
       field: 'email',
-      type: DataTypes.STRING
+      type: DataTypes.STRING,
     },
     photo: {
       field: 'photo',
-      type: DataTypes.STRING
+      type: DataTypes.STRING,
     },
     status: {
       field: 'status',
-      type: DataTypes.ENUM(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE)
+      type: DataTypes.ENUM(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE),
+      defaultValue: ELocationStatus.ACTIVE,
+    },
+    city: {
+      field: 'city',
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    district: {
+      field: 'district',
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    ward: {
+      field: 'ward',
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    address: {
+      field: 'address',
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    latitude: {
+      field: 'latitude',
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    longitude: {
+      field: 'longitude',
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
     },
     updatedAt: {
       field: 'updated_at',
       type: 'TIMESTAMP',
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
     },
     deletedAt: {
       field: 'deleted_at',
       type: 'TIMESTAMP',
-      defaultValue: null
-    }
+      defaultValue: null,
+    },
   },
   {
     sequelize,
     freezeTableName: true,
     tableName: 'location',
     timestamps: true,
-    paranoid: true
+    paranoid: true,
   }
 );
 
