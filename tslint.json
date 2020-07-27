@@ -22,6 +22,7 @@
     "member-ordering": false,
     "strict-type-predicates": true,
     "strict-boolean-expressions": [false, "allow-null-union", "allow-undefined-union", "ignore-rhs"],
-    "prefer-for-of": false
+    "prefer-for-of": false,
+    "object-shorthand": false
   }
 }
