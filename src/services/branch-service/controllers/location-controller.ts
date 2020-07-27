@@ -35,11 +35,6 @@ export class LocationController {
    *       required: true
    *       type: string
    *     - in: "formData"
-   *       name: "status"
-   *       required: true
-   *       type: string
-   *       enum: [active, inactive]
-   *     - in: "formData"
    *       name: "phone"
    *       required: true
    *       type: string
@@ -54,6 +49,9 @@ export class LocationController {
    *       type: string
    *     - in: "formData"
    *       name: "ward"
+   *       type: string
+   *     - in: "formData"
+   *       name: "address"
    *       type: string
    *     - in: "formData"
    *       name: "latitude"
@@ -84,8 +82,9 @@ export class LocationController {
         city: req.body.city,
         district: req.body.district,
         ward: req.body.ward,
+        address: req.body.address,
         latitude: req.body.latitude,
-        longitude: req.body.longitude
+        longitude: req.body.longitude,
       };
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
