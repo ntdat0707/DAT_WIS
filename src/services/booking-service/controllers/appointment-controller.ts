@@ -28,7 +28,8 @@ import {
 import {
   createAppointmentSchema,
   filterAppointmentDetailChema,
-  updateAppointmentStatus
+  updateAppointmentStatusSchema,
+  appointmentCancelReasonSchema
 } from '../configs/validate-schemas';
 import { IAppointmentDetailInput } from '../configs/interfaces';
 
@@ -480,6 +481,9 @@ export class AppointmentController {
    *           status:
    *               type: string
    *               enum: [new, confirmed, arrived, in_service, completed, cancel]
+   *           cancelReason:
+   *               type: string
+   *               description: only accept with status cancel
    *
    */
   /**
@@ -508,7 +512,7 @@ export class AppointmentController {
   public updateAppointmentStatus = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = { appointmentId: req.body.appointmentId, status: req.body.status };
-      const validateErrors = validate(data, updateAppointmentStatus);
+      const validateErrors = validate(data, updateAppointmentStatusSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
@@ -536,10 +540,21 @@ export class AppointmentController {
           )
         );
       }
-      await AppointmentModel.update(
-        { status: data.status },
-        { where: { id: data.appointmentId, locationId: workingLocationIds } }
-      );
+      if (data.status === EAppointmentStatus.CANCEL) {
+        const validateReasonErrors = validate(req.body.cancelReason, appointmentCancelReasonSchema);
+        if (validateReasonErrors) {
+          return next(new CustomError(validateReasonErrors, HttpStatus.BAD_REQUEST));
+        }
+        await AppointmentModel.update(
+          { status: data.status, cancelReason: req.body.cancelReason },
+          { where: { id: data.appointmentId, locationId: workingLocationIds } }
+        );
+      } else {
+        await AppointmentModel.update(
+          { status: data.status },
+          { where: { id: data.appointmentId, locationId: workingLocationIds } }
+        );
+      }
       const newAppointmentStatus = await AppointmentModel.findOne({
         where: { id: data.appointmentId, locationId: workingLocationIds }
       });

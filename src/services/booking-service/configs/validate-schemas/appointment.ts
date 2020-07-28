@@ -62,7 +62,7 @@ const appointmentIdSchema = Joi.string()
   .required()
   .label('appointmentIdSchema');
 
-const updateAppointmentStatus = Joi.object({
+const updateAppointmentStatusSchema = Joi.object({
   appointmentId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -82,10 +82,13 @@ const updateAppointmentStatus = Joi.object({
     )
     .label('status')
 });
+
+const appointmentCancelReasonSchema = Joi.string().required().max(1000).label('cancelReason');
 export {
   createAppointmentDetailSchema,
   createAppointmentSchema,
   filterAppointmentDetailChema,
   appointmentIdSchema,
-  updateAppointmentStatus
+  updateAppointmentStatusSchema,
+  appointmentCancelReasonSchema
 };
