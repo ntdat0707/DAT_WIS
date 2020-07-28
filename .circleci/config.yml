@@ -145,14 +145,17 @@ jobs:
             docker pull registry.digitalocean.com/wisere/wisere
             tar -xzvf /data/deployment.tar.gz -C /data/
             cd /data && docker-compose -f docker-compose.prod.yml down 
-            cd /data && docker-compose -f docker-compose.prod.yml up --build -d
+            docker rmi $(docker images --filter "dangling=true" -q --no-trunc) || true
+            cd /data && docker-compose -f docker-compose.prod.yml up --build -d --force-recreate
             '
 
 workflows:
   version: 2
   btd:
     jobs:
-      - lint
+      - lint:
+          requires:
+            - build_and_deploy
       # - test
       - build_and_deploy:
           filters:
@@ -161,6 +164,6 @@ workflows:
                 - develop
                 - staging
                 - production
-                - feature/wsr-109-init-models
+                - bugfix/force_build_container
         # requires:
         #   - build
