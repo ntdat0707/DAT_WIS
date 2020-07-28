@@ -1,5 +1,5 @@
 import Joi from 'joi';
-// import { EAppointmentStatus } from '../../../../utils/consts';
+import { EAppointmentStatus } from '../../../../utils/consts';
 
 const createAppointmentDetailSchema = Joi.object({
   serviceId: Joi.string()
@@ -25,10 +25,7 @@ const createAppointmentDetailSchema = Joi.object({
     })
     .required()
     .label('resourceId'),
-  startTime: Joi.string()
-    .isoDate()
-    .required()
-    .label('startTime')
+  startTime: Joi.string().isoDate().required().label('startTime')
 });
 
 const createAppointmentSchema = Joi.object({
@@ -43,13 +40,8 @@ const createAppointmentSchema = Joi.object({
       version: ['uuidv4']
     })
     .label('customerId'),
-  date: Joi.string()
-    .isoDate()
-    .required(),
-  appointmentDetails: Joi.array()
-    .min(1)
-    .items(createAppointmentDetailSchema)
-    .label('appointmentDetails')
+  date: Joi.string().isoDate().required(),
+  appointmentDetails: Joi.array().min(1).items(createAppointmentDetailSchema).label('appointmentDetails')
 });
 
 const filterAppointmentDetailChema = Joi.object({
@@ -63,4 +55,37 @@ const filterAppointmentDetailChema = Joi.object({
   endTime: Joi.string().isoDate()
 });
 
-export { createAppointmentDetailSchema, createAppointmentSchema, filterAppointmentDetailChema };
+const appointmentIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('appointmentIdSchema');
+
+const updateAppointmentStatus = Joi.object({
+  appointmentId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('appointmentId'),
+  status: Joi.string()
+    .required()
+    .valid(
+      EAppointmentStatus.NEW,
+      EAppointmentStatus.CONFIRMED,
+      EAppointmentStatus.CONFIRMED,
+      EAppointmentStatus.IN_SERVICE,
+      EAppointmentStatus.ARRIVED,
+      EAppointmentStatus.COMPLETED,
+      EAppointmentStatus.CANCEL
+    )
+    .label('status')
+});
+export {
+  createAppointmentDetailSchema,
+  createAppointmentSchema,
+  filterAppointmentDetailChema,
+  appointmentIdSchema,
+  updateAppointmentStatus
+};
