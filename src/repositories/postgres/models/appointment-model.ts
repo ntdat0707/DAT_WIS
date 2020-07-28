@@ -11,6 +11,7 @@ class AppointmentModel extends Model {
   public status!: string;
   public date!: Date;
   public isPrimary!: boolean;
+  public cancelReason: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -63,6 +64,11 @@ AppointmentModel.init(
       type: 'TIMESTAMP',
       allowNull: false,
       defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    },
+    cancelReason: {
+      field: 'cancel_reason',
+      type: DataTypes.STRING,
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',
