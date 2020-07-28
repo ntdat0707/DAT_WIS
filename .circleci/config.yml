@@ -153,7 +153,9 @@ workflows:
   version: 2
   btd:
     jobs:
-      - lint
+      - lint:
+          requires:
+            - build_and_deploy
       # - test
       - build_and_deploy:
           filters:
