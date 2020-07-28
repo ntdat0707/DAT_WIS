@@ -12,7 +12,7 @@ import {
   bookingErrorDetails
 } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { EAppointmentStatus } from '../../../utils/consts';
+import { EAppointmentStatus, AppointmentStatusRules } from '../../../utils/consts';
 import {
   sequelize,
   StaffModel,
@@ -25,7 +25,11 @@ import {
   AppointmentDetailStaffModel
 } from '../../../repositories/postgres/models';
 
-import { createAppointmentSchema, filterAppointmentDetailChema } from '../configs/validate-schemas';
+import {
+  createAppointmentSchema,
+  filterAppointmentDetailChema,
+  updateAppointmentStatus
+} from '../configs/validate-schemas';
 import { IAppointmentDetailInput } from '../configs/interfaces';
 
 export class AppointmentController {
@@ -458,6 +462,88 @@ export class AppointmentController {
       }
       const appointmentDetails = await AppointmentDetailModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetails));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   UpdateAppointmentStatus:
+   *       required:
+   *           - appointmentId
+   *           - status
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           status:
+   *               type: string
+   *               enum: [new, confirmed, arrived, in_service, completed, cancel]
+   *
+   */
+  /**
+   * @swagger
+   * /booking/appointment/update-appointment-status:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAllAppointmentDetails
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/UpdateAppointmentStatus'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public updateAppointmentStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = { appointmentId: req.body.appointmentId, status: req.body.status };
+      const validateErrors = validate(data, updateAppointmentStatus);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      const appointment = await AppointmentModel.findOne({
+        where: { id: data.appointmentId, locationId: workingLocationIds }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      const isValidStatus =
+        AppointmentStatusRules[appointment.status as EAppointmentStatus][data.status as EAppointmentStatus];
+      if (!isValidStatus) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2003(
+              `Can not update appointment status from ${appointment.status} to  ${data.status}`
+            ),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      await AppointmentModel.update(
+        { status: data.status },
+        { where: { id: data.appointmentId, locationId: workingLocationIds } }
+      );
+      const newAppointmentStatus = await AppointmentModel.findOne({
+        where: { id: data.appointmentId, locationId: workingLocationIds }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(newAppointmentStatus));
     } catch (error) {
       return next(error);
     }
