@@ -78,7 +78,7 @@ ServiceModel.init(
     }
   },
   {
-    sequelize: sequelize,
+    sequelize,
     freezeTableName: true,
     tableName: 'service',
     timestamps: true,

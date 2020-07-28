@@ -15,8 +15,6 @@ import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import { createBusinessAccountSchema, loginSchema } from '../configs/validate-schemas';
 
 export class AuthController {
-  constructor() {}
-
   /**
    * @swagger
    * definitions:
@@ -150,7 +148,7 @@ export class AuthController {
         userId: staff.id,
         userName: staff.fullName,
         userType: 'staff',
-        refreshToken: refreshToken
+        refreshToken
       };
       const accessToken = await createAccessToken(accessTokenData);
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken }));

@@ -51,7 +51,7 @@ CateServiceModel.init(
     }
   },
   {
-    sequelize: sequelize,
+    sequelize,
     freezeTableName: true,
     tableName: 'cate_service',
     timestamps: true,

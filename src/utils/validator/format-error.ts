@@ -2,8 +2,8 @@ import { ValidationError, ValidationErrorItem } from 'joi';
 import { IErrorDetail } from '../response-messages/index';
 
 function format(error: ValidationError): IErrorDetail[] {
-  let errDetail: Array<ValidationErrorItem> = error.details || [];
-  let errResponse: IErrorDetail[] = [];
+  const errDetail: ValidationErrorItem[] = error.details || [];
+  const errResponse: IErrorDetail[] = [];
   errDetail.forEach(element => {
     errResponse.push({
       title: element.message,

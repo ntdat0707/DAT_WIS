@@ -14,7 +14,6 @@ import { StaffModel, LocationModel, ServiceModel } from '../../../repositories/p
 import { staffIdSchema, createStaffSchema, filterStaffSchema } from '../configs/validate-schemas';
 
 export class StaffController {
-  constructor() {}
   /**
    * @swagger
    * /staff/get-staff/{staffId}:

@@ -24,10 +24,10 @@ const makeStorage = (permission: EFileACL) => {
     secretAccessKey: process.env.DO_SPACES_SECRET_ACCESS_KEY
   });
   const multerS3 = s3Storage({
-    s3: s3,
+    s3,
     bucket: process.env.DO_SPACES_BUCKET,
     acl: permission,
-    key: function(_request, file, cb) {
+    key(_request, file, cb) {
       //   console.log(file);
       cb(null, shortid.generate() + shortid.generate() + '-' + file.originalname);
     }
@@ -48,13 +48,7 @@ function checkFile(
   cb: (error: IErrorDetail | null, acceptFile: boolean) => void
 ): void {
   const fileTypes = FileExtensions[type];
-  const isValidType = fileTypes.includes(
-    path
-      .extname(file.originalname)
-      .toLowerCase()
-      .split('.')
-      .pop()
-  );
+  const isValidType = fileTypes.includes(path.extname(file.originalname).toLowerCase().split('.').pop());
   if (isValidType) {
     return cb(null, true);
   } else {
@@ -85,7 +79,7 @@ function isUploadFields(data: any): data is UploadFields {
 function isArrayOfUploadFields(data: any): data is UploadFields[] {
   if (!Array.isArray(data)) return false;
   for (let i = 0; i < data.length; i++) {
-    let isValid = isUploadFields(data[i]);
+    const isValid = isUploadFields(data[i]);
     if (!isValid) return false;
   }
   return true;
@@ -101,15 +95,16 @@ function isArrayOfUploadFields(data: any): data is UploadFields[] {
  * @returns {*}
  */
 const uploadAsMiddleware = (
-  file: string | UploadFields | Array<UploadFields>,
+  file: string | UploadFields | UploadFields[],
   fileType: EFileTypes = EFileTypes.IMAGE,
   permission: EFileACL = EFileACL.PUBLIC_READ,
   fileSize: number = Infinity
 ): any => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    let multerInstance = multer({
+    const multerInstance = multer({
       storage: makeStorage(permission),
-      fileFilter: function(_req, file, cb) {
+      //tslint:disable-next-line
+      fileFilter(_req, file: Express.Multer.File, cb) {
         checkFile(file, fileType, cb as any);
       },
       limits: { fileSize }
@@ -124,7 +119,7 @@ const uploadAsMiddleware = (
       upload = multerInstance.single(file);
     }
 
-    upload(req, res, function(err: any) {
+    upload(req, res, (err: any) => {
       if (err) {
         if (isErrorDetail(err)) {
           logger.error({ label: LOG_LABEL, message: JSON.stringify(err) });

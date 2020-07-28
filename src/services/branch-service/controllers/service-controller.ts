@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-require('dotenv').config();
+import * as joi from 'joi';
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
@@ -8,18 +8,16 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { createServiceSchema, serviceIdSchema } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
-import { StaffModel, LocationModel, LocationStaffModel, sequelize } from '../../../repositories/postgres/models';
+import { StaffModel, LocationModel, sequelize } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
-import * as joi from 'joi';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 
 export class ServiceController {
-  constructor() {}
   /**
    * @swagger
    * definitions:
@@ -96,9 +94,9 @@ export class ServiceController {
             }
           }
         ]
-      }).then(staffs => staffs.map(staff => staff.id));
+      }).then((staffs) => staffs.map((staff) => staff.id));
 
-      if (!(body.staffIds as []).every(x => staffIds.includes(x))) {
+      if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
         return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
       }
       const data: any = {
@@ -111,8 +109,8 @@ export class ServiceController {
       };
 
       const transaction = await sequelize.transaction();
-      const service = await ServiceModel.create(data, { transaction: transaction });
-      const prepareServiceStaff = (body.staffIds as []).map(x => ({
+      const service = await ServiceModel.create(data, { transaction });
+      const prepareServiceStaff = (body.staffIds as []).map((x) => ({
         serviceId: service.id,
         staffId: x
       }));

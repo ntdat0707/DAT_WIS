@@ -14,8 +14,6 @@ import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 
 export class ResourceController {
-  constructor() {}
-
   /**
    * @swagger
    * definitions:
@@ -77,9 +75,9 @@ export class ResourceController {
         name: body.name
       };
       const transaction = await sequelize.transaction();
-      const resource = await ResourceModel.create(data, { transaction: transaction });
-      const serviceResourceData = (body.serviceIds as []).map(x => ({ serviceId: x, resourceId: resource.id }));
-      await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction: transaction });
+      const resource = await ResourceModel.create(data, { transaction });
+      const serviceResourceData = (body.serviceIds as []).map((x) => ({ serviceId: x, resourceId: resource.id }));
+      await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       await transaction.commit();
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));

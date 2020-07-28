@@ -29,8 +29,6 @@ import { createAppointmentSchema, filterAppointmentDetailChema } from '../config
 import { IAppointmentDetailInput } from '../configs/interfaces';
 
 export class AppointmentController {
-  constructor() {}
-
   private verifyAppointmentDetails = async (
     appointmentDetails: IAppointmentDetailInput[],
     locationId: string
@@ -107,7 +105,7 @@ export class AppointmentController {
       }
       const servicesFind = await Promise.all(serviceTasks);
       const serviceIdsFind: string[] = [];
-      servicesFind.forEach(e => {
+      servicesFind.forEach((e) => {
         try {
           if (e) serviceIdsFind.push(e.id);
         } catch (error) {
@@ -117,14 +115,14 @@ export class AppointmentController {
       const serviceIds = [...new Set(serviceIdsFind)];
       const resourcesFind = await Promise.all(resourceTasks);
       const resourceIdsFind: string[] = [];
-      resourcesFind.forEach(e => {
+      resourcesFind.forEach((e) => {
         if (e) resourceIdsFind.push(e.id);
       });
       const resourceIds = [...new Set(resourceIdsFind)];
 
       const staffsFind = await Promise.all(staffTasks);
       const staffs: StaffModel[][] = [];
-      staffsFind.forEach(e => {
+      staffsFind.forEach((e) => {
         if (e) staffs.push(e);
       });
       if (
@@ -138,8 +136,8 @@ export class AppointmentController {
         );
       }
       for (let j = 0; j < appointmentDetails.length; j++) {
-        let tmpStaffIds: string[] = [];
-        staffs[j].forEach(e => {
+        const tmpStaffIds: string[] = [];
+        staffs[j].forEach((e) => {
           if (e) tmpStaffIds.push(e.id);
         });
         const staffIds = [...new Set(tmpStaffIds)];
