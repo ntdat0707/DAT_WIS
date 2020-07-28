@@ -162,6 +162,6 @@ workflows:
                 - develop
                 - staging
                 - production
-                - feature/wsr-109-init-models
+                - bugfix/force_build_container
         # requires:
         #   - build
