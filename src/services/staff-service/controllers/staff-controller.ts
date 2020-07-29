@@ -209,7 +209,9 @@ export class StaffController {
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       //rollback transaction
-      if (transaction) await transaction.rollback();
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

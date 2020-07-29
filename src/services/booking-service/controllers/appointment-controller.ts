@@ -352,7 +352,9 @@ export class AppointmentController {
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentStoraged));
     } catch (error) {
       //rollback transaction
-      if (transaction) await transaction.rollback();
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

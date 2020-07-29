@@ -98,7 +98,9 @@ export class LocationController {
       return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
       //rollback transaction
-      if (transaction) await transaction.rollback();
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

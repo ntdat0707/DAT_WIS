@@ -13,7 +13,7 @@ import { ServiceStaffModel } from '../../../repositories/postgres/models/service
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-import { FindOptions } from 'sequelize/types';
+import { FindOptions, Transaction } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 
@@ -75,6 +75,7 @@ export class ServiceController {
    *         description:
    */
   public createService = async ({ body }: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       const validateErrors = validate(body, createServiceSchema);
       if (validateErrors) {
@@ -108,7 +109,7 @@ export class ServiceController {
         cateServiceId: body.cateServiceId
       };
 
-      const transaction = await sequelize.transaction();
+      transaction = await sequelize.transaction();
       const service = await ServiceModel.create(data, { transaction });
       const prepareServiceStaff = (body.staffIds as []).map((x) => ({
         serviceId: service.id,
@@ -119,6 +120,9 @@ export class ServiceController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
