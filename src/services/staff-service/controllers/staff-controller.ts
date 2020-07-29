@@ -2,6 +2,8 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { FindOptions } from 'sequelize';
+import { v4 as uuidv4 } from 'uuid';
+import _ from 'lodash';
 require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
@@ -9,7 +11,13 @@ import { CustomError } from '../../../utils/error-handlers';
 import { staffErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
-import { StaffModel, LocationModel, ServiceModel } from '../../../repositories/postgres/models';
+import {
+  sequelize,
+  StaffModel,
+  LocationModel,
+  ServiceModel,
+  LocationStaffModel
+} from '../../../repositories/postgres/models';
 
 import { staffIdSchema, createStaffSchema, filterStaffSchema } from '../configs/validate-schemas';
 
@@ -103,6 +111,7 @@ export class StaffController {
    *       required:
    *           - fullName
    *           - mainLocationId
+   *           - workingLocationIds
    *       properties:
    *           mainLocationId:
    *               type: string
@@ -118,6 +127,10 @@ export class StaffController {
    *               type: string
    *           address:
    *               type: string
+   *           workingLocationIds:
+   *               type: array
+   *               items:
+   *                   type: string
    *
    *
    */
@@ -148,21 +161,55 @@ export class StaffController {
    *         description: Server internal error
    */
   public createStaff = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
+      transaction = await sequelize.transaction();
       const validateErrors = validate(req.body, createStaffSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.mainLocationId))
+      const profile = {
+        fullName: req.body.fullName,
+        gender: req.body.gender,
+        phone: req.body.phone,
+        mainLocationId: req.body.mainLocationId,
+        birthDate: req.body.birthDate,
+        passportNumber: req.body.passportNumber,
+        address: req.body.phone,
+        id: uuidv4()
+      };
+      if (!res.locals.staffPayload.workingLocationIds.includes(profile.mainLocationId))
         return next(
           new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${req.body.mainLocationId}`),
+            branchErrorDetails.E_1001(`You can not access to location ${profile.mainLocationId}`),
             HttpStatus.FORBIDDEN
           )
         );
-      await StaffModel.create(req.body);
+      if (req.body.workingLocationIds) {
+        const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
+        if (diff.length) {
+          return next(
+            new CustomError(
+              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+              HttpStatus.FORBIDDEN
+            )
+          );
+        }
+      }
+      await StaffModel.create(profile, { transaction });
+      if (req.body.workingLocationIds) {
+        const workingLocationData = (req.body.workingLocationIds as []).map((x) => ({
+          locationId: x,
+          staffId: profile.id
+        }));
+        await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
+      }
+      //commit transaction
+      await transaction.commit();
       return res.status(HttpStatus.OK).send();
     } catch (error) {
+      //rollback transaction
+      if (transaction) await transaction.rollback();
       return next(error);
     }
   };

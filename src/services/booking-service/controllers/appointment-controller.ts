@@ -506,6 +506,10 @@ export class AppointmentController {
    *         description: success
    *       400:
    *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: FORBIDDEN
+   *       404:
+   *         description: Appointment not found
    *       500:
    *         description: Internal server errors
    */
@@ -525,6 +529,14 @@ export class AppointmentController {
           new CustomError(
             bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
             HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (!workingLocationIds.includes(appointment.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${appointment.locationId}`),
+            HttpStatus.FORBIDDEN
           )
         );
       }
