@@ -13,7 +13,7 @@ import { ServiceStaffModel } from '../../../repositories/postgres/models/service
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-import { FindOptions, Transaction, BaseError } from 'sequelize/types';
+import { FindOptions, Transaction } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 
@@ -120,7 +120,7 @@ export class ServiceController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
-      if (error instanceof BaseError) {
+      if (transaction) {
         await transaction.rollback();
       }
       return next(error);

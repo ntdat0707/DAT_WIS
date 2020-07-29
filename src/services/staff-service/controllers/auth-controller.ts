@@ -13,7 +13,6 @@ import { sequelize, StaffModel, CompanyModel } from '../../../repositories/postg
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import { createBusinessAccountSchema, loginSchema } from '../configs/validate-schemas';
-import { BaseError } from 'sequelize/types';
 
 export class AuthController {
   /**
@@ -83,7 +82,7 @@ export class AuthController {
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       //rollback transaction
-      if (error instanceof BaseError) {
+      if (transaction) {
         await transaction.rollback();
       }
       return next(error);

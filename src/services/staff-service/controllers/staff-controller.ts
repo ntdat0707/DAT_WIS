@@ -1,7 +1,7 @@
 //
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, BaseError } from 'sequelize';
+import { FindOptions } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import _ from 'lodash';
 require('dotenv').config();
@@ -209,7 +209,7 @@ export class StaffController {
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       //rollback transaction
-      if (error instanceof BaseError) {
+      if (transaction) {
         await transaction.rollback();
       }
       return next(error);

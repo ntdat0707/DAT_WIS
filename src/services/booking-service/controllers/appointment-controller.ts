@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op, BaseError } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
 
@@ -352,7 +352,7 @@ export class AppointmentController {
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentStoraged));
     } catch (error) {
       //rollback transaction
-      if (error instanceof BaseError) {
+      if (transaction) {
         await transaction.rollback();
       }
       return next(error);

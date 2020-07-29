@@ -10,7 +10,7 @@ import { ResourceModel, LocationModel, ServiceModel, sequelize } from '../../../
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { resourceErrorDetails } from '../../../utils/response-messages/error-details/branch/resource';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
-import { FindOptions, Transaction, BaseError } from 'sequelize/types';
+import { FindOptions, Transaction } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 
 export class ResourceController {
@@ -83,7 +83,7 @@ export class ResourceController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));
     } catch (error) {
-      if (error instanceof BaseError) {
+      if (transaction) {
         await transaction.rollback();
       }
       return next(error);
