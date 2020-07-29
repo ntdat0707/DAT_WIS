@@ -16,12 +16,12 @@ interface IAccessTokenData {
   userId: string;
   userName: string;
   userType: 'staff' | 'customer';
-  refreshToken: string;
 }
 interface IRefreshTokenData {
   userId: string;
   userName: string;
   userType: 'staff' | 'customer';
+  accessToken: string;
 }
 
 const algorithm: jwt.Algorithm = 'RS256';
@@ -137,18 +137,18 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
 /**
  * Destroy access token and refresh token
  *
- * @param {string} accessToken
+ * @param {string} refreshToken
  * @returns {(Promise<boolean | CustomError>)}
  */
-async function destroyTokens(accessToken: string): Promise<boolean | CustomError> {
+async function destroyTokens(refreshToken: string): Promise<boolean | CustomError> {
   try {
-    const accessTokenData = await verifyAcessToken(accessToken);
-    if (accessTokenData instanceof CustomError) return accessTokenData;
-    const accessTokenStoraged = await redis.getData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
-    if (!accessTokenStoraged) return new CustomError(generalErrorDetails.E_0003());
-    const refreshToken = accessTokenStoraged.refreshToken;
-    await redis.deleteData(`${EKeys.REFRESH_TOKEN}-${refreshToken}`);
+    const refreshTokenData = await verifyRefreshToken(refreshToken);
+    if (refreshTokenData instanceof CustomError) return refreshTokenData;
+    const refreshTokenStoraged = await redis.getData(`${EKeys.REFRESH_TOKEN}-${refreshToken}`);
+    if (!refreshTokenStoraged) return new CustomError(generalErrorDetails.E_0005());
+    const accessToken = refreshTokenData.accessToken;
     await redis.deleteData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
+    await redis.deleteData(`${EKeys.REFRESH_TOKEN}-${refreshToken}`);
     return true;
   } catch (error) {
     throw error;
