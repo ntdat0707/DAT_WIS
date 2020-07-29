@@ -6,8 +6,9 @@ require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { staffErrorDetails } from '../../../utils/response-messages/error-details';
-import { buildSuccessMessage } from '../../../utils/response-messages';
+import { staffErrorDetails, generalErrorDetails } from '../../../utils/response-messages/error-details';
+import { buildSuccessMessage, buildErrorMessage } from '../../../utils/response-messages';
+import { logger } from '../../../utils/logger';
 import {
   createAccessToken,
   createRefreshToken,
@@ -22,6 +23,7 @@ import { sequelize, StaffModel, CompanyModel, LocationModel } from '../../../rep
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import { createBusinessAccountSchema, loginSchema, refreshTokensChema } from '../configs/validate-schemas';
 
+const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 export class AuthController {
   /**
    * @swagger
@@ -199,7 +201,7 @@ export class AuthController {
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/StaffLogin'
+   *         $ref: '#/definitions/StaffRefreshToken'
    *     responses:
    *       200:
    *         description: Sucess
@@ -210,9 +212,14 @@ export class AuthController {
    */
   public refreshTokens = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const inputRefreshToken = req.body.refreshToken;
-      const validateErrors = validate(inputRefreshToken, refreshTokensChema);
+      const inputRefreshTokenBearer = req.body.refreshToken;
+      const validateErrors = validate(inputRefreshTokenBearer, refreshTokensChema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (!inputRefreshTokenBearer.startsWith('Bearer ')) {
+        logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0005()) });
+        return res.status(HttpStatus.UNAUTHORIZED).send(buildErrorMessage(generalErrorDetails.E_0005()));
+      }
+      const inputRefreshToken = inputRefreshTokenBearer.slice(7, inputRefreshTokenBearer.length).trimLeft();
 
       const oldRefreshToken = await verifyRefreshToken(inputRefreshToken);
       if (oldRefreshToken instanceof CustomError) return next(oldRefreshToken);
