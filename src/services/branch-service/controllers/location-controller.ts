@@ -10,6 +10,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { sequelize, LocationModel, LocationStaffModel, CompanyModel } from '../../../repositories/postgres/models';
 
 import { createLocationSchema } from '../configs/validate-schemas';
+import { BaseError } from 'sequelize/types';
 
 export class LocationController {
   /**
@@ -98,7 +99,9 @@ export class LocationController {
       return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
       //rollback transaction
-      if (transaction) await transaction.rollback();
+      if (error instanceof BaseError) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
