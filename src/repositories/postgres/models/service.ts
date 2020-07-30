@@ -24,6 +24,11 @@ ServiceModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
+    name: {
+      field: 'name',
+      type: DataTypes.STRING(255),
+      allowNull: false
+    },
     status: {
       field: 'status',
       type: DataTypes.ENUM(EServiceStatus.ACTIVE, EServiceStatus.IN_ACTIVE),
