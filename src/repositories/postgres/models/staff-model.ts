@@ -9,9 +9,10 @@ class StaffModel extends Model {
   public email: string;
   public birthDate: Date;
   public passportNumber: string;
-  // public groupStaffId: string;
+  public groupStaffId: string;
   public isBusinessAccount: boolean;
   public mainLocationId: string;
+  public address: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -72,6 +73,10 @@ StaffModel.init(
     mainLocationId: {
       field: 'main_location_id',
       type: DataTypes.UUIDV4
+    },
+    address: {
+      field: 'address',
+      type: DataTypes.STRING
     },
     createdAt: {
       field: 'created_at',
