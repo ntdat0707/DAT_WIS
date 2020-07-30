@@ -7,7 +7,8 @@ const createServiceSchema = Joi.object({
   salePrice: Joi.number().required(),
   color: Joi.string().required(),
   duration: Joi.number().required(),
-  staffIds: Joi.array().items(Joi.string()).required()
+  staffIds: Joi.array().items(Joi.string()).required(),
+  name: Joi.string().required()
 });
 
 const createCateServiceSchema = Joi.object({

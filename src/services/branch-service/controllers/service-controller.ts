@@ -23,6 +23,7 @@ export class ServiceController {
    * definitions:
    *   createService:
    *       required:
+   *           - name
    *           - locationId
    *           - description
    *           - salePrice
@@ -30,6 +31,8 @@ export class ServiceController {
    *           - duration
    *           - cateServiceId
    *       properties:
+   *           name:
+   *               type: string
    *           locationId:
    *               type: string
    *           description:
@@ -106,7 +109,8 @@ export class ServiceController {
         salePrice: body.salePrice,
         duration: body.duration,
         color: body.color,
-        cateServiceId: body.cateServiceId
+        cateServiceId: body.cateServiceId,
+        name: body.name
       };
 
       transaction = await sequelize.transaction();
