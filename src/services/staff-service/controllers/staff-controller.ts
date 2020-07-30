@@ -175,7 +175,7 @@ export class StaffController {
         mainLocationId: req.body.mainLocationId,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
-        address: req.body.phone,
+        address: req.body.address,
         id: uuidv4()
       };
       if (!res.locals.staffPayload.workingLocationIds.includes(profile.mainLocationId))
