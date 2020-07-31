@@ -22,4 +22,11 @@ const createCustomerSchema = Joi.object({
   address: Joi.string().label('address')
 });
 
-export { createCustomerSchema };
+const customerIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('customerId');
+
+export { createCustomerSchema, customerIdSchema };

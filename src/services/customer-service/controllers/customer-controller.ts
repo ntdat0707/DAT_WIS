@@ -13,6 +13,7 @@ import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
+import { customerIdSchema } from '../configs/validate-schemas/customer';
 
 export class CustomerController {
   /**
@@ -118,6 +119,54 @@ export class CustomerController {
       });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customers));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/delete/{customerId}:
+   *   delete:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: delete-customer
+   *     parameters:
+   *     - in: path
+   *       name: customerId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public deleteCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { companyId } = res.locals.staffPayload;
+      const customerId = req.params.customerId;
+      const validateErrors = validate(customerId, customerIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const customer = await CustomerModel.findOne({ where: { id: customerId } });
+      if (!customer)
+        return next(
+          new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND)
+        );
+      if (companyId !== customer.companyId) {
+        return next(
+          new CustomError(
+            customerErrorDetails.E_3002(`You can not access to company ${customer.companyId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      await CustomerModel.destroy({ where: { id: customerId } });
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
