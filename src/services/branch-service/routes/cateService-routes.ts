@@ -9,5 +9,6 @@ export class CateServiceRoutes {
   }
   private config(): void {
     this.router.post('/create', isAuthenticated, this.cateServiceController.createCateService);
+    this.router.get('/get-all-category', isAuthenticated, this.cateServiceController.getAllCateServices);
   }
 }
