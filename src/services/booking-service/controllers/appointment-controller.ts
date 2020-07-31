@@ -240,8 +240,6 @@ export class AppointmentController {
   public createAppointment = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      // start transaction
-      transaction = await sequelize.transaction();
       const dataInput = {
         locationId: req.body.locationId,
         customerId: req.body.customerId,
@@ -290,7 +288,8 @@ export class AppointmentController {
         status: EAppointmentStatus.NEW,
         customerId: dataInput.customerId ? dataInput.customerId : null
       };
-
+      // start transaction
+      transaction = await sequelize.transaction();
       await AppointmentModel.create(appointmentData, { transaction });
 
       const appointmentDetailData: any[] = [];
