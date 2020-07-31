@@ -68,4 +68,30 @@ export class CateServiceController {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /branch/cate-service/get-all-cate-service:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getAllCateServices
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAllCateServices = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const cateService = await CateServiceModel.findAll();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateService));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
