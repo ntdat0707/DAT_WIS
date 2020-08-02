@@ -5,15 +5,16 @@ import HttpStatus from 'http-status-codes';
 // import { FindOptions } from 'sequelize';
 require('dotenv').config();
 
-import { validate } from '../../../utils/validator';
+import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { customerErrorDetails } from '../../../utils/response-messages/error-details';
-// import { buildSuccessMessage } from '../../../utils/response-messages';
 import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { customerIdSchema } from '../configs/validate-schemas/customer';
+import { paginate } from '../../../utils/paginator';
+import { FindOptions } from 'sequelize/types';
 
 export class CustomerController {
   /**
@@ -167,6 +168,61 @@ export class CustomerController {
       }
       await CustomerModel.destroy({ where: { id: customerId } });
       return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+    /**
+   * @swagger
+   * /customer/get-customers:
+   *   get:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: getCustomers
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getCustomers = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const { companyId } = res.locals.staffPayload;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const query: FindOptions = {
+        where: {
+          companyId: companyId
+        }
+      };
+      const customer = await paginate(
+        CustomerModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
       return next(error);
     }
