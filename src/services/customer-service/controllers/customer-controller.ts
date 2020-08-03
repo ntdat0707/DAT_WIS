@@ -173,7 +173,7 @@ export class CustomerController {
     }
   };
 
-    /**
+  /**
    * @swagger
    * /customer/get-customers:
    *   get:
