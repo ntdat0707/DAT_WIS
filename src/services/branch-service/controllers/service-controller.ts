@@ -16,42 +16,9 @@ import { CateServiceModel } from '../../../repositories/postgres/models/cate-ser
 import { FindOptions, Transaction } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
+import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 
 export class ServiceController {
-  /**
-   * @swagger
-   * definitions:
-   *   createService:
-   *       required:
-   *           - name
-   *           - locationId
-   *           - description
-   *           - salePrice
-   *           - color
-   *           - duration
-   *           - cateServiceId
-   *       properties:
-   *           name:
-   *               type: string
-   *           locationId:
-   *               type: string
-   *           description:
-   *               type: string
-   *           cateServiceId:
-   *               type: string
-   *           salePrice:
-   *               type: integer
-   *           duration:
-   *               type: integer
-   *           color:
-   *               type: string
-   *           staffIds:
-   *               type: array
-   *               items:
-   *                  type: string
-   *
-   */
-
   /**
    * @swagger
    * /branch/service/create:
@@ -61,12 +28,48 @@ export class ServiceController {
    *     security:
    *       - Bearer: []
    *     name: createService
+   *     consumes:
+   *     - multipart/form-data
    *     parameters:
-   *     - in: "body"
-   *       name: "body"
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: array
+   *       items:
+   *          type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: locationId
+   *       type: string
    *       required: true
-   *       schema:
-   *         $ref: '#/definitions/createService'
+   *     - in: "formData"
+   *       name: cateServiceId
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: name
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: description
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: salePrice
+   *       type: integer
+   *       required: true
+   *     - in: "formData"
+   *       name: duration
+   *       type: integer
+   *       required: true
+   *     - in: "formData"
+   *       name: color
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: staffIds
+   *       type: array
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description:
@@ -77,7 +80,7 @@ export class ServiceController {
    *       500:
    *         description:
    */
-  public createService = async ({ body }: Request, res: Response, next: NextFunction) => {
+  public createService = async ({ body, files }: Request, res: Response, next: NextFunction) => {
     let transaction: Transaction;
     try {
       const validateErrors = validate(body, createServiceSchema);
@@ -115,10 +118,19 @@ export class ServiceController {
 
       transaction = await sequelize.transaction();
       const service = await ServiceModel.create(data, { transaction });
-      const prepareServiceStaff = (body.staffIds as []).map((x) => ({
+      const prepareServiceStaff = (body.staffIds as []).map((id) => ({
         serviceId: service.id,
-        staffId: x
+        staffId: id
       }));
+      if (files.length) {
+        const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
+          serviceId: service.id,
+          path: x.location,
+          isAvatar: index === 0 ? true : false
+        }));
+        await ServiceImageModel.bulkCreate(images, { transaction: transaction });
+      }
+
       await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
       await transaction.commit();
 
