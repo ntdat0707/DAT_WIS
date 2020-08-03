@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import * as joi from 'joi';
+import shortId from 'shortid';
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
@@ -66,6 +67,10 @@ export class ServiceController {
    *       type: string
    *       required: true
    *     - in: "formData"
+   *       name: serviceCode
+   *       type: string
+   *       required: true
+   *     - in: "formData"
    *       name: staffIds
    *       type: array
    *       items:
@@ -106,6 +111,21 @@ export class ServiceController {
       if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
         return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
       }
+
+      let serviceCode: string = body.serviceCode;
+      if (serviceCode.length > 0) {
+        const countServiceCode = await ServiceModel.count({
+          where: {
+            serviceCode: body.serviceCode
+          }
+        });
+        if (countServiceCode > 0) {
+          return next(new CustomError(branchErrorDetails.E_1204(), HttpStatus.BAD_REQUEST));
+        }
+      } else {
+        serviceCode = shortId.generate();
+      }
+
       const data: any = {
         locationId: body.locationId,
         description: body.description,
@@ -113,7 +133,8 @@ export class ServiceController {
         duration: body.duration,
         color: body.color,
         cateServiceId: body.cateServiceId,
-        name: body.name
+        name: body.name,
+        serviceCode: serviceCode
       };
 
       transaction = await sequelize.transaction();

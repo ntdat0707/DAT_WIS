@@ -46,6 +46,11 @@ ServiceModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
+    serviceCode: {
+      field: 'service_code',
+      type: DataTypes.STRING(125),
+      allowNull: false
+    },
     description: {
       field: 'description',
       type: DataTypes.STRING(5000),

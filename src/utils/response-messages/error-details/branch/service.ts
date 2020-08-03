@@ -27,6 +27,10 @@ const serviceErrorDetails = {
   E_1203(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1203', 'Service not found', detail);
     return e;
+  },
+  E_1204(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1204', 'Service code exist', detail);
+    return e;
   }
 };
 
