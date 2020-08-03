@@ -74,7 +74,7 @@ export class AppointmentController {
         resourceTasks.push(
           ResourceModel.findOne({
             where: {
-              id: appointmentDetails[i].serviceId,
+              id: appointmentDetails[i].resourceId,
               locationId
             },
             include: [
