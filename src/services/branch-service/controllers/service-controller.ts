@@ -214,19 +214,24 @@ export class ServiceController {
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const service = await ServiceModel.findOne({ where: { id: serviceId } });
+      const service: any = await ServiceModel.findOne({
+        where: { id: serviceId },
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            where: {
+              id: workingLocationIds
+            }
+          }
+        ]
+      });
       if (!service)
         return next(
           new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
         );
-      if (!workingLocationIds.includes(service.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${service.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
+
       await ServiceModel.destroy({ where: { id: serviceId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
@@ -262,15 +267,18 @@ export class ServiceController {
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const service = await ServiceModel.findOne({
+      const service: any = await ServiceModel.findOne({
         where: {
           id: serviceId
         },
         include: [
           {
             model: LocationModel,
-            as: 'location',
-            required: true
+            as: 'locations',
+            required: true,
+            where: {
+              id: workingLocationIds
+            }
           },
           {
             model: CateServiceModel,
@@ -288,14 +296,6 @@ export class ServiceController {
         return next(
           new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
         );
-      if (!workingLocationIds.includes(service.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${service.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       return next(error);
@@ -341,9 +341,16 @@ export class ServiceController {
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = {
-        where: {
-          locationId: workingLocationIds
-        }
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            where: {
+              id: workingLocationIds
+            }
+          }
+        ]
       };
       const services = await paginate(
         ServiceModel,

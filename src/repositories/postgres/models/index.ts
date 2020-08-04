@@ -31,7 +31,7 @@ ResourceModel.belongsToMany(ServiceModel, { through: ServiceResourceModel, as: '
 ServiceModel.belongsToMany(ResourceModel, { through: ServiceResourceModel, as: 'resources', foreignKey: 'serviceId' });
 
 LocationModel.belongsToMany(ServiceModel, { through: LocationServiceModel, as: 'services', foreignKey: 'locationId' });
-ServiceModel.belongsToMany(LocationModel, { through: ServiceResourceModel, as: 'locations', foreignKey: 'serviceId' });
+ServiceModel.belongsToMany(LocationModel, { through: LocationServiceModel, as: 'locations', foreignKey: 'serviceId' });
 
 LocationModel.hasMany(ResourceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'resources' });
 ResourceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
