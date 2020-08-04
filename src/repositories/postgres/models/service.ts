@@ -6,7 +6,6 @@ class ServiceModel extends Model {
   public id: string;
   public status!: string;
   public cateServiceId!: string;
-  public locationId!: string;
   public description: string;
   public salePrice: number;
   public duration: number;
