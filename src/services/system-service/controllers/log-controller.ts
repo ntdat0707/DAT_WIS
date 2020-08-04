@@ -41,6 +41,6 @@ export const writelog = async () => {
       { noAck: true }
     );
   } catch (error) {
-    console.log(error);
+    throw error;
   }
 };
