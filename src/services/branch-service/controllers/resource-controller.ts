@@ -254,4 +254,74 @@ export class ResourceController {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /branch/resource/get-resource/{resourceId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getResource
+   *     parameters:
+   *     - in: path
+   *       name: resourceId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getResource = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { workingLocationIds } = res.locals.staffPayload;
+      const resourceId = req.params.resourceId;
+      const validateErrors = validate(resourceId, resourceIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const resource = await ResourceModel.findOne({
+        where: {
+          id: resourceId
+        },
+        include: [
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
+          },
+          {
+            model: ServiceResourceModel,
+            as: 'resourceServices',
+            required: false,
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service',
+                required: true
+              }
+            ]
+          }
+        ]
+      });
+      if (!resource)
+        return next(
+          new CustomError(resourceErrorDetails.E_1101(`resourceId ${resourceId} not found`), HttpStatus.NOT_FOUND)
+        );
+      if (!workingLocationIds.includes(resource.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${resource.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
