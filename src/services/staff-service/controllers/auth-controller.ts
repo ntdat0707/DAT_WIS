@@ -38,7 +38,7 @@ import { redis, EKeys } from '../../../repositories/redis';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
-
+const recoveryPasswordUrl = process.env.RECOVERY_PASSWORD_URL;
 export class AuthController {
   /**
    * @swagger
@@ -311,7 +311,7 @@ export class AuthController {
       const uuidToken = uuidv4();
       const data: IStaffRecoveryPasswordTemplate = {
         staffName: staff.fullName,
-        yourURL: `https://app.wisere.com/forgot-password?token=${uuidToken}`
+        yourURL: `${recoveryPasswordUrl}${uuidToken}`
       };
       const msg = buildEmailTemplate(staffRecoveryPasswordTemplate, data);
       await redis.setData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
