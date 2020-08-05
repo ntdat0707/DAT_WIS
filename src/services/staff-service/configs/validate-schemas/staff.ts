@@ -35,9 +35,13 @@ export const createStaffSchema = Joi.object({
 });
 
 const filterStaffSchema = Joi.object({
-  locationId: Joi.string().guid({
-    version: ['uuidv4']
-  }),
+  workingLocationIds: Joi.array()
+    .min(1)
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    ),
   serviceIds: Joi.array()
     .min(1)
     .items(

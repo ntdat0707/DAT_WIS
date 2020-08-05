@@ -13,7 +13,7 @@ export class StaffRoutes {
   }
   private config(): void {
     this.router.get('/get-staff/:staffId?', this.staffController.getStaff);
-    this.router.get('/get-staffs', this.staffController.getStaffs);
+    this.router.get('/get-staffs', isAuthenticated, this.staffController.getStaffs);
     this.router.post('/create', isAuthenticated, this.staffController.createStaff);
     this.router.get('/get-all-staffs', isAuthenticated, this.staffController.getAllStaffs);
     this.router.delete('/delete-staff/:staffId?', isAuthenticated, this.staffController.deleteStaff);

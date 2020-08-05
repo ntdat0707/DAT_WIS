@@ -6,7 +6,6 @@ class ServiceModel extends Model {
   public id: string;
   public status!: string;
   public cateServiceId!: string;
-  public locationId!: string;
   public description: string;
   public salePrice: number;
   public duration: number;
@@ -38,11 +37,6 @@ ServiceModel.init(
     },
     cateServiceId: {
       field: 'cate_service_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
-    },
-    locationId: {
-      field: 'location_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },

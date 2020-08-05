@@ -20,6 +20,6 @@ export const sendEmail = async () => {
       { noAck: true }
     );
   } catch (error) {
-    console.log(error);
+    throw new Error(error);
   }
 };

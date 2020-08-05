@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import * as joi from 'joi';
+import _ from 'lodash';
 import shortId from 'shortid';
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
@@ -18,6 +19,7 @@ import { FindOptions, Transaction } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
+import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 
 export class ServiceController {
   /**
@@ -38,10 +40,6 @@ export class ServiceController {
    *       items:
    *          type: file
    *       description: The file to upload.
-   *     - in: "formData"
-   *       name: locationId
-   *       type: string
-   *       required: true
    *     - in: "formData"
    *       name: cateServiceId
    *       type: string
@@ -75,6 +73,11 @@ export class ServiceController {
    *       type: array
    *       items:
    *          type: string
+   *     - in: "formData"
+   *       name: locationIds
+   *       type: array
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description:
@@ -85,9 +88,18 @@ export class ServiceController {
    *       500:
    *         description:
    */
-  public createService = async ({ body, files }: Request, res: Response, next: NextFunction) => {
+  public createService = async ({ body, files, query }: Request, res: Response, next: NextFunction) => {
     let transaction: Transaction;
     try {
+      const diff = _.difference(body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
+      if (diff.length) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
       const validateErrors = validate(body, createServiceSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -99,7 +111,7 @@ export class ServiceController {
             model: LocationModel,
             as: 'workingLocations',
             where: {
-              id: body.locationId
+              id: body.locationIds
             },
             through: {
               attributes: ['id']
@@ -127,7 +139,6 @@ export class ServiceController {
       }
 
       const data: any = {
-        locationId: body.locationId,
         description: body.description,
         salePrice: body.salePrice,
         duration: body.duration,
@@ -149,8 +160,19 @@ export class ServiceController {
           path: x.location,
           isAvatar: index === 0 ? true : false
         }));
+
         await ServiceImageModel.bulkCreate(images, { transaction: transaction });
       }
+
+      /**
+       * Prepare location service
+       */
+      const locationService = (body.locationIds as []).map((locationId: string) => ({
+        locationId: locationId,
+        serviceId: service.id
+      }));
+
+      await LocationServiceModel.bulkCreate(locationService, { transaction: transaction });
 
       await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
       await transaction.commit();
@@ -192,19 +214,24 @@ export class ServiceController {
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const service = await ServiceModel.findOne({ where: { id: serviceId } });
+      const service: any = await ServiceModel.findOne({
+        where: { id: serviceId },
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            where: {
+              id: workingLocationIds
+            }
+          }
+        ]
+      });
       if (!service)
         return next(
           new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
         );
-      if (!workingLocationIds.includes(service.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${service.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
+
       await ServiceModel.destroy({ where: { id: serviceId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
@@ -240,15 +267,18 @@ export class ServiceController {
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const service = await ServiceModel.findOne({
+      const service: any = await ServiceModel.findOne({
         where: {
           id: serviceId
         },
         include: [
           {
             model: LocationModel,
-            as: 'location',
-            required: true
+            as: 'locations',
+            required: true,
+            where: {
+              id: workingLocationIds
+            }
           },
           {
             model: CateServiceModel,
@@ -266,14 +296,6 @@ export class ServiceController {
         return next(
           new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
         );
-      if (!workingLocationIds.includes(service.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${service.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       return next(error);
@@ -319,9 +341,16 @@ export class ServiceController {
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = {
-        where: {
-          locationId: workingLocationIds
-        }
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            where: {
+              id: workingLocationIds
+            }
+          }
+        ]
       };
       const services = await paginate(
         ServiceModel,
