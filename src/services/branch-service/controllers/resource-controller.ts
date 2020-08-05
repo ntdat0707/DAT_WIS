@@ -294,16 +294,9 @@ export class ResourceController {
             required: true
           },
           {
-            model: ServiceResourceModel,
-            as: 'resourceServices',
-            required: false,
-            include: [
-              {
-                model: ServiceModel,
-                as: 'service',
-                required: true
-              }
-            ]
+            model: ServiceModel,
+            as: 'services',
+            required: false
           }
         ]
       });
