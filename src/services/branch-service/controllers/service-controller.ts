@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import * as joi from 'joi';
 import _ from 'lodash';
 import shortId from 'shortid';
 
