@@ -1,6 +1,7 @@
 import handlebars from 'handlebars';
 import { sampleTemplate, ISampleTemplate } from './sample';
 import { verifyEmailTemplate, IVerifyEmailTemplate } from './customer';
+import { staffRecoveryPasswordTemplate, IStaffRecoveryPasswordTemplate } from './staff-recovery-password';
 // you can import your templates here
 
 interface IBaseEmailTemplate {
@@ -25,5 +26,7 @@ export {
   ISampleTemplate,
   sampleTemplate,
   verifyEmailTemplate,
-  IVerifyEmailTemplate
+  IVerifyEmailTemplate,
+  staffRecoveryPasswordTemplate,
+  IStaffRecoveryPasswordTemplate
 };
