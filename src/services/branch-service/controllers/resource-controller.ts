@@ -5,7 +5,7 @@ import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
-import { createResourceSchema, resourceIdSchema } from '../configs/validate-schemas/resource';
+import { createResourceSchema, resourceIdSchema, updateResourceSchema } from '../configs/validate-schemas/resource';
 import { ResourceModel, LocationModel, ServiceModel, sequelize } from '../../../repositories/postgres/models';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { resourceErrorDetails } from '../../../utils/response-messages/error-details/branch/resource';
@@ -314,6 +314,98 @@ export class ResourceController {
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   UpdateResource:
+   *       required:
+   *           - resourceId
+   *       properties:
+   *           resourceId:
+   *               type: string
+   *           name:
+   *               type: string
+   *           excerpt:
+   *               type: string
+   *           description:
+   *               type: string
+   *           serviceIds:
+   *               type: array
+   *               items:
+   *                  type: string
+   *
+   */
+  /**
+   * @swagger
+   * /branch/resource/update:
+   *   put:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: updateResource
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/UpdateResource'
+   *     responses:
+   *       200:
+   *         description:
+   *       400:
+   *         description:
+   *       404:
+   *         description:
+   *       500:
+   *         description:
+   */
+  public updateResource = async ({ body }: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
+    try {
+      const { workingLocationIds } = res.locals.staffPayload;
+      const validateErrors = validate(body, updateResourceSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const resource = await ResourceModel.findOne({
+        where: {
+          id: body.resourceId
+        }
+      });
+      if (!resource)
+        return next(
+          new CustomError(resourceErrorDetails.E_1101(`resourceId ${body.resourceId} not found`), HttpStatus.NOT_FOUND)
+        );
+      if (!workingLocationIds.includes(resource.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${resource.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      const data: any = {
+        description: body.description,
+        excerpt: body.excerpt,
+        name: body.name
+      };
+      transaction = await sequelize.transaction();
+      await ServiceResourceModel.destroy({ where: { resourceId: body.resourceId } });
+      await ResourceModel.update(data, { where: { id: body.resourceId } });
+      const serviceResourceData = (body.serviceIds as []).map((x) => ({ serviceId: x, resourceId: body.resourceId }));
+      await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
+      await transaction.commit();
+
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
