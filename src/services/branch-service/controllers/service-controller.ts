@@ -381,7 +381,7 @@ export class ServiceController {
 
   /**
    * @swagger
-   * /branch/service/{locationId}/all:
+   * /branch/service/all:
    *   get:
    *     tags:
    *       - Branch
@@ -389,10 +389,11 @@ export class ServiceController {
    *       - Bearer: []
    *     name: getAllService
    *     parameters:
-   *     - in: path
-   *       name: locationId
-   *       schema:
-   *          type: string
+   *     - in: query
+   *       name: locationIds
+   *       type: array
+   *       items:
+   *        type: string
    *       required: true
    *     responses:
    *       200:
@@ -404,15 +405,27 @@ export class ServiceController {
    */
   public getAllService = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validateErrors = validate(
-        req.params,
-        joi.object({
-          locationId: joi.string().required()
-        })
-      );
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const { workingLocationIds } = res.locals.staffPayload;
+      const locationIdsDiff = _.difference(req.query.locationIds as string[], workingLocationIds);
+      if (locationIdsDiff.length > 0) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(locationIdsDiff)}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
       const servicesInLocation = await ServiceModel.findAll({
-        where: { locationId: req.params.locationId }
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            where: {
+              id: (req.query.locationIds as []).length ? req.query.locationIds : workingLocationIds
+            }
+          }
+        ]
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(servicesInLocation));
     } catch (error) {
