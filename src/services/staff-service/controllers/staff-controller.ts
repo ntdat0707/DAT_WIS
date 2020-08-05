@@ -15,7 +15,7 @@ import {
   sequelize,
   StaffModel,
   LocationModel,
-  ServiceModel,
+  // ServiceModel,
   LocationStaffModel
 } from '../../../repositories/postgres/models';
 
@@ -74,6 +74,13 @@ export class StaffController {
    *       required: true
    *       schema:
    *          type: integer
+   *     - in: query
+   *       name: workingLocationIds
+   *       schema:
+   *          type: array
+   *          items:
+   *             type: string
+   *       description: array of UUID v4
    *     responses:
    *       200:
    *         description: success
@@ -84,6 +91,7 @@ export class StaffController {
    */
   public getStaffs = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { workingLocationIds } = res.locals.staffPayload;
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
         pageNum: req.query.pageNum,
@@ -91,7 +99,54 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const query: FindOptions = {};
+      const filter = { workingLocationIds: req.query.workingLocationIds };
+      const validateFilterErrors = validate(filter, filterStaffSchema);
+      if (validateFilterErrors) return next(new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST));
+
+      const query: FindOptions = { include: [] };
+      if (
+        filter.workingLocationIds &&
+        Array.isArray(filter.workingLocationIds) &&
+        filter.workingLocationIds.every((e: any) => typeof e === 'string')
+      ) {
+        const diff = _.difference(filter.workingLocationIds as string[], workingLocationIds);
+        if (diff.length) {
+          return next(
+            new CustomError(
+              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+              HttpStatus.FORBIDDEN
+            )
+          );
+        }
+        query.include = [
+          ...query.include,
+          ...[
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              required: true,
+              through: {
+                attributes: []
+              },
+              where: { id: filter.workingLocationIds }
+            }
+          ]
+        ];
+        //
+      } else {
+        query.include = [
+          ...query.include,
+          ...[
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              required: true,
+              where: { id: workingLocationIds }
+            }
+          ]
+        ];
+      }
+
       const staffs = await paginate(
         StaffModel.scope('safe'),
         query,
@@ -223,10 +278,15 @@ export class StaffController {
    *       - Staff
    *     security:
    *       - Bearer: []
-   *     name: getAllLocations
+   *     name: getAllStaffs
    *     parameters:
    *     - in: query
-   *       name: locationId
+   *       name: workingLocationIds
+   *       schema:
+   *          type: array
+   *          items:
+   *             type: string
+   *       description: array of UUID v4
    *     - in: query
    *       name: serviceIds
    *       schema:
@@ -251,14 +311,21 @@ export class StaffController {
         include: [],
         where: {}
       };
-      if (req.query.locationId) {
-        if (!workingLocationIds.includes(req.query.locationId))
+      if (
+        req.query.workingLocationIds &&
+        Array.isArray(req.query.workingLocationIds) &&
+        req.query.workingLocationIds.every((e: any) => typeof e === 'string')
+      ) {
+        const diff = _.difference(req.query.workingLocationIds as string[], res.locals.staffPayload.workingLocationIds);
+        if (diff.length) {
           return next(
             new CustomError(
-              branchErrorDetails.E_1001(`You can not access to location ${req.query.locationId}`),
+              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
               HttpStatus.FORBIDDEN
             )
           );
+        }
+
         query.include = [
           ...query.include,
           ...[
@@ -269,7 +336,7 @@ export class StaffController {
               through: {
                 attributes: []
               },
-              where: { id: req.query.locationId }
+              where: { id: req.query.workingLocationIds }
             }
           ]
         ];
@@ -286,6 +353,7 @@ export class StaffController {
           ]
         ];
       }
+      /*
       if (req.query.serviceIds) {
         query.include = [
           ...query.include,
@@ -312,6 +380,7 @@ export class StaffController {
           ]
         ];
       }
+      */
 
       const staffs = await StaffModel.scope('safe').findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));

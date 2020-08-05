@@ -17,8 +17,6 @@ class RabbitMQTransport extends Transport {
     if (isLoggerData(info)) {
       await emit(EQueueNames.LOG, info);
       callback();
-    } else {
-      console.log('log data must be ILogger');
     }
   }
 }

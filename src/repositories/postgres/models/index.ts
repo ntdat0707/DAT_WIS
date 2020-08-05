@@ -13,6 +13,7 @@ import { AppointmentDetailModel } from './appointment-detail-model';
 import { AppointmentDetailStaffModel } from './appointment-detail-staff-model';
 import { CateServiceModel } from './cate-service';
 import { ServiceImageModel } from './service-image';
+import { LocationServiceModel } from './location-service';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -29,8 +30,8 @@ StaffModel.belongsToMany(ServiceModel, { through: ServiceStaffModel, as: 'servic
 ResourceModel.belongsToMany(ServiceModel, { through: ServiceResourceModel, as: 'services', foreignKey: 'resourceId' });
 ServiceModel.belongsToMany(ResourceModel, { through: ServiceResourceModel, as: 'resources', foreignKey: 'serviceId' });
 
-LocationModel.hasMany(ServiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'services' });
-ServiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+LocationModel.belongsToMany(ServiceModel, { through: LocationServiceModel, as: 'services', foreignKey: 'locationId' });
+ServiceModel.belongsToMany(LocationModel, { through: LocationServiceModel, as: 'locations', foreignKey: 'serviceId' });
 
 LocationModel.hasMany(ResourceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'resources' });
 ResourceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });

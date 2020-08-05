@@ -7,7 +7,7 @@
     "no-floating-promises": [false, "Bluebird", "Thenable", "SchemaBuilder", "RequestPromise"],
     "promise-function-async": true,
     "ordered-imports": false,
-    "no-console": false,
+    "no-console": true,
     "comment-format": false,
     "no-var-requires": false,
     "interface-name": false,
