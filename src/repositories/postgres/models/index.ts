@@ -39,9 +39,7 @@ ResourceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location
 CateServiceModel.hasMany(ServiceModel, { foreignKey: 'cateServiceId', sourceKey: 'id', as: 'services' });
 ServiceModel.belongsTo(CateServiceModel, { foreignKey: 'cateServiceId', as: 'cateService' });
 
-ServiceModel.hasMany(ServiceResourceModel, { foreignKey: 'serviceId', sourceKey: 'id', as: 'serviceResources' });
 ServiceModel.hasMany(ServiceImageModel, { foreignKey: 'serviceId', sourceKey: 'id', as: 'images' });
-
 ServiceResourceModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
 
 // Appointment

@@ -10,14 +10,13 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { createServiceSchema, serviceIdSchema } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
-import { StaffModel, LocationModel, sequelize } from '../../../repositories/postgres/models';
+import { StaffModel, LocationModel, sequelize, ResourceModel } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 import { FindOptions, Transaction } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
-import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 
@@ -286,8 +285,8 @@ export class ServiceController {
             required: true
           },
           {
-            model: ServiceResourceModel,
-            as: 'serviceResources',
+            model: ResourceModel,
+            as: 'resources',
             required: false
           }
         ]
