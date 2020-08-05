@@ -12,4 +12,18 @@ const loginSchema = Joi.object({
 
 const refreshTokensChema = Joi.string().required().label('refreshToken');
 
-export { createBusinessAccountSchema, loginSchema, refreshTokensChema };
+const emailSchema = Joi.object({
+  email: Joi.string().required().email().label('email')
+});
+
+const changePasswordSchema = Joi.object({
+  token: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('token'),
+  newPassword: Joi.string().required().min(6).label('newPassword')
+});
+
+export { createBusinessAccountSchema, loginSchema, refreshTokensChema, emailSchema, changePasswordSchema };

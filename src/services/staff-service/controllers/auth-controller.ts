@@ -21,9 +21,24 @@ import {
 import { sequelize, StaffModel, CompanyModel, LocationModel } from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
-import { createBusinessAccountSchema, loginSchema, refreshTokensChema } from '../configs/validate-schemas';
+import {
+  createBusinessAccountSchema,
+  loginSchema,
+  refreshTokensChema,
+  emailSchema,
+  changePasswordSchema
+} from '../configs/validate-schemas';
+import {
+  buildEmailTemplate,
+  staffRecoveryPasswordTemplate,
+  IStaffRecoveryPasswordTemplate
+} from '../../../utils/emailer/templates';
+import { sendEmail } from '../../../utils/emailer';
+import { redis, EKeys } from '../../../repositories/redis';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
+const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
+
 export class AuthController {
   /**
    * @swagger
@@ -248,6 +263,134 @@ export class AuthController {
       return res
         .status(HttpStatus.OK)
         .send(buildSuccessMessage({ accessToken: newAccessToken, refreshToken: newRefreshToken }));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   StaffRequestNewPassword:
+   *       required:
+   *           - email
+   *       properties:
+   *           email:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /staff/auth/request-new-password:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: staff-request-new-password
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/StaffRequestNewPassword'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public requestNewPassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const email = req.body.email;
+      const validateErrors = validate({ email: email }, emailSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
+      const uuidToken = uuidv4();
+      const data: IStaffRecoveryPasswordTemplate = {
+        staffName: staff.fullName,
+        yourURL: `https://app.wisere.com/forgot-password?token=${uuidToken}`
+      };
+      const msg = buildEmailTemplate(staffRecoveryPasswordTemplate, data);
+      await redis.setData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
+        key: 'EX',
+        value: recoveryPasswordUrlExpiresIn
+      });
+      await sendEmail({
+        receivers: email,
+        subject: 'Recovery password',
+        type: 'html',
+        message: msg
+      });
+      res.status(HttpStatus.OK).send(buildSuccessMessage({ msg: 'Please check your email' }));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   StaffChangePassword:
+   *       required:
+   *           - token
+   *           - newPassword
+   *       properties:
+   *           token:
+   *               type: string
+   *           newPassword:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /staff/auth/change-password:
+   *   put:
+   *     tags:
+   *       - Staff
+   *     name: staff-change-password
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/StaffChangePassword'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public changePassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = {
+        token: req.body.token,
+        newPassword: req.body.newPassword
+      };
+      const validateErrors = validate(body, changePasswordSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const tokenStoraged = await redis.getData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${body.token}`);
+      if (!tokenStoraged)
+        return next(new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED));
+      const data = JSON.parse(tokenStoraged);
+      const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: data.email } });
+      if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
+      const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
+      await StaffModel.update(
+        { password: password },
+        {
+          where: {
+            email: data.email
+          }
+        }
+      );
+      await redis.deleteData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${body.token}`);
+      res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }

@@ -12,5 +12,7 @@ export class AuthRoutes {
     this.router.post('/register-business-account', this.authController.registerBusinessAccount);
     this.router.post('/login', this.authController.login);
     this.router.post('/refresh-tokens', this.authController.refreshTokens);
+    this.router.post('/request-new-password', this.authController.requestNewPassword);
+    this.router.put('/change-password', this.authController.changePassword);
   }
 }
