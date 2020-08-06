@@ -15,7 +15,7 @@ import {
   sequelize,
   StaffModel,
   LocationModel,
-  // ServiceModel,
+  ServiceModel,
   LocationStaffModel
 } from '../../../repositories/postgres/models';
 
@@ -353,7 +353,7 @@ export class StaffController {
           ]
         ];
       }
-      /*
+
       if (req.query.serviceIds) {
         query.include = [
           ...query.include,
@@ -380,7 +380,6 @@ export class StaffController {
           ]
         ];
       }
-      */
 
       const staffs = await StaffModel.scope('safe').findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));

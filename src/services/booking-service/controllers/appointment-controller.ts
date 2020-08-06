@@ -515,6 +515,7 @@ export class AppointmentController {
    *         description: Internal server errors
    */
   public updateAppointmentStatus = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
       const data = { appointmentId: req.body.appointmentId, status: req.body.status };
       const validateErrors = validate(data, updateAppointmentStatusSchema);
@@ -553,6 +554,8 @@ export class AppointmentController {
           )
         );
       }
+      // start transaction
+      transaction = await sequelize.transaction();
       if (data.status === EAppointmentStatus.CANCEL) {
         const validateReasonErrors = validate(req.body.cancelReason, appointmentCancelReasonSchema);
         if (validateReasonErrors) {
@@ -560,19 +563,34 @@ export class AppointmentController {
         }
         await AppointmentModel.update(
           { status: data.status, cancelReason: req.body.cancelReason },
-          { where: { id: data.appointmentId, locationId: workingLocationIds } }
+          { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
+        );
+        await AppointmentDetailModel.update(
+          { status: data.status },
+          { where: { appointmentId: data.appointmentId }, transaction }
         );
       } else {
         await AppointmentModel.update(
           { status: data.status },
-          { where: { id: data.appointmentId, locationId: workingLocationIds } }
+          { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
+        );
+        await AppointmentDetailModel.update(
+          { status: data.status },
+          { where: { appointmentId: data.appointmentId }, transaction }
         );
       }
       const newAppointmentStatus = await AppointmentModel.findOne({
-        where: { id: data.appointmentId, locationId: workingLocationIds }
+        where: { id: data.appointmentId, locationId: workingLocationIds },
+        transaction
       });
+      //commit transaction
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(newAppointmentStatus));
     } catch (error) {
+      if (transaction) {
+        //rollback transaction
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
