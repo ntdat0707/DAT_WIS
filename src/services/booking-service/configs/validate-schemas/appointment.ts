@@ -78,7 +78,8 @@ const updateAppointmentStatusSchema = Joi.object({
       EAppointmentStatus.IN_SERVICE,
       EAppointmentStatus.ARRIVED,
       EAppointmentStatus.COMPLETED,
-      EAppointmentStatus.CANCEL
+      EAppointmentStatus.CANCEL,
+      EAppointmentStatus.NO_SHOW
     )
     .label('status')
 });

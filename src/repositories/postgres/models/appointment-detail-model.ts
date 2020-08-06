@@ -1,6 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 
 import sequelize from '../configs/db-connector';
+import { EAppointmentStatus } from '../../../utils/consts';
 
 class AppointmentDetailModel extends Model {
   public id: string;
@@ -9,6 +10,7 @@ class AppointmentDetailModel extends Model {
   public startTime!: Date;
   public serviceId!: string;
   public resourceId!: string;
+  public status!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -41,6 +43,20 @@ AppointmentDetailModel.init(
       field: 'resource_id',
       type: DataTypes.UUIDV4,
       allowNull: false
+    },
+    status: {
+      field: 'status',
+      type: DataTypes.ENUM(
+        EAppointmentStatus.NEW,
+        EAppointmentStatus.CONFIRMED,
+        EAppointmentStatus.ARRIVED,
+        EAppointmentStatus.IN_SERVICE,
+        EAppointmentStatus.COMPLETED,
+        EAppointmentStatus.CANCEL,
+        EAppointmentStatus.NO_SHOW
+      ),
+      allowNull: false
+      // defaultValue: EAppointmentStatus.NEW
     },
     createdAt: {
       field: 'created_at',
