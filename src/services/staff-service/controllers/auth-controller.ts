@@ -311,7 +311,7 @@ export class AuthController {
       const uuidToken = uuidv4();
       const data: IStaffRecoveryPasswordTemplate = {
         staffName: staff.fullName,
-        yourURL: `${fontEndUrl}/forgot-pasword?token=${uuidToken}`
+        yourURL: `${fontEndUrl}/users/forgot-password?token=${uuidToken}`
       };
       const msg = buildEmailTemplate(staffRecoveryPasswordTemplate, data);
       await redis.setData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
