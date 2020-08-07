@@ -5,7 +5,7 @@ import { buildErrorDetail } from '../index';
 
 const locationErrorDetails = {
   /**
-   * Branch is not exists
+   * Location is not exists
    *
    * @param {string} [detail=null]
    * @returns {IErrorDetail}
