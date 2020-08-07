@@ -182,6 +182,11 @@ export class ResourceController {
             model: LocationModel,
             as: 'location',
             required: true
+          },
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: false
           }
         ],
         where: {
