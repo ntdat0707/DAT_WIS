@@ -49,8 +49,7 @@ export class AppointmentController {
           ServiceModel.findOne({
             // attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('id')), 'id']],
             where: {
-              id: appointmentDetails[i].serviceId,
-              locationId
+              id: appointmentDetails[i].serviceId
             },
             include: [
               {
@@ -66,6 +65,12 @@ export class AppointmentController {
                 required: true,
                 where: { id: appointmentDetails[i].resourceId },
                 through: { attributes: [] }
+              },
+              {
+                model: LocationModel,
+                as: 'locations',
+                required: true,
+                where: { id: locationId }
               }
             ]
           })

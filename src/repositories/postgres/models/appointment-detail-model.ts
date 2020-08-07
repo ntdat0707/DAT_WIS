@@ -55,8 +55,8 @@ AppointmentDetailModel.init(
         EAppointmentStatus.CANCEL,
         EAppointmentStatus.NO_SHOW
       ),
-      allowNull: false
-      // defaultValue: EAppointmentStatus.NEW
+      allowNull: false,
+      defaultValue: EAppointmentStatus.NEW
     },
     createdAt: {
       field: 'created_at',
