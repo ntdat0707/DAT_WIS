@@ -3,19 +3,10 @@ import Joi from 'joi';
 import { ELocationStatus } from '../../../../utils/consts';
 
 const createLocationSchema = Joi.object({
-  name: Joi.string()
-    .required()
-    .label('name'),
-  phone: Joi.string()
-    .required()
-    .label('phone'),
-  email: Joi.string()
-    .email()
-    .label('email'),
-  status: Joi.string()
-    .valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE)
-    .required()
-    .label('status'),
+  name: Joi.string().required().label('name'),
+  phone: Joi.string().required().label('phone'),
+  email: Joi.string().email().label('email'),
+  status: Joi.string().valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE).required().label('status'),
   city: Joi.string().label('city'),
   district: Joi.string().label('district'),
   ward: Joi.string().label('ward'),
@@ -24,4 +15,11 @@ const createLocationSchema = Joi.object({
   longitude: Joi.number().label('longitude')
 });
 
-export { createLocationSchema };
+const locationIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('locationId');
+
+export { createLocationSchema, locationIdSchema };

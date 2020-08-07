@@ -6,11 +6,18 @@ import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 // import { customerErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { sequelize, LocationModel, LocationStaffModel, CompanyModel } from '../../../repositories/postgres/models';
+import {
+  sequelize,
+  LocationModel,
+  LocationStaffModel,
+  CompanyModel,
+  StaffModel
+} from '../../../repositories/postgres/models';
 
-import { createLocationSchema } from '../configs/validate-schemas';
+import { createLocationSchema, locationIdSchema } from '../configs/validate-schemas';
 import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
+import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 
 export class LocationController {
   /**
@@ -181,6 +188,64 @@ export class LocationController {
         fullPath
       );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/get-location/{locationId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getLocation
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getLocation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const companyId = res.locals.staffPayload.companyId;
+      const locationId = req.params.locationId;
+      const validateErrors = validate(locationId, locationIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const location: any = await LocationModel.findOne({
+        where: {
+          id: locationId,
+          companyId: companyId
+        },
+        include: [
+          {
+            model: CompanyModel,
+            as: 'company',
+            required: true,
+            include: [
+              {
+                model: StaffModel.scope('safe'),
+                as: 'owner',
+                required: true
+              }
+            ]
+          }
+        ]
+      });
+      if (!location)
+        return next(
+          new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
+        );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
       return next(error);
     }
