@@ -1,15 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-// import { FindOptions } from 'sequelize';
 require('dotenv').config();
 
-import { validate } from '../../../utils/validator';
+import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 // import { customerErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { sequelize, LocationModel, LocationStaffModel, CompanyModel } from '../../../repositories/postgres/models';
 
 import { createLocationSchema } from '../configs/validate-schemas';
+import { FindOptions } from 'sequelize/types';
+import { paginate } from '../../../utils/paginator';
 
 export class LocationController {
   /**
@@ -124,6 +125,61 @@ export class LocationController {
     try {
       const companyId = res.locals.staffPayload.companyId;
       const locations = await LocationModel.findAll({ where: { companyId } });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/get-locations:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getLocations
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getLocations = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const companyId = res.locals.staffPayload.companyId;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const query: FindOptions = {
+        where: {
+          companyId: companyId
+        }
+      };
+      const locations = await paginate(
+        LocationModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
       return next(error);

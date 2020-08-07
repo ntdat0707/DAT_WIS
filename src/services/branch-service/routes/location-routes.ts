@@ -19,5 +19,6 @@ export class LocationRoutes {
       this.locationController.createLocation
     );
     this.router.get('/get-all-locations', isAuthenticated, this.locationController.getAllLocations);
+    this.router.get('/get-locations', isAuthenticated, this.locationController.getLocations);
   }
 }
