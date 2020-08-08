@@ -796,4 +796,84 @@ export class AppointmentController {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /booking/appointment/get-appointment/{appointmentId}:
+   *   get:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAppointment
+   *     parameters:
+   *     - in: path
+   *       name: appointmentId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: FORBIDDEN
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.params.appointmentId, appointmentIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      const appointment = await AppointmentModel.findOne({
+        where: { id: req.params.appointmentId, locationId: workingLocationIds },
+        include: [
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
+          },
+          {
+            model: CustomerModel,
+            as: 'customer'
+          },
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service',
+                required: true
+              },
+              {
+                model: ResourceModel,
+                as: 'resource',
+                required: true
+              },
+              {
+                model: StaffModel.scope('safe'),
+                as: 'staffs'
+              }
+            ]
+          }
+        ]
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointment));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }

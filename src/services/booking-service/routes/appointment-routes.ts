@@ -24,5 +24,6 @@ export class AppointmentRoutes {
       isAuthenticated,
       this.appointmentController.deleteAppointment
     );
+    this.router.get('/get-appointment/:appointmentId?', isAuthenticated, this.appointmentController.getAppointment);
   }
 }
