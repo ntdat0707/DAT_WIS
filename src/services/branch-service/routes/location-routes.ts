@@ -21,5 +21,6 @@ export class LocationRoutes {
     this.router.get('/get-all-locations', isAuthenticated, this.locationController.getAllLocations);
     this.router.get('/get-locations', isAuthenticated, this.locationController.getLocations);
     this.router.get('/get-location/:locationId?', isAuthenticated, this.locationController.getLocation);
+    this.router.delete('/delete/:locationId', isAuthenticated, this.locationController.deleteLocation);
   }
 }

@@ -250,4 +250,47 @@ export class LocationController {
       return next(error);
     }
   };
+  /**
+   * @swagger
+   * /branch/location/delete/{locationId}:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getLocation
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public deleteLocation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const companyId = res.locals.staffPayload.companyId;
+      const locationId = req.params.locationId;
+      const validateErrors = validate(locationId, locationIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const rowsDeleted: any = await LocationModel.destroy({
+        where: {
+          id: locationId,
+          companyId: companyId
+        }
+      });
+      if (!rowsDeleted)
+        return next(
+          new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
+        );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(rowsDeleted));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
