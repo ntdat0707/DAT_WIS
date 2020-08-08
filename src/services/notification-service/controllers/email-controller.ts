@@ -4,8 +4,9 @@ import { EQueueNames, rabbitmqURL } from '../../../utils/event-queues';
 import { excuteSendingEmail, IEmailOptions } from '../../../utils/emailer';
 
 export const sendEmail = async () => {
+  let open;
   try {
-    const open = await amqp.connect(rabbitmqURL);
+    open = await amqp.connect(rabbitmqURL);
     const ch = await open.createChannel();
     await ch.assertQueue(EQueueNames.EMAIL, { durable: false });
     await ch.consume(
@@ -19,7 +20,9 @@ export const sendEmail = async () => {
       },
       { noAck: true }
     );
+    await open.close();
   } catch (error) {
+    if (open) await open.close();
     throw error;
   }
 };

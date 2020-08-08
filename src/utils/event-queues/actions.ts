@@ -5,12 +5,15 @@ const rabbitmqURL = `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBI
 import { EQueueNames } from './queues';
 
 const emit = async (channel: EQueueNames, message: object) => {
+  let open = null;
   try {
-    const open = await amqp.connect(rabbitmqURL);
+    open = await amqp.connect(rabbitmqURL);
     const ch = await open.createChannel();
     await ch.assertQueue(channel, { durable: false });
     ch.sendToQueue(channel, Buffer.from(JSON.stringify(message), 'utf8'));
+    await open.close();
   } catch (error) {
+    if (open) await open.close();
     throw error;
   }
 };

@@ -29,7 +29,8 @@ import {
   createAppointmentSchema,
   filterAppointmentDetailChema,
   updateAppointmentStatusSchema,
-  appointmentCancelReasonSchema
+  appointmentCancelReasonSchema,
+  updateAppointmentSchema
 } from '../configs/validate-schemas';
 import { IAppointmentDetailInput } from '../configs/interfaces';
 
@@ -596,6 +597,145 @@ export class AppointmentController {
         //rollback transaction
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   UpdateAppointment:
+   *       required:
+   *           - appointmentId
+   *           - locationId
+   *           - date
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           locationId:
+   *               type: string
+   *           customerId:
+   *               type: string
+   *           date:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
+   *
+   */
+  /**
+   * @swagger
+   * /booking/appointment/update-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAllAppointmentDetails
+   *     description: Nếu thay đổi location các appointmentDetail sẽ bị xóa
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/UpdateAppointment'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: FORBIDDEN
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+  public updateAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction;
+    try {
+      const data = {
+        locationId: req.body.locationId,
+        date: req.body.date,
+        customerId: req.body.customerId,
+        appointmentId: req.body.appointmentId
+      };
+
+      const validateErrors = validate(data, updateAppointmentSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds, companyId } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(data.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${data.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      const appointment = await AppointmentModel.findOne({ where: { id: data.appointmentId } });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      // Check customer exist
+      if (data.customerId) {
+        const customer = await CustomerModel.findOne({ where: { id: data.customerId, companyId } });
+        if (!customer) {
+          return next(
+            new CustomError(
+              customerErrorDetails.E_3001(`Can not find customer ${data.customerId} in location ${data.locationId}`),
+              HttpStatus.BAD_REQUEST
+            )
+          );
+        }
+      }
+      // start transaction
+      transaction = await sequelize.transaction();
+      if (data.locationId !== appointment.locationId) {
+        // If change location, appointment details would be delete
+        await AppointmentDetailModel.destroy({ where: { appointmentId: data.appointmentId } });
+      }
+      await AppointmentModel.update(data, { where: { id: data.appointmentId } });
+      const findQuery: FindOptions = {
+        where: { id: data.appointmentId },
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service'
+              },
+              {
+                model: ResourceModel,
+                as: 'resource'
+              },
+              {
+                model: StaffModel.scope('safe'),
+                as: 'staffs',
+                through: { attributes: [] }
+              }
+            ]
+          }
+        ],
+        transaction
+      };
+      if (data.customerId)
+        findQuery.include.push({
+          model: CustomerModel,
+          as: 'customer'
+        });
+      const appointmentStoraged = await AppointmentModel.findOne(findQuery);
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentStoraged));
+    } catch (error) {
+      if (transaction) await transaction.rollback();
       return next(error);
     }
   };
