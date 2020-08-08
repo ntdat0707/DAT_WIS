@@ -30,7 +30,8 @@ import {
   filterAppointmentDetailChema,
   updateAppointmentStatusSchema,
   appointmentCancelReasonSchema,
-  updateAppointmentSchema
+  updateAppointmentSchema,
+  appointmentIdSchema
 } from '../configs/validate-schemas';
 import { IAppointmentDetailInput } from '../configs/interfaces';
 
@@ -630,7 +631,7 @@ export class AppointmentController {
    *       - Booking
    *     security:
    *       - Bearer: []
-   *     name: getAllAppointmentDetails
+   *     name: updateAppointment
    *     description: Nếu thay đổi location các appointmentDetail sẽ bị xóa
    *     parameters:
    *     - in: "body"
@@ -734,6 +735,62 @@ export class AppointmentController {
       const appointmentStoraged = await AppointmentModel.findOne(findQuery);
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentStoraged));
+    } catch (error) {
+      if (transaction) await transaction.rollback();
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /booking/appointment/delete-appointment/{appointmentId}:
+   *   delete:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: deleteAppointment
+   *     parameters:
+   *     - in: path
+   *       name: appointmentId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: FORBIDDEN
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+  public deleteAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const validateErrors = validate(req.params.appointmentId, appointmentIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      const appointmentStoraged = await AppointmentModel.findOne({
+        where: { id: req.params.appointmentId, locationId: workingLocationIds }
+      });
+      if (!appointmentStoraged) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      // start transaction
+      transaction = await sequelize.transaction();
+      await AppointmentDetailModel.destroy({ where: { appointmentId: req.params.appointmentId }, transaction });
+      await AppointmentModel.destroy({ where: { id: req.params.appointmentId }, transaction });
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       if (transaction) await transaction.rollback();
       return next(error);

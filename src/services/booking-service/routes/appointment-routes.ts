@@ -19,5 +19,10 @@ export class AppointmentRoutes {
     );
     this.router.put('/update-appointment-status', isAuthenticated, this.appointmentController.updateAppointmentStatus);
     this.router.put('/update-appointment', isAuthenticated, this.appointmentController.updateAppointment);
+    this.router.delete(
+      '/delete-appointment/:appointmentId?',
+      isAuthenticated,
+      this.appointmentController.deleteAppointment
+    );
   }
 }
