@@ -18,5 +18,6 @@ export class AppointmentRoutes {
       this.appointmentController.getAllAppointmentDetails
     );
     this.router.put('/update-appointment-status', isAuthenticated, this.appointmentController.updateAppointmentStatus);
+    this.router.put('/update-appointment', isAuthenticated, this.appointmentController.updateAppointment);
   }
 }

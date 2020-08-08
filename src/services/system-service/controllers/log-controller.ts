@@ -22,8 +22,9 @@ import { LoggerModel, ILogger } from '../../../repositories/mongo/models';
 // })();
 
 export const writelog = async () => {
+  let open;
   try {
-    const open = await amqp.connect(rabbitmqURL);
+    open = await amqp.connect(rabbitmqURL);
     const ch = await open.createChannel();
     await ch.assertQueue(EQueueNames.LOG, { durable: false });
     await ch.consume(
@@ -40,7 +41,9 @@ export const writelog = async () => {
       },
       { noAck: true }
     );
+    await open.close();
   } catch (error) {
+    if (open) await open.close();
     throw error;
   }
 };
