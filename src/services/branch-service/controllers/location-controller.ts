@@ -274,14 +274,18 @@ export class LocationController {
    */
   public deleteLocation = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const companyId = res.locals.staffPayload.companyId;
+      const { workingLocationIds } = res.locals.staffPayload;
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (!(workingLocationIds as string[]).includes(locationId)) {
+        return next(
+          new CustomError(locationErrorDetails.E_1001(`Can not access to this ${locationId}`), HttpStatus.NOT_FOUND)
+        );
+      }
       const rowsDeleted: any = await LocationModel.destroy({
         where: {
-          id: locationId,
-          companyId: companyId
+          id: locationId
         }
       });
       if (!rowsDeleted)
