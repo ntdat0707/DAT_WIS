@@ -48,7 +48,7 @@ services:
       - network
     depends_on:
       - system-service
-      - notification_service
+      - notification-service
   staff-service:
     container_name: ${SVC_STAFF_HOST}
     image: registry.digitalocean.com/wisere/wisere
@@ -62,7 +62,7 @@ services:
       - network
     depends_on:
       - system-service
-      - notification_service
+      - notification-service
   system-service:
     container_name: ${SVC_SYSTEM_HOST}
     image: registry.digitalocean.com/wisere/wisere
