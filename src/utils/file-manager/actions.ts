@@ -125,7 +125,7 @@ const uploadAsMiddleware = (
           logger.error({ label: LOG_LABEL, message: JSON.stringify(err) });
           return res.status(HttpStatus.BAD_REQUEST).send(buildErrorMessage(err));
         } else {
-          const e = buildErrorDetail('001', 'Internal server error', err.message || '');
+          const e = buildErrorDetail('0001', 'Internal server error', err.message || '');
           logger.error({ label: LOG_LABEL, message: JSON.stringify(e) });
           return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(buildErrorMessage(generalErrorDetails.E_0001(err)));
         }
