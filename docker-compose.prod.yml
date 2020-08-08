@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 
 services:
   gateway:
@@ -7,7 +7,7 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - "127.0.0.1:${GTW_PORT}:${GTW_PORT}"
+      - '127.0.0.1:${GTW_PORT}:${GTW_PORT}'
     environment:
       NODE_ENV: 'staging'
       NODE_NAME: 'gateway'
@@ -25,10 +25,10 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - "127.0.0.1:${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}"
+      - '127.0.0.1:${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}'
     environment:
-      NODE_ENV: "staging"
-      NODE_NAME: "customer-service"
+      NODE_ENV: 'staging'
+      NODE_NAME: 'customer-service'
     networks:
       - network
     depends_on:
@@ -54,10 +54,10 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - "127.0.0.1:${SVC_STAFF_PORT}:${SVC_STAFF_PORT}"
+      - '127.0.0.1:${SVC_STAFF_PORT}:${SVC_STAFF_PORT}'
     environment:
-      NODE_ENV: "staging"
-      NODE_NAME: "staff-service"
+      NODE_ENV: 'staging'
+      NODE_NAME: 'staff-service'
     networks:
       - network
     depends_on:
@@ -68,8 +68,8 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     environment:
-      NODE_ENV: "staging"
-      NODE_NAME: "system-service"
+      NODE_ENV: 'staging'
+      NODE_NAME: 'system-service'
     networks:
       - network
   notification-service:
@@ -77,20 +77,8 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     environment:
-      NODE_ENV: "staging"
-      NODE_NAME: "notification-service"
-    networks:
-      - network
-  staff-service:
-    env_file: .env
-    container_name: ${SVC_STAFF_HOST}
-    image: registry.digitalocean.com/wisere/wisere
-    restart: always
-    ports:
-      - '127.0.0.1:${SVC_STAFF_PORT}:${SVC_STAFF_PORT}'
-    environment:
       NODE_ENV: 'staging'
-      NODE_NAME: '${SVC_STAFF_HOST}'
+      NODE_NAME: 'notification-service'
     networks:
       - network
   booking-service:
