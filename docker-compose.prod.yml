@@ -35,14 +35,15 @@ services:
       - system-service
       - notification-service
   branch-service:
+    env_file: .env
     container_name: ${SVC_BRANCH_HOST}
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - "127.0.0.1:${SVC_BRANCH_PORT}:${SVC_BRANCH_PORT}"
+      - '127.0.0.1:${SVC_BRANCH_PORT}:${SVC_BRANCH_PORT}'
     environment:
-      NODE_ENV: "staging"
-      NODE_NAME: "branch-service"
+      NODE_ENV: 'staging'
+      NODE_NAME: '${SVC_BRANCH_HOST}'
     networks:
       - network
     depends_on:
@@ -90,18 +91,6 @@ services:
     environment:
       NODE_ENV: 'staging'
       NODE_NAME: '${SVC_STAFF_HOST}'
-    networks:
-      - network
-  branch-service:
-    env_file: .env
-    container_name: ${SVC_BRANCH_HOST}
-    image: registry.digitalocean.com/wisere/wisere
-    restart: always
-    ports:
-      - '127.0.0.1:${SVC_BRANCH_PORT}:${SVC_BRANCH_PORT}'
-    environment:
-      NODE_ENV: 'staging'
-      NODE_NAME: '${SVC_BRANCH_HOST}'
     networks:
       - network
   booking-service:

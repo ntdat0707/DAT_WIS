@@ -164,6 +164,6 @@ workflows:
                 - develop
                 - staging
                 - production
-                - bugfix/force_build_container
+                - hotfixes/remove_duplicate_container
         # requires:
         #   - build
