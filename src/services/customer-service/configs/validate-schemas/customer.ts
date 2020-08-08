@@ -11,6 +11,11 @@ const createCustomerSchema = Joi.object({
   address: Joi.string().label('address')
 });
 
-const customerIdSchema = Joi.string().required().label('customerId');
+const customerIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('customerId');
 
 export { createCustomerSchema, customerIdSchema };
