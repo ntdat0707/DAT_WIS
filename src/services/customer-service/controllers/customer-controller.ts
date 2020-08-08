@@ -227,4 +227,41 @@ export class CustomerController {
       return next(error);
     }
   };
+  /**
+   * @swagger
+   * /customer/get/{customerId}:
+   *   get:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: getCustomers
+   *     parameters:
+   *     - in: path
+   *       name: customerId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getCustomerById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { companyId } = res.locals.staffPayload;
+      const customerId = req.params.customerId;
+      const validateErrors = validate(customerId, customerIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const customer = await CustomerModel.findOne({ where: { id: customerId, companyId: companyId } });
+      if (!customer)
+        return next(
+          new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND)
+        );
+      return res.status(HttpStatus.OK).send(customer);
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
