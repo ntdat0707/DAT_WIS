@@ -13,5 +13,10 @@ export class AppointmentDetailRoutes {
   private config(): void {
     this.router.post('/create', isAuthenticated, this.appointmentDetailController.createAppointmentDetail);
     this.router.put('/update', isAuthenticated, this.appointmentDetailController.updateAppointmentDetail);
+    this.router.delete(
+      '/delete/:appointmentDetailId?',
+      isAuthenticated,
+      this.appointmentDetailController.deleteAppointmentDetail
+    );
   }
 }
