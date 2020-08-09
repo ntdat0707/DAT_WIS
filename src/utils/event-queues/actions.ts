@@ -1,21 +1,44 @@
-import amqp from 'amqplib';
+import amqp from 'amqplib/callback_api';
+import chalk from 'chalk';
 // const rabbitmqURL = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
 const rabbitmqURL = `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
 
 import { EQueueNames } from './queues';
+const warningColor = chalk.keyword('yellow');
+let ch: any = null;
+let connection: any = null;
+//tslint:disable-next-line
+amqp.connect(rabbitmqURL, function (_err, conn) {
+  connection = conn;
+  //tslint:disable-next-line
+  conn.createChannel(function (_err, channel) {
+    ch = channel;
+  });
+});
 
-const emit = async (channel: EQueueNames, message: object) => {
-  let open = null;
+const emit = async (queueName: EQueueNames, message: object) => {
   try {
-    open = await amqp.connect(rabbitmqURL);
-    const ch = await open.createChannel();
-    await ch.assertQueue(channel, { durable: false });
-    ch.sendToQueue(channel, Buffer.from(JSON.stringify(message), 'utf8'));
-    await open.close();
+    if (ch !== null) {
+      await ch.assertQueue(queueName, { durable: false });
+      await ch.sendToQueue(queueName, Buffer.from(JSON.stringify(message), 'utf8'));
+    } else {
+      //tslint:disable-next-line
+      console.log(
+        warningColor('warn') + ': Rabbitmq is not ready, message will not be sent to queue.',
+        JSON.stringify(message)
+      );
+    }
   } catch (error) {
-    if (open) await open.close();
     throw error;
   }
 };
+
+process.on('exit', (_code) => {
+  if (connection !== null) {
+    connection.close();
+    //tslint:disable-next-line
+    console.log(warningColor('warn') + ': Closing rabbitmq');
+  }
+});
 
 export { emit, rabbitmqURL };
