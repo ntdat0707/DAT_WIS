@@ -16,6 +16,12 @@ amqp.connect(rabbitmqURL, function (_err, conn) {
   });
 });
 
+/**
+ * Send a message to queue
+ *
+ * @param {EQueueNames} queueName
+ * @param {object} message
+ */
 const emit = async (queueName: EQueueNames, message: object) => {
   try {
     if (ch !== null) {

@@ -42,6 +42,16 @@ const bookingErrorDetails = {
   E_2003(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('2003', 'Appointment status invalid', detail);
     return e;
+  },
+  /**
+   * Appointment not found
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2004(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2004', 'Appointment detail not found', detail);
+    return e;
   }
 };
 

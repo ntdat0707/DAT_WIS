@@ -6,9 +6,14 @@ import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { bookingErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { AppointmentModel, AppointmentDetailModel } from '../../../repositories/postgres/models';
+import {
+  sequelize,
+  AppointmentModel,
+  AppointmentDetailModel,
+  AppointmentDetailStaffModel
+} from '../../../repositories/postgres/models';
 
-import { createAppointmentDetailFullSchema } from '../configs/validate-schemas';
+import { createAppointmentDetailFullSchema, updateAppointmentDetailSchema } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 
 export class AppointmentDetailController extends BaseController {
@@ -66,6 +71,7 @@ export class AppointmentDetailController extends BaseController {
    *         description: Internal server errors
    */
   public createAppointmentDetail = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
       const data = {
         appointmentId: req.body.appointmentId,
@@ -92,9 +98,151 @@ export class AppointmentDetailController extends BaseController {
       }
       const checkAppointmentDetail = await this.verifyAppointmentDetails([data], appointment.locationId);
       if (checkAppointmentDetail instanceof CustomError) return next(checkAppointmentDetail);
-      const appointmentDetail = await AppointmentDetailModel.create(data);
+      // start transaction
+      transaction = await sequelize.transaction();
+      const appointmentDetail = await AppointmentDetailModel.create(
+        {
+          serviceId: data.serviceId,
+          resourceId: data.resourceId,
+          startTime: data.startTime,
+          appointmentId: data.appointmentId
+        },
+        { transaction }
+      );
+      if (data.staffIds) {
+        const appointmentDetailStaffData = data.staffIds.map((id: string) => ({
+          appointmentDetailId: appointmentDetail.id,
+          staffId: id
+        }));
+        await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      }
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetail));
     } catch (error) {
+      if (transaction) await transaction.rollback();
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   UpdateAppointmentDetail:
+   *       required:
+   *           - appointmentDetailId
+   *           - serviceId
+   *           - resourceId
+   *           - staffIds
+   *           - startTime
+   *       properties:
+   *           appointmentDetailId:
+   *               type: string
+   *           serviceId:
+   *               type: string
+   *           resourceId:
+   *               type: string
+   *           staffIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *           startTime:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
+   *
+   */
+
+  /**
+   * @swagger
+   * /booking/appointment-detail/update:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: updateAppointmentDetail
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/UpdateAppointmentDetail'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: Forbidden
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public updateAppointmentDetail = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const data = {
+        appointmentDetailId: req.body.appointmentDetailId,
+        staffIds: req.body.staffIds,
+        serviceId: req.body.serviceId,
+        resourceId: req.body.resourceId,
+        startTime: req.body.startTime
+      };
+      const validateErrors = validate(data, updateAppointmentDetailSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      const appointmentDetailStoraged = await AppointmentDetailModel.findOne({
+        where: { id: data.appointmentDetailId },
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { locationId: workingLocationIds }
+          }
+        ]
+      });
+      if (!appointmentDetailStoraged) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2004(`Not found appointment detail ${data.appointmentDetailId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      const appointmentId = appointmentDetailStoraged.appointmentId;
+      const checkAppointmentDetail = await this.verifyAppointmentDetails(
+        [data],
+        (appointmentDetailStoraged as any).appointment.locationId
+      );
+      if (checkAppointmentDetail instanceof CustomError) return next(checkAppointmentDetail);
+      // start transaction
+      transaction = await sequelize.transaction();
+      await AppointmentDetailStaffModel.destroy({
+        where: { appointmentDetailId: data.appointmentDetailId },
+        transaction
+      });
+      await AppointmentDetailModel.destroy({ where: { id: data.appointmentDetailId }, transaction });
+      const appointmentDetail = await AppointmentDetailModel.create(
+        {
+          serviceId: data.serviceId,
+          resourceId: data.resourceId,
+          startTime: data.startTime,
+          appointmentId
+        },
+        { transaction }
+      );
+      const appointmentDetailStaffData = data.staffIds.map((id: string) => ({
+        appointmentDetailId: appointmentDetail.id,
+        staffId: id
+      }));
+      await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetail));
+    } catch (error) {
+      if (transaction) await transaction.rollback();
       return next(error);
     }
   };

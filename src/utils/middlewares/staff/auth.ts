@@ -132,7 +132,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
 
         // working location ids
         const workingLocations = await getWorkingLocations(companyId, staffPayload.id, staffPayload.isBusinessAccount);
-        const workingLocationIds = workingLocations.map(location => location.id);
+        const workingLocationIds = workingLocations.map((location) => location.id);
         staffPayload.workingLocationIds = workingLocationIds;
 
         res.locals.staffPayload = staffPayload;
@@ -140,7 +140,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
     }
     next();
   } catch (error) {
-    const e = buildErrorDetail('001', 'Internal server error', error.message || '');
+    const e = buildErrorDetail('0001', 'Internal server error', error.message || '');
     logger.error({ label: LOG_LABEL, message: JSON.stringify(e) });
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(buildErrorMessage(generalErrorDetails.E_0001(error)));
   }
