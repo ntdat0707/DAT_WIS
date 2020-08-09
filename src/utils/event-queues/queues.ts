@@ -1,7 +1,7 @@
 enum EQueueNames {
-  LOG = 'log',
+  LOG = 'logger',
   NOTIFICATION = 'notification',
-  EMAIL = 'email'
+  EMAIL = 'emailer'
 }
 
 export { EQueueNames };

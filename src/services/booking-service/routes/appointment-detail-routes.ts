@@ -18,5 +18,10 @@ export class AppointmentDetailRoutes {
       isAuthenticated,
       this.appointmentDetailController.deleteAppointmentDetail
     );
+    this.router.get(
+      '/get/:appointmentDetailId?',
+      isAuthenticated,
+      this.appointmentDetailController.getAppointmentDtail
+    );
   }
 }

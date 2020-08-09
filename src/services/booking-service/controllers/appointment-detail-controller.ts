@@ -10,7 +10,11 @@ import {
   sequelize,
   AppointmentModel,
   AppointmentDetailModel,
-  AppointmentDetailStaffModel
+  AppointmentDetailStaffModel,
+  ServiceModel,
+  ResourceModel,
+  StaffModel,
+  LocationModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -311,6 +315,83 @@ export class AppointmentDetailController extends BaseController {
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       if (transaction) await transaction.rollback();
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /booking/appointment-detail/get/{appointmentDetailId}:
+   *   get:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAppointmentDetail
+   *     parameters:
+   *     - in: path
+   *       name: appointmentDetailId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAppointmentDtail = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const appointmentDetailId = req.params.appointmentDetailId;
+      const validateErrors = validate(appointmentDetailId, appointmentDetailIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      const appointmentDetail = await AppointmentDetailModel.findOne({
+        where: { id: appointmentDetailId },
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { locationId: workingLocationIds },
+            include: [
+              {
+                model: LocationModel,
+                as: 'location'
+              }
+            ]
+          },
+          {
+            model: StaffModel.scope('safe'),
+            as: 'staffs',
+            through: { attributes: [] }
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: true
+          }
+        ]
+      });
+      if (!appointmentDetail) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2004(`Not found appointment detail ${appointmentDetailId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetail));
+    } catch (error) {
       return next(error);
     }
   };

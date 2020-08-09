@@ -44,7 +44,7 @@ const bookingErrorDetails = {
     return e;
   },
   /**
-   * Appointment not found
+   * Appointment detail not found
    *
    * @param {string} [detail=null]
    * @returns {IErrorDetail}
