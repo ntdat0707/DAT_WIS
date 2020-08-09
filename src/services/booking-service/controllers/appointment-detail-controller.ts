@@ -13,7 +13,11 @@ import {
   AppointmentDetailStaffModel
 } from '../../../repositories/postgres/models';
 
-import { createAppointmentDetailFullSchema, updateAppointmentDetailSchema } from '../configs/validate-schemas';
+import {
+  createAppointmentDetailFullSchema,
+  updateAppointmentDetailSchema,
+  appointmentDetailIdSchema
+} from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 
 export class AppointmentDetailController extends BaseController {
@@ -241,6 +245,70 @@ export class AppointmentDetailController extends BaseController {
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetail));
+    } catch (error) {
+      if (transaction) await transaction.rollback();
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /booking/appointment-detail/delete/{appointmentDetailId}:
+   *   delete:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: deleteAppointmentDetail
+   *     parameters:
+   *     - in: path
+   *       name: appointmentDetailId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public deleteAppointmentDetail = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const appointmentDetailId = req.params.appointmentDetailId;
+      const validateErrors = validate(appointmentDetailId, appointmentDetailIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      const appointmentDetailStoraged = await AppointmentDetailModel.findOne({
+        where: { id: appointmentDetailId },
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { locationId: workingLocationIds }
+          }
+        ]
+      });
+      if (!appointmentDetailStoraged) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2004(`Not found appointment detail ${appointmentDetailId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      // start transaction
+      transaction = await sequelize.transaction();
+      await AppointmentDetailStaffModel.destroy({ where: { appointmentDetailId }, transaction });
+      await AppointmentDetailModel.destroy({ where: { id: appointmentDetailId }, transaction });
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       if (transaction) await transaction.rollback();
       return next(error);
