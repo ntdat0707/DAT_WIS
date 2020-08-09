@@ -105,6 +105,38 @@ const updateAppointmentSchema = Joi.object({
     .label('customerId'),
   date: Joi.string().isoDate().required()
 });
+const createAppointmentDetailFullSchema = Joi.object({
+  appointmentId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('appointmentId'),
+  serviceId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('serviceId'),
+  staffIds: Joi.array()
+    .min(1)
+    .items(
+      Joi.string()
+        .guid({
+          version: ['uuidv4']
+        })
+        .required()
+    )
+    .label('staffIds'),
+
+  resourceId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('resourceId'),
+  startTime: Joi.string().isoDate().required().label('startTime')
+});
 
 export {
   createAppointmentDetailSchema,
@@ -113,5 +145,6 @@ export {
   appointmentIdSchema,
   updateAppointmentStatusSchema,
   appointmentCancelReasonSchema,
-  updateAppointmentSchema
+  updateAppointmentSchema,
+  createAppointmentDetailFullSchema
 };
