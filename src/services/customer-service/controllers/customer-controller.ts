@@ -259,7 +259,7 @@ export class CustomerController {
         return next(
           new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND)
         );
-      return res.status(HttpStatus.OK).send(customer);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
       return next(error);
     }
