@@ -83,7 +83,6 @@ export class LocationController {
       const data: any = {
         name: req.body.name,
         phone: req.body.phone,
-        status: req.body.status,
         email: req.body.email,
         city: req.body.city,
         district: req.body.district,
