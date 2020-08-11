@@ -33,12 +33,12 @@ ResourceModel.init(
     excerpt: {
       field: 'excerpt',
       type: DataTypes.STRING(500),
-      allowNull: false
+      allowNull: true
     },
     description: {
       field: 'description',
       type: DataTypes.STRING(5000),
-      allowNull: false
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',

@@ -3,9 +3,9 @@ import Joi from 'joi';
 const createServiceSchema = Joi.object({
   cateServiceId: Joi.string().required().label('cateServiceId'),
   locationIds: Joi.array().items(Joi.string()),
-  description: Joi.string().required(),
-  salePrice: Joi.number().required(),
-  color: Joi.string().required(),
+  description: Joi.string().allow(null, ''),
+  salePrice: Joi.number().allow(null, ''),
+  color: Joi.string().allow(null, ''),
   duration: Joi.number().required(),
   staffIds: Joi.array().items(Joi.string()).required(),
   name: Joi.string().required(),
