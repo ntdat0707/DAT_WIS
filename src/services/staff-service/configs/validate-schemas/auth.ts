@@ -26,4 +26,19 @@ const changePasswordSchema = Joi.object({
   newPassword: Joi.string().required().min(6).label('newPassword')
 });
 
-export { createBusinessAccountSchema, loginSchema, refreshTokensChema, emailSchema, changePasswordSchema };
+const loginSocialSchema = Joi.object({
+  provider: Joi.string().required().label('provider'),
+  providerId: Joi.string().required().label('providerId'),
+  email: Joi.string().email().label('email'),
+  fullName: Joi.string().required().label('fullName'),
+  avatarPath: Joi.string().label('avatarPath')
+});
+
+export {
+  createBusinessAccountSchema,
+  loginSchema,
+  refreshTokensChema,
+  emailSchema,
+  changePasswordSchema,
+  loginSocialSchema
+};

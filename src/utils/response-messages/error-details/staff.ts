@@ -44,6 +44,17 @@ const staffErrorDetails = {
    */
   E_4004(detail: string = 'Invalid token'): IErrorDetail {
     return buildErrorDetail('4004', 'Unauthorized', detail);
+  },
+
+  /**
+   *
+   * Login info invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_4005(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4005', 'providerId incorrect', detail);
+    return e;
   }
 };
 
