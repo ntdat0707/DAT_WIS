@@ -32,7 +32,6 @@ ServiceModel.init(
       field: 'status',
       type: DataTypes.ENUM(EServiceStatus.ACTIVE, EServiceStatus.IN_ACTIVE),
       defaultValue: EServiceStatus.ACTIVE,
-
       allowNull: false
     },
     cateServiceId: {
@@ -48,12 +47,12 @@ ServiceModel.init(
     description: {
       field: 'description',
       type: DataTypes.STRING(5000),
-      allowNull: false
+      allowNull: true
     },
     salePrice: {
       field: 'sale_price',
       type: DataTypes.DOUBLE,
-      allowNull: false
+      allowNull: true
     },
     duration: {
       field: 'duration',
@@ -63,7 +62,7 @@ ServiceModel.init(
     color: {
       field: 'color',
       type: DataTypes.STRING(100),
-      allowNull: false
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',
