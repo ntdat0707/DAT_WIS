@@ -138,7 +138,7 @@ export class ServiceController {
 
       const data: any = {
         description: body.description,
-        salePrice: body.salePrice,
+        salePrice: !isNaN(parseInt(body.salePrice, 10)) ? body.salePrice : null,
         duration: body.duration,
         color: body.color,
         cateServiceId: body.cateServiceId,
