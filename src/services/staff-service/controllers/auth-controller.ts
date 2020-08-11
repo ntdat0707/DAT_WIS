@@ -405,6 +405,7 @@ export class AuthController {
    *           - provider
    *           - providerId
    *           - fullName
+   *           - avatarPath
    *       properties:
    *           provider:
    *               type: string
