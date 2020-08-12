@@ -25,4 +25,38 @@ const serviceIdSchema = Joi.string()
   .required()
   .label('serviceId');
 
-export { createCateServiceSchema, createServiceSchema, serviceIdSchema };
+const createServicesSchema = Joi.object({
+  cateServiceId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('cateServiceId'),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  staffIds: Joi.array()
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+    .required()
+    .label('staffIds'),
+  serviceDetails: Joi.array()
+    .min(1)
+    .required()
+    .items(
+      Joi.object({
+        name: Joi.string().required(),
+        salePrice: Joi.number().allow(null, ''),
+        duration: Joi.number().required()
+      })
+    )
+    .label('serviceDetails')
+});
+
+export { createCateServiceSchema, createServiceSchema, serviceIdSchema, createServicesSchema };
