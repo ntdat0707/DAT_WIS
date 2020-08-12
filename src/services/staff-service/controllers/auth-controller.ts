@@ -590,6 +590,7 @@ export class AuthController {
         };
         socialInfor = await request(options);
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
+          await transaction.rollback();
           return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
         staff = await StaffModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
