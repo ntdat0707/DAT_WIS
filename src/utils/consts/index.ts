@@ -28,6 +28,12 @@ enum EServiceStatus {
   IN_ACTIVE = 'in_active'
 }
 
+enum ESocialType {
+  FACEBOOK = 'facebook',
+  GOOGLE = 'google',
+  APPLE = 'apple'
+}
+
 export {
   buildingEnvs,
   EServiceStatus,
@@ -36,5 +42,6 @@ export {
   EGender,
   ELocationStatus,
   EAppointmentStatus,
-  AppointmentStatusRules
+  AppointmentStatusRules,
+  ESocialType
 };

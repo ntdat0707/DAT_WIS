@@ -44,6 +44,39 @@ const staffErrorDetails = {
    */
   E_4004(detail: string = 'Invalid token'): IErrorDetail {
     return buildErrorDetail('4004', 'Unauthorized', detail);
+  },
+
+  /**
+   *
+   * Login info invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_4005(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4005', 'Incorrect providerId', detail);
+    return e;
+  },
+
+  /**
+   *
+   * Login info invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_4006(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4006', 'Incorrect social information', detail);
+    return e;
+  },
+
+  /**
+   *
+   * Input invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_4007(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4007', 'Missing email', detail);
+    return e;
   }
 };
 
