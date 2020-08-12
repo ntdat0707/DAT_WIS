@@ -521,7 +521,7 @@ export class StaffController {
       await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
       //commit transaction
       await transaction.commit();
-      return res.status(HttpStatus.OK).send();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       //rollback transaction
       if (transaction) {
