@@ -453,7 +453,6 @@ export class StaffController {
    *   CreateStaffs:
    *       required:
    *           - mainLocationId
-   *           - workingLocationIds
    *           - staffDetails
    *       properties:
    *           mainLocationId:
