@@ -19,5 +19,6 @@ export class ServiceRoutes {
     this.router.get('/get-service/:serviceId?', isAuthenticated, this.serviceController.getService);
     this.router.get('/get-services', isAuthenticated, this.serviceController.getServices);
     this.router.get('/all', isAuthenticated, this.serviceController.getAllService);
+    this.router.post('/create-services', isAuthenticated, this.serviceController.createServices);
   }
 }

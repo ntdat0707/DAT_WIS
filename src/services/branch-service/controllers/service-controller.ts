@@ -7,7 +7,7 @@ import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
-import { createServiceSchema, serviceIdSchema } from '../configs/validate-schemas';
+import { createServiceSchema, serviceIdSchema, createServicesSchema } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
 import { StaffModel, LocationModel, sequelize, ResourceModel } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
@@ -427,6 +427,154 @@ export class ServiceController {
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(servicesInLocation));
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CreateServiceDetail:
+   *       required:
+   *           - name
+   *           - salePrice
+   *           - duration
+   *       properties:
+   *           name:
+   *               type: string
+   *           salePrice:
+   *               type: integer
+   *           duration:
+   *               type: integer
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   CreateServices:
+   *       required:
+   *           - cateServiceId
+   *           - locationId
+   *           - serviceDetails
+   *           - staffIds
+   *       properties:
+   *           cateServiceId:
+   *               type: string
+   *           locationId:
+   *               type: string
+   *           staffIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *           serviceDetails:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CreateServiceDetail'
+   *
+   */
+  /**
+   * @swagger
+   * /branch/service/create-services:
+   *   post:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: createServices
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CreateServices'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       403:
+   *         description: forbidden
+   *       500:
+   *         description: Server internal error
+   */
+  public createServices = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
+    try {
+      transaction = await sequelize.transaction();
+      const validateErrors = validate(req.body, createServicesSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      const cateService = await CateServiceModel.findOne({
+        where: {
+          id: req.body.cateServiceId,
+          companyId: res.locals.staffPayload.companyId
+        }
+      });
+      if (!cateService) {
+        return next(
+          new CustomError(branchErrorDetails.E_1205(`${req.body.cateServiceId} out of company`), HttpStatus.FORBIDDEN)
+        );
+      }
+      const staffIds = await StaffModel.findAll({
+        attributes: ['id'],
+        include: [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            where: {
+              id: req.body.locationId
+            },
+            through: {
+              attributes: ['id']
+            }
+          }
+        ]
+      }).then((staffs) => staffs.map((staff) => staff.id));
+
+      if (!(req.body.staffIds as []).every((x) => staffIds.includes(x))) {
+        return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+      }
+
+      transaction = await sequelize.transaction();
+      for (let i = 0; i < req.body.serviceDetails.length; i++) {
+        const data = {
+          salePrice: !isNaN(parseInt(req.body.serviceDetails[i].salePrice, 10))
+            ? req.body.serviceDetails[i].salePrice
+            : null,
+          duration: req.body.serviceDetails[i].duration,
+          cateServiceId: req.body.cateServiceId,
+          name: req.body.serviceDetails[i].name,
+          serviceCode: shortId.generate()
+        };
+        const service = await ServiceModel.create(data, { transaction });
+        const serviceStaff = (req.body.staffIds as []).map((id) => ({
+          serviceId: service.id,
+          staffId: id
+        }));
+        const locationService = {
+          locationId: req.body.locationId,
+          serviceId: service.id
+        };
+        await LocationServiceModel.create(locationService, { transaction: transaction });
+        await ServiceStaffModel.bulkCreate(serviceStaff, { transaction });
+      }
+
+      //commit transaction
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
