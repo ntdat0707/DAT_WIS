@@ -36,7 +36,7 @@ const loginSocialSchema = Joi.object({
   token: Joi.string().required().label('token'),
   email: Joi.string().email().label('email'),
   fullName: Joi.string().required().label('fullName'),
-  avatarPath: Joi.string().label('avatarPath')
+  avatarPath: Joi.string().allow('', null).label('avatarPath')
 });
 
 export {

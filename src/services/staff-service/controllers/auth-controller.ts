@@ -407,9 +407,7 @@ export class AuthController {
    *           - provider
    *           - providerId
    *           - fullName
-   *           - avatarPath
    *           - token
-   *           - email
    *       properties:
    *           provider:
    *               type: string
