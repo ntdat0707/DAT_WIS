@@ -17,5 +17,6 @@ export class StaffRoutes {
     this.router.post('/create', isAuthenticated, this.staffController.createStaff);
     this.router.get('/get-all-staffs', isAuthenticated, this.staffController.getAllStaffs);
     this.router.delete('/delete-staff/:staffId?', isAuthenticated, this.staffController.deleteStaff);
+    this.router.post('/create-staffs', isAuthenticated, this.staffController.createStaffs);
   }
 }
