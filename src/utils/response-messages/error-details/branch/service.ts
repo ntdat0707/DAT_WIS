@@ -31,6 +31,10 @@ const serviceErrorDetails = {
   E_1204(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1204', 'Service code exist', detail);
     return e;
+  },
+  E_1205(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1204', 'cateServiceId out of company', detail);
+    return e;
   }
 };
 
