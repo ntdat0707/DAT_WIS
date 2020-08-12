@@ -19,7 +19,7 @@ import {
   LocationStaffModel
 } from '../../../repositories/postgres/models';
 
-import { staffIdSchema, createStaffSchema, filterStaffSchema } from '../configs/validate-schemas';
+import { staffIdSchema, createStaffSchema, filterStaffSchema, createStaffsSchema } from '../configs/validate-schemas';
 
 export class StaffController {
   /**
@@ -430,6 +430,103 @@ export class StaffController {
       await StaffModel.destroy({ where: { id: staffId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CreateStaffDetail:
+   *       required:
+   *           - fullName
+   *       properties:
+   *           fullName:
+   *               type: string
+   *           email:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   CreateStaffs:
+   *       required:
+   *           - mainLocationId
+   *           - staffDetails
+   *       properties:
+   *           mainLocationId:
+   *               type: string
+   *           staffDetails:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CreateStaffDetail'
+   *
+   */
+  /**
+   * @swagger
+   * /staff/create-staffs:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: createStaffs
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CreateStaffs'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       403:
+   *         description: forbidden
+   *       500:
+   *         description: Server internal error
+   */
+  public createStaffs = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const validateErrors = validate(req.body, createStaffsSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const profiles = [];
+      for (let i = 0; i < req.body.staffDetails.length; i++) {
+        const profile = {
+          mainLocationId: req.body.mainLocationId,
+          fullName: req.body.staffDetails[i].fullName,
+          email: req.body.staffDetails[i].email ? req.body.staffDetails[i].email : null,
+          isBusinessAccount: false
+        };
+        profiles.push(profile);
+      }
+      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.mainLocationId))
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${req.body.mainLocationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      transaction = await sequelize.transaction();
+      const staffs = await StaffModel.bulkCreate(profiles, { transaction });
+      const workingLocationData = (staffs as []).map((x: any) => ({
+        locationId: req.body.mainLocationId,
+        staffId: x.id
+      }));
+      await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
+      //commit transaction
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

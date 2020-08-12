@@ -50,4 +50,24 @@ const filterStaffSchema = Joi.object({
       })
     )
 });
+
+export const createStaffsSchema = Joi.object({
+  mainLocationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('mainLocationId'),
+  staffDetails: Joi.array()
+    .min(1)
+    .required()
+    .items(
+      Joi.object({
+        fullName: Joi.string().required().label('fullName'),
+        email: Joi.string().email().label('email')
+      })
+    )
+    .label('staffDetails')
+});
+
 export { staffIdSchema, filterStaffSchema };
