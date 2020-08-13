@@ -72,7 +72,7 @@ export class CustomerController {
         fullName: req.body.fullName,
         gender: req.body.gender,
         phone: req.body.phone,
-        email: req.body.email,
+        email: req.body.email ? req.body.email : null,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
         address: req.body.address
@@ -82,8 +82,6 @@ export class CustomerController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      const customer = await CustomerModel.findOne({ where: { email: data.email } });
-      if (customer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       await CustomerModel.create(data);
       return res.status(HttpStatus.OK).send();
     } catch (error) {
