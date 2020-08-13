@@ -491,7 +491,6 @@ export class StaffController {
   public createStaffs = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      transaction = await sequelize.transaction();
       const validateErrors = validate(req.body, createStaffsSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -513,6 +512,7 @@ export class StaffController {
             HttpStatus.FORBIDDEN
           )
         );
+      transaction = await sequelize.transaction();
       const staffs = await StaffModel.bulkCreate(profiles, { transaction });
       const workingLocationData = (staffs as []).map((x: any) => ({
         locationId: req.body.mainLocationId,

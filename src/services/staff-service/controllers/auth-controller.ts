@@ -26,7 +26,8 @@ import {
   loginSchema,
   refreshTokensChema,
   emailSchema,
-  changePasswordSchema
+  changePasswordSchema,
+  loginSocialSchema
 } from '../configs/validate-schemas';
 import {
   buildEmailTemplate,
@@ -35,6 +36,8 @@ import {
 } from '../../../utils/emailer/templates';
 import { sendEmail } from '../../../utils/emailer';
 import { redis, EKeys } from '../../../repositories/redis';
+import { request, IRequestOptions } from '../../../utils/request';
+import { ESocialType } from '../../../utils/consts';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
@@ -393,6 +396,333 @@ export class AuthController {
       res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   StaffLoginSocial:
+   *       required:
+   *           - provider
+   *           - providerId
+   *           - fullName
+   *           - token
+   *       properties:
+   *           provider:
+   *               type: string
+   *           providerId:
+   *               type: string
+   *           email:
+   *               type: string
+   *           fullName:
+   *               type: string
+   *           avatarPath:
+   *               type: string
+   *           token:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /staff/auth/login-social:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: staff-login-social
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/StaffLoginSocial'
+   *     responses:
+   *       200:
+   *         description: Sucess
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public loginSocial = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      let staff: StaffModel;
+      let data = {};
+      let accessTokenData: IAccessTokenData;
+      let accessToken: string;
+      let refreshTokenData: IRefreshTokenData;
+      let refreshToken: string;
+      let profile: StaffModel;
+      let newStaff: StaffModel;
+      let checkTokenUrl: string;
+      let socialInfor: any;
+      let options: IRequestOptions;
+      const validateErrors = validate(req.body, loginSocialSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (req.body.email) {
+        if (req.body.provider === ESocialType.GOOGLE) {
+          checkTokenUrl = process.env.CHECK_TOKEN_GG_URL;
+          options = {
+            url: `${checkTokenUrl}${req.body.token}`,
+            method: 'get',
+            headers: {
+              'User-Agent': 'wisere-web',
+              'Content-Type': 'application/json'
+            }
+          };
+          socialInfor = await request(options);
+          if (socialInfor.response.email !== req.body.email || socialInfor.response.expires_in === 0) {
+            return next(new CustomError(staffErrorDetails.E_4006('Incorrect google token'), HttpStatus.BAD_REQUEST));
+          }
+        } else if (req.body.provider === ESocialType.FACEBOOK) {
+          checkTokenUrl = process.env.CHECK_TOKEN_FB_URL.replace('${id}', req.body.providerId);
+          options = {
+            url: `${checkTokenUrl}${req.body.token}`,
+            method: 'get',
+            headers: {
+              'User-Agent': 'wisere',
+              'Content-Type': 'application/json'
+            }
+          };
+          socialInfor = await request(options);
+          if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
+            return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
+          }
+        }
+        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      } else {
+        if (req.body.provider === ESocialType.GOOGLE) {
+          return next(new CustomError(staffErrorDetails.E_4007('Missing email'), HttpStatus.BAD_REQUEST));
+        }
+      }
+      if (staff) {
+        if (req.body.provider === ESocialType.FACEBOOK) {
+          if (staff.facebookId === null) {
+            data = {
+              facebookId: req.body.providerId,
+              avatarPath: req.body.avatarPath ? req.body.avatarPath : null
+            };
+            await StaffModel.update(data, { where: { email: req.body.email } });
+          } else {
+            if (staff.facebookId !== req.body.providerId) {
+              return next(new CustomError(staffErrorDetails.E_4005('providerId incorrect'), HttpStatus.BAD_REQUEST));
+            }
+          }
+          accessTokenData = {
+            userId: staff.id,
+            userName: staff.fullName,
+            userType: 'staff'
+          };
+          accessToken = await createAccessToken(accessTokenData);
+          refreshTokenData = {
+            userId: staff.id,
+            userName: staff.fullName,
+            userType: 'staff',
+            accessToken
+          };
+          refreshToken = await createRefreshToken(refreshTokenData);
+          profile = await StaffModel.scope('safe').findOne({
+            where: { email: req.body.email },
+            include: [
+              {
+                model: LocationModel,
+                as: 'workingLocations',
+                through: { attributes: [] }
+              }
+            ]
+          });
+          return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+        }
+        if (req.body.provider === ESocialType.GOOGLE) {
+          if (staff.googleId === null) {
+            data = {
+              googleId: req.body.providerId,
+              avatarPath: req.body.avatarPath ? req.body.avatarPath : null
+            };
+            await StaffModel.update(data, { where: { email: req.body.email } });
+          } else {
+            if (staff.googleId !== req.body.providerId) {
+              return next(new CustomError(staffErrorDetails.E_4005('providerId incorrect'), HttpStatus.BAD_REQUEST));
+            }
+          }
+          accessTokenData = {
+            userId: staff.id,
+            userName: staff.fullName,
+            userType: 'staff'
+          };
+          accessToken = await createAccessToken(accessTokenData);
+          refreshTokenData = {
+            userId: staff.id,
+            userName: staff.fullName,
+            userType: 'staff',
+            accessToken
+          };
+          refreshToken = await createRefreshToken(refreshTokenData);
+          profile = await StaffModel.scope('safe').findOne({
+            where: { email: req.body.email },
+            include: [
+              {
+                model: LocationModel,
+                as: 'workingLocations',
+                through: { attributes: [] }
+              }
+            ]
+          });
+          return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+        }
+      }
+
+      // start transaction
+      transaction = await sequelize.transaction();
+      if (req.body.provider === ESocialType.FACEBOOK) {
+        checkTokenUrl = process.env.CHECK_TOKEN_FB_URL.replace('${id}', req.body.providerId);
+        options = {
+          url: `${checkTokenUrl}${req.body.token}`,
+          method: 'get',
+          headers: {
+            'User-Agent': 'wisere',
+            'Content-Type': 'application/json'
+          }
+        };
+        socialInfor = await request(options);
+        if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
+          await transaction.rollback();
+          return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
+        }
+        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
+        if (!staff) {
+          data = {
+            fullName: req.body.fullName,
+            email: req.body.email ? req.body.email : null,
+            facebookId: req.body.providerId,
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
+            isBusinessAccount: true
+          };
+          newStaff = await StaffModel.create(data, { transaction });
+          await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
+          //commit transaction
+          await transaction.commit();
+          accessTokenData = {
+            userId: newStaff.id,
+            userName: newStaff.fullName,
+            userType: 'staff'
+          };
+          accessToken = await createAccessToken(accessTokenData);
+          refreshTokenData = {
+            userId: newStaff.id,
+            userName: newStaff.fullName,
+            userType: 'staff',
+            accessToken
+          };
+          refreshToken = await createRefreshToken(refreshTokenData);
+          profile = await StaffModel.scope('safe').findOne({
+            where: { facebookId: newStaff.facebookId },
+            include: [
+              {
+                model: LocationModel,
+                as: 'workingLocations',
+                through: { attributes: [] }
+              }
+            ]
+          });
+          return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+        }
+        accessTokenData = {
+          userId: staff.id,
+          userName: staff.fullName,
+          userType: 'staff'
+        };
+        accessToken = await createAccessToken(accessTokenData);
+        refreshTokenData = {
+          userId: staff.id,
+          userName: staff.fullName,
+          userType: 'staff',
+          accessToken
+        };
+        refreshToken = await createRefreshToken(refreshTokenData);
+        profile = await StaffModel.scope('safe').findOne({
+          where: { facebookId: staff.facebookId },
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              through: { attributes: [] }
+            }
+          ]
+        });
+        return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+      }
+      if (req.body.provider === ESocialType.GOOGLE) {
+        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
+        if (!staff) {
+          data = {
+            fullName: req.body.fullName,
+            email: req.body.email,
+            googleId: req.body.providerId,
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
+            isBusinessAccount: true
+          };
+          newStaff = await StaffModel.create(data, { transaction });
+          await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
+          //commit transaction
+          await transaction.commit();
+          accessTokenData = {
+            userId: newStaff.id,
+            userName: newStaff.fullName,
+            userType: 'staff'
+          };
+          accessToken = await createAccessToken(accessTokenData);
+          refreshTokenData = {
+            userId: newStaff.id,
+            userName: newStaff.fullName,
+            userType: 'staff',
+            accessToken
+          };
+          refreshToken = await createRefreshToken(refreshTokenData);
+          profile = await StaffModel.scope('safe').findOne({
+            where: { googleId: newStaff.googleId },
+            include: [
+              {
+                model: LocationModel,
+                as: 'workingLocations',
+                through: { attributes: [] }
+              }
+            ]
+          });
+          return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+        }
+        accessTokenData = {
+          userId: staff.id,
+          userName: staff.fullName,
+          userType: 'staff'
+        };
+        accessToken = await createAccessToken(accessTokenData);
+        refreshTokenData = {
+          userId: staff.id,
+          userName: staff.fullName,
+          userType: 'staff',
+          accessToken
+        };
+        refreshToken = await createRefreshToken(refreshTokenData);
+        profile = await StaffModel.scope('safe').findOne({
+          where: { googleId: staff.googleId },
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              through: { attributes: [] }
+            }
+          ]
+        });
+        return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+      }
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
     }
   };
 }

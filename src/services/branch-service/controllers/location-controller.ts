@@ -78,8 +78,6 @@ export class LocationController {
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      // start transaction
-      transaction = await sequelize.transaction();
       const data: any = {
         name: req.body.name,
         phone: req.body.phone,
@@ -91,6 +89,8 @@ export class LocationController {
         latitude: req.body.latitude,
         longitude: req.body.longitude
       };
+      // start transaction
+      transaction = await sequelize.transaction();
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));

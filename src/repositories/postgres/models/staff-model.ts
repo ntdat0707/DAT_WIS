@@ -13,6 +13,9 @@ class StaffModel extends Model {
   public isBusinessAccount: boolean;
   public mainLocationId: string;
   public address: string;
+  public facebookId: string;
+  public googleId: string;
+  public avatarPath: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -77,6 +80,21 @@ StaffModel.init(
     address: {
       field: 'address',
       type: DataTypes.STRING
+    },
+    facebookId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'facebook_id'
+    },
+    googleId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'google_id'
+    },
+    avatarPath: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'avatar_path'
     },
     createdAt: {
       field: 'created_at',
