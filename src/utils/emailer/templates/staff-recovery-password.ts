@@ -177,9 +177,9 @@ const staffRecoveryPasswordTemplate = `
             Wisere, 268 Tran Hung Dao Street, Ward 11 , District 5, HCMC
           </p>
           <div>
-            <a href="https://beta.wisere.com" target="blank">Wisere for Business</a>
-            <a href="https://beta.wisere.com" target="blank">View in browser</a>
-            <a href="https://beta.wisere.com" target="blank">Unsubscribe</a>
+            <a href="https://app.wisere.com" target="blank">Wisere for Business</a>
+            <a href="https://app.wisere.com" target="blank">View in browser</a>
+            <a href="https://app.wisere.com" target="blank">Unsubscribe</a>
           </div>
         </footer>
       </div>
