@@ -36,8 +36,8 @@ import {
 } from '../../../utils/emailer/templates';
 import { sendEmail } from '../../../utils/emailer';
 import { redis, EKeys } from '../../../repositories/redis';
-import { request, IRequestOptions } from '../../../utils/request';
 import { ESocialType } from '../../../utils/consts';
+import { validateGoogleToken, validateFacebookToken } from '../../../utils/validator/validate-social-token';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
@@ -456,37 +456,17 @@ export class AuthController {
       let refreshToken: string;
       let profile: StaffModel;
       let newStaff: StaffModel;
-      let checkTokenUrl: string;
       let socialInfor: any;
-      let options: IRequestOptions;
       const validateErrors = validate(req.body, loginSocialSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       if (req.body.email) {
         if (req.body.provider === ESocialType.GOOGLE) {
-          checkTokenUrl = process.env.CHECK_TOKEN_GG_URL;
-          options = {
-            url: `${checkTokenUrl}${req.body.token}`,
-            method: 'get',
-            headers: {
-              'User-Agent': 'wisere-web',
-              'Content-Type': 'application/json'
-            }
-          };
-          socialInfor = await request(options);
+          socialInfor = await validateGoogleToken(req.body.token);
           if (socialInfor.response.email !== req.body.email || socialInfor.response.expires_in === 0) {
             return next(new CustomError(staffErrorDetails.E_4006('Incorrect google token'), HttpStatus.BAD_REQUEST));
           }
         } else if (req.body.provider === ESocialType.FACEBOOK) {
-          checkTokenUrl = process.env.CHECK_TOKEN_FB_URL.replace('${id}', req.body.providerId);
-          options = {
-            url: `${checkTokenUrl}${req.body.token}`,
-            method: 'get',
-            headers: {
-              'User-Agent': 'wisere',
-              'Content-Type': 'application/json'
-            }
-          };
-          socialInfor = await request(options);
+          socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
           if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
             return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
           }
@@ -577,16 +557,7 @@ export class AuthController {
       // start transaction
       transaction = await sequelize.transaction();
       if (req.body.provider === ESocialType.FACEBOOK) {
-        checkTokenUrl = process.env.CHECK_TOKEN_FB_URL.replace('${id}', req.body.providerId);
-        options = {
-          url: `${checkTokenUrl}${req.body.token}`,
-          method: 'get',
-          headers: {
-            'User-Agent': 'wisere',
-            'Content-Type': 'application/json'
-          }
-        };
-        socialInfor = await request(options);
+        socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
           await transaction.rollback();
           return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
