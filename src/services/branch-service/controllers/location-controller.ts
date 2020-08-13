@@ -372,7 +372,7 @@ export class LocationController {
 
       if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
         return next(
-          new CustomError(locationErrorDetails.E_1002('Weekday do not allow duplicate value'), HttpStatus.NOT_FOUND)
+          new CustomError(locationErrorDetails.E_1002('Weekday do not allow duplicate value'), HttpStatus.BAD_REQUEST)
         );
       }
       if (!(workingLocationIds as string[]).includes(body.locationId)) {
@@ -394,7 +394,7 @@ export class LocationController {
         return next(
           new CustomError(
             locationErrorDetails.E_1003(`Location ${body.locationId} working hours is exist`),
-            HttpStatus.NOT_FOUND
+            HttpStatus.BAD_REQUEST
           )
         );
       }
@@ -407,7 +407,7 @@ export class LocationController {
               locationErrorDetails.E_1004(
                 `startTime ${body.workingTimes[i].range[0]} not before endTime ${body.workingTimes[i].range[1]}`
               ),
-              HttpStatus.NOT_FOUND
+              HttpStatus.BAD_REQUEST
             )
           );
         }
