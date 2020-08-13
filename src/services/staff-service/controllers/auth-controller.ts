@@ -118,7 +118,7 @@ export class AuthController {
       const msg = buildEmailTemplate(staffRegisterAccountTemplate, dataSendMail);
       await sendEmail({
         receivers: data.email,
-        subject: 'Welcome to Wisere 👋',
+        subject: 'Welcome to Wisere',
         type: 'html',
         message: msg
       });
