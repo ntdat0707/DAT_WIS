@@ -313,7 +313,7 @@ export class AuthController {
       if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
       const uuidToken = uuidv4();
       const data: IStaffRecoveryPasswordTemplate = {
-        staffName: staff.fullName,
+        staffEmail: staff.email,
         yourURL: `${fontEndUrl}/users/forgot-password?token=${uuidToken}`
       };
       const msg = buildEmailTemplate(staffRecoveryPasswordTemplate, data);
