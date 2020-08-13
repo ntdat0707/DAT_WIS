@@ -323,7 +323,7 @@ export class AuthController {
       });
       await sendEmail({
         receivers: email,
-        subject: 'Recovery password',
+        subject: 'Your Login information for Wisere',
         type: 'html',
         message: msg
       });
