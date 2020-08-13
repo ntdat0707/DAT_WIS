@@ -9,7 +9,7 @@ class AppointmentDetailModel extends Model {
   public locationId!: string;
   public startTime!: Date;
   public serviceId!: string;
-  public resourceId!: string;
+  public resourceId: string;
   public status!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
@@ -41,8 +41,7 @@ AppointmentDetailModel.init(
     },
     resourceId: {
       field: 'resource_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
+      type: DataTypes.UUIDV4
     },
     status: {
       field: 'status',

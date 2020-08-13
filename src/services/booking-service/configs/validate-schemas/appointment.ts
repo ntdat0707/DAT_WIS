@@ -23,7 +23,6 @@ const createAppointmentDetailSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .required()
     .label('resourceId'),
   startTime: Joi.string().isoDate().required().label('startTime')
 });
@@ -133,7 +132,6 @@ const createAppointmentDetailFullSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .required()
     .label('resourceId'),
   startTime: Joi.string().isoDate().required().label('startTime')
 });
@@ -166,7 +164,6 @@ const updateAppointmentDetailSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .required()
     .label('resourceId'),
   startTime: Joi.string().isoDate().required().label('startTime')
 });

@@ -179,7 +179,7 @@ export class AppointmentController extends BaseController {
           id: appointmentDetailId,
           appointmentId,
           serviceId: appointmentDetails[i].serviceId,
-          resourceId: appointmentDetails[i].resourceId,
+          resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
           startTime: appointmentDetails[i].startTime
         });
         for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
