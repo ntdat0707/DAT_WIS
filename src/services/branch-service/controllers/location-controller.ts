@@ -14,10 +14,13 @@ import {
   StaffModel
 } from '../../../repositories/postgres/models';
 
-import { createLocationSchema, locationIdSchema } from '../configs/validate-schemas';
+import { createLocationSchema, locationIdSchema, createLocationWorkingTimeSchema } from '../configs/validate-schemas';
 import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
+import _ from 'lodash';
+import { LocationWorkingHourModel } from '../../../repositories/postgres/models/location-working-hour-model';
+import moment from 'moment';
 
 export class LocationController {
   /**
@@ -292,6 +295,133 @@ export class LocationController {
           new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
         );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(rowsDeleted));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   WorkingTimeDetail:
+   *       required:
+   *           - day
+   *           - enabled
+   *           - range
+   *       properties:
+   *           day:
+   *               type: string
+   *           enabled:
+   *               type: boolean
+   *           range:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   CreateLocationWorkingTime:
+   *       required:
+   *           - locationId
+   *           - workingTimes
+   *       properties:
+   *           locationId:
+   *               type: string
+   *           workingTimes:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/WorkingTimeDetail'
+   *
+   */
+  /**
+   * @swagger
+   * /branch/location/create-location-working-time:
+   *   post:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: createLocationWorkingTime
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CreateLocationWorkingTime'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       403:
+   *         description: forbidden
+   *       500:
+   *         description: Server internal error
+   */
+  public createLocationWorkingTime = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { workingLocationIds } = res.locals.staffPayload;
+      const body = {
+        locationId: req.body.locationId,
+        workingTimes: req.body.workingTimes
+      };
+      const validateErrors = validate(body, createLocationWorkingTimeSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
+      if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
+        return next(
+          new CustomError(locationErrorDetails.E_1002('Weekday do not allow duplicate value'), HttpStatus.NOT_FOUND)
+        );
+      }
+      if (!(workingLocationIds as string[]).includes(body.locationId)) {
+        return next(
+          new CustomError(
+            locationErrorDetails.E_1001(`Can not access to this ${body.locationId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+
+      const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
+        where: {
+          locationId: body.locationId
+        }
+      });
+
+      if (existLocationWorkingHour) {
+        return next(
+          new CustomError(
+            locationErrorDetails.E_1003(`Location ${body.locationId} working hours is exist`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+
+      const workingsTimes = [];
+      for (let i = 0; i < body.workingTimes.length; i++) {
+        if (!moment(body.workingTimes[i].range[0], 'hh:mm').isBefore(moment(body.workingTimes[i].range[1], 'hh:mm'))) {
+          return next(
+            new CustomError(
+              locationErrorDetails.E_1004(
+                `startTime ${body.workingTimes[i].range[0]} not before endTime ${body.workingTimes[i].range[1]}`
+              ),
+              HttpStatus.NOT_FOUND
+            )
+          );
+        }
+        const data = {
+          locationId: body.locationId,
+          weekday: body.workingTimes[i].day,
+          startTime: body.workingTimes[i].range[0],
+          endTime: body.workingTimes[i].range[1],
+          isEnabled: body.workingTimes[i].enabled
+        };
+        workingsTimes.push(data);
+      }
+      const locationWorkingHour = await LocationWorkingHourModel.bulkCreate(workingsTimes);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationWorkingHour));
     } catch (error) {
       return next(error);
     }
