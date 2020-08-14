@@ -383,13 +383,21 @@ export class LocationController {
           )
         );
       }
+      const even = (element: any) => {
+        return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
+      };
+      const checkValidWoringTime = await body.workingTimes.some(even);
+      if (checkValidWoringTime) {
+        return next(
+          new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+        );
+      }
 
       const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
         where: {
           locationId: body.locationId
         }
       });
-
       if (existLocationWorkingHour) {
         return next(
           new CustomError(
@@ -399,27 +407,13 @@ export class LocationController {
         );
       }
 
-      const workingsTimes = [];
-      for (let i = 0; i < body.workingTimes.length; i++) {
-        if (!moment(body.workingTimes[i].range[0], 'hh:mm').isBefore(moment(body.workingTimes[i].range[1], 'hh:mm'))) {
-          return next(
-            new CustomError(
-              locationErrorDetails.E_1004(
-                `startTime ${body.workingTimes[i].range[0]} not before endTime ${body.workingTimes[i].range[1]}`
-              ),
-              HttpStatus.BAD_REQUEST
-            )
-          );
-        }
-        const data = {
-          locationId: body.locationId,
-          weekday: body.workingTimes[i].day,
-          startTime: body.workingTimes[i].range[0],
-          endTime: body.workingTimes[i].range[1],
-          isEnabled: body.workingTimes[i].enabled
-        };
-        workingsTimes.push(data);
-      }
+      const workingsTimes = (body.workingTimes as []).map((value: any) => ({
+        locationId: body.locationId,
+        weekday: value.day,
+        startTime: value.range[0],
+        endTime: value.range[1],
+        isEnabled: value.enabled
+      }));
       const locationWorkingHour = await LocationWorkingHourModel.bulkCreate(workingsTimes);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationWorkingHour));
     } catch (error) {
