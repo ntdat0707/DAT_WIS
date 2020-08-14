@@ -29,19 +29,14 @@ import {
   changePasswordSchema,
   loginSocialSchema
 } from '../configs/validate-schemas';
-import {
-  buildEmailTemplate,
-  staffRecoveryPasswordTemplate,
-  IStaffRecoveryPasswordTemplate
-} from '../../../utils/emailer/templates';
+import { IStaffRecoveryPasswordTemplate } from '../../../utils/emailer/templates';
 import { sendEmail } from '../../../utils/emailer';
 import { redis, EKeys } from '../../../repositories/redis';
 import { ESocialType } from '../../../utils/consts';
 import { validateGoogleToken, validateFacebookToken } from '../../../utils/validator/validate-social-token';
-import {
-  staffRegisterAccountTemplate,
-  IStaffRegisterAccountTemplate
-} from '../../../utils/emailer/templates/staff-register-account';
+import { IStaffRegisterAccountTemplate } from '../../../utils/emailer/templates/staff-register-account';
+import * as ejs from 'ejs';
+import * as path from 'path';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
@@ -115,12 +110,16 @@ export class AuthController {
         staffEmail: data.email,
         staffName: data.fullName
       };
-      const msg = buildEmailTemplate(staffRegisterAccountTemplate, dataSendMail);
-      await sendEmail({
-        receivers: data.email,
-        subject: 'Welcome to Wisere',
-        type: 'html',
-        message: msg
+      const pathFile = path.join(__dirname, process.env.REGISTER_ACCOUNT_PATH);
+      ejs.renderFile(pathFile, dataSendMail, async (err, dataEjs) => {
+        if (!err) {
+          await sendEmail({
+            receivers: dataSendMail.staffEmail,
+            subject: 'Welcome to Wisere',
+            type: 'html',
+            message: dataEjs
+          });
+        }
       });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
@@ -327,21 +326,27 @@ export class AuthController {
       const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
       if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
       const uuidToken = uuidv4();
-      const data: IStaffRecoveryPasswordTemplate = {
-        staffEmail: staff.email,
+      const dataSendMail: IStaffRecoveryPasswordTemplate = {
+        staffEmail: email,
         yourURL: `${fontEndUrl}/users/forgot-password?token=${uuidToken}`
       };
-      const msg = buildEmailTemplate(staffRecoveryPasswordTemplate, data);
       await redis.setData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
         key: 'EX',
         value: recoveryPasswordUrlExpiresIn
       });
-      await sendEmail({
-        receivers: email,
-        subject: 'Your Login information for Wisere',
-        type: 'html',
-        message: msg
+
+      const pathFile = path.join(__dirname, process.env.RECOVERY_PASSWORD_PATH);
+      ejs.renderFile(pathFile, dataSendMail, async (err, dataEjs) => {
+        if (!err) {
+          await sendEmail({
+            receivers: email,
+            subject: 'Your Login information for Wisere',
+            type: 'html',
+            message: dataEjs
+          });
+        }
       });
+
       res.status(HttpStatus.OK).send(buildSuccessMessage({ msg: 'Please check your email' }));
     } catch (error) {
       return next(error);
