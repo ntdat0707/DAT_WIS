@@ -320,8 +320,7 @@ export class AppointmentController extends BaseController {
           },
           {
             model: ResourceModel,
-            as: 'resource',
-            required: true
+            as: 'resource'
           },
           {
             model: StaffModel,
@@ -724,8 +723,7 @@ export class AppointmentController extends BaseController {
               },
               {
                 model: ResourceModel,
-                as: 'resource',
-                required: true
+                as: 'resource'
               },
               {
                 model: StaffModel.scope('safe'),

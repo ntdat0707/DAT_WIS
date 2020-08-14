@@ -92,8 +92,7 @@ export class LocationController {
         latitude: req.body.latitude,
         longitude: req.body.longitude
       };
-      // start transaction
-      transaction = await sequelize.transaction();
+
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -101,6 +100,8 @@ export class LocationController {
       data.companyId = res.locals.staffPayload.companyId;
       if (req.file) data.photo = (req.file as any).location;
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
+      // start transaction
+      transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
       //commit transaction
