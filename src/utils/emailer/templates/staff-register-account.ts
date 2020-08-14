@@ -1,9 +1,11 @@
 import { IBaseEmailTemplate } from './index';
-interface IStaffRecoveryPasswordTemplate extends IBaseEmailTemplate {
+
+interface IStaffRegisterAccountTemplate extends IBaseEmailTemplate {
+  staffName: string;
   staffEmail: string;
-  yourURL: string;
 }
-const staffRecoveryPasswordTemplate = `
+
+const staffRegisterAccountTemplate = `
 <!-- saved from url=(0075)http://lms.myclass.vn/pluginfile.php/12538/mod_lesson/intro/bookTicket.html -->
 <html>
   <head>
@@ -46,12 +48,10 @@ const staffRecoveryPasswordTemplate = `
       }
       .main img {
         width: 100%;
-        border-radius: 15px 15px 0 0;
       }
       .main p {
         margin: 8px 0;
         line-height: 170%;
-        color: #070d14;
       }
       .main .info {
         padding: 20px 40px 30px;
@@ -83,6 +83,26 @@ const staffRecoveryPasswordTemplate = `
         padding-top: 25px;
         margin-top: 25px;
       }
+      .main .info__button {
+        height: 42px;
+        width: 180px;
+        display: block;
+        background-color: #08c4e3;
+        margin: 15px 0;
+        text-decoration: none;
+        border: none;
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 10px;
+        box-sizing: border-box;
+        text-align: center;
+      }
+      .main .info__button:focus {
+        outline: none;
+      }
 
       footer p {
         color: #727070;
@@ -95,8 +115,7 @@ const staffRecoveryPasswordTemplate = `
       }
       footer div {
         display: flex;
-        width: fit-content;
-        margin: auto;
+        justify-content: center !important;
       }
       footer div a {
         margin: 5px;
@@ -120,7 +139,6 @@ const staffRecoveryPasswordTemplate = `
         header {
           padding: 0 15px;
         }
-
       }
     </style>
   </head>
@@ -128,32 +146,34 @@ const staffRecoveryPasswordTemplate = `
     <div id="resetpw">
       <div class="resetpw">
         <header>
-          <img style="height: 50px" src="https://space-sgp1-01.sgp1.digitaloceanspaces.com/HQeuPMliJnECufjaQ7L-Colorful.png" alt="logo" />
-          <a href="https://app.wisere.com" target="blank">
+        <img style="height: 50px" src="https://space-sgp1-01.sgp1.digitaloceanspaces.com/HQeuPMliJnECufjaQ7L-Colorful.png" alt="logo" />
+        <a href="https://app.wisere.com" target="blank">
             > Visit website
           </a>
         </header>
         <div class="main">
-          <img
-            class="banner"
-            src="https://space-sgp1-01.sgp1.digitaloceanspaces.com/Group%206009.png"
-            alt="banner"
-          />
+          <img class="banner" src="https://space-sgp1-01.sgp1.digitaloceanspaces.com/Group%206008.png" alt="banner" />
           <div class="info">
             <h1>
-              Wisere account password reset
+              Welcome to Wisere Partners
             </h1>
+            <p>
+              Hi {{staffName}}!
+            </p>
+            <p>
+              Thanks for creating an account Business on Wisere - our powerful suite of tools helps, manage your
+              schedules.
+            </p>
 
             <p>
-              Please use this code to reset the password for the Wisere account
-              <strong>{{staffEmail}}</strong>
+              Your username is <strong>{{staffEmail}}</strong>
+              <br />
+              Log in now and start setting your business for success.
+              <br />
             </p>
-            <p>
-              Click link to recovery password:
-            </p>
-            <a class="info__link" href="{{yourURL}}" target="blank">
-              {{yourURL}}
-            </a>
+
+            <a class="info__button" href="https://app.wisere.com/users/signin" target="_blank">Log in to Wisere</a>
+
             <div class="info__thanks">
               <p>
                 Sincerely,
@@ -186,6 +206,7 @@ const staffRecoveryPasswordTemplate = `
     </div>
   </body>
 </html>
+
 `;
 
-export { staffRecoveryPasswordTemplate, IStaffRecoveryPasswordTemplate };
+export { staffRegisterAccountTemplate, IStaffRegisterAccountTemplate };

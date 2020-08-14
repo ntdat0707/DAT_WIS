@@ -18,41 +18,42 @@ export class BaseController {
       const resourceTasks = [];
       const staffTasks = [];
       for (let i = 0; i < appointmentDetails.length; i++) {
-        serviceTasks.push(
-          ServiceModel.findOne({
-            // attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('id')), 'id']],
-            where: {
-              id: appointmentDetails[i].serviceId
+        const queryService: any = {
+          where: {
+            id: appointmentDetails[i].serviceId
+          },
+          include: [
+            {
+              model: StaffModel,
+              as: 'staffs',
+              required: true,
+              where: { id: appointmentDetails[i].staffIds },
+              through: { attributes: [] }
             },
-            include: [
-              {
-                model: StaffModel,
-                as: 'staffs',
-                required: true,
-                where: { id: appointmentDetails[i].staffIds },
-                through: { attributes: [] }
-              },
-              {
-                model: ResourceModel,
-                as: 'resources',
-                required: true,
-                where: { id: appointmentDetails[i].resourceId },
-                through: { attributes: [] }
-              },
-              {
-                model: LocationModel,
-                as: 'locations',
-                required: true,
-                where: { id: locationId }
-              }
-            ]
-          })
-        );
+            {
+              model: LocationModel,
+              as: 'locations',
+              required: true,
+              where: { id: locationId }
+            }
+          ]
+        };
+        if (appointmentDetails[i].resourceId) {
+          queryService.include.push({
+            model: ResourceModel,
+            as: 'resources',
+            required: true,
+            where: { id: appointmentDetails[i].resourceId },
+            through: { attributes: [] }
+          });
+        }
+
+        serviceTasks.push(ServiceModel.findOne(queryService));
         // resource
         resourceTasks.push(
           ResourceModel.findOne({
             where: {
-              id: appointmentDetails[i].resourceId,
+              id: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
               locationId
             },
             include: [
@@ -87,36 +88,18 @@ export class BaseController {
         );
       }
       const servicesFind = await Promise.all(serviceTasks);
-      const serviceIdsFind: string[] = [];
-      servicesFind.forEach((e) => {
-        try {
-          if (e) serviceIdsFind.push(e.id);
-        } catch (error) {
-          throw error;
-        }
-      });
-      const serviceIds = [...new Set(serviceIdsFind)];
       const resourcesFind = await Promise.all(resourceTasks);
-      const resourceIdsFind: string[] = [];
-      resourcesFind.forEach((e) => {
-        if (e) resourceIdsFind.push(e.id);
-      });
-      const resourceIds = [...new Set(resourceIdsFind)];
 
       const staffsFind = await Promise.all(staffTasks);
       const staffs: StaffModel[][] = [];
       staffsFind.forEach((e) => {
         if (e) staffs.push(e);
       });
-      if (
-        serviceIds.length !== appointmentDetails.length ||
-        resourceIds.length !== appointmentDetails.length ||
-        staffs.length !== appointmentDetails.length
-      ) {
-        return new CustomError(
-          bookingErrorDetails.E_2001('service or resource or staff not match'),
-          HttpStatus.BAD_REQUEST
-        );
+      if (servicesFind.length !== appointmentDetails.length) {
+        return new CustomError(bookingErrorDetails.E_2001('Service not match'), HttpStatus.BAD_REQUEST);
+      }
+      if (staffs.length !== appointmentDetails.length) {
+        return new CustomError(bookingErrorDetails.E_2001('Staff not match'), HttpStatus.BAD_REQUEST);
       }
       for (let j = 0; j < appointmentDetails.length; j++) {
         const tmpStaffIds: string[] = [];
@@ -126,6 +109,12 @@ export class BaseController {
         const staffIds = [...new Set(tmpStaffIds)];
         if (staffIds.length !== appointmentDetails[j].staffIds.length) {
           return new CustomError(bookingErrorDetails.E_2001('Staff not match'), HttpStatus.BAD_REQUEST);
+        }
+        // verify resource
+        if (appointmentDetails[j].resourceId) {
+          if (!resourcesFind[j]) {
+            return new CustomError(bookingErrorDetails.E_2001('Resource not match'), HttpStatus.BAD_REQUEST);
+          }
         }
       }
       return appointmentDetails;

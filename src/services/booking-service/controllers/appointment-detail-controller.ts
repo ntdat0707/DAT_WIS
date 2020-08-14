@@ -111,7 +111,7 @@ export class AppointmentDetailController extends BaseController {
       const appointmentDetail = await AppointmentDetailModel.create(
         {
           serviceId: data.serviceId,
-          resourceId: data.resourceId,
+          resourceId: data.resourceId ? data.resourceId : null,
           startTime: data.startTime,
           appointmentId: data.appointmentId
         },
@@ -236,7 +236,7 @@ export class AppointmentDetailController extends BaseController {
       const appointmentDetail = await AppointmentDetailModel.create(
         {
           serviceId: data.serviceId,
-          resourceId: data.resourceId,
+          resourceId: data.resourceId ? data.resourceId : null,
           startTime: data.startTime,
           appointmentId
         },

@@ -23,6 +23,38 @@ const locationErrorDetails = {
   E_1001(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1001', 'Can not access to this location', detail);
     return e;
+  },
+  /**
+   * Weekday do not allow duplicate value
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_1002(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1002', 'Weekday do not allow duplicate value', detail);
+    return e;
+  },
+
+  /**
+   * Location working hour exists
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_1003(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1003', 'Location working hour exists', detail);
+    return e;
+  },
+
+  /**
+   * Start time before end time
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_1004(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1004', 'Start time before end time', detail);
+    return e;
   }
 };
 

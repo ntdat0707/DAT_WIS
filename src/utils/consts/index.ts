@@ -34,6 +34,16 @@ enum ESocialType {
   APPLE = 'apple'
 }
 
+enum EWeekDays {
+  MONDAY = 'monday',
+  TUESDAY = 'tuesday',
+  WEDNESDAY = 'wednesday',
+  THURSDAY = 'thursday',
+  FRIDAY = 'friday',
+  SATURDAY = 'saturday',
+  SUNDAY = 'sunday'
+}
+
 export {
   buildingEnvs,
   EServiceStatus,
@@ -43,5 +53,6 @@ export {
   ELocationStatus,
   EAppointmentStatus,
   AppointmentStatusRules,
-  ESocialType
+  ESocialType,
+  EWeekDays
 };
