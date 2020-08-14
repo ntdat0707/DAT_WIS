@@ -82,8 +82,8 @@ export class CustomerController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      await CustomerModel.create(data);
-      return res.status(HttpStatus.OK).send();
+      const customer = await CustomerModel.create(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
       return next(error);
     }
