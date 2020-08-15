@@ -111,7 +111,7 @@ export class AuthController {
         staffName: data.fullName
       };
       const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/staff-register-account.ejs');
-      ejs.renderFile(pathFile, dataSendMail, async (err, dataEjs) => {
+      ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
         if (!err) {
           await sendEmail({
             receivers: dataSendMail.staffEmail,
@@ -335,7 +335,7 @@ export class AuthController {
         value: recoveryPasswordUrlExpiresIn
       });
       const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/staff-recovery-password.ejs');
-      ejs.renderFile(pathFile, dataSendMail, async (err, dataEjs) => {
+      ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
         if (!err) {
           await sendEmail({
             receivers: email,
