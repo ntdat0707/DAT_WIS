@@ -12,7 +12,7 @@ import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { customerIdSchema } from '../configs/validate-schemas/customer';
+import { customerIdSchema, updateCustomerSchema } from '../configs/validate-schemas/customer';
 import { paginate } from '../../../utils/paginator';
 import { FindOptions } from 'sequelize/types';
 
@@ -87,6 +87,79 @@ export class CustomerController {
         if (existCustomer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
       const customer = await CustomerModel.create(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
+    } catch (error) {
+      return next(error);
+    }
+  };
+  /**
+   * @swagger
+   * definitions:
+   *   customerUpdate:
+   *       properties:
+   *           fullName:
+   *               type: string
+   *           gender:
+   *               type: integer
+   *               required: true
+   *               enum: [0, 1, 2]
+   *           birthDate:
+   *               type: string
+   *           passportNumber:
+   *               type: string
+   *           address:
+   *               type: string
+   *
+   *
+   */
+
+  /**
+   * @swagger
+   * /customer/update/{customerId}:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: updateCustomer
+   *     parameters:
+   *     - in: "path"
+   *       name: "customerId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/customerUpdate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { companyId } = res.locals.staffPayload;
+      const data: any = {
+        fullName: req.body.fullName,
+        gender: req.body.gender,
+        birthDate: req.body.birthDate,
+        passportNumber: req.body.passportNumber,
+        address: req.body.address
+      };
+      const customerId = req.params.customerId;
+      const validateErrors = validate(data, updateCustomerSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      let customer = await CustomerModel.findOne({ where: { id: req.params.customerId, companyId: companyId } });
+      if (!customer)
+        return next(
+          new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND)
+        );
+      customer = await customer.update(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
       return next(error);
