@@ -56,3 +56,12 @@ export {
   ESocialType,
   EWeekDays
 };
+
+export enum BusinessType {
+  DENTAL = 'DENTAL',
+  SPA = 'SPA',
+  BEAUTY_SALON = 'BEAUTY_SALON',
+  NAIL_SALON = 'NAIL_SALON',
+  BABER_SHOP = 'BABER_SHOP',
+  MASSAGE = 'MASSAGE'
+}

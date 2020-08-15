@@ -1,13 +1,5 @@
 import Joi from 'joi';
-
-export enum BusinessType {
-  DENTAL = 'DENTAL',
-  SPA = 'SPA',
-  BEAUTY_SALON = 'BEAUTY_SALON',
-  NAIL_SALON = 'NAIL_SALON',
-  BABER_SHOP = 'BABER_SHOP',
-  MASSAGE = 'MASSAGE'
-}
+import { BusinessType } from '../../../../utils/consts';
 
 const initCompanySchema = Joi.object({
   businessName: Joi.string().required().label('businessName'),

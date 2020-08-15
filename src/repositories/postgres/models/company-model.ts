@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
+import { BusinessType } from '../../../utils/consts';
 class CompanyModel extends Model {
   public id: string;
   public ownerId: string;
@@ -26,7 +27,7 @@ CompanyModel.init(
     },
     businessType: {
       field: 'business_type',
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM(...Object.keys(BusinessType)),
       allowNull: true
     },
     businessName: {
