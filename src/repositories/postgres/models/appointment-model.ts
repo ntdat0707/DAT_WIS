@@ -79,7 +79,7 @@ AppointmentModel.init(
     updatedAt: {
       field: 'updated_at',
       type: 'TIMESTAMP',
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: null
     },
     deletedAt: {
       field: 'deleted_at',
