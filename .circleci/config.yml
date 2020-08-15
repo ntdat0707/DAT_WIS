@@ -165,5 +165,6 @@ workflows:
                 - staging
                 - production
                 - hotfixes/remove_duplicate_container
+                - feature/wrs-207-build-real-time-gateway
         # requires:
         #   - build

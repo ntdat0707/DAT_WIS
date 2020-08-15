@@ -1,16 +1,16 @@
 version: '3'
 
 services:
-  gateway:
-    container_name: ${GTW_HOST}
+  api-gateway:
+    container_name: ${API_GTW_HOST}
     env_file: .env
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - '127.0.0.1:${GTW_PORT}:${GTW_PORT}'
+      - '127.0.0.1:${API_GTW_PORT}:${API_GTW_PORT}'
     environment:
       NODE_ENV: 'staging'
-      NODE_NAME: 'gateway'
+      NODE_NAME: ${API_GTW_NAME}
     networks:
       - network
     depends_on:
