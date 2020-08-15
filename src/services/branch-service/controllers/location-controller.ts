@@ -11,7 +11,8 @@ import {
   LocationModel,
   LocationStaffModel,
   CompanyModel,
-  StaffModel
+  StaffModel,
+  LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
 import { createLocationSchema, locationIdSchema, createLocationWorkingTimeSchema } from '../configs/validate-schemas';
@@ -19,7 +20,6 @@ import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
-import { LocationWorkingHourModel } from '../../../repositories/postgres/models/location-working-hour-model';
 import moment from 'moment';
 
 export class LocationController {
