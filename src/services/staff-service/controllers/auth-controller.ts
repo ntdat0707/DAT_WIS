@@ -169,6 +169,8 @@ export class AuthController {
 
   public login = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      //tslint:disable-next-line
+      console.log('test login ===================================================================');
       const data = {
         email: req.body.email,
         password: req.body.password

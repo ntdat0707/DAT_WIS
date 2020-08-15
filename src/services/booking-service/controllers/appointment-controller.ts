@@ -119,6 +119,9 @@ export class AppointmentController extends BaseController {
   public createAppointment = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
+      //tslint:disable-next-line
+      console.log('test create appointment  ===================================================================');
+
       const dataInput = {
         locationId: req.body.locationId,
         customerId: req.body.customerId,
