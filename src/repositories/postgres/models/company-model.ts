@@ -33,12 +33,12 @@ CompanyModel.init(
     businessName: {
       field: 'business_name',
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     phone: {
       field: 'phone',
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',
