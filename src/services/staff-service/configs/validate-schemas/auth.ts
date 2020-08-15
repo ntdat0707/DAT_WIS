@@ -4,11 +4,11 @@ import { ESocialType } from '../../../../utils/consts';
 const createBusinessAccountSchema = Joi.object({
   email: Joi.string().required().email().label('email'),
   fullName: Joi.string().required().label('fullName'),
-  password: Joi.string().required().min(6).label('password')
+  password: Joi.string().required().min(8).label('password')
 });
 const loginSchema = Joi.object({
   email: Joi.string().required().email().label('email'),
-  password: Joi.string().required().min(6).label('password')
+  password: Joi.string().required().min(8).label('password')
 });
 
 const refreshTokensChema = Joi.string().required().label('refreshToken');
@@ -24,7 +24,7 @@ const changePasswordSchema = Joi.object({
     })
     .required()
     .label('token'),
-  newPassword: Joi.string().required().min(6).label('newPassword')
+  newPassword: Joi.string().required().min(8).label('newPassword')
 });
 
 const loginSocialSchema = Joi.object({
