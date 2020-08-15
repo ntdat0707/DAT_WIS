@@ -7,7 +7,7 @@ class AppointmentModel extends Model {
   public id: string;
   public customerId: string;
   public locationId!: string;
-  public appointmentGroupId!: string;
+  public appointmentGroupId: string;
   public status!: string;
   public date!: Date;
   public isPrimary!: boolean;
