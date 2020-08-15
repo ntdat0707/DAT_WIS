@@ -174,6 +174,25 @@ const appointmentDetailIdSchema = Joi.string()
   .required()
   .label('appointmentDetailId');
 
+const createAppointmentInGroupSchema = Joi.object({
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('customerId'),
+  appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
+  isPrimary: Joi.bool().required().label('isPrimary')
+});
+const createAppointmentGroupSchema = Joi.object({
+  date: Joi.string().isoDate().required(),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  appointments: Joi.array().min(1).max(50).items(createAppointmentInGroupSchema).label('appointments')
+});
 export {
   createAppointmentDetailSchema,
   createAppointmentSchema,
@@ -184,5 +203,6 @@ export {
   updateAppointmentSchema,
   createAppointmentDetailFullSchema,
   updateAppointmentDetailSchema,
-  appointmentDetailIdSchema
+  appointmentDetailIdSchema,
+  createAppointmentGroupSchema
 };
