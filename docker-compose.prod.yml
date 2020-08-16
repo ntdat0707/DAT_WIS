@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   api-gateway:
@@ -7,9 +7,9 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - '127.0.0.1:${API_GTW_PORT}:${API_GTW_PORT}'
+      - "127.0.0.1:${API_GTW_PORT}:${API_GTW_PORT}"
     environment:
-      NODE_ENV: 'staging'
+      NODE_ENV: "staging"
       NODE_NAME: ${API_GTW_NAME}
     networks:
       - network
@@ -19,16 +19,35 @@ services:
       - customer-service
       - staff-service
       - branch-service
+  real-time-gateway:
+    container_name: ${REAL_TIME_GTW_HOST}
+    env_file: .env
+    image: registry.digitalocean.com/wisere/wisere
+    restart: always
+    ports:
+      - "127.0.0.1:${REAL_TIME_GTW_PORT}:${REAL_TIME_GTW_PORT}"
+    environment:
+      NODE_ENV: "staging"
+      NODE_NAME: ${REAL_TIME_GTW_NAME}
+    networks:
+      - network
+    depends_on:
+      - system-service
+      - notification-service
+      - customer-service
+      - staff-service
+      - branch-service
+
   customer-service:
     env_file: .env
     container_name: ${SVC_CUSTOMER_HOST}
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - '127.0.0.1:${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}'
+      - "127.0.0.1:${SVC_CUSTOMER_PORT}:${SVC_CUSTOMER_PORT}"
     environment:
-      NODE_ENV: 'staging'
-      NODE_NAME: 'customer-service'
+      NODE_ENV: "staging"
+      NODE_NAME: "customer-service"
     networks:
       - network
     depends_on:
@@ -40,10 +59,10 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - '127.0.0.1:${SVC_BRANCH_PORT}:${SVC_BRANCH_PORT}'
+      - "127.0.0.1:${SVC_BRANCH_PORT}:${SVC_BRANCH_PORT}"
     environment:
-      NODE_ENV: 'staging'
-      NODE_NAME: '${SVC_BRANCH_HOST}'
+      NODE_ENV: "staging"
+      NODE_NAME: "${SVC_BRANCH_HOST}"
     networks:
       - network
     depends_on:
@@ -54,10 +73,10 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - '127.0.0.1:${SVC_STAFF_PORT}:${SVC_STAFF_PORT}'
+      - "127.0.0.1:${SVC_STAFF_PORT}:${SVC_STAFF_PORT}"
     environment:
-      NODE_ENV: 'staging'
-      NODE_NAME: 'staff-service'
+      NODE_ENV: "staging"
+      NODE_NAME: "staff-service"
     networks:
       - network
     depends_on:
@@ -68,8 +87,8 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     environment:
-      NODE_ENV: 'staging'
-      NODE_NAME: 'system-service'
+      NODE_ENV: "staging"
+      NODE_NAME: "system-service"
     networks:
       - network
   notification-service:
@@ -77,8 +96,8 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     environment:
-      NODE_ENV: 'staging'
-      NODE_NAME: 'notification-service'
+      NODE_ENV: "staging"
+      NODE_NAME: "notification-service"
     networks:
       - network
   booking-service:
@@ -87,10 +106,10 @@ services:
     image: registry.digitalocean.com/wisere/wisere
     restart: always
     ports:
-      - '127.0.0.1:${SVC_BOOKING_PORT}:${SVC_BOOKING_PORT}'
+      - "127.0.0.1:${SVC_BOOKING_PORT}:${SVC_BOOKING_PORT}"
     environment:
-      NODE_ENV: 'staging'
-      NODE_NAME: '${SVC_BOOKING_HOST}'
+      NODE_ENV: "staging"
+      NODE_NAME: "${SVC_BOOKING_HOST}"
     networks:
       - network
 
