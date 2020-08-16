@@ -1,6 +1,6 @@
 import * as express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import { buildingEnvs } from '../../../utils/consts';
+import { buildingEnvs } from '../../../../utils/consts';
 import { customerServiceConfigs, staffServiceConfigs, branchServiceConfigs, bookingServiceConfigs } from './configs';
 import { API_BASE_PATH } from '../configs';
 
@@ -9,8 +9,7 @@ require('dotenv').config();
 class ServiceRoutes {
   public router: express.Router = express.Router();
   private nodeName = process.env.NODE_NAME;
-  // private gatewayHost = process.env.GTW_HOST;
-  private gatewayHost = 'gateway';
+  private apiGatewayName = process.env.API_GTW_NAME;
 
   private onProxyReq = (proxyReq: any, req: express.Request, _res: express.Response) => {
     const serviceBasePath = this.getServiceBasePath(req.originalUrl);
@@ -51,7 +50,7 @@ class ServiceRoutes {
     if (buildingEnvs.includes(process.env.NODE_ENV)) {
       this.config();
     } else {
-      if (this.nodeName === this.gatewayHost) this.config();
+      if (this.nodeName === this.apiGatewayName) this.config();
     }
   }
   private config(): void {

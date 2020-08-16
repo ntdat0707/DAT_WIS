@@ -1,4 +1,4 @@
-import { EAppointmentStatus, AppointmentStatusRules } from './appointment';
+import { EAppointmentStatus, AppointmentStatusRules, IAppointmentDataStatus } from './appointment';
 const buildingEnvs = ['develop', 'development', 'staging', 'test', 'testing'];
 
 enum ELocales {
@@ -54,7 +54,8 @@ export {
   EAppointmentStatus,
   AppointmentStatusRules,
   ESocialType,
-  EWeekDays
+  EWeekDays,
+  IAppointmentDataStatus
 };
 
 export enum BusinessType {

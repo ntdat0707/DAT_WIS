@@ -49,4 +49,4 @@ const buildErrorMessage = (error: IErrorDetail | IErrorDetail[]): IErrorMessage 
   else return { errors: [error] };
 };
 
-export { buildSuccessMessage, buildErrorMessage, IErrorDetail, ISourceError };
+export { buildSuccessMessage, buildErrorMessage, IErrorDetail, ISourceError, isPaginationResult };

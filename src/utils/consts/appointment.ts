@@ -65,4 +65,16 @@ const AppointmentStatusRules = {
   }
 };
 
-export { EAppointmentStatus, AppointmentStatusRules };
+interface IAppointmentDataStatus {
+  time: {
+    start: Date;
+    end?: Date;
+  };
+  data: {
+    staffIds: string[];
+    serviceId: string;
+    resourceId?: string;
+  };
+}
+
+export { EAppointmentStatus, AppointmentStatusRules, IAppointmentDataStatus };
