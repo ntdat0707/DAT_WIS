@@ -1,6 +1,7 @@
 import express from 'express';
 import { createServer, Server } from 'http';
 import socketIo, { Socket } from 'socket.io';
+import cors from 'cors';
 // import amqp from 'amqplib';
 require('dotenv').config();
 
@@ -20,6 +21,7 @@ export default class RealTimeGateway {
 
   constructor() {
     this.app = express();
+    this.app.use(cors());
     this.server = createServer(this.app);
     this.io = socketIo(this.server);
     this.config();
