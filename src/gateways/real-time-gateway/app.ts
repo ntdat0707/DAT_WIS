@@ -27,6 +27,7 @@ export default class RealTimeGateway {
 
   private async config(): Promise<void> {
     this.server.listen(process.env.REAL_TIME_GTW_PORT);
+    this.io.origins('*:*');
     this.io
       .use(async (socket, next) => {
         try {
