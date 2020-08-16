@@ -3,8 +3,12 @@ enum Events {
   JOIN = 'join',
   DISCONNECT = 'disconenct',
   ERROR = 'error',
-  APPOINTMENT_LOCK_DATA = 'appointment-lock-data',
-  APPOINTMENT_UN_LOCK_DATA = 'appointment-un-lock-data'
+  LOCK_STAFF = 'lock-staff',
+  UN_LOCK_STAFF = 'un-lock-staff',
+  LOCK_SERVICE = 'lock-service',
+  UN_LOCK_SERVICE = 'un-lock-service',
+  LOCK_RESOURCE = 'lock-resource',
+  UN_LOCK_RESOURCE = 'un-lock-resource'
 }
 
 enum SocketRoomPrefixes {

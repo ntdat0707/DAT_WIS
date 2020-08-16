@@ -41,25 +41,15 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
         });
       break;
     case realTimeGatewayName:
-      // code block
       const realTimeGateway = new RealTimeGateway().app;
-      realTimeGateway
-        .listen(realTimeGateway.get('port'), (): void => {
-          logger.info({
-            label: realTimeGatewayName,
-            message: `App is running at http://localhost:${realTimeGateway.get('port')} in mode ${realTimeGateway.get(
-              'env'
-            )} `
-          });
-        })
-        .on('error', () => {
-          logger.error({
-            label: realTimeGatewayName,
-            message: `gateway start fail at http://localhost:${realTimeGateway.get(
-              'port'
-            )} in mode ${realTimeGateway.get('env')} `
-          });
+      realTimeGateway.listen(realTimeGateway.get('port'), (): void => {
+        logger.info({
+          label: realTimeGatewayName,
+          message: `App is running at http://localhost:${process.env.REAL_TIME_GTW_PORT} in mode ${realTimeGateway.get(
+            'env'
+          )} `
         });
+      });
       break;
     case 'customer-service':
       const customerService = new CustomerService().app;

@@ -1,11 +1,14 @@
 import express from 'express';
 import { createServer, Server } from 'http';
 import socketIo, { Socket } from 'socket.io';
+// import amqp from 'amqplib';
 require('dotenv').config();
 
 import { authenticate } from '../../utils/middlewares/staff/auth';
 import { generalErrorDetails } from '../../utils/response-messages/error-details';
 import { CustomError } from '../../utils/error-handlers';
+// import { EQueueNames, rabbitmqURL } from '../../utils/event-queues';
+// import { IAppointmentDataStatus } from '../../utils/consts';
 import { Events, getRoomsFromStrings, SocketRoomPrefixes } from './configs/socket';
 import { buildSocketErrorMessage } from './configs/response';
 
@@ -13,6 +16,7 @@ export default class RealTimeGateway {
   public app: express.Application;
   public server: Server;
   private io: SocketIO.Server;
+  // private openRabbitMQ: any;
 
   constructor() {
     this.app = express();
@@ -39,7 +43,8 @@ export default class RealTimeGateway {
         }
       })
       .on(Events.CONNECT, (socket: Socket) => {
-        // console.log('socket id: ============', socket.id, socket.request.staffPayload);
+        //tslint:disable-next-line
+        console.log('sk id', socket.id);
         const appointmentRooms = getRoomsFromStrings(
           socket.request.staffPayload.workingLocationIds,
           SocketRoomPrefixes.APPOINTMENT
