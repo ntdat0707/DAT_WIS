@@ -2,22 +2,22 @@ import express from 'express';
 import { createServer, Server } from 'http';
 import socketIo, { Socket } from 'socket.io';
 import cors from 'cors';
-// import amqp from 'amqplib';
+import amqp from 'amqplib';
 require('dotenv').config();
 
 import { authenticate } from '../../utils/middlewares/staff/auth';
 import { generalErrorDetails } from '../../utils/response-messages/error-details';
 import { CustomError } from '../../utils/error-handlers';
-// import { EQueueNames, rabbitmqURL } from '../../utils/event-queues';
-// import { IAppointmentDataStatus } from '../../utils/consts';
+import { EQueueNames, rabbitmqURL } from '../../utils/event-queues';
+import { IManagementLockAppointmentData } from '../../utils/consts';
 import { Events, getRoomsFromStrings, SocketRoomPrefixes } from './configs/socket';
-import { buildSocketErrorMessage } from './configs/response';
+import { buildSocketErrorMessage, buildSocketSuccessMessage } from './configs/response';
 
 export default class RealTimeGateway {
   public app: express.Application;
   public server: Server;
   private io: SocketIO.Server;
-  // private openRabbitMQ: any;
+  private openRabbitMQ: any;
 
   constructor() {
     this.app = express();
@@ -56,15 +56,49 @@ export default class RealTimeGateway {
           socket.join(appointmentRooms);
         }
       });
-    setTimeout(() => {
-      // this.io.emit('cc', 'cc from server');
-      const someRooms = [
-        'appointment-764eaa2b-c5aa-451f-82d0-63fceb424af6',
-        'appointment-a825577d-95d0-4e2a-8577-81c35deab014'
-      ];
-      for (const room of someRooms) {
-        this.io.to(room).emit('server-sent-from-room', 'cc ne bla bla blaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
-      }
-    }, 10000);
+    await this.lockAppointmentData();
   }
+  private lockAppointmentData = async () => {
+    try {
+      if (!this.openRabbitMQ) this.openRabbitMQ = await amqp.connect(rabbitmqURL);
+      const ch = await this.openRabbitMQ.createChannel();
+      await ch.assertQueue(EQueueNames.LOCK_APPOINTMENT_DATA, { durable: false });
+      await ch.consume(
+        EQueueNames.LOCK_APPOINTMENT_DATA,
+        async (messageObj: any) => {
+          const msg = messageObj.content.toString();
+          const data: IManagementLockAppointmentData = JSON.parse(msg);
+          this.pushNotifyLockAppointmentData(data);
+        },
+        { noAck: true }
+      );
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  private pushNotifyLockAppointmentData = (data: IManagementLockAppointmentData) => {
+    try {
+      if (data.services && data.services.locationId && data.services.data.length > 0) {
+        const room = SocketRoomPrefixes.APPOINTMENT + data.services.locationId;
+        this.io.to(room).emit(Events.LOCK_SERVICE, buildSocketSuccessMessage(data.services.data));
+      }
+      if (data.resources && data.resources.locationId && data.resources.data.length > 0) {
+        const room = SocketRoomPrefixes.APPOINTMENT + data.resources.locationId;
+        this.io.to(room).emit(Events.LOCK_RESOURCE, buildSocketSuccessMessage(data.resources.data));
+      }
+      if (data.staffs && data.staffs.length > 0) {
+        for (const staff of data.staffs) {
+          if (staff.locationId && staff.data && staff.data.length > 0) {
+            const room = SocketRoomPrefixes.APPOINTMENT + staff.locationId;
+            this.io.to(room).emit(Events.LOCK_STAFF, buildSocketSuccessMessage(staff.data));
+          }
+        }
+      }
+    } catch (error) {
+      //tslint:disable-next-line
+      console.log(error);
+      // throw error;
+    }
+  };
 }
