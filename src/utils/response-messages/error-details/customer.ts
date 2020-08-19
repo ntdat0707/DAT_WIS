@@ -19,7 +19,11 @@ const customerErrorDetails = {
     return e;
   },
   E_3003(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3000', 'Phone already exists', detail);
+    const e = buildErrorDetail('3003', 'Phone already exists', detail);
+    return e;
+  },
+  E_3004(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3004', 'Login info invalid', detail);
     return e;
   }
 };

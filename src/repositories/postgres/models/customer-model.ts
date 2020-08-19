@@ -11,6 +11,7 @@ class CustomerModel extends Model {
   public passportNumber: string;
   public address: string;
   public companyId!: string;
+  public password!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -68,6 +69,11 @@ CustomerModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'password'
+    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
@@ -88,7 +94,13 @@ CustomerModel.init(
     sequelize,
     freezeTableName: true,
     tableName: 'customer',
-    // scopes: {},
+    scopes: {
+      safe: {
+        attributes: {
+          exclude: ['password']
+        }
+      }
+    },
     timestamps: true,
     paranoid: true
   }

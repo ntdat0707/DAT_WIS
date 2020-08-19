@@ -12,9 +12,13 @@ import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { customerIdSchema } from '../configs/validate-schemas/customer';
+import { customerIdSchema, loginSchema } from '../configs/validate-schemas/customer';
 import { paginate } from '../../../utils/paginator';
 import { FindOptions } from 'sequelize/types';
+import RandExp from 'randexp';
+import { hash, compare } from 'bcryptjs';
+import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
+import { IAccessTokenData, IRefreshTokenData, createAccessToken, createRefreshToken } from '../../../utils/jwt';
 
 export class CustomerController {
   /**
@@ -86,11 +90,13 @@ export class CustomerController {
       }
       data.companyId = res.locals.staffPayload.companyId;
       const existPhone = await CustomerModel.findOne({ where: { phone: data.phone } });
-      if (existPhone) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+      if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
       if (req.body.email) {
         const existEmail = await CustomerModel.findOne({ where: { email: data.email } });
-        if (existEmail) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+        if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
+      const password = new RandExp(/^(?=.*[!@#$&*])(?=.*[0-9])(?!.* )(?=.*[a-z]).{8,10}$/).gen();
+      data.password = await hash(password, PASSWORD_SALT_ROUNDS);
       const customer = await CustomerModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
@@ -267,6 +273,79 @@ export class CustomerController {
           new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND)
         );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerLogin:
+   *       required:
+   *           - email
+   *           - password
+   *       properties:
+   *           email:
+   *               type: string
+   *           password:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/login:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     name: customer-login
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerLogin'
+   *     responses:
+   *       200:
+   *         description: Sucess
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public login = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = {
+        email: req.body.email,
+        password: req.body.password
+      };
+      const validateErrors = validate(data, loginSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const customer = await CustomerModel.findOne({ raw: true, where: { email: data.email } });
+      if (!customer)
+        return next(new CustomError(customerErrorDetails.E_3004('Email or password invalid'), HttpStatus.NOT_FOUND));
+      const match = await compare(data.password, customer.password);
+      if (!match)
+        return next(new CustomError(customerErrorDetails.E_3004('Email or password invalid'), HttpStatus.NOT_FOUND));
+      //create tokens
+
+      const accessTokenData: IAccessTokenData = {
+        userId: customer.id,
+        userName: `${customer.firstName} ${customer.lastName}`,
+        userType: 'customer'
+      };
+      const accessToken = await createAccessToken(accessTokenData);
+      const refreshTokenData: IRefreshTokenData = {
+        userId: customer.id,
+        userName: `${customer.firstName} ${customer.lastName}`,
+        userType: 'customer',
+        accessToken
+      };
+      const refreshToken = await createRefreshToken(refreshTokenData);
+      const profile = await CustomerModel.scope('safe').findOne({
+        where: { email: data.email }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
     } catch (error) {
       return next(error);
     }
