@@ -59,4 +59,17 @@ const createServicesSchema = Joi.object({
     .label('serviceDetails')
 });
 
-export { createCateServiceSchema, createServiceSchema, serviceIdSchema, createServicesSchema };
+const getAllServiceSchema = Joi.object({
+  staffId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .allow(null, '')
+    .label('staffId'),
+  locationIds: Joi.array().items(
+    Joi.string().guid({
+      version: ['uuidv4']
+    })
+  )
+});
+export { createCateServiceSchema, createServiceSchema, serviceIdSchema, createServicesSchema, getAllServiceSchema };
