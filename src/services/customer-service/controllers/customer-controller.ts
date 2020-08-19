@@ -22,7 +22,9 @@ export class CustomerController {
    * definitions:
    *   customerCreate:
    *       properties:
-   *           fullName:
+   *           firstName:
+   *               type: string
+   *           lastName:
    *               type: string
    *           gender:
    *               type: integer
