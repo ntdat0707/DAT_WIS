@@ -49,13 +49,16 @@ export class AuthController {
    *       required:
    *           - email
    *           - password
-   *           - fullName
+   *           - firstName
+   *           - lastName
    *       properties:
    *           email:
    *               type: string
    *           password:
    *               type: string
-   *           fullName:
+   *           firstName:
+   *               type: string
+   *           lastName:
    *               type: string
    *
    */
@@ -88,7 +91,8 @@ export class AuthController {
       transaction = await sequelize.transaction();
       const data = {
         email: req.body.email,
-        fullName: req.body.fullName,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
         password: req.body.password
       };
 
@@ -108,7 +112,7 @@ export class AuthController {
       await transaction.commit();
       const dataSendMail: IStaffRegisterAccountTemplate = {
         staffEmail: data.email,
-        staffName: data.fullName
+        staffName: `${data.firstName} ${data.lastName}`
       };
       const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/staff-register-account.ejs');
       ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
@@ -178,6 +182,9 @@ export class AuthController {
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff)
         return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
+      if (!staff.isBusinessAccount || !staff.password) {
+        return next(new CustomError(staffErrorDetails.E_4002('Account unavailable'), HttpStatus.NOT_FOUND));
+      }
       const match = await compare(data.password, staff.password);
       if (!match)
         return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
@@ -185,13 +192,13 @@ export class AuthController {
 
       const accessTokenData: IAccessTokenData = {
         userId: staff.id,
-        userName: staff.fullName,
+        userName: `${staff.firstName} ${staff.lastName}`,
         userType: 'staff'
       };
       const accessToken = await createAccessToken(accessTokenData);
       const refreshTokenData: IRefreshTokenData = {
         userId: staff.id,
-        userName: staff.fullName,
+        userName: `${staff.firstName} ${staff.lastName}`,
         userType: 'staff',
         accessToken
       };
@@ -266,13 +273,13 @@ export class AuthController {
 
       const newAccessTokenData: IAccessTokenData = {
         userId: staff.id,
-        userName: staff.fullName,
+        userName: `${staff.firstName} ${staff.lastName}`,
         userType: 'staff'
       };
       const newAccessToken = await createAccessToken(newAccessTokenData);
       const newRefreshTokenData: IRefreshTokenData = {
         userId: staff.id,
-        userName: staff.fullName,
+        userName: `${staff.firstName} ${staff.lastName}`,
         userType: 'staff',
         accessToken: newAccessToken
       };
@@ -511,13 +518,13 @@ export class AuthController {
           }
           accessTokenData = {
             userId: staff.id,
-            userName: staff.fullName,
+            userName: `${staff.firstName} ${staff.lastName}`,
             userType: 'staff'
           };
           accessToken = await createAccessToken(accessTokenData);
           refreshTokenData = {
             userId: staff.id,
-            userName: staff.fullName,
+            userName: `${staff.firstName} ${staff.lastName}`,
             userType: 'staff',
             accessToken
           };
@@ -548,13 +555,13 @@ export class AuthController {
           }
           accessTokenData = {
             userId: staff.id,
-            userName: staff.fullName,
+            userName: `${staff.firstName} ${staff.lastName}`,
             userType: 'staff'
           };
           accessToken = await createAccessToken(accessTokenData);
           refreshTokenData = {
             userId: staff.id,
-            userName: staff.fullName,
+            userName: `${staff.firstName} ${staff.lastName}`,
             userType: 'staff',
             accessToken
           };
@@ -584,7 +591,8 @@ export class AuthController {
         staff = await StaffModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
           data = {
-            fullName: req.body.fullName,
+            firstName: req.body.fullName.split(' ')[0],
+            lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
             email: req.body.email ? req.body.email : null,
             facebookId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
@@ -596,13 +604,13 @@ export class AuthController {
           await transaction.commit();
           accessTokenData = {
             userId: newStaff.id,
-            userName: newStaff.fullName,
+            userName: `${newStaff.firstName} ${newStaff.lastName}`,
             userType: 'staff'
           };
           accessToken = await createAccessToken(accessTokenData);
           refreshTokenData = {
             userId: newStaff.id,
-            userName: newStaff.fullName,
+            userName: `${newStaff.firstName} ${newStaff.lastName}`,
             userType: 'staff',
             accessToken
           };
@@ -621,13 +629,13 @@ export class AuthController {
         }
         accessTokenData = {
           userId: staff.id,
-          userName: staff.fullName,
+          userName: `${staff.firstName} ${staff.lastName}`,
           userType: 'staff'
         };
         accessToken = await createAccessToken(accessTokenData);
         refreshTokenData = {
           userId: staff.id,
-          userName: staff.fullName,
+          userName: `${staff.firstName} ${staff.lastName}`,
           userType: 'staff',
           accessToken
         };
@@ -648,7 +656,8 @@ export class AuthController {
         staff = await StaffModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
         if (!staff) {
           data = {
-            fullName: req.body.fullName,
+            firstName: req.body.fullName.split(' ')[0],
+            lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
             email: req.body.email,
             googleId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
@@ -660,13 +669,13 @@ export class AuthController {
           await transaction.commit();
           accessTokenData = {
             userId: newStaff.id,
-            userName: newStaff.fullName,
+            userName: `${newStaff.firstName} ${newStaff.lastName}`,
             userType: 'staff'
           };
           accessToken = await createAccessToken(accessTokenData);
           refreshTokenData = {
             userId: newStaff.id,
-            userName: newStaff.fullName,
+            userName: `${newStaff.firstName} ${newStaff.lastName}`,
             userType: 'staff',
             accessToken
           };
@@ -685,13 +694,13 @@ export class AuthController {
         }
         accessTokenData = {
           userId: staff.id,
-          userName: staff.fullName,
+          userName: `${staff.firstName} ${staff.lastName}`,
           userType: 'staff'
         };
         accessToken = await createAccessToken(accessTokenData);
         refreshTokenData = {
           userId: staff.id,
-          userName: staff.fullName,
+          userName: `${staff.firstName} ${staff.lastName}`,
           userType: 'staff',
           accessToken
         };

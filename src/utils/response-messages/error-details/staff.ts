@@ -77,6 +77,16 @@ const staffErrorDetails = {
   E_4007(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('4007', 'Missing email', detail);
     return e;
+  },
+  /**
+   *
+   * Login info invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_4008(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4008', 'Login info invalid', detail);
+    return e;
   }
 };
 
