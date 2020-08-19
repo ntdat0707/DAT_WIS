@@ -173,7 +173,23 @@ export class AppointmentController extends BaseController {
 
       const appointmentDetailData: any[] = [];
       const appointmentDetailStaffData = [];
+      const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
+      const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
       for (let i = 0; i < appointmentDetails.length; i++) {
+        serviceDataNotify.push({
+          id: appointmentDetails[i].serviceId,
+          time: { start: appointmentDetails[i].startTime }
+        });
+        if (appointmentDetails[i].resourceId)
+          resourceDataNotify.push({
+            id: appointmentDetails[i].resourceId,
+            time: { start: appointmentDetails[i].startTime }
+          });
+        staffDataNotify.push({
+          ids: appointmentDetails[i].staffIds,
+          time: { start: appointmentDetails[i].startTime }
+        });
         const appointmentDetailId = uuidv4();
         appointmentDetailData.push({
           id: appointmentDetailId,
@@ -224,7 +240,12 @@ export class AppointmentController extends BaseController {
           as: 'customer'
         });
       const appointmentStoraged = await AppointmentModel.findOne(findQuery);
-
+      await this.pushNotifyLockAppointmentData({
+        locationId: appointmentData.locationId,
+        serviceData: serviceDataNotify,
+        resourceData: resourceDataNotify,
+        staffData: staffDataNotify
+      });
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentStoraged));

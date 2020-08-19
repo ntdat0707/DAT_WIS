@@ -2,6 +2,8 @@ import HttpStatus from 'http-status-codes';
 
 import { CustomError } from '../../../utils/error-handlers';
 import { bookingErrorDetails } from '../../../utils/response-messages/error-details';
+import { IManagementLockAppointmentData } from '../../../utils/consts';
+import { emit, EQueueNames } from '../../../utils/event-queues';
 import { StaffModel, ServiceModel, ResourceModel, LocationModel } from '../../../repositories/postgres/models';
 
 import { IAppointmentDetailInput } from '../configs/interfaces';
@@ -118,6 +120,47 @@ export class BaseController {
         }
       }
       return appointmentDetails;
+    } catch (error) {
+      throw error;
+    }
+  };
+  protected pushNotifyLockAppointmentData = async (data: {
+    locationId: string;
+    serviceData: { id: string; time: { start: Date; end?: Date } }[];
+    resourceData?: { id: string; time: { start: Date; end?: Date } }[];
+    staffData: { ids: string[]; time: { start: Date; end?: Date } }[];
+  }) => {
+    try {
+      const { locationId, resourceData, serviceData, staffData } = data;
+      const staffIds = [];
+      for (const s of staffData) {
+        staffIds.push(...s.ids);
+      }
+      if (!staffIds.length) return;
+      const locations = await LocationModel.findAll({
+        include: [{ model: StaffModel, as: 'staffs', required: true, where: { id: staffIds } }]
+      });
+      if (!locations) return;
+      const staffDataNotify = locations.map((location) => {
+        const tmpStaffIds = (location as any).staffs.map((staff: any) => staff.id) as string[];
+
+        const tmpData = [];
+        for (const s of staffData) {
+          for (const sid of tmpStaffIds) {
+            if (s.ids.indexOf(sid) > -1) tmpData.push({ id: sid, time: s.time });
+          }
+        }
+        return {
+          locationId: location.id,
+          data: tmpData
+        };
+      });
+      const dataNotify: IManagementLockAppointmentData = {
+        services: { locationId, data: serviceData },
+        resources: resourceData ? { locationId, data: resourceData } : null,
+        staffs: staffDataNotify
+      };
+      await emit(EQueueNames.LOCK_APPOINTMENT_DATA, dataNotify);
     } catch (error) {
       throw error;
     }

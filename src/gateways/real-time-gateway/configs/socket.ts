@@ -12,7 +12,7 @@ enum Events {
 }
 
 enum SocketRoomPrefixes {
-  APPOINTMENT = 'appointment'
+  APPOINTMENT = 'appointment-'
 }
 
 /**
@@ -24,7 +24,7 @@ enum SocketRoomPrefixes {
  */
 const getRoomsFromStrings = (strings: string[], roomPrefix: SocketRoomPrefixes): string[] => {
   if (strings.length < 1) return [];
-  const rooms = strings.map((id) => roomPrefix + '-' + id);
+  const rooms = strings.map((id) => roomPrefix + id);
   return rooms;
 };
 export { Events, SocketRoomPrefixes, getRoomsFromStrings };
