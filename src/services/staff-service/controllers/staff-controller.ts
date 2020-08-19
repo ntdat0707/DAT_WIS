@@ -1,8 +1,9 @@
 //
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
+import moment from 'moment';
 import _ from 'lodash';
 require('dotenv').config();
 
@@ -16,10 +17,17 @@ import {
   StaffModel,
   LocationModel,
   ServiceModel,
-  LocationStaffModel
+  LocationStaffModel,
+  AppointmentModel
 } from '../../../repositories/postgres/models';
 
-import { staffIdSchema, createStaffSchema, filterStaffSchema, createStaffsSchema } from '../configs/validate-schemas';
+import {
+  staffIdSchema,
+  createStaffSchema,
+  filterStaffSchema,
+  createStaffsSchema,
+  updateStaffSchema
+} from '../configs/validate-schemas';
 
 export class StaffController {
   /**
@@ -266,6 +274,154 @@ export class StaffController {
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+  /**
+   * @swagger
+   * definitions:
+   *   staffUpdate:
+   *       required:
+   *           - firstName
+   *           - lastName
+   *           - workingLocationIds
+   *       properties:
+   *           mainLocationId:
+   *               type: string
+   *           firstName:
+   *               type: string
+   *           lastName:
+   *               type: string
+   *           gender:
+   *               type: integer
+   *           birthDate:
+   *               type: string
+   *           passportNumber:
+   *               type: string
+   *           address:
+   *               type: string
+   *           workingLocationIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   *
+   */
+
+  /**
+   * @swagger
+   * /staff/update/{staffId}:
+   *   put:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: updateStaff
+   *     parameters:
+   *     - in: "path"
+   *       name: "staffId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/staffUpdate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       403:
+   *         description: forbidden
+   *       500:
+   *         description: Server internal error
+   */
+  public updateStaff = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      transaction = await sequelize.transaction();
+      const validateErrors = validate(req.body, updateStaffSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const profile = {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        gender: req.body.gender,
+        birthDate: req.body.birthDate,
+        passportNumber: req.body.passportNumber,
+        address: req.body.address
+      };
+
+      if (req.body.workingLocationIds) {
+        const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
+        if (diff.length) {
+          return next(
+            new CustomError(
+              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+              HttpStatus.FORBIDDEN
+            )
+          );
+        }
+      }
+      let staff = await StaffModel.findOne({
+        where: {
+          id: req.params.staffId
+        },
+        attributes: {
+          exclude: ['password']
+        }
+      });
+      const locationIdsRemoved = await LocationStaffModel.findAll({
+        where: {
+          staffId: req.params.staffId,
+          locationId: {
+            [Op.notIn]: req.body.workingLocationIds
+          }
+        }
+      })
+        .then((x) => x.map(({ locationId }: any) => locationId))
+        .then((x) => _.uniq(x));
+
+      const locationIdsAdded = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
+
+      const appointmentsInFeature = await AppointmentModel.findAll({
+        where: {
+          locationId: locationIdsRemoved,
+          date: {
+            [Op.gte]: moment().toDate()
+          }
+        }
+      }).then((rows: any[]) => rows.map(({ locationId }: any) => locationId));
+
+      if (appointmentsInFeature.length) {
+        return next(new CustomError(staffErrorDetails.E_4009(), HttpStatus.FORBIDDEN));
+      }
+
+      staff = await staff.update(profile, {
+        transaction: transaction
+      });
+      if (locationIdsAdded.length) {
+        await LocationStaffModel.bulkCreate(
+          locationIdsAdded.map((locationId) => ({ staffId: req.params.staffId, locationId: locationId })),
+          { transaction: transaction }
+        );
+      }
+      await LocationStaffModel.destroy({
+        where: {
+          locationId: locationIdsRemoved
+        },
+        transaction: transaction
+      });
+
+      //commit transaction
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       //rollback transaction
       if (transaction) {

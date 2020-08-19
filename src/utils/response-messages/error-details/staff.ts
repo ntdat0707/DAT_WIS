@@ -87,6 +87,10 @@ const staffErrorDetails = {
   E_4008(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('4008', 'Account unavailable', detail);
     return e;
+  },
+  E_4009(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4009', 'Exist appointment in feature. You can not remove working location', detail);
+    return e;
   }
 };
 

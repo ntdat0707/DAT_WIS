@@ -34,6 +34,26 @@ export const createStaffSchema = Joi.object({
     )
     .label('workingLocationIds')
 });
+export const updateStaffSchema = Joi.object({
+  // groupStaffId: Joi.string().required(),
+  firstName: Joi.string().required().label('firstName'),
+  lastName: Joi.string().required().label('lastName'),
+  gender: Joi.number().required(),
+  birthDate: Joi.string().isoDate().required(),
+  passportNumber: Joi.string().required(),
+  address: Joi.string(),
+  workingLocationIds: Joi.array()
+    .min(1)
+    .required()
+    .items(
+      Joi.string()
+        .guid({
+          version: ['uuidv4']
+        })
+        .required()
+    )
+    .label('workingLocationIds')
+});
 
 const filterStaffSchema = Joi.object({
   workingLocationIds: Joi.array()
