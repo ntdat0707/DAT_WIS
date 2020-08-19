@@ -16,5 +16,6 @@ export class CustomerRoutes {
     this.router.delete('/delete/:customerId?', isAuthenticated, this.customerController.deleteCustomer);
     this.router.get('/get-customers', isAuthenticated, this.customerController.getCustomers);
     this.router.get('/get/:customerId', isAuthenticated, this.customerController.getCustomerById);
+    this.router.post('/login', this.customerController.login);
   }
 }

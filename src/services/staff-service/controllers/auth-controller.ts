@@ -37,6 +37,7 @@ import { validateGoogleToken, validateFacebookToken } from '../../../utils/valid
 import { IStaffRegisterAccountTemplate } from '../../../utils/emailer/templates/staff-register-account';
 import * as ejs from 'ejs';
 import * as path from 'path';
+import RandExp from 'randexp';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
@@ -182,8 +183,8 @@ export class AuthController {
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff)
         return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
-      if (!staff.isBusinessAccount || !staff.password) {
-        return next(new CustomError(staffErrorDetails.E_4002('Account unavailable'), HttpStatus.NOT_FOUND));
+      if (!staff.isBusinessAccount) {
+        return next(new CustomError(staffErrorDetails.E_4008(), HttpStatus.NOT_FOUND));
       }
       const match = await compare(data.password, staff.password);
       if (!match)
@@ -475,7 +476,7 @@ export class AuthController {
     let transaction = null;
     try {
       let staff: StaffModel;
-      let data = {};
+      let data: any;
       let accessTokenData: IAccessTokenData;
       let accessToken: string;
       let refreshTokenData: IRefreshTokenData;
@@ -590,6 +591,7 @@ export class AuthController {
         }
         staff = await StaffModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
+          const password = new RandExp(/^(?=.*[!@#$&*])(?=.*[0-9])(?!.* )(?=.*[a-z]).{8,10}$/).gen();
           data = {
             firstName: req.body.fullName.split(' ')[0],
             lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
@@ -598,6 +600,7 @@ export class AuthController {
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
             isBusinessAccount: true
           };
+          data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
           await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
           //commit transaction
@@ -655,6 +658,7 @@ export class AuthController {
       if (req.body.provider === ESocialType.GOOGLE) {
         staff = await StaffModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
         if (!staff) {
+          const password = new RandExp(/^(?=.*[!@#$&*])(?=.*[0-9])(?!.* )(?=.*[a-z]).{8,10}$/).gen();
           data = {
             firstName: req.body.fullName.split(' ')[0],
             lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
@@ -663,6 +667,7 @@ export class AuthController {
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
             isBusinessAccount: true
           };
+          data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
           await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
           //commit transaction
