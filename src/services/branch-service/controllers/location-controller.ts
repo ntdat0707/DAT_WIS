@@ -11,7 +11,8 @@ import {
   LocationModel,
   LocationStaffModel,
   CompanyModel,
-  StaffModel
+  StaffModel,
+  LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
 import { createLocationSchema, locationIdSchema, createLocationWorkingTimeSchema } from '../configs/validate-schemas';
@@ -19,7 +20,6 @@ import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
-import { LocationWorkingHourModel } from '../../../repositories/postgres/models/location-working-hour-model';
 import moment from 'moment';
 
 export class LocationController {
@@ -92,8 +92,7 @@ export class LocationController {
         latitude: req.body.latitude,
         longitude: req.body.longitude
       };
-      // start transaction
-      transaction = await sequelize.transaction();
+
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -101,6 +100,8 @@ export class LocationController {
       data.companyId = res.locals.staffPayload.companyId;
       if (req.file) data.photo = (req.file as any).location;
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
+      // start transaction
+      transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
       //commit transaction
@@ -383,13 +384,21 @@ export class LocationController {
           )
         );
       }
+      const even = (element: any) => {
+        return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
+      };
+      const checkValidWoringTime = await body.workingTimes.some(even);
+      if (checkValidWoringTime) {
+        return next(
+          new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+        );
+      }
 
       const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
         where: {
           locationId: body.locationId
         }
       });
-
       if (existLocationWorkingHour) {
         return next(
           new CustomError(
@@ -399,27 +408,13 @@ export class LocationController {
         );
       }
 
-      const workingsTimes = [];
-      for (let i = 0; i < body.workingTimes.length; i++) {
-        if (!moment(body.workingTimes[i].range[0], 'hh:mm').isBefore(moment(body.workingTimes[i].range[1], 'hh:mm'))) {
-          return next(
-            new CustomError(
-              locationErrorDetails.E_1004(
-                `startTime ${body.workingTimes[i].range[0]} not before endTime ${body.workingTimes[i].range[1]}`
-              ),
-              HttpStatus.BAD_REQUEST
-            )
-          );
-        }
-        const data = {
-          locationId: body.locationId,
-          weekday: body.workingTimes[i].day,
-          startTime: body.workingTimes[i].range[0],
-          endTime: body.workingTimes[i].range[1],
-          isEnabled: body.workingTimes[i].enabled
-        };
-        workingsTimes.push(data);
-      }
+      const workingsTimes = (body.workingTimes as []).map((value: any) => ({
+        locationId: body.locationId,
+        weekday: value.day,
+        startTime: value.range[0],
+        endTime: value.range[1],
+        isEnabled: value.enabled
+      }));
       const locationWorkingHour = await LocationWorkingHourModel.bulkCreate(workingsTimes);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationWorkingHour));
     } catch (error) {

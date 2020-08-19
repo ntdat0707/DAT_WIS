@@ -3,7 +3,7 @@ import { EWeekDays } from '../../../../utils/consts';
 
 const createLocationSchema = Joi.object({
   name: Joi.string().required().label('name'),
-  phone: Joi.string().required().label('phone'),
+  phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   email: Joi.string().email().label('email'),
   city: Joi.string().label('city'),
   district: Joi.string().label('district'),

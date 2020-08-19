@@ -11,13 +11,13 @@ import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/p
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
-/*interface IStaffPayload {
+interface IStaffAuthenicationPayload {
   id: string;
   fullName: string;
   isBusinessAccount: boolean;
   companyId: string;
-  locationIds: string[];
-}*/
+  workingLocationIds: string[];
+}
 
 /**
  * get working branches  of staff.
@@ -84,6 +84,7 @@ const getCompany = async (staffId: string) => {
  * @param {NextFunction} next
  * @returns
  */
+/*
 const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const accessTokenBearer = req.headers.authorization as string;
@@ -145,5 +146,95 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(buildErrorMessage(generalErrorDetails.E_0001(error)));
   }
 };
+*/
 
-export { isAuthenticated };
+/**
+ * Middleware check staff logined
+ *
+ * @param {Request} req
+ * @param {Response} res
+ * @param {NextFunction} next
+ * @returns
+ */
+const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const staffAuthenticationPayload = await authenticate(req.headers.authorization as string);
+    if (staffAuthenticationPayload instanceof CustomError) {
+      return res.status(HttpStatus.UNAUTHORIZED).send(buildErrorMessage(staffAuthenticationPayload.details));
+    }
+    res.locals.staffPayload = staffAuthenticationPayload;
+    next();
+  } catch (error) {
+    const e = buildErrorDetail('0001', 'Internal server error', error.message || '');
+    logger.error({ label: LOG_LABEL, message: JSON.stringify(e) });
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(buildErrorMessage(generalErrorDetails.E_0001(error)));
+  }
+};
+
+/**
+ * Check staff logined
+ *
+ * @param {string} accessTokenBearer
+ * @returns {(Promise<IStaffAuthenicationPayload | CustomError>)}
+ */
+const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenicationPayload | CustomError> => {
+  try {
+    let staffAuthenicationPayload: IStaffAuthenicationPayload;
+    //missing token
+    if (!accessTokenBearer) {
+      logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0002()) });
+      return new CustomError(generalErrorDetails.E_0002());
+    }
+    //check Bearer
+    if (!accessTokenBearer.startsWith('Bearer ')) {
+      logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
+      return new CustomError(generalErrorDetails.E_0003());
+    }
+
+    const accessToken = accessTokenBearer.slice(7, accessTokenBearer.length).trimLeft();
+    const accessTokenData = await verifyAcessToken(accessToken);
+    //Invalid token
+    if (accessTokenData instanceof CustomError) {
+      logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
+      return accessTokenData;
+    } else {
+      const staff = await StaffModel.scope('safe').findOne({
+        where: { id: accessTokenData.userId },
+        include: [{ model: CompanyModel, as: 'hasCompany', required: false }]
+      });
+      if (!staff) {
+        logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
+        return new CustomError(generalErrorDetails.E_0003());
+      } else {
+        const staffPayload: any = {
+          id: staff.id,
+          fullName: staff.fullName,
+          isBusinessAccount: staff.isBusinessAccount
+        };
+
+        //companyId
+        let companyId = null;
+        if ((staff as any).hasCompany && (staff as any).hasCompany.id) {
+          companyId = (staff as any).hasCompany.id;
+        } else {
+          const company = await getCompany(staff.id);
+          companyId = company.id;
+        }
+
+        staffPayload.companyId = companyId;
+
+        // working location ids
+        const workingLocations = await getWorkingLocations(companyId, staffPayload.id, staffPayload.isBusinessAccount);
+        const workingLocationIds = workingLocations.map((location) => location.id);
+        staffPayload.workingLocationIds = workingLocationIds;
+
+        staffAuthenicationPayload = staffPayload;
+      }
+    }
+    return staffAuthenicationPayload;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export { isAuthenticated, authenticate };

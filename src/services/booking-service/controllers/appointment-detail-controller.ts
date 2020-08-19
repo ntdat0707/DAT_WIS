@@ -377,8 +377,7 @@ export class AppointmentDetailController extends BaseController {
           },
           {
             model: ResourceModel,
-            as: 'resource',
-            required: true
+            as: 'resource'
           }
         ]
       });

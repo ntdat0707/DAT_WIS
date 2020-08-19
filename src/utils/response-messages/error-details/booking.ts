@@ -52,6 +52,26 @@ const bookingErrorDetails = {
   E_2004(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('2004', 'Appointment detail not found', detail);
     return e;
+  },
+  /**
+   * Appointment data not match
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2005(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2005', 'Appointment data not match', detail);
+    return e;
+  },
+  /**
+   * Appointment group must has only one primary appointment
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2006(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2006', 'Appointment group must has only one primary appointment', detail);
+    return e;
   }
 };
 

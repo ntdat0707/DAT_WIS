@@ -1,18 +1,17 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+
 import sequelize from '../configs/db-connector';
-import { BusinessType } from '../../../utils/consts';
-class CompanyModel extends Model {
+
+class AppointmentGroupModel extends Model {
   public id: string;
-  public ownerId: string;
-  public businessType?: string;
-  public businessName: string;
-  public phone: string;
+  public locationId!: string;
+  public date!: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-CompanyModel.init(
+AppointmentGroupModel.init(
   {
     id: {
       field: 'id',
@@ -20,25 +19,16 @@ CompanyModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    ownerId: {
-      field: 'owner_id',
+    locationId: {
+      field: 'location_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    businessType: {
-      field: 'business_type',
-      type: DataTypes.ENUM(...Object.keys(BusinessType)),
-      allowNull: true
-    },
-    businessName: {
-      field: 'business_name',
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    phone: {
-      field: 'phone',
-      type: DataTypes.STRING,
-      allowNull: true
+    date: {
+      field: 'date',
+      type: 'TIMESTAMP',
+      allowNull: false,
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
     },
     createdAt: {
       field: 'created_at',
@@ -48,7 +38,7 @@ CompanyModel.init(
     updatedAt: {
       field: 'updated_at',
       type: 'TIMESTAMP',
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: null
     },
     deletedAt: {
       field: 'deleted_at',
@@ -59,10 +49,10 @@ CompanyModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'company',
+    tableName: 'appointment_group',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { CompanyModel };
+export { AppointmentGroupModel };

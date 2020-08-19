@@ -1,4 +1,4 @@
-import { EAppointmentStatus, AppointmentStatusRules } from './appointment';
+import { EAppointmentStatus, AppointmentStatusRules, IAppointmentDataStatus } from './appointment';
 const buildingEnvs = ['develop', 'development', 'staging', 'test', 'testing'];
 
 enum ELocales {
@@ -54,5 +54,15 @@ export {
   EAppointmentStatus,
   AppointmentStatusRules,
   ESocialType,
-  EWeekDays
+  EWeekDays,
+  IAppointmentDataStatus
 };
+
+export enum BusinessType {
+  DENTAL = 'DENTAL',
+  SPA = 'SPA',
+  BEAUTY_SALON = 'BEAUTY_SALON',
+  NAIL_SALON = 'NAIL_SALON',
+  BABER_SHOP = 'BABER_SHOP',
+  MASSAGE = 'MASSAGE'
+}

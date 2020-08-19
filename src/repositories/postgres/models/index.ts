@@ -14,6 +14,8 @@ import { AppointmentDetailStaffModel } from './appointment-detail-staff-model';
 import { CateServiceModel } from './cate-service';
 import { ServiceImageModel } from './service-image';
 import { LocationServiceModel } from './location-service';
+import { AppointmentGroupModel } from './appointment-group-model';
+import { LocationWorkingHourModel } from './location-working-hour-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -79,6 +81,19 @@ AppointmentModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'locat
 
 CustomerModel.hasMany(AppointmentModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'appointments' });
 AppointmentModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
+
+AppointmentGroupModel.hasMany(AppointmentModel, {
+  foreignKey: 'appointmentGroupId',
+  sourceKey: 'id',
+  as: 'appointments'
+});
+AppointmentModel.belongsTo(AppointmentGroupModel, { foreignKey: 'appointmentGroupId', as: 'appointmentGroup' });
+
+LocationModel.hasMany(AppointmentGroupModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'appointmentGroups' });
+AppointmentGroupModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+LocationModel.hasMany(LocationWorkingHourModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'workingTimes' });
+LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
 export {
   sequelize,
   StaffModel,
@@ -90,5 +105,7 @@ export {
   LocationStaffModel,
   AppointmentModel,
   AppointmentDetailModel,
-  AppointmentDetailStaffModel
+  AppointmentDetailStaffModel,
+  AppointmentGroupModel,
+  LocationWorkingHourModel
 };

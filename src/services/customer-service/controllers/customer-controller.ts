@@ -82,6 +82,10 @@ export class CustomerController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
+      if (req.body.email) {
+        const existCustomer = await CustomerModel.findOne({ where: { email: data.email } });
+        if (existCustomer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+      }
       const customer = await CustomerModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {

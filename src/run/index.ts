@@ -1,7 +1,8 @@
 /* eslint-disable no-unused-vars */
 import { logger } from '../utils/logger';
 import { EEnvironments } from '../utils/consts';
-import Gateway from '../gateway/app';
+import APIGateway from '../gateways/api-gateway/app';
+import RealTimeGateway from '../gateways/real-time-gateway/app';
 import CustomerService from '../services/customer-service/app';
 import SystemService from '../services/system-service/app';
 import NotificationService from '../services/notification-service/app';
@@ -11,29 +12,44 @@ import BookingService from '../services/booking-service/app';
 
 require('dotenv').config();
 const nodeName = process.env.NODE_NAME;
+const apiGatewayName = process.env.API_GTW_NAME;
+const realTimeGatewayName = process.env.REAL_TIME_GTW_NAME;
+
 /**
  * Start Express server.
  */
 
 if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV === EEnvironments.STAGING) {
   switch (nodeName) {
-    case 'gateway':
+    case apiGatewayName:
       // code block
-      const gateway = new Gateway().app;
-      gateway
-        .listen(gateway.get('port'), (): void => {
+      const apiGateway = new APIGateway().app;
+      apiGateway
+        .listen(apiGateway.get('port'), (): void => {
           logger.info({
-            label: 'gateway',
-            message: `App is running at http://localhost:${gateway.get('port')} in mode ${gateway.get('env')} `
+            label: apiGatewayName,
+            message: `App is running at http://localhost:${apiGateway.get('port')} in mode ${apiGateway.get('env')} `
           });
         })
         .on('error', () => {
           logger.error({
-            label: 'gateway',
-            message: `gateway start fail at http://localhost:${gateway.get('port')} in mode ${gateway.get('env')} `
+            label: apiGatewayName,
+            message: `gateway start fail at http://localhost:${apiGateway.get('port')} in mode ${apiGateway.get(
+              'env'
+            )} `
           });
         });
-
+      break;
+    case realTimeGatewayName:
+      const realTimeGateway = new RealTimeGateway().app;
+      realTimeGateway.listen(realTimeGateway.get('port'), (): void => {
+        logger.info({
+          label: realTimeGatewayName,
+          message: `App is running at http://localhost:${process.env.REAL_TIME_GTW_PORT} in mode ${realTimeGateway.get(
+            'env'
+          )} `
+        });
+      });
       break;
     case 'customer-service':
       const customerService = new CustomerService().app;
@@ -94,13 +110,22 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
   }
 } else {
   // develop mode
-  const gateway = new Gateway().app;
+  const apiGateway = new APIGateway().app;
   const customerService = new CustomerService().app;
-
-  gateway.listen(gateway.get('port'), (): void => {
+  apiGateway.listen(apiGateway.get('port'), (): void => {
     logger.info({
-      label: 'gateway',
-      message: `App is running at http://localhost:${gateway.get('port')} in mode ${gateway.get('env')} `
+      label: apiGatewayName,
+      message: `App is running at http://localhost:${apiGateway.get('port')} in mode ${apiGateway.get('env')} `
+    });
+  });
+
+  const realTimeGateway = new RealTimeGateway().app;
+  realTimeGateway.listen(realTimeGateway.get('port'), (): void => {
+    logger.info({
+      label: realTimeGatewayName,
+      message: `App is running at http://localhost:${process.env.REAL_TIME_GTW_PORT} in mode ${realTimeGateway.get(
+        'env'
+      )} `
     });
   });
 
