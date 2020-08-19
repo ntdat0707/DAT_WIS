@@ -10,8 +10,11 @@ import { generalErrorDetails } from '../../utils/response-messages/error-details
 import { CustomError } from '../../utils/error-handlers';
 import { EQueueNames, rabbitmqURL } from '../../utils/event-queues';
 import { IManagementLockAppointmentData } from '../../utils/consts';
+import { logger } from '../../utils/logger';
+import { buildErrorDetail } from '../../utils/response-messages';
 import { Events, getRoomsFromStrings, SocketRoomPrefixes } from './configs/socket';
 import { buildSocketErrorMessage, buildSocketSuccessMessage } from './configs/response';
+const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
 export default class RealTimeGateway {
   public app: express.Application;
@@ -46,8 +49,6 @@ export default class RealTimeGateway {
         }
       })
       .on(Events.CONNECT, (socket: Socket) => {
-        //tslint:disable-next-line
-        console.log('sk id', socket.id);
         const appointmentRooms = getRoomsFromStrings(
           socket.request.staffPayload.workingLocationIds,
           SocketRoomPrefixes.APPOINTMENT
@@ -96,9 +97,8 @@ export default class RealTimeGateway {
         }
       }
     } catch (error) {
-      //tslint:disable-next-line
-      console.log(error);
-      // throw error;
+      const e = buildErrorDetail('0001', 'Internal server error', error.message || '');
+      logger.error({ label: LOG_LABEL, message: JSON.stringify(e) });
     }
   };
 }
