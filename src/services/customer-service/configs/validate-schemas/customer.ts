@@ -19,4 +19,9 @@ const customerIdSchema = Joi.string()
   .required()
   .label('customerId');
 
-export { createCustomerSchema, customerIdSchema };
+const loginSchema = Joi.object({
+  email: Joi.string().required().email().label('email'),
+  password: Joi.string().required().min(8).label('password')
+});
+
+export { createCustomerSchema, customerIdSchema, loginSchema };
