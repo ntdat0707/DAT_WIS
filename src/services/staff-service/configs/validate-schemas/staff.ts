@@ -9,7 +9,8 @@ const staffIdSchema = Joi.string()
 
 export const createStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
-  fullName: Joi.string().required(),
+  firstName: Joi.string().required().label('firstName'),
+  lastName: Joi.string().required().label('lastName'),
   gender: Joi.number().required(),
   phone: Joi.string().required(),
   birthDate: Joi.string().isoDate().required(),
@@ -63,7 +64,8 @@ export const createStaffsSchema = Joi.object({
     .required()
     .items(
       Joi.object({
-        fullName: Joi.string().required().label('fullName'),
+        firstName: Joi.string().required().label('firstName'),
+        lastName: Joi.string().required().label('lastName'),
         email: Joi.string().email().label('email')
       })
     )

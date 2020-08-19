@@ -13,7 +13,8 @@ const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
 interface IStaffAuthenicationPayload {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   isBusinessAccount: boolean;
   companyId: string;
   workingLocationIds: string[];
@@ -208,7 +209,8 @@ const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenicat
       } else {
         const staffPayload: any = {
           id: staff.id,
-          fullName: staff.fullName,
+          firstName: staff.firstName,
+          lastName: staff.lastName,
           isBusinessAccount: staff.isBusinessAccount
         };
 

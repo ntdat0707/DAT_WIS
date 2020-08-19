@@ -164,13 +164,16 @@ export class StaffController {
    * definitions:
    *   staffCreate:
    *       required:
-   *           - fullName
+   *           - firstName
+   *           - lastName
    *           - mainLocationId
    *           - workingLocationIds
    *       properties:
    *           mainLocationId:
    *               type: string
-   *           fullName:
+   *           firstName:
+   *               type: string
+   *           lastName:
    *               type: string
    *           gender:
    *               type: integer
@@ -224,7 +227,8 @@ export class StaffController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const profile = {
-        fullName: req.body.fullName,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
         gender: req.body.gender,
         phone: req.body.phone,
         mainLocationId: req.body.mainLocationId,
@@ -439,9 +443,12 @@ export class StaffController {
    * definitions:
    *   CreateStaffDetail:
    *       required:
-   *           - fullName
+   *           - firstName
+   *           - lastName
    *       properties:
-   *           fullName:
+   *           firstName:
+   *               type: string
+   *           lastName:
    *               type: string
    *           email:
    *               type: string
@@ -499,7 +506,8 @@ export class StaffController {
       for (let i = 0; i < req.body.staffDetails.length; i++) {
         const profile = {
           mainLocationId: req.body.mainLocationId,
-          fullName: req.body.staffDetails[i].fullName,
+          firstName: req.body.staffDetails[i].firstName,
+          lastName: req.body.staffDetails[i].lastName,
           email: req.body.staffDetails[i].email ? req.body.staffDetails[i].email : null,
           isBusinessAccount: false
         };

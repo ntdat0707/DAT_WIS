@@ -2,7 +2,8 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 class StaffModel extends Model {
   public id: string;
-  public fullName!: string;
+  public firstName!: string;
+  public lastName!: string;
   public gender: number;
   public phone: string;
   public password: string;
@@ -34,10 +35,15 @@ StaffModel.init(
       allowNull: true,
       field: 'password'
     },
-    fullName: {
+    firstName: {
       type: DataTypes.STRING,
       allowNull: false,
-      field: 'full_name'
+      field: 'first_name'
+    },
+    lastName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: 'last_name'
     },
     gender: {
       type: DataTypes.TINYINT,
