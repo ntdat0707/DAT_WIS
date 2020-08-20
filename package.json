@@ -63,7 +63,6 @@
     "nodemailer": "^6.4.6",
     "nodemailer-mailgun-transport": "^2.0.0",
     "pg": "^8.2.2",
-    "randexp": "^0.5.3",
     "redis": "^2.8.0",
     "sequelize": "^5.15.2",
     "shortid": "^2.2.15",

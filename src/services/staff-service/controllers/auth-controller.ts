@@ -37,7 +37,7 @@ import { validateGoogleToken, validateFacebookToken } from '../../../utils/valid
 import { IStaffRegisterAccountTemplate } from '../../../utils/emailer/templates/staff-register-account';
 import * as ejs from 'ejs';
 import * as path from 'path';
-import RandExp from 'randexp';
+import { generatePWD } from '../../../utils/lib/generatePassword';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
@@ -591,7 +591,7 @@ export class AuthController {
         }
         staff = await StaffModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
-          const password = new RandExp(/^(?=.*[!@#$&*])(?=.*[0-9])(?!.* )(?=.*[a-z]).{8,10}$/).gen();
+          const password = await generatePWD(8);
           data = {
             firstName: req.body.fullName.split(' ')[0],
             lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
@@ -658,7 +658,7 @@ export class AuthController {
       if (req.body.provider === ESocialType.GOOGLE) {
         staff = await StaffModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
         if (!staff) {
-          const password = new RandExp(/^(?=.*[!@#$&*])(?=.*[0-9])(?!.* )(?=.*[a-z]).{8,10}$/).gen();
+          const password = await generatePWD(8);
           data = {
             firstName: req.body.fullName.split(' ')[0],
             lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
