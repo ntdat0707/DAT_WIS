@@ -1,21 +1,42 @@
 import Joi from 'joi';
 
 const createServiceSchema = Joi.object({
-  cateServiceId: Joi.string().required().label('cateServiceId'),
-  locationIds: Joi.array().items(Joi.string()),
+  cateServiceId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('cateServiceId'),
+  locationIds: Joi.array()
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+    .min(1)
+    .required(),
   description: Joi.string().allow(null, ''),
   salePrice: Joi.number().allow(null, ''),
   color: Joi.string().allow(null, ''),
   duration: Joi.number().required(),
-  staffIds: Joi.array().items(Joi.string()).required(),
+  staffIds: Joi.array()
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+    .min(1)
+    .required(),
   name: Joi.string().required(),
-  serviceCode: Joi.string().required().allow('', null)
+  serviceCode: Joi.string().required().allow('', null),
+  isAllowedMarketplace: Joi.boolean().required().label('isAllowedMarketplace')
 });
 
 const createCateServiceSchema = Joi.object({
   name: Joi.string().required().label('name'),
   excerpt: Joi.string().required().label('excerpt'),
-  companyId: Joi.string().required().label('companyId')
+  companyId: Joi.string().required().label('companyId'),
+  color: Joi.string().regex(/^#[0-9A-F]{6}$/i)
 });
 
 const serviceIdSchema = Joi.string()
@@ -72,4 +93,30 @@ const getAllServiceSchema = Joi.object({
     })
   )
 });
-export { createCateServiceSchema, createServiceSchema, serviceIdSchema, createServicesSchema, getAllServiceSchema };
+
+const updateCateServiceSchema = Joi.object({
+  id: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('id'),
+  name: Joi.string().required().label('name'),
+  excerpt: Joi.string().required().label('excerpt'),
+  companyId: Joi.string().required().label('companyId'),
+  color: Joi.string().regex(/^#[0-9A-F]{6}$/i)
+});
+const cateServiceIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required();
+export {
+  createCateServiceSchema,
+  createServiceSchema,
+  serviceIdSchema,
+  createServicesSchema,
+  getAllServiceSchema,
+  updateCateServiceSchema,
+  cateServiceIdSchema
+};

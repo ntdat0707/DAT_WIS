@@ -12,6 +12,7 @@ class CustomerModel extends Model {
   public address: string;
   public companyId!: string;
   public password!: string;
+  public otpCode: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -73,6 +74,11 @@ CustomerModel.init(
       type: DataTypes.STRING,
       allowNull: true,
       field: 'password'
+    },
+    otpCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'otp_code'
     },
     createdAt: {
       field: 'created_at',

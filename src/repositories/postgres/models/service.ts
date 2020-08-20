@@ -10,6 +10,7 @@ class ServiceModel extends Model {
   public salePrice: number;
   public duration: number;
   public color: string;
+  public isAllowedMarketplace!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -63,6 +64,12 @@ ServiceModel.init(
       field: 'color',
       type: DataTypes.STRING(100),
       allowNull: true
+    },
+    isAllowedMarketplace: {
+      field: 'is_allowed_marketplace',
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     },
     createdAt: {
       field: 'created_at',

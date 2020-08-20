@@ -10,5 +10,10 @@ export class CateServiceRoutes {
   private config(): void {
     this.router.post('/create', isAuthenticated, this.cateServiceController.createCateService);
     this.router.get('/get-all-cate-service', isAuthenticated, this.cateServiceController.getAllCateServices);
+    this.router.put('/update', isAuthenticated, this.cateServiceController.updateCateService);
+    this.router.get('/get/:cateServiceId?', isAuthenticated, this.cateServiceController.getCateService);
+    this.router.get('/get-all', isAuthenticated, this.cateServiceController.getAllCateService);
+    this.router.get('/get-cate-services', isAuthenticated, this.cateServiceController.getCateServices);
+    this.router.delete('/delete/:cateServiceId?', isAuthenticated, this.cateServiceController.deleteCateService);
   }
 }

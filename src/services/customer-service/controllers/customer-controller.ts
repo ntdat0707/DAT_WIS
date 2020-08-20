@@ -2,7 +2,6 @@
 //
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-// import { FindOptions } from 'sequelize';
 require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
@@ -15,11 +14,14 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { customerIdSchema, loginSchema } from '../configs/validate-schemas/customer';
 import { paginate } from '../../../utils/paginator';
 import { FindOptions } from 'sequelize/types';
-import RandExp from 'randexp';
 import { hash, compare } from 'bcryptjs';
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import { IAccessTokenData, IRefreshTokenData, createAccessToken, createRefreshToken } from '../../../utils/jwt';
-
+import * as ejs from 'ejs';
+import * as path from 'path';
+import { ICustomerRegisterAccountTemplate } from '../../../utils/emailer/templates/customer-register-account';
+import { sendEmail } from '../../../utils/emailer';
+import { generatePWD } from '../../../utils/lib/generatePassword';
 export class CustomerController {
   /**
    * @swagger
@@ -95,9 +97,25 @@ export class CustomerController {
         const existEmail = await CustomerModel.findOne({ where: { email: data.email } });
         if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
-      const password = new RandExp(/^(?=.*[!@#$&*])(?=.*[0-9])(?!.* )(?=.*[a-z]).{8,10}$/).gen();
+      const password = await generatePWD(8);
       data.password = await hash(password, PASSWORD_SALT_ROUNDS);
       const customer = await CustomerModel.create(data);
+      const dataSendMail: ICustomerRegisterAccountTemplate = {
+        customerEmail: data.email,
+        customerName: `${data.firstName} ${data.lastName}`,
+        password: password
+      };
+      const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/customer-register-account.ejs');
+      ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
+        if (!err) {
+          await sendEmail({
+            receivers: data.email,
+            subject: 'Your Login information for Wisere',
+            type: 'html',
+            message: dataEjs
+          });
+        }
+      });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
       return next(error);
