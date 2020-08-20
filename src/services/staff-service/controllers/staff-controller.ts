@@ -18,7 +18,8 @@ import {
   LocationModel,
   ServiceModel,
   LocationStaffModel,
-  AppointmentModel
+  AppointmentModel,
+  AppointmentDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -28,6 +29,7 @@ import {
   createStaffsSchema,
   updateStaffSchema
 } from '../configs/validate-schemas';
+import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
 export class StaffController {
   /**
@@ -291,8 +293,6 @@ export class StaffController {
    *           - lastName
    *           - workingLocationIds
    *       properties:
-   *           mainLocationId:
-   *               type: string
    *           firstName:
    *               type: string
    *           lastName:
@@ -306,6 +306,10 @@ export class StaffController {
    *           address:
    *               type: string
    *           workingLocationIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *           serviceIds:
    *               type: array
    *               items:
    *                   type: string
@@ -347,7 +351,7 @@ export class StaffController {
       transaction = await sequelize.transaction();
       const validateErrors = validate(req.body, updateStaffSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const profile = {
         firstName: req.body.firstName,
@@ -361,11 +365,9 @@ export class StaffController {
       if (req.body.workingLocationIds) {
         const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
         if (diff.length) {
-          return next(
-            new CustomError(
-              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
-              HttpStatus.FORBIDDEN
-            )
+          throw new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+            HttpStatus.FORBIDDEN
           );
         }
       }
@@ -377,48 +379,47 @@ export class StaffController {
           exclude: ['password']
         }
       });
-      const locationIdsRemoved = await LocationStaffModel.findAll({
-        where: {
-          staffId: req.params.staffId,
-          locationId: {
-            [Op.notIn]: req.body.workingLocationIds
-          }
-        }
-      })
-        .then((x) => x.map(({ locationId }: any) => locationId))
-        .then((x) => _.uniq(x));
-
-      const locationIdsAdded = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
-
-      const appointmentsInFeature = await AppointmentModel.findAll({
-        where: {
-          locationId: locationIdsRemoved,
-          date: {
-            [Op.gte]: moment().toDate()
-          }
-        }
-      }).then((rows: any[]) => rows.map(({ locationId }: any) => locationId));
-
-      if (appointmentsInFeature.length) {
-        return next(new CustomError(staffErrorDetails.E_4009(), HttpStatus.FORBIDDEN));
-      }
 
       staff = await staff.update(profile, {
         transaction: transaction
       });
-      if (locationIdsAdded.length) {
+      //
+      //If body.workingLocationIds === currently location, not need change location of user.
+
+      const handleLocationIds = await this.handleEditStaffLocations(req.params.staffId, req.body.workingLocationIds);
+      if (handleLocationIds.locationIdsAdded.length) {
         await LocationStaffModel.bulkCreate(
-          locationIdsAdded.map((locationId) => ({ staffId: req.params.staffId, locationId: locationId })),
+          handleLocationIds.locationIdsAdded.map((locationId) => ({
+            staffId: req.params.staffId,
+            locationId: locationId
+          })),
           { transaction: transaction }
         );
       }
-      await LocationStaffModel.destroy({
-        where: {
-          locationId: locationIdsRemoved
-        },
-        transaction: transaction
-      });
+      if (handleLocationIds.locationIdsRemoved.length) {
+        await LocationStaffModel.destroy({
+          where: {
+            locationId: handleLocationIds.locationIdsRemoved,
+            staffId: req.params.staffId
+          },
+          transaction: transaction
+        });
+      }
 
+      const handleServiceIds = await this.handleEditStaffServices(req.params.staffId, req.body.serviceIds);
+      if (handleServiceIds.serviceIdsAdded.length) {
+        await ServiceStaffModel.bulkCreate(
+          handleServiceIds.serviceIdsAdded.map((serviceId) => ({ staffId: req.params.staffId, serviceId: serviceId }))
+        );
+      }
+      if (handleServiceIds.serviceIdsRemoved.length) {
+        await ServiceStaffModel.destroy({
+          where: {
+            serviceId: handleServiceIds.serviceIdsRemoved,
+            staffId: req.params.staffId
+          }
+        });
+      }
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
@@ -430,6 +431,89 @@ export class StaffController {
       return next(error);
     }
   };
+
+  async handleEditStaffLocations(staffId: string, locationIdsPayload: string[]) {
+    const currentLocationIdsOfStaff = await LocationStaffModel.findAll({
+      where: {
+        staffId: staffId
+      }
+    }).then((locationStaffs) => locationStaffs.map(({ locationId }) => locationId));
+    const currentLocationIdsLocked = await AppointmentModel.findAll({
+      where: {
+        locationId: locationIdsPayload,
+        date: {
+          [Op.gte]: moment().toDate()
+        }
+      },
+      include: [
+        {
+          model: AppointmentDetailModel,
+          as: 'appointmentDetails',
+          include: [
+            {
+              model: StaffModel,
+              as: 'staffs',
+              where: {
+                id: staffId
+              }
+            }
+          ]
+        }
+      ]
+    }).then((rows: any[]) => rows.map(({ locationId }: any) => locationId));
+    const locationIdsNoDeleted = _.difference(currentLocationIdsLocked, locationIdsPayload);
+    if (locationIdsNoDeleted.length) {
+      throw new CustomError(staffErrorDetails.E_4009(), HttpStatus.FORBIDDEN);
+    }
+    const locationIdsRemoved = _.difference(currentLocationIdsOfStaff, locationIdsPayload);
+    const locationIdsAdded = _.difference(locationIdsPayload, currentLocationIdsOfStaff);
+    return {
+      locationIdsRemoved,
+      locationIdsAdded
+    };
+  }
+
+  async handleEditStaffServices(staffId: string, serviceIdsPayload: string[]) {
+    const currentServiceIdsOfStaff = await ServiceStaffModel.findAll({
+      where: {
+        staffId: staffId
+      }
+    }).then((locationStaffs) => locationStaffs.map(({ serviceId }) => serviceId));
+
+    const serviceIdsLocked = await AppointmentDetailModel.findAll({
+      attributes: ['serviceId'],
+      where: {
+        serviceId: serviceIdsPayload,
+        startTime: {
+          [Op.gte]: moment().toDate()
+        }
+      },
+      include: [
+        {
+          model: StaffModel,
+          as: 'staffs',
+          where: {
+            id: staffId
+          }
+        }
+      ]
+    })
+      .then((rows) => rows.map(({ serviceId }: any): string => serviceId))
+      .then((x) => _.uniq(x));
+
+    // Check service appointment will used in appointment feature.
+    if (_.difference(serviceIdsLocked, serviceIdsPayload).length) {
+      throw new CustomError(staffErrorDetails.E_40010(), HttpStatus.FORBIDDEN);
+    }
+
+    const serviceIdsRemoved = _.difference(currentServiceIdsOfStaff, serviceIdsPayload);
+    const serviceIdsAdded = _.difference(serviceIdsPayload, currentServiceIdsOfStaff);
+    return {
+      serviceIdsRemoved: serviceIdsRemoved,
+      serviceIdsAdded: serviceIdsAdded
+    };
+  }
+
   /**
    * @swagger
    * /staff/get-all-staffs:

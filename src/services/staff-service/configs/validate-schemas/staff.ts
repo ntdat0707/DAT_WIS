@@ -52,7 +52,15 @@ export const updateStaffSchema = Joi.object({
         })
         .required()
     )
-    .label('workingLocationIds')
+    .label('workingLocationIds'),
+  serviceIds: Joi.array()
+    .required()
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+    .label('serviceIds')
 });
 
 const filterStaffSchema = Joi.object({
