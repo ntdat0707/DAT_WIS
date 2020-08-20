@@ -64,6 +64,10 @@ StaffModel.init(
       type: DataTypes.DATE,
       field: 'birth_date'
     },
+    isAllowedMarketPlace: {
+      type: DataTypes.BOOLEAN,
+      field: 'is_allowed_marketplace'
+    },
     passportNumber: {
       type: DataTypes.STRING,
       field: 'passport_number'

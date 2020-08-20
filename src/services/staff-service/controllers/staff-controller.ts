@@ -293,6 +293,8 @@ export class StaffController {
    *           - lastName
    *           - workingLocationIds
    *       properties:
+   *           isAllowedMarketPlace:
+   *               type: boolean
    *           firstName:
    *               type: string
    *           lastName:
@@ -359,7 +361,8 @@ export class StaffController {
         gender: req.body.gender,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
-        address: req.body.address
+        address: req.body.address,
+        isAllowedMarketPlace: req.body.isAllowedMarketPlace
       };
 
       if (req.body.workingLocationIds) {

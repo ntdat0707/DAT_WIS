@@ -36,6 +36,7 @@ export const createStaffSchema = Joi.object({
 });
 export const updateStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
+  isAllowedMarketPlace: Joi.boolean().required().label('isAllowMarketPlace'),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
   gender: Joi.number().required(),
