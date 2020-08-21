@@ -376,6 +376,12 @@ export class ServiceController {
             where: {
               id: (req.query.locationIds as []).length ? req.query.locationIds : workingLocationIds
             }
+          },
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: true,
+            attributes: []
           }
         ]
       };
