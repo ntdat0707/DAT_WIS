@@ -94,7 +94,7 @@ export class CustomerController {
       const existPhone = await CustomerModel.findOne({ where: { phone: data.phone } });
       if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
       if (req.body.email) {
-        const existEmail = await CustomerModel.findOne({ where: { email: data.email } });
+        const existEmail = await CustomerModel.findOne({ where: { email: data.email, companyId: data.companyId } });
         if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
       const password = await generatePWD(8);
