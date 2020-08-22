@@ -13,7 +13,8 @@ const createCustomerSchema = Joi.object({
 });
 
 const updateCustomerSchema = Joi.object({
-  fullName: Joi.string().required().label('fullName'),
+  firstName: Joi.string().required().label('firstName'),
+  lastName: Joi.string().required().label('lastName'),
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   birthDate: Joi.string().isoDate().label('birthDate'),
   passportNumber: Joi.string().label('passportNumber'),

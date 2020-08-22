@@ -1,5 +1,3 @@
-//
-//
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 require('dotenv').config();
@@ -126,7 +124,9 @@ export class CustomerController {
    * definitions:
    *   customerUpdate:
    *       properties:
-   *           fullName:
+   *           lastName:
+   *               type: string
+   *           firstName:
    *               type: string
    *           gender:
    *               type: integer
@@ -172,7 +172,8 @@ export class CustomerController {
     try {
       const { companyId } = res.locals.staffPayload;
       const data: any = {
-        fullName: req.body.fullName,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
         gender: req.body.gender,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
@@ -181,13 +182,11 @@ export class CustomerController {
       const customerId = req.params.customerId;
       const validateErrors = validate(data, updateCustomerSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       let customer = await CustomerModel.findOne({ where: { id: req.params.customerId, companyId: companyId } });
       if (!customer)
-        return next(
-          new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND)
-        );
+        throw new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND);
       customer = await customer.update(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
@@ -398,9 +397,9 @@ export class CustomerController {
    *         $ref: '#/definitions/CustomerLogin'
    *     responses:
    *       200:
-   *         description: Sucess
+   *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad requests - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
