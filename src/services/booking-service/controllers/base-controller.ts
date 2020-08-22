@@ -6,13 +6,13 @@ import { IManagementLockAppointmentData } from '../../../utils/consts';
 import { emit, EQueueNames } from '../../../utils/event-queues';
 import { StaffModel, ServiceModel, ResourceModel, LocationModel } from '../../../repositories/postgres/models';
 
-import { IAppointmentDetailInput } from '../configs/interfaces';
+import { IAppointmentDetailInput, IAppointmentDetail } from '../configs/interfaces';
 
 export class BaseController {
   protected verifyAppointmentDetails = async (
     appointmentDetails: IAppointmentDetailInput[],
     locationId: string
-  ): Promise<IAppointmentDetailInput[] | CustomError> => {
+  ): Promise<IAppointmentDetail[] | CustomError> => {
     try {
       if (!appointmentDetails || appointmentDetails.length < 1)
         return new CustomError(bookingErrorDetails.E_2000(), HttpStatus.BAD_REQUEST);
@@ -119,7 +119,11 @@ export class BaseController {
           }
         }
       }
-      return appointmentDetails;
+      const result = appointmentDetails.map((element, i) => ({
+        ...element,
+        ...{ duration: servicesFind[i].duration }
+      }));
+      return result;
     } catch (error) {
       throw error;
     }
