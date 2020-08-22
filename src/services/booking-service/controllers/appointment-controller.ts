@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
+import moment from 'moment';
 require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
@@ -179,16 +180,25 @@ export class AppointmentController extends BaseController {
       for (let i = 0; i < appointmentDetails.length; i++) {
         serviceDataNotify.push({
           id: appointmentDetails[i].serviceId,
-          time: { start: appointmentDetails[i].startTime }
+          time: {
+            start: appointmentDetails[i].startTime,
+            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+          }
         });
         if (appointmentDetails[i].resourceId)
           resourceDataNotify.push({
             id: appointmentDetails[i].resourceId,
-            time: { start: appointmentDetails[i].startTime }
+            time: {
+              start: appointmentDetails[i].startTime,
+              end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+            }
           });
         staffDataNotify.push({
           ids: appointmentDetails[i].staffIds,
-          time: { start: appointmentDetails[i].startTime }
+          time: {
+            start: appointmentDetails[i].startTime,
+            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+          }
         });
         const appointmentDetailId = uuidv4();
         appointmentDetailData.push({
