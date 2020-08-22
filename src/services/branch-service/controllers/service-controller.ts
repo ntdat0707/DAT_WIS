@@ -7,7 +7,12 @@ import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
-import { createServiceSchema, serviceIdSchema, createServicesSchema } from '../configs/validate-schemas';
+import {
+  createServiceSchema,
+  serviceIdSchema,
+  createServicesSchema,
+  getAllServiceSchema
+} from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
 import { StaffModel, LocationModel, sequelize, ResourceModel } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
@@ -69,6 +74,7 @@ export class ServiceController {
    *     - in: "formData"
    *       name: staffIds
    *       type: array
+   *       required: true
    *       items:
    *          type: string
    *     - in: "formData"
@@ -76,6 +82,10 @@ export class ServiceController {
    *       type: array
    *       items:
    *          type: string
+   *     - in: "formData"
+   *       name: isAllowedMarketplace
+   *       type: boolean
+   *       required: true
    *     responses:
    *       200:
    *         description:
@@ -102,7 +112,8 @@ export class ServiceController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const staffIds = await StaffModel.findAll({
+      const staffs = await StaffModel.findAll({
+        where: { id: body.staffIds },
         attributes: ['id'],
         include: [
           {
@@ -116,7 +127,9 @@ export class ServiceController {
             }
           }
         ]
-      }).then((staffs) => staffs.map((staff) => staff.id));
+      });
+      const staffIds = staffs.map((staff) => staff.id);
+      // .then((staffs) => staffs.map((staff) => staff.id));
 
       if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
         return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
@@ -143,7 +156,8 @@ export class ServiceController {
         color: body.color,
         cateServiceId: body.cateServiceId,
         name: body.name,
-        serviceCode: serviceCode
+        serviceCode: serviceCode,
+        isAllowedMarketplace: body.isAllowedMarketplace
       };
 
       transaction = await sequelize.transaction();
@@ -362,6 +376,12 @@ export class ServiceController {
             where: {
               id: (req.query.locationIds as []).length ? req.query.locationIds : workingLocationIds
             }
+          },
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: true,
+            attributes: []
           }
         ]
       };
@@ -393,6 +413,9 @@ export class ServiceController {
    *       items:
    *        type: string
    *       required: true
+   *     - in: query
+   *       name: staffId
+   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -404,7 +427,13 @@ export class ServiceController {
   public getAllService = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { workingLocationIds } = res.locals.staffPayload;
-      const locationIdsDiff = _.difference(req.query.locationIds as string[], workingLocationIds);
+      const data = {
+        locationIds: req.query.locationIds,
+        staffId: req.query.staffId
+      };
+      const validateErrors = validate(data, getAllServiceSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const locationIdsDiff = _.difference(data.locationIds as string[], workingLocationIds);
       if (locationIdsDiff.length > 0) {
         return next(
           new CustomError(
@@ -413,18 +442,30 @@ export class ServiceController {
           )
         );
       }
-      const servicesInLocation = await ServiceModel.findAll({
+      const query: FindOptions = {
         include: [
           {
             model: LocationModel,
             as: 'locations',
             required: true,
             where: {
-              id: (req.query.locationIds as []).length ? req.query.locationIds : workingLocationIds
+              id: (data.locationIds as []).length ? data.locationIds : workingLocationIds
             }
           }
         ]
-      });
+      };
+      if (data.staffId) {
+        query.include.push({
+          model: StaffModel,
+          as: 'staffs',
+          required: true,
+          where: {
+            id: data.staffId
+          },
+          attributes: []
+        });
+      }
+      const servicesInLocation = await ServiceModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(servicesInLocation));
     } catch (error) {
       return next(error);

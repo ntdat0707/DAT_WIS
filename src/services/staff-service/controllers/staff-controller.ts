@@ -1,8 +1,9 @@
 //
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
+import moment from 'moment';
 import _ from 'lodash';
 require('dotenv').config();
 
@@ -16,10 +17,19 @@ import {
   StaffModel,
   LocationModel,
   ServiceModel,
-  LocationStaffModel
+  LocationStaffModel,
+  AppointmentModel,
+  AppointmentDetailModel
 } from '../../../repositories/postgres/models';
 
-import { staffIdSchema, createStaffSchema, filterStaffSchema, createStaffsSchema } from '../configs/validate-schemas';
+import {
+  staffIdSchema,
+  createStaffSchema,
+  filterStaffSchema,
+  createStaffsSchema,
+  updateStaffSchema
+} from '../configs/validate-schemas';
+import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
 export class StaffController {
   /**
@@ -164,13 +174,16 @@ export class StaffController {
    * definitions:
    *   staffCreate:
    *       required:
-   *           - fullName
+   *           - firstName
+   *           - lastName
    *           - mainLocationId
    *           - workingLocationIds
    *       properties:
    *           mainLocationId:
    *               type: string
-   *           fullName:
+   *           firstName:
+   *               type: string
+   *           lastName:
    *               type: string
    *           gender:
    *               type: integer
@@ -224,7 +237,8 @@ export class StaffController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const profile = {
-        fullName: req.body.fullName,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
         gender: req.body.gender,
         phone: req.body.phone,
         mainLocationId: req.body.mainLocationId,
@@ -270,6 +284,239 @@ export class StaffController {
       return next(error);
     }
   };
+  /**
+   * @swagger
+   * definitions:
+   *   staffUpdate:
+   *       required:
+   *           - firstName
+   *           - lastName
+   *           - workingLocationIds
+   *       properties:
+   *           isAllowedMarketPlace:
+   *               type: boolean
+   *           firstName:
+   *               type: string
+   *           lastName:
+   *               type: string
+   *           gender:
+   *               type: integer
+   *           birthDate:
+   *               type: string
+   *           passportNumber:
+   *               type: string
+   *           address:
+   *               type: string
+   *           workingLocationIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *           serviceIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   *
+   */
+
+  /**
+   * @swagger
+   * /staff/update/{staffId}:
+   *   put:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: updateStaff
+   *     parameters:
+   *     - in: "path"
+   *       name: "staffId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/staffUpdate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       403:
+   *         description: forbidden
+   *       500:
+   *         description: Server internal error
+   */
+  public updateStaff = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      transaction = await sequelize.transaction();
+      const validateErrors = validate(req.body, updateStaffSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
+      const profile = {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        gender: req.body.gender,
+        birthDate: req.body.birthDate,
+        passportNumber: req.body.passportNumber,
+        address: req.body.address,
+        isAllowedMarketPlace: req.body.isAllowedMarketPlace
+      };
+
+      if (req.body.workingLocationIds) {
+        const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
+        if (diff.length) {
+          throw new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+            HttpStatus.FORBIDDEN
+          );
+        }
+      }
+      let staff = await StaffModel.findOne({
+        where: {
+          id: req.params.staffId
+        },
+        attributes: {
+          exclude: ['password']
+        }
+      });
+
+      staff = await staff.update(profile, {
+        transaction: transaction
+      });
+      //
+      //If body.workingLocationIds === currently location, not need change location of user.
+
+      const handleLocationIds = await this.handleEditStaffLocations(req.params.staffId, req.body.workingLocationIds);
+      if (handleLocationIds.locationIdsAdded.length) {
+        await LocationStaffModel.bulkCreate(
+          handleLocationIds.locationIdsAdded.map((locationId) => ({
+            staffId: req.params.staffId,
+            locationId: locationId
+          })),
+          { transaction: transaction }
+        );
+      }
+      if (handleLocationIds.locationIdsRemoved.length) {
+        await LocationStaffModel.destroy({
+          where: {
+            locationId: handleLocationIds.locationIdsRemoved,
+            staffId: req.params.staffId
+          },
+          transaction: transaction
+        });
+      }
+
+      const handleServiceIds = await this.handleEditStaffServices(req.params.staffId, req.body.serviceIds);
+      if (handleServiceIds.serviceIdsAdded.length) {
+        await ServiceStaffModel.bulkCreate(
+          handleServiceIds.serviceIdsAdded.map((serviceId) => ({ staffId: req.params.staffId, serviceId: serviceId }))
+        );
+      }
+      if (handleServiceIds.serviceIdsRemoved.length) {
+        await ServiceStaffModel.destroy({
+          where: {
+            serviceId: handleServiceIds.serviceIdsRemoved,
+            staffId: req.params.staffId
+          }
+        });
+      }
+      //commit transaction
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
+  async handleEditStaffLocations(staffId: string, locationIdsPayload: string[]) {
+    const currentLocationIdsOfStaff = await LocationStaffModel.findAll({
+      where: {
+        staffId: staffId
+      }
+    }).then((locationStaffs) => locationStaffs.map(({ locationId }) => locationId));
+    const currentLocationIdsLocked = await AppointmentModel.findAll({
+      where: {
+        locationId: locationIdsPayload,
+        date: {
+          [Op.gte]: moment().toDate()
+        }
+      },
+      include: [
+        {
+          model: AppointmentDetailModel,
+          as: 'appointmentDetails',
+          include: [
+            {
+              model: StaffModel,
+              as: 'staffs',
+              where: {
+                id: staffId
+              }
+            }
+          ]
+        }
+      ]
+    }).then((rows: any[]) => rows.map(({ locationId }: any) => locationId));
+    const locationIdsNoDeleted = _.difference(currentLocationIdsLocked, locationIdsPayload);
+    if (locationIdsNoDeleted.length) {
+      throw new CustomError(staffErrorDetails.E_4009(), HttpStatus.FORBIDDEN);
+    }
+    const locationIdsRemoved = _.difference(currentLocationIdsOfStaff, locationIdsPayload);
+    const locationIdsAdded = _.difference(locationIdsPayload, currentLocationIdsOfStaff);
+    return {
+      locationIdsRemoved,
+      locationIdsAdded
+    };
+  }
+
+  async handleEditStaffServices(staffId: string, serviceIdsPayload: string[]) {
+    const currentServiceIdsOfStaff = await ServiceStaffModel.findAll({
+      where: {
+        staffId: staffId
+      }
+    }).then((locationStaffs) => locationStaffs.map(({ serviceId }) => serviceId));
+
+    const serviceIdsLocked = await AppointmentDetailModel.findAll({
+      attributes: ['serviceId'],
+      where: {
+        serviceId: serviceIdsPayload,
+        startTime: {
+          [Op.gte]: moment().toDate()
+        }
+      },
+      include: [
+        {
+          model: StaffModel,
+          as: 'staffs',
+          where: {
+            id: staffId
+          }
+        }
+      ]
+    })
+      .then((rows) => rows.map(({ serviceId }: any): string => serviceId))
+      .then((x) => _.uniq(x));
+
+    // Check service appointment will used in appointment feature.
+    if (_.difference(serviceIdsLocked, serviceIdsPayload).length) {
+      throw new CustomError(staffErrorDetails.E_40010(), HttpStatus.FORBIDDEN);
+    }
+
+    const serviceIdsRemoved = _.difference(currentServiceIdsOfStaff, serviceIdsPayload);
+    const serviceIdsAdded = _.difference(serviceIdsPayload, currentServiceIdsOfStaff);
+    return {
+      serviceIdsRemoved: serviceIdsRemoved,
+      serviceIdsAdded: serviceIdsAdded
+    };
+  }
+
   /**
    * @swagger
    * /staff/get-all-staffs:
@@ -439,9 +686,12 @@ export class StaffController {
    * definitions:
    *   CreateStaffDetail:
    *       required:
-   *           - fullName
+   *           - firstName
+   *           - lastName
    *       properties:
-   *           fullName:
+   *           firstName:
+   *               type: string
+   *           lastName:
    *               type: string
    *           email:
    *               type: string
@@ -499,7 +749,8 @@ export class StaffController {
       for (let i = 0; i < req.body.staffDetails.length; i++) {
         const profile = {
           mainLocationId: req.body.mainLocationId,
-          fullName: req.body.staffDetails[i].fullName,
+          firstName: req.body.staffDetails[i].firstName,
+          lastName: req.body.staffDetails[i].lastName,
           email: req.body.staffDetails[i].email ? req.body.staffDetails[i].email : null,
           isBusinessAccount: false
         };

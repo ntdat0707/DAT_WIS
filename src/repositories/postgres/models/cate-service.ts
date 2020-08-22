@@ -6,6 +6,7 @@ class CateServiceModel extends Model {
   public companyId!: string;
   public name!: string;
   public excerpt!: string;
+  public color: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -33,6 +34,10 @@ CateServiceModel.init(
       field: 'excerpt',
       type: DataTypes.STRING(255),
       allowNull: false
+    },
+    color: {
+      field: 'color',
+      type: DataTypes.STRING(20)
     },
     createdAt: {
       field: 'created_at',

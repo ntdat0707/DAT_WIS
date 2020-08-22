@@ -3,7 +3,8 @@ import { ESocialType } from '../../../../utils/consts';
 
 const createBusinessAccountSchema = Joi.object({
   email: Joi.string().required().email().label('email'),
-  fullName: Joi.string().required().label('fullName'),
+  firstName: Joi.string().required().label('firstName'),
+  lastName: Joi.string().required().label('lastName'),
   password: Joi.string().required().min(8).label('password')
 });
 const loginSchema = Joi.object({

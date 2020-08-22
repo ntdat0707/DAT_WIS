@@ -17,6 +17,14 @@ const customerErrorDetails = {
   E_3002(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3002', 'Can not access to this company', detail);
     return e;
+  },
+  E_3003(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3003', 'Phone already exists', detail);
+    return e;
+  },
+  E_3004(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3004', 'Login info invalid', detail);
+    return e;
   }
 };
 

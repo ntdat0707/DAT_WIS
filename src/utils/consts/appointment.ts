@@ -65,4 +65,19 @@ const AppointmentStatusRules = {
   }
 };
 
-export { EAppointmentStatus, AppointmentStatusRules };
+interface IManagementLockAppointmentData {
+  staffs: {
+    locationId: string;
+    data: { id: string; time: { start: Date; end?: Date } }[];
+  }[];
+  services: {
+    locationId: string;
+    data: { id: string; time: { start: Date; end?: Date } }[];
+  };
+  resources?: {
+    locationId: string;
+    data: { id: string; time: { start: Date; end?: Date } }[];
+  };
+}
+
+export { EAppointmentStatus, AppointmentStatusRules, IManagementLockAppointmentData };

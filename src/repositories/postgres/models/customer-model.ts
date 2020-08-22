@@ -2,7 +2,8 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 class CustomerModel extends Model {
   public id: string;
-  public fullName!: string;
+  public firstName!: string;
+  public lastName!: string;
   public gender: number;
   public phone!: string;
   public email: string;
@@ -10,6 +11,8 @@ class CustomerModel extends Model {
   public passportNumber: string;
   public address: string;
   public companyId!: string;
+  public password!: string;
+  public otpCode: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -23,10 +26,15 @@ CustomerModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    fullName: {
+    firstName: {
       type: DataTypes.STRING,
       allowNull: false,
-      field: 'full_name'
+      field: 'first_name'
+    },
+    lastName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: 'last_name'
     },
     gender: {
       type: DataTypes.TINYINT,
@@ -62,6 +70,16 @@ CustomerModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'password'
+    },
+    otpCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'otp_code'
+    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
@@ -82,7 +100,13 @@ CustomerModel.init(
     sequelize,
     freezeTableName: true,
     tableName: 'customer',
-    // scopes: {},
+    scopes: {
+      safe: {
+        attributes: {
+          exclude: ['password']
+        }
+      }
+    },
     timestamps: true,
     paranoid: true
   }
