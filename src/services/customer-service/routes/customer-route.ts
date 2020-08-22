@@ -12,6 +12,7 @@ export class CustomerRoutes {
   }
   private config(): void {
     this.router.post('/create', isAuthenticated, this.customerController.createCustomer);
+    this.router.put('/update/:customerId', isAuthenticated, this.customerController.updateCustomer);
     this.router.get('/all', isAuthenticated, this.customerController.getAllCustomerInCompany);
     this.router.delete('/delete/:customerId?', isAuthenticated, this.customerController.deleteCustomer);
     this.router.get('/get-customers', isAuthenticated, this.customerController.getCustomers);

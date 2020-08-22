@@ -12,6 +12,15 @@ const createCustomerSchema = Joi.object({
   address: Joi.string().label('address')
 });
 
+const updateCustomerSchema = Joi.object({
+  firstName: Joi.string().required().label('firstName'),
+  lastName: Joi.string().required().label('lastName'),
+  gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
+  birthDate: Joi.string().isoDate().label('birthDate'),
+  passportNumber: Joi.string().label('passportNumber'),
+  address: Joi.string().label('address')
+});
+
 const customerIdSchema = Joi.string()
   .guid({
     version: ['uuidv4']
@@ -23,5 +32,4 @@ const loginSchema = Joi.object({
   email: Joi.string().required().email().label('email'),
   password: Joi.string().required().min(8).label('password')
 });
-
-export { createCustomerSchema, customerIdSchema, loginSchema };
+export { createCustomerSchema, customerIdSchema, updateCustomerSchema, loginSchema };

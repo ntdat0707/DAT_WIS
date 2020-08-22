@@ -1,5 +1,3 @@
-//
-//
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 require('dotenv').config();
@@ -11,7 +9,7 @@ import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { customerIdSchema, loginSchema } from '../configs/validate-schemas/customer';
+import { customerIdSchema, updateCustomerSchema, loginSchema } from '../configs/validate-schemas/customer';
 import { paginate } from '../../../utils/paginator';
 import { FindOptions } from 'sequelize/types';
 import { hash, compare } from 'bcryptjs';
@@ -116,6 +114,80 @@ export class CustomerController {
           });
         }
       });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
+    } catch (error) {
+      return next(error);
+    }
+  };
+  /**
+   * @swagger
+   * definitions:
+   *   customerUpdate:
+   *       properties:
+   *           lastName:
+   *               type: string
+   *           firstName:
+   *               type: string
+   *           gender:
+   *               type: integer
+   *               required: true
+   *               enum: [0, 1, 2]
+   *           birthDate:
+   *               type: string
+   *           passportNumber:
+   *               type: string
+   *           address:
+   *               type: string
+   *
+   *
+   */
+
+  /**
+   * @swagger
+   * /customer/update/{customerId}:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: updateCustomer
+   *     parameters:
+   *     - in: "path"
+   *       name: "customerId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/customerUpdate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { companyId } = res.locals.staffPayload;
+      const data: any = {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        gender: req.body.gender,
+        birthDate: req.body.birthDate,
+        passportNumber: req.body.passportNumber,
+        address: req.body.address
+      };
+      const customerId = req.params.customerId;
+      const validateErrors = validate(data, updateCustomerSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
+      let customer = await CustomerModel.findOne({ where: { id: req.params.customerId, companyId: companyId } });
+      if (!customer)
+        throw new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND);
+      customer = await customer.update(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
       return next(error);
@@ -325,9 +397,9 @@ export class CustomerController {
    *         $ref: '#/definitions/CustomerLogin'
    *     responses:
    *       200:
-   *         description: Sucess
+   *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad requests - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
