@@ -51,7 +51,16 @@ const filterAppointmentDetailChema = Joi.object({
     .required()
     .label('locationId'),
   startTime: Joi.string().isoDate(),
-  endTime: Joi.string().isoDate()
+  endTime: Joi.string().isoDate(),
+  staffIds: Joi.array()
+    .items(
+      Joi.string()
+        .guid({
+          version: ['uuidv4']
+        })
+        .required()
+    )
+    .label('staffIds')
 });
 
 const appointmentIdSchema = Joi.string()
