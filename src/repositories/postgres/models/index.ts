@@ -94,6 +94,9 @@ AppointmentGroupModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: '
 LocationModel.hasMany(LocationWorkingHourModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'workingTimes' });
 LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
+CompanyModel.hasMany(CustomerModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customers' });
+CustomerModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
 export {
   sequelize,
   StaffModel,
