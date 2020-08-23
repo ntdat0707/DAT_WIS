@@ -294,6 +294,12 @@ export class AppointmentController extends BaseController {
    *       schema:
    *          type: string
    *          format: date-time
+   *     - in: query
+   *       name: staffIds
+   *       schema:
+   *           type: array
+   *           items:
+   *               type: string
    *     responses:
    *       200:
    *         description: success
@@ -308,7 +314,8 @@ export class AppointmentController extends BaseController {
       const conditions = {
         locationId: req.query.locationId,
         startTime: req.query.startTime,
-        endTime: req.query.endTime
+        endTime: req.query.endTime,
+        staffIds: req.query.staffIds
       };
       const validateErrors = validate(conditions, filterAppointmentDetailChema);
       if (validateErrors) {
@@ -365,12 +372,30 @@ export class AppointmentController extends BaseController {
       let conditionStartTime = {};
       if (conditions.startTime) conditionStartTime = { ...conditionStartTime, ...{ [Op.gte]: conditions.startTime } };
       if (conditions.endTime) conditionStartTime = { ...conditionStartTime, ...{ [Op.lte]: conditions.endTime } };
-      if (conditionStartTime.constructor === Object && Object.keys(conditionStartTime).length > 0) {
+      if (conditionStartTime.constructor === Object && Object.getOwnPropertySymbols(conditionStartTime).length > 0) {
         query.where = {
           ...query.where,
           ...{ startTime: conditionStartTime }
         };
       }
+      const conditionsStaffs: any = conditions.staffIds
+        ? {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] },
+            where: { id: conditions.staffIds }
+          }
+        : {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          };
+      query.include = {
+        ...query.include,
+        ...conditionsStaffs
+      };
       const appointmentDetails = await AppointmentDetailModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetails));
     } catch (error) {
