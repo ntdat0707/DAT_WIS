@@ -9,7 +9,12 @@ import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { customerIdSchema, loginSchema, updateCustomerSchema } from '../configs/validate-schemas/customer';
+import {
+  customerIdSchema,
+  updateCustomerSchema,
+  loginSchema,
+  loginSocialSchema
+} from '../configs/validate-schemas/customer';
 import { paginate } from '../../../utils/paginator';
 import { FindOptions } from 'sequelize/types';
 import { hash, compare } from 'bcryptjs';
@@ -26,6 +31,8 @@ import * as path from 'path';
 import { ICustomerRegisterAccountTemplate } from '../../../utils/emailer/templates/customer-register-account';
 import { sendEmail } from '../../../utils/emailer';
 import { generatePWD } from '../../../utils/lib/generatePassword';
+import { ESocialType } from '../../../utils/consts';
+import { validateFacebookToken, validateGoogleToken } from '../../../utils/validator/validate-social-token';
 export class CustomerController {
   /**
    * @swagger
@@ -496,6 +503,257 @@ export class CustomerController {
           return next(new CustomError(generalErrorDetails.E_0003()));
         }
         return res.status(HttpStatus.OK).send();
+      }
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerLoginSocial:
+   *       required:
+   *           - provider
+   *           - providerId
+   *           - fullName
+   *           - token
+   *       properties:
+   *           provider:
+   *               type: string
+   *           providerId:
+   *               type: string
+   *           email:
+   *               type: string
+   *           fullName:
+   *               type: string
+   *           avatarPath:
+   *               type: string
+   *           token:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/login-social:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     name: customer-login-social
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerLoginSocial'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public loginSocial = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      let customer: CustomerModel;
+      let data: any;
+      let accessTokenData: IAccessTokenData;
+      let accessToken: string;
+      let refreshTokenData: IRefreshTokenData;
+      let refreshToken: string;
+      let profile: CustomerModel;
+      let newCustomer: CustomerModel;
+      let socialInfor: any;
+      const validateErrors = validate(req.body, loginSocialSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (req.body.email) {
+        if (req.body.provider === ESocialType.GOOGLE) {
+          socialInfor = await validateGoogleToken(req.body.token);
+          if (socialInfor.response.email !== req.body.email || socialInfor.response.expires_in === 0) {
+            return next(new CustomError(customerErrorDetails.E_3006('Incorrect google token'), HttpStatus.BAD_REQUEST));
+          }
+        } else if (req.body.provider === ESocialType.FACEBOOK) {
+          socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
+          if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
+            return next(
+              new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST)
+            );
+          }
+        }
+        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      } else {
+        if (req.body.provider === ESocialType.GOOGLE) {
+          return next(new CustomError(customerErrorDetails.E_3007('Missing email'), HttpStatus.BAD_REQUEST));
+        }
+      }
+      if (customer) {
+        if (req.body.provider === ESocialType.FACEBOOK) {
+          if (customer.facebookId === null) {
+            data = {
+              facebookId: req.body.providerId,
+              avatarPath: req.body.avatarPath ? req.body.avatarPath : null
+            };
+            await CustomerModel.update(data, { where: { email: req.body.email } });
+          } else {
+            if (customer.facebookId !== req.body.providerId) {
+              return next(new CustomError(customerErrorDetails.E_3005('providerId incorrect'), HttpStatus.BAD_REQUEST));
+            }
+          }
+          accessTokenData = {
+            userId: customer.id,
+            userName: `${customer.firstName} ${customer.lastName}`,
+            userType: 'customer'
+          };
+          accessToken = await createAccessToken(accessTokenData);
+          refreshTokenData = {
+            userId: customer.id,
+            userName: `${customer.firstName} ${customer.lastName}`,
+            userType: 'customer',
+            accessToken
+          };
+          refreshToken = await createRefreshToken(refreshTokenData);
+          profile = await CustomerModel.scope('safe').findOne({
+            where: { email: req.body.email }
+          });
+          return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+        }
+        if (req.body.provider === ESocialType.GOOGLE) {
+          if (customer.googleId === null) {
+            data = {
+              googleId: req.body.providerId,
+              avatarPath: req.body.avatarPath ? req.body.avatarPath : null
+            };
+            await CustomerModel.update(data, { where: { email: req.body.email } });
+          } else {
+            if (customer.googleId !== req.body.providerId) {
+              return next(new CustomError(customerErrorDetails.E_3005('providerId incorrect'), HttpStatus.BAD_REQUEST));
+            }
+          }
+          accessTokenData = {
+            userId: customer.id,
+            userName: `${customer.firstName} ${customer.lastName}`,
+            userType: 'customer'
+          };
+          accessToken = await createAccessToken(accessTokenData);
+          refreshTokenData = {
+            userId: customer.id,
+            userName: `${customer.firstName} ${customer.lastName}`,
+            userType: 'customer',
+            accessToken
+          };
+          refreshToken = await createRefreshToken(refreshTokenData);
+          profile = await CustomerModel.scope('safe').findOne({
+            where: { email: req.body.email }
+          });
+          return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+        }
+      }
+
+      if (req.body.provider === ESocialType.FACEBOOK) {
+        socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
+        if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
+          return next(new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
+        }
+        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
+        if (!customer) {
+          const password = await generatePWD(8);
+          data = {
+            firstName: req.body.fullName.split(' ')[0],
+            lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
+            email: req.body.email ? req.body.email : null,
+            facebookId: req.body.providerId,
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
+            isBusinessAccount: true
+          };
+          data.password = await hash(password, PASSWORD_SALT_ROUNDS);
+          newCustomer = await CustomerModel.create(data);
+          accessTokenData = {
+            userId: newCustomer.id,
+            userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
+            userType: 'customer'
+          };
+          accessToken = await createAccessToken(accessTokenData);
+          refreshTokenData = {
+            userId: newCustomer.id,
+            userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
+            userType: 'customer',
+            accessToken
+          };
+          refreshToken = await createRefreshToken(refreshTokenData);
+          profile = await CustomerModel.scope('safe').findOne({
+            where: { facebookId: newCustomer.facebookId }
+          });
+          return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+        }
+        accessTokenData = {
+          userId: customer.id,
+          userName: `${customer.firstName} ${customer.lastName}`,
+          userType: 'customer'
+        };
+        accessToken = await createAccessToken(accessTokenData);
+        refreshTokenData = {
+          userId: customer.id,
+          userName: `${customer.firstName} ${customer.lastName}`,
+          userType: 'customer',
+          accessToken
+        };
+        refreshToken = await createRefreshToken(refreshTokenData);
+        profile = await CustomerModel.scope('safe').findOne({
+          where: { facebookId: customer.facebookId }
+        });
+        return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+      }
+      if (req.body.provider === ESocialType.GOOGLE) {
+        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
+        if (!customer) {
+          const password = await generatePWD(8);
+          data = {
+            firstName: req.body.fullName.split(' ')[0],
+            lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
+            email: req.body.email,
+            googleId: req.body.providerId,
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
+            isBusinessAccount: true
+          };
+          data.password = await hash(password, PASSWORD_SALT_ROUNDS);
+          newCustomer = await CustomerModel.create(data);
+          accessTokenData = {
+            userId: newCustomer.id,
+            userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
+            userType: 'customer'
+          };
+          accessToken = await createAccessToken(accessTokenData);
+          refreshTokenData = {
+            userId: newCustomer.id,
+            userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
+            userType: 'customer',
+            accessToken
+          };
+          refreshToken = await createRefreshToken(refreshTokenData);
+          profile = await CustomerModel.scope('safe').findOne({
+            where: { googleId: newCustomer.googleId }
+          });
+          return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+        }
+        accessTokenData = {
+          userId: customer.id,
+          userName: `${customer.firstName} ${customer.lastName}`,
+          userType: 'customer'
+        };
+        accessToken = await createAccessToken(accessTokenData);
+        refreshTokenData = {
+          userId: customer.id,
+          userName: `${customer.firstName} ${customer.lastName}`,
+          userType: 'customer',
+          accessToken
+        };
+        refreshToken = await createRefreshToken(refreshTokenData);
+        profile = await CustomerModel.scope('safe').findOne({
+          where: { googleId: customer.googleId }
+        });
+        return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
     } catch (error) {
       return next(error);
