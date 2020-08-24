@@ -9,7 +9,7 @@ import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { customerIdSchema, updateCustomerSchema, loginSchema } from '../configs/validate-schemas/customer';
+import { customerIdSchema, loginSchema, updateCustomerSchema } from '../configs/validate-schemas/customer';
 import { paginate } from '../../../utils/paginator';
 import { FindOptions } from 'sequelize/types';
 import { hash, compare } from 'bcryptjs';

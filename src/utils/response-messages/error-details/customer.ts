@@ -25,6 +25,39 @@ const customerErrorDetails = {
   E_3004(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3004', 'Login info invalid', detail);
     return e;
+  },
+
+  /**
+   *
+   * Login info invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_3005(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3005', 'Incorrect providerId', detail);
+    return e;
+  },
+
+  /**
+   *
+   * Login info invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_3006(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3006', 'Incorrect social information', detail);
+    return e;
+  },
+
+  /**
+   *
+   * Input invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_3007(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3007', 'Missing email', detail);
+    return e;
   }
 };
 

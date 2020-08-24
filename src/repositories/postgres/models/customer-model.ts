@@ -13,6 +13,9 @@ class CustomerModel extends Model {
   public companyId!: string;
   public password!: string;
   public otpCode: string;
+  public facebookId: string;
+  public googleId: string;
+  public avatarPath: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -79,6 +82,21 @@ CustomerModel.init(
       type: DataTypes.STRING,
       allowNull: true,
       field: 'otp_code'
+    },
+    facebookId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'facebook_id'
+    },
+    googleId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'google_id'
+    },
+    avatarPath: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'avatar_path'
     },
     createdAt: {
       field: 'created_at',
