@@ -463,7 +463,7 @@ export class CustomerController {
    * /customer/login/verify-token:
    *   post:
    *     tags:
-   *       - Staff
+   *       - Customer
    *     name: customer-verify-token
    *     parameters:
    *     - in: "body"
