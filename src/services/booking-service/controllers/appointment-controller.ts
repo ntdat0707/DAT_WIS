@@ -392,10 +392,7 @@ export class AppointmentController extends BaseController {
             required: true,
             through: { attributes: [] }
           };
-      query.include = {
-        ...query.include,
-        ...conditionsStaffs
-      };
+      query.include.push(conditionsStaffs);
       const appointmentDetails = await AppointmentDetailModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetails));
     } catch (error) {
