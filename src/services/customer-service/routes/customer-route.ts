@@ -18,5 +18,6 @@ export class CustomerRoutes {
     this.router.get('/get-customers', isAuthenticated, this.customerController.getCustomers);
     this.router.get('/get/:customerId', isAuthenticated, this.customerController.getCustomerById);
     this.router.post('/login', this.customerController.login);
+    this.router.post('/verify-token', this.customerController.verifyTokenCustomer);
   }
 }

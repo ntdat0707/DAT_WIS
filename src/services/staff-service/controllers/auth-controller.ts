@@ -729,4 +729,59 @@ export class AuthController {
       }
     }
   };
+
+  /**
+   * @swagger
+   * definitions:
+   *   StaffVerifyToken:
+   *       required:
+   *           - token
+   *       properties:
+   *           token:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /staff/auth/verify-token:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: staff-verify-token
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/StaffVerifyToken'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public verifyTokenStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.body.token) {
+        return next(new CustomError(generalErrorDetails.E_0002()));
+      }
+      const accessTokenData = await verifyAcessToken(req.body.token);
+      if (accessTokenData instanceof CustomError) {
+        return next(new CustomError(generalErrorDetails.E_0003()));
+      } else {
+        const staff = await StaffModel.scope('safe').findOne({
+          where: { id: accessTokenData.userId }
+        });
+        if (!staff) {
+          return next(new CustomError(generalErrorDetails.E_0003()));
+        }
+        return res.status(HttpStatus.OK).send();
+      }
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
