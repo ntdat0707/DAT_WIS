@@ -460,7 +460,7 @@ export class CustomerController {
    */
   /**
    * @swagger
-   * /customer/login/verify-token:
+   * /customer/verify-token:
    *   post:
    *     tags:
    *       - Customer
