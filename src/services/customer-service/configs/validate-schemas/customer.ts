@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EGender } from '../../../../utils/consts';
+import { EGender, ESocialType } from '../../../../utils/consts';
 
 const createCustomerSchema = Joi.object({
   firstName: Joi.string().required().label('firstName'),
@@ -32,4 +32,17 @@ const loginSchema = Joi.object({
   email: Joi.string().required().email().label('email'),
   password: Joi.string().required().min(8).label('password')
 });
-export { createCustomerSchema, customerIdSchema, updateCustomerSchema, loginSchema };
+
+const loginSocialSchema = Joi.object({
+  provider: Joi.string()
+    .valid(ESocialType.FACEBOOK, ESocialType.GOOGLE, ESocialType.APPLE)
+    .required()
+    .label('provider'),
+  providerId: Joi.string().required().label('providerId'),
+  token: Joi.string().required().label('token'),
+  email: Joi.string().email().allow('', null).label('email'),
+  fullName: Joi.string().required().label('fullName'),
+  avatarPath: Joi.string().allow('', null).label('avatarPath')
+});
+
+export { createCustomerSchema, customerIdSchema, loginSchema, loginSocialSchema, updateCustomerSchema };
