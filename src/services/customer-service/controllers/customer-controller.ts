@@ -4,7 +4,7 @@ require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { customerErrorDetails } from '../../../utils/response-messages/error-details';
+import { customerErrorDetails, generalErrorDetails } from '../../../utils/response-messages/error-details';
 import { CustomerModel } from '../../../repositories/postgres/models';
 
 import { createCustomerSchema } from '../configs/validate-schemas';
@@ -14,7 +14,13 @@ import { paginate } from '../../../utils/paginator';
 import { FindOptions } from 'sequelize/types';
 import { hash, compare } from 'bcryptjs';
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
-import { IAccessTokenData, IRefreshTokenData, createAccessToken, createRefreshToken } from '../../../utils/jwt';
+import {
+  IAccessTokenData,
+  IRefreshTokenData,
+  createAccessToken,
+  createRefreshToken,
+  verifyAcessToken
+} from '../../../utils/jwt';
 import * as ejs from 'ejs';
 import * as path from 'path';
 import { ICustomerRegisterAccountTemplate } from '../../../utils/emailer/templates/customer-register-account';
@@ -436,6 +442,61 @@ export class CustomerController {
         where: { email: data.email }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerVerifyToken:
+   *       required:
+   *           - token
+   *       properties:
+   *           token:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/login/verify-token:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: customer-verify-token
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerVerifyToken'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public verifyTokenCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.body.token) {
+        return next(new CustomError(generalErrorDetails.E_0002()));
+      }
+      const accessTokenData = await verifyAcessToken(req.body.token);
+      if (accessTokenData instanceof CustomError) {
+        return next(new CustomError(generalErrorDetails.E_0003()));
+      } else {
+        const customer = await CustomerModel.scope('safe').findOne({
+          where: { id: accessTokenData.userId }
+        });
+        if (!customer) {
+          return next(new CustomError(generalErrorDetails.E_0003()));
+        }
+        return res.status(HttpStatus.OK).send();
+      }
     } catch (error) {
       return next(error);
     }

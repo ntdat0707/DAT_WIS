@@ -15,5 +15,6 @@ export class AuthRoutes {
     this.router.post('/request-new-password', this.authController.requestNewPassword);
     this.router.put('/change-password', this.authController.changePassword);
     this.router.post('/login-social', this.authController.loginSocial);
+    this.router.post('/verify-token', this.authController.verifyTokenStaff);
   }
 }
