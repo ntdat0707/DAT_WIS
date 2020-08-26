@@ -241,6 +241,11 @@ export class LocationController {
                 required: true
               }
             ]
+          },
+          {
+            model: LocationWorkingHourModel,
+            as: 'workingTimes',
+            required: false
           }
         ]
       });

@@ -19,7 +19,7 @@ import { ServiceStaffModel } from '../../../repositories/postgres/models/service
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-import { FindOptions, Transaction } from 'sequelize/types';
+import { FindOptions, Transaction, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
@@ -330,6 +330,11 @@ export class ServiceController {
    *       schema:
    *          type: integer
    *     - in: query
+   *       name: searchValue
+   *       required: false
+   *       schema:
+   *          type: string
+   *     - in: query
    *       name: locationIds
    *       type: array
    *       items:
@@ -385,6 +390,15 @@ export class ServiceController {
           }
         ]
       };
+      if (req.query.searchValue) {
+        query.where = {
+          [Op.or]: [
+            Sequelize.literal(`unaccent("ServiceModel"."name") ilike unaccent('%${req.query.searchValue}%')`),
+            Sequelize.literal(`unaccent("ServiceModel"."service_code") ilike unaccent('%${req.query.searchValue}%')`)
+          ]
+        };
+      }
+
       const services = await paginate(
         ServiceModel,
         query,
