@@ -754,7 +754,9 @@ export class AuthController {
    *       400:
    *         description: Bad request - input invalid format, header is invalid
    *       500:
-   *         description: Internal server errors
+   *         description: |
+   *           </br> xxx1: Something error
+   *           </br> xxx2: Internal server errors
    */
 
   public verifyTokenStaff = async (req: Request, res: Response, next: NextFunction) => {

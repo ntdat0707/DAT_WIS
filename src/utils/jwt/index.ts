@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { TokenExpiredError } from 'jsonwebtoken';
 require('dotenv').config();
 
 import { redis, EKeys } from '../../repositories/redis';
@@ -69,6 +69,9 @@ async function verifyAccessToken(accessToken: string): Promise<IAccessTokenData 
         ACCESS_TOKEN_PUBLIC_KEY,
         verifyOptions,
         async (err, accessTokenData: IAccessTokenData) => {
+          if (err instanceof TokenExpiredError) {
+            resolve(new CustomError(generalErrorDetails.E_0007()));
+          }
           if (err) return resolve(new CustomError(generalErrorDetails.E_0003()));
           const tokenStoraged = await redis.getData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
           if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_0003()));
@@ -122,6 +125,9 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
         REFRESH_TOKEN_PUBLIC_KEY,
         verifyOptions,
         async (err, refreshTokenData: IRefreshTokenData) => {
+          if (err instanceof TokenExpiredError) {
+            resolve(new CustomError(generalErrorDetails.E_0008()));
+          }
           if (err) return resolve(new CustomError(generalErrorDetails.E_0005()));
           const tokenStoraged = await redis.getData(`${EKeys.REFRESH_TOKEN}-${refreshToken}`);
           if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_0005()));

@@ -65,7 +65,13 @@ const generalErrorDetails = {
    * @returns {IErrorDetail}
    */
   E_0006(detail: string = 'Invalid file extension', source: ISourceError = null): IErrorDetail {
-    return buildErrorDetail('0005', 'Invalid file extension', detail, source);
+    return buildErrorDetail('0006', 'Invalid file extension', detail, source);
+  },
+  E_0007(detail: string = 'Token Expired Error', source: ISourceError = null): IErrorDetail {
+    return buildErrorDetail('0007', 'TokenExpiredError', detail, source);
+  },
+  E_0008(detail: string = 'RefreshToken Expired Error', source: ISourceError = null): IErrorDetail {
+    return buildErrorDetail('0008', 'RefreshToken Expired Error', detail, source);
   }
 };
 

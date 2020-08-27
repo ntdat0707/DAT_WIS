@@ -11,7 +11,7 @@ import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/p
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
-interface IStaffAuthenicationPayload {
+interface IStaffAuthenticationPayload {
   id: string;
   firstName: string;
   lastName: string;
@@ -176,11 +176,11 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
  * Check staff logined
  *
  * @param {string} accessTokenBearer
- * @returns {(Promise<IStaffAuthenicationPayload | CustomError>)}
+ * @returns {(Promise<IStaffAuthenticationPayload | CustomError>)}
  */
-const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenicationPayload | CustomError> => {
+const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenticationPayload | CustomError> => {
   try {
-    let staffAuthenicationPayload: IStaffAuthenicationPayload;
+    let staffAuthenticationPayload: IStaffAuthenticationPayload;
     //missing token
     if (!accessTokenBearer) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0002()) });
@@ -230,10 +230,10 @@ const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenicat
         const workingLocationIds = workingLocations.map((location) => location.id);
         staffPayload.workingLocationIds = workingLocationIds;
 
-        staffAuthenicationPayload = staffPayload;
+        staffAuthenticationPayload = staffPayload;
       }
     }
-    return staffAuthenicationPayload;
+    return staffAuthenticationPayload;
   } catch (error) {
     throw error;
   }
