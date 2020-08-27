@@ -11,7 +11,8 @@ import {
   createServiceSchema,
   serviceIdSchema,
   createServicesSchema,
-  getAllServiceSchema
+  getAllServiceSchema,
+  updateServiceSchema
 } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
 import { StaffModel, LocationModel, sequelize, ResourceModel } from '../../../repositories/postgres/models';
@@ -627,6 +628,199 @@ export class ServiceController {
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/update/{serviceId}:
+   *   put:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: updateService
+   *     consumes:
+   *     - multipart/form-data
+   *     parameters:
+   *     - in: path
+   *       name: serviceId
+   *       required: true
+   *       schema:
+   *          type: string
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: array
+   *       items:
+   *          type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: cateServiceId
+   *       type: string
+   *     - in: "formData"
+   *       name: name
+   *       type: string
+   *     - in: "formData"
+   *       name: description
+   *       type: string
+   *     - in: "formData"
+   *       name: salePrice
+   *       type: integer
+   *     - in: "formData"
+   *       name: duration
+   *       type: integer
+   *       required: true
+   *     - in: "formData"
+   *       name: color
+   *       type: string
+   *     - in: "formData"
+   *       name: serviceCode
+   *       type: string
+   *     - in: "formData"
+   *       name: staffIds
+   *       type: array
+   *       items:
+   *          type: string
+   *     - in: "formData"
+   *       name: locationIds
+   *       type: array
+   *       items:
+   *          type: string
+   *     - in: "formData"
+   *       name: deleteImages
+   *       type: array
+   *       items:
+   *          type: string
+   *     - in: "formData"
+   *       name: isAllowedMarketplace
+   *       type: boolean
+   *       required: true
+   *     - in: "formData"
+   *       name: status
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description:
+   *       400:
+   *         description:
+   *       404:
+   *         description:
+   *       500:
+   *         description:
+   */
+  public updateService = async ({ params, body, files }: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
+    try {
+      body.serviceId = params.serviceId;
+      const validateErrors = validate(body, updateServiceSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const service = await ServiceModel.findOne({
+        where: {
+          id: params.serviceId
+        }
+      });
+      if (!service) {
+        return next(
+          new CustomError(serviceErrorDetails.E_1203(`Service ${params.serviceId} not exist`), HttpStatus.NOT_FOUND)
+        );
+      }
+
+      if (body.locationIds && body.locationIds.length > 0) {
+        const diff = _.difference(body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
+        if (diff.length) {
+          return next(
+            new CustomError(
+              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+              HttpStatus.FORBIDDEN
+            )
+          );
+        }
+        const locationService = (body.locationIds as []).map((locationId: string) => ({
+          locationId: locationId,
+          serviceId: service.id
+        }));
+        await LocationServiceModel.bulkCreate(locationService, { transaction: transaction });
+      }
+      transaction = await sequelize.transaction();
+      if (body.staffIds && body.staffIds.length > 0) {
+        const staffs = await StaffModel.findAll({
+          where: { id: body.staffIds },
+          attributes: ['id'],
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              where: {
+                id: body.locationIds
+              },
+              through: {
+                attributes: ['id']
+              }
+            }
+          ]
+        });
+        const staffIds = staffs.map((staff) => staff.id);
+        if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
+          return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+        }
+
+        await ServiceStaffModel.destroy({ where: { serviceId: params.serviceId } });
+        const prepareServiceStaff = (body.staffIds as []).map((id) => ({
+          serviceId: service.id,
+          staffId: id
+        }));
+        await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
+      }
+
+      const data: any = {
+        description: body.description,
+        salePrice: !isNaN(parseInt(body.salePrice, 10)) ? body.salePrice : service.salePrice,
+        duration: body.duration ? body.duration : service.duration,
+        color: body.color ? body.color : service.color,
+        cateServiceId: body.cateServiceId ? body.cateServiceId : service.cateServiceId,
+        name: body.name ? body.name : service.name,
+        serviceCode: body.serviceCode ? body.serviceCode : null,
+        isAllowedMarketplace: body.isAllowedMarketplace,
+        status: body.status
+      };
+
+      if (body.deleteImages && body.deleteImages.length > 0) {
+        const serviceImages = await ServiceImageModel.findAll({
+          where: {
+            id: body.deleteImages
+          }
+        });
+        if (body.deleteImages.length !== serviceImages.length) {
+          return next(new CustomError(serviceErrorDetails.E_1206(), HttpStatus.NOT_FOUND));
+        }
+        await ServiceImageModel.destroy({ where: { id: body.deleteImages } });
+      }
+
+      if (files.length) {
+        const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
+          serviceId: service.id,
+          path: x.location,
+          isAvatar: index === 0 ? true : false
+        }));
+        await ServiceImageModel.bulkCreate(images, { transaction: transaction });
+      }
+
+      await ServiceModel.update(data, {
+        where: {
+          id: params.serviceId
+        },
+        transaction
+      });
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
+    } catch (error) {
       if (transaction) {
         await transaction.rollback();
       }

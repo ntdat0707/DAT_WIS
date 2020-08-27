@@ -20,5 +20,11 @@ export class ServiceRoutes {
     this.router.get('/get-services', isAuthenticated, this.serviceController.getServices);
     this.router.get('/all', isAuthenticated, this.serviceController.getAllService);
     this.router.post('/create-services', isAuthenticated, this.serviceController.createServices);
+    this.router.put(
+      '/update/:serviceId?',
+      isAuthenticated,
+      uploadAsMiddleware({ name: 'photo[]', maxCount: 5 }),
+      this.serviceController.updateService
+    );
   }
 }
