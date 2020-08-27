@@ -24,7 +24,7 @@ import {
   IRefreshTokenData,
   createAccessToken,
   createRefreshToken,
-  verifyAcessToken
+  verifyAccessToken
 } from '../../../utils/jwt';
 import * as ejs from 'ejs';
 import * as path from 'path';
@@ -492,7 +492,7 @@ export class CustomerController {
       if (!req.body.token) {
         return next(new CustomError(generalErrorDetails.E_0002()));
       }
-      const accessTokenData = await verifyAcessToken(req.body.token);
+      const accessTokenData = await verifyAccessToken(req.body.token);
       if (accessTokenData instanceof CustomError) {
         return next(new CustomError(generalErrorDetails.E_0003()));
       } else {

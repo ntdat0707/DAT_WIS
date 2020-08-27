@@ -37,7 +37,7 @@ const refreshTokenExpiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN;
 async function createAccessToken(data: IAccessTokenData): Promise<string> {
   try {
     const signOptions: jwt.SignOptions = {
-      expiresIn: accessTokenExpiresIn,
+      expiresIn: parseInt(accessTokenExpiresIn, 10),
       algorithm
     };
     const token = jwt.sign(data, ACCESS_TOKEN_PRIVATE_KEY, signOptions);
@@ -55,13 +55,13 @@ async function createAccessToken(data: IAccessTokenData): Promise<string> {
  * Verify access token
  *
  * @param {string} accessToken
- * @returns {(Promise<IAcessTokenData | CustomError>)}
+ * @returns {(Promise<IAccessTokenData | CustomError>)}
  */
-async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData | CustomError> {
+async function verifyAccessToken(accessToken: string): Promise<IAccessTokenData | CustomError> {
   try {
     return new Promise((resolve, _reject) => {
       const verifyOptions: jwt.SignOptions = {
-        expiresIn: accessTokenExpiresIn,
+        expiresIn: parseInt(accessTokenExpiresIn, 10),
         algorithm
       };
       jwt.verify(
@@ -90,7 +90,7 @@ async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData |
 async function createRefreshToken(data: IRefreshTokenData): Promise<string> {
   try {
     const signOptions: jwt.SignOptions = {
-      expiresIn: refreshTokenExpiresIn,
+      expiresIn: parseInt(refreshTokenExpiresIn, 10),
       algorithm
     };
     const token = jwt.sign(data, REFRESH_TOKEN_PRIVATE_KEY, signOptions);
@@ -114,7 +114,7 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
   try {
     return new Promise((resolve, _reject) => {
       const verifyOptions: jwt.SignOptions = {
-        expiresIn: refreshTokenExpiresIn,
+        expiresIn: parseInt(refreshTokenExpiresIn, 10),
         algorithm
       };
       jwt.verify(
@@ -156,7 +156,7 @@ async function destroyTokens(refreshToken: string): Promise<boolean | CustomErro
 }
 export {
   createAccessToken,
-  verifyAcessToken,
+  verifyAccessToken,
   createRefreshToken,
   verifyRefreshToken,
   destroyTokens,

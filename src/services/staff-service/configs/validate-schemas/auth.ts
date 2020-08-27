@@ -12,7 +12,7 @@ const loginSchema = Joi.object({
   password: Joi.string().required().min(8).label('password')
 });
 
-const refreshTokensChema = Joi.string().required().label('refreshToken');
+const refreshTokenSchema = Joi.string().required().label('refreshToken');
 
 const emailSchema = Joi.object({
   email: Joi.string().required().email().label('email')
@@ -43,7 +43,7 @@ const loginSocialSchema = Joi.object({
 export {
   createBusinessAccountSchema,
   loginSchema,
-  refreshTokensChema,
+  refreshTokenSchema,
   emailSchema,
   changePasswordSchema,
   loginSocialSchema

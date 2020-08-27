@@ -5,7 +5,7 @@ import HttpStatus from 'http-status-codes';
 import { generalErrorDetails } from '../../response-messages/error-details';
 import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
 import { logger } from '../../logger';
-import { verifyAcessToken } from '../../jwt';
+import { verifyAccessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
 import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/postgres/models';
 
@@ -101,7 +101,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
     }
 
     const accessToken = accessTokenBearer.slice(7, accessTokenBearer.length).trimLeft();
-    const accessTokenData = await verifyAcessToken(accessToken);
+    const accessTokenData = await verifyAccessToken(accessToken);
     //Invalid token
     if (accessTokenData instanceof CustomError) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
@@ -193,7 +193,7 @@ const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenicat
     }
 
     const accessToken = accessTokenBearer.slice(7, accessTokenBearer.length).trimLeft();
-    const accessTokenData = await verifyAcessToken(accessToken);
+    const accessTokenData = await verifyAccessToken(accessToken);
     //Invalid token
     if (accessTokenData instanceof CustomError) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
