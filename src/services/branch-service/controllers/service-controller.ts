@@ -786,7 +786,7 @@ export class ServiceController {
         color: body.color ? body.color : service.color,
         cateServiceId: body.cateServiceId ? body.cateServiceId : service.cateServiceId,
         name: body.name ? body.name : service.name,
-        serviceCode: body.serviceCode ? body.serviceCode : null,
+        serviceCode: body.serviceCode ? body.serviceCode : service.serviceCode,
         isAllowedMarketplace: body.isAllowedMarketplace,
         status: body.status
       };
