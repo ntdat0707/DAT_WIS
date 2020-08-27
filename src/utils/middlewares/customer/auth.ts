@@ -3,7 +3,7 @@ import HttpStatus from 'http-status-codes';
 require('dotenv').config();
 
 import { logger } from '../../logger';
-import { verifyAcessToken } from '../../jwt';
+import { verifyAccessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
 import { generalErrorDetails } from '../../response-messages/error-details';
 import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
@@ -59,7 +59,7 @@ const authenticate = async (accessTokenBearer: string): Promise<ICustomerAutheni
     }
 
     const accessToken = accessTokenBearer.slice(7, accessTokenBearer.length).trimLeft();
-    const accessTokenData = await verifyAcessToken(accessToken);
+    const accessTokenData = await verifyAccessToken(accessToken);
     //Invalid token
     if (accessTokenData instanceof CustomError) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });

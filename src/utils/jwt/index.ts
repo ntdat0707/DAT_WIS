@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { TokenExpiredError } from 'jsonwebtoken';
 require('dotenv').config();
 
 import { redis, EKeys } from '../../repositories/redis';
@@ -37,7 +37,7 @@ const refreshTokenExpiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN;
 async function createAccessToken(data: IAccessTokenData): Promise<string> {
   try {
     const signOptions: jwt.SignOptions = {
-      expiresIn: accessTokenExpiresIn,
+      expiresIn: parseInt(accessTokenExpiresIn, 10),
       algorithm
     };
     const token = jwt.sign(data, ACCESS_TOKEN_PRIVATE_KEY, signOptions);
@@ -55,13 +55,13 @@ async function createAccessToken(data: IAccessTokenData): Promise<string> {
  * Verify access token
  *
  * @param {string} accessToken
- * @returns {(Promise<IAcessTokenData | CustomError>)}
+ * @returns {(Promise<IAccessTokenData | CustomError>)}
  */
-async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData | CustomError> {
+async function verifyAccessToken(accessToken: string): Promise<IAccessTokenData | CustomError> {
   try {
     return new Promise((resolve, _reject) => {
       const verifyOptions: jwt.SignOptions = {
-        expiresIn: accessTokenExpiresIn,
+        expiresIn: parseInt(accessTokenExpiresIn, 10),
         algorithm
       };
       jwt.verify(
@@ -69,6 +69,9 @@ async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData |
         ACCESS_TOKEN_PUBLIC_KEY,
         verifyOptions,
         async (err, accessTokenData: IAccessTokenData) => {
+          if (err instanceof TokenExpiredError) {
+            resolve(new CustomError(generalErrorDetails.E_0007()));
+          }
           if (err) return resolve(new CustomError(generalErrorDetails.E_0003()));
           const tokenStoraged = await redis.getData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
           if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_0003()));
@@ -90,7 +93,7 @@ async function verifyAcessToken(accessToken: string): Promise<IAccessTokenData |
 async function createRefreshToken(data: IRefreshTokenData): Promise<string> {
   try {
     const signOptions: jwt.SignOptions = {
-      expiresIn: refreshTokenExpiresIn,
+      expiresIn: parseInt(refreshTokenExpiresIn, 10),
       algorithm
     };
     const token = jwt.sign(data, REFRESH_TOKEN_PRIVATE_KEY, signOptions);
@@ -114,7 +117,7 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
   try {
     return new Promise((resolve, _reject) => {
       const verifyOptions: jwt.SignOptions = {
-        expiresIn: refreshTokenExpiresIn,
+        expiresIn: parseInt(refreshTokenExpiresIn, 10),
         algorithm
       };
       jwt.verify(
@@ -122,6 +125,9 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
         REFRESH_TOKEN_PUBLIC_KEY,
         verifyOptions,
         async (err, refreshTokenData: IRefreshTokenData) => {
+          if (err instanceof TokenExpiredError) {
+            resolve(new CustomError(generalErrorDetails.E_0008()));
+          }
           if (err) return resolve(new CustomError(generalErrorDetails.E_0005()));
           const tokenStoraged = await redis.getData(`${EKeys.REFRESH_TOKEN}-${refreshToken}`);
           if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_0005()));
@@ -156,7 +162,7 @@ async function destroyTokens(refreshToken: string): Promise<boolean | CustomErro
 }
 export {
   createAccessToken,
-  verifyAcessToken,
+  verifyAccessToken,
   createRefreshToken,
   verifyRefreshToken,
   destroyTokens,
