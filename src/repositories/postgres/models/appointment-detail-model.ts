@@ -8,6 +8,7 @@ class AppointmentDetailModel extends Model {
   public appointmentId!: string;
   public locationId!: string;
   public startTime!: Date;
+  public duration!: number;
   public serviceId!: string;
   public resourceId: string;
   public status!: string;
@@ -42,6 +43,11 @@ AppointmentDetailModel.init(
     resourceId: {
       field: 'resource_id',
       type: DataTypes.UUIDV4
+    },
+    duration: {
+      field: 'duration',
+      type: DataTypes.INTEGER,
+      allowNull: false
     },
     status: {
       field: 'status',
