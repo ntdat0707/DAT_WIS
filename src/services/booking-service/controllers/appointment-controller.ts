@@ -206,7 +206,8 @@ export class AppointmentController extends BaseController {
           appointmentId,
           serviceId: appointmentDetails[i].serviceId,
           resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
-          startTime: appointmentDetails[i].startTime
+          startTime: appointmentDetails[i].startTime,
+          duration: appointmentDetails[i].duration
         });
         for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
           appointmentDetailStaffData.push({
