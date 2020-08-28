@@ -673,7 +673,6 @@ export class ServiceController {
    *     - in: "formData"
    *       name: duration
    *       type: integer
-   *       required: true
    *     - in: "formData"
    *       name: color
    *       type: string
@@ -731,7 +730,7 @@ export class ServiceController {
           new CustomError(serviceErrorDetails.E_1203(`Service ${params.serviceId} not exist`), HttpStatus.NOT_FOUND)
         );
       }
-
+      transaction = await sequelize.transaction();
       if (body.locationIds && body.locationIds.length > 0) {
         const diff = _.difference(body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
         if (diff.length) {
@@ -742,41 +741,50 @@ export class ServiceController {
             )
           );
         }
-        const locationService = (body.locationIds as []).map((locationId: string) => ({
-          locationId: locationId,
-          serviceId: service.id
-        }));
-        await LocationServiceModel.bulkCreate(locationService, { transaction: transaction });
-      }
-      transaction = await sequelize.transaction();
-      if (body.staffIds && body.staffIds.length > 0) {
-        const staffs = await StaffModel.findAll({
-          where: { id: body.staffIds },
-          attributes: ['id'],
-          include: [
-            {
-              model: LocationModel,
-              as: 'workingLocations',
-              where: {
-                id: body.locationIds
-              },
-              through: {
-                attributes: ['id']
-              }
-            }
-          ]
-        });
-        const staffIds = staffs.map((staff) => staff.id);
-        if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
-          return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+        const curLocationServices = await LocationServiceModel.findAll({ where: { serviceId: params.serviceId } });
+        const curLocationIds = curLocationServices.map((location) => location.locationId);
+        const diffCur = _.difference(curLocationIds, body.locationIds);
+        if (curLocationIds.length !== body.locationIds.length || diffCur.length > 0) {
+          await LocationServiceModel.destroy({ where: { serviceId: params.serviceId } });
+          const locationService = (body.locationIds as []).map((locationId: string) => ({
+            locationId: locationId,
+            serviceId: service.id
+          }));
+          await LocationServiceModel.bulkCreate(locationService, { transaction: transaction });
         }
-
-        await ServiceStaffModel.destroy({ where: { serviceId: params.serviceId } });
-        const prepareServiceStaff = (body.staffIds as []).map((id) => ({
-          serviceId: service.id,
-          staffId: id
-        }));
-        await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
+      }
+      if (body.staffIds && body.staffIds.length > 0) {
+        const serviceStaff = await ServiceStaffModel.findAll({ where: { serviceId: params.serviceId } });
+        const currentStaffIds = serviceStaff.map((staff) => staff.staffId);
+        const diff = _.difference(currentStaffIds, body.staffIds);
+        if (currentStaffIds.length !== body.staffIds.length || diff.length > 0) {
+          const staffs = await StaffModel.findAll({
+            where: { id: body.staffIds },
+            attributes: ['id'],
+            include: [
+              {
+                model: LocationModel,
+                as: 'workingLocations',
+                where: {
+                  id: body.locationIds
+                },
+                through: {
+                  attributes: ['id']
+                }
+              }
+            ]
+          });
+          const staffIds = staffs.map((staff) => staff.id);
+          if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
+            return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+          }
+          await ServiceStaffModel.destroy({ where: { serviceId: params.serviceId } });
+          const prepareServiceStaff = (body.staffIds as []).map((id) => ({
+            serviceId: service.id,
+            staffId: id
+          }));
+          await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
+        }
       }
 
       const data: any = {
@@ -790,7 +798,6 @@ export class ServiceController {
         isAllowedMarketplace: body.isAllowedMarketplace,
         status: body.status
       };
-
       if (body.deleteImages && body.deleteImages.length > 0) {
         const serviceImages = await ServiceImageModel.findAll({
           where: {

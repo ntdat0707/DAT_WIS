@@ -132,14 +132,14 @@ const updateServiceSchema = Joi.object({
         version: ['uuidv4']
       })
     )
-    .min(0),
+    .allow(null),
   deleteImages: Joi.array()
     .items(
       Joi.string().guid({
         version: ['uuidv4']
       })
     )
-    .min(0),
+    .allow(null),
   description: Joi.string().allow(null, ''),
   salePrice: Joi.number().allow(null, ''),
   color: Joi.string().disallow('', null).label('color'),
@@ -150,7 +150,7 @@ const updateServiceSchema = Joi.object({
         version: ['uuidv4']
       })
     )
-    .min(0),
+    .allow(null),
   name: Joi.string().disallow('', null),
   serviceCode: Joi.string().disallow('', null),
   isAllowedMarketplace: Joi.boolean().required().label('isAllowedMarketplace'),
