@@ -19,5 +19,7 @@ export class CustomerRoutes {
     this.router.get('/get/:customerId', isAuthenticated, this.customerController.getCustomerById);
     this.router.post('/login', this.customerController.login);
     this.router.post('/verify-token', this.customerController.verifyTokenCustomer);
+    this.router.post('/login-social', this.customerController.loginSocial);
+    this.router.post('/login-apple', this.customerController.loginApple);
   }
 }

@@ -16,6 +16,7 @@ class StaffModel extends Model {
   public address: string;
   public facebookId: string;
   public googleId: string;
+  public appleId: string;
   public avatarPath: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
@@ -100,6 +101,11 @@ StaffModel.init(
       type: DataTypes.STRING,
       allowNull: true,
       field: 'google_id'
+    },
+    appleId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'apple_id'
     },
     avatarPath: {
       type: DataTypes.STRING,
