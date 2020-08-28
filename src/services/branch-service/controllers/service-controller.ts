@@ -743,10 +743,16 @@ export class ServiceController {
         }
         const curLocationServices = await LocationServiceModel.findAll({ where: { serviceId: params.serviceId } });
         const curLocationIds = curLocationServices.map((location) => location.locationId);
-        const diffCur = _.difference(curLocationIds, body.locationIds);
-        if (curLocationIds.length !== body.locationIds.length || diffCur.length > 0) {
-          await LocationServiceModel.destroy({ where: { serviceId: params.serviceId } });
-          const locationService = (body.locationIds as []).map((locationId: string) => ({
+        const removeLocationIds = _.difference(curLocationIds, body.locationIds);
+        if (removeLocationIds.length > 0) {
+          await LocationServiceModel.destroy({
+            where: { serviceId: params.serviceId, locationId: removeLocationIds },
+            transaction
+          });
+        }
+        const addLocationIds = _.difference(body.locationIds, curLocationIds);
+        if (addLocationIds.length > 0) {
+          const locationService = (addLocationIds as []).map((locationId: string) => ({
             locationId: locationId,
             serviceId: service.id
           }));
@@ -754,12 +760,22 @@ export class ServiceController {
         }
       }
       if (body.staffIds && body.staffIds.length > 0) {
-        const serviceStaff = await ServiceStaffModel.findAll({ where: { serviceId: params.serviceId } });
-        const currentStaffIds = serviceStaff.map((staff) => staff.staffId);
-        const diff = _.difference(currentStaffIds, body.staffIds);
-        if (currentStaffIds.length !== body.staffIds.length || diff.length > 0) {
+        const curServiceStaff = await ServiceStaffModel.findAll({
+          where: { serviceId: params.serviceId },
+          transaction
+        });
+        const currentStaffIds = curServiceStaff.map((staff) => staff.staffId);
+        const removeStaffIds = _.difference(currentStaffIds, body.staffIds);
+        if (removeStaffIds.length > 0) {
+          await ServiceStaffModel.destroy({
+            where: { serviceId: params.serviceId, staffId: removeStaffIds },
+            transaction
+          });
+        }
+        const addStaffIds = _.difference(body.staffIds, currentStaffIds);
+        if (addStaffIds.length > 0) {
           const staffs = await StaffModel.findAll({
-            where: { id: body.staffIds },
+            where: { id: addStaffIds },
             attributes: ['id'],
             include: [
               {
@@ -775,10 +791,9 @@ export class ServiceController {
             ]
           });
           const staffIds = staffs.map((staff) => staff.id);
-          if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
+          if (!(addStaffIds as []).every((x) => staffIds.includes(x))) {
             return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
           }
-          await ServiceStaffModel.destroy({ where: { serviceId: params.serviceId } });
           const prepareServiceStaff = (body.staffIds as []).map((id) => ({
             serviceId: service.id,
             staffId: id
@@ -807,7 +822,7 @@ export class ServiceController {
         if (body.deleteImages.length !== serviceImages.length) {
           return next(new CustomError(serviceErrorDetails.E_1206(), HttpStatus.NOT_FOUND));
         }
-        await ServiceImageModel.destroy({ where: { id: body.deleteImages } });
+        await ServiceImageModel.destroy({ where: { id: body.deleteImages }, transaction });
       }
 
       if (files.length) {
