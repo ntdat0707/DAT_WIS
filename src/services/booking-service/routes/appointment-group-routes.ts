@@ -12,5 +12,10 @@ export class AppointmentGroupRoutes {
   }
   private config(): void {
     this.router.post('/create', isAuthenticated, this.appointmentGroupController.createAppointmentGroup);
+    this.router.get(
+      '/get-appointment-group/:appointmentGroupId?',
+      isAuthenticated,
+      this.appointmentGroupController.getAppointmentGroup
+    );
   }
 }

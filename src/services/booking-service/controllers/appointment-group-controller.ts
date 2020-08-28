@@ -16,10 +16,11 @@ import {
   StaffModel,
   ServiceModel,
   ResourceModel,
-  LocationModel
+  LocationModel,
+  CustomerModel
 } from '../../../repositories/postgres/models';
 
-import { createAppointmentGroupSchema } from '../configs/validate-schemas';
+import { createAppointmentGroupSchema, appointmentGroupIdSchema } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 export class AppointmentGroupController extends BaseController {
   /**
@@ -208,6 +209,92 @@ export class AppointmentGroupController extends BaseController {
       res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentGroupStoraged));
     } catch (error) {
       if (transaction) await transaction.rollback();
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /booking/appointment-group/get-appointment-group/{appointmentGroupId}:
+   *   get:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAppointmentGroup
+   *     parameters:
+   *     - in: path
+   *       name: appointmentGroupId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: FORBIDDEN
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAppointmentGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.params.appointmentGroupId, appointmentGroupIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      const appointmentGroup = await AppointmentGroupModel.findOne({
+        where: { id: req.params.appointmentGroupId, locationId: workingLocationIds },
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointments',
+            required: true,
+            include: [
+              {
+                model: LocationModel,
+                as: 'location',
+                required: true
+              },
+              {
+                model: CustomerModel,
+                as: 'customer'
+              },
+              {
+                model: AppointmentDetailModel,
+                as: 'appointmentDetails',
+                include: [
+                  {
+                    model: ServiceModel,
+                    as: 'service',
+                    required: true
+                  },
+                  {
+                    model: ResourceModel,
+                    as: 'resource'
+                  },
+                  {
+                    model: StaffModel.scope('safe'),
+                    as: 'staffs'
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      });
+      if (!appointmentGroup) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`Not found appointment-group ${req.params.appointmentGroupId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentGroup));
+    } catch (error) {
       return next(error);
     }
   };

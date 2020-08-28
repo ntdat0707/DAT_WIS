@@ -202,6 +202,12 @@ const createAppointmentGroupSchema = Joi.object({
     .label('locationId'),
   appointments: Joi.array().min(1).max(50).items(createAppointmentInGroupSchema).label('appointments')
 });
+const appointmentGroupIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('appointmentGroupIdSchema');
 export {
   createAppointmentDetailSchema,
   createAppointmentSchema,
@@ -213,5 +219,6 @@ export {
   createAppointmentDetailFullSchema,
   updateAppointmentDetailSchema,
   appointmentDetailIdSchema,
-  createAppointmentGroupSchema
+  createAppointmentGroupSchema,
+  appointmentGroupIdSchema
 };
