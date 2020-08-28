@@ -119,7 +119,7 @@ const updateServiceSchema = Joi.object({
       version: ['uuidv4']
     })
     .required()
-    .label('cateServiceId'),
+    .label('serviceId'),
   cateServiceId: Joi.string()
     .guid({
       version: ['uuidv4']
