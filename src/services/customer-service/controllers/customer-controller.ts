@@ -32,7 +32,14 @@ import { ICustomerRegisterAccountTemplate } from '../../../utils/emailer/templat
 import { sendEmail } from '../../../utils/emailer';
 import { generatePWD } from '../../../utils/lib/generatePassword';
 import { ESocialType } from '../../../utils/consts';
-import { validateFacebookToken, validateGoogleToken } from '../../../utils/validator/validate-social-token';
+import {
+  validateFacebookToken,
+  validateGoogleToken,
+  validateAppleCode
+} from '../../../utils/validator/validate-social-token';
+import { generateAppleToken } from '../../../utils/lib/generateAppleToken';
+import jwt from 'jsonwebtoken';
+
 export class CustomerController {
   /**
    * @swagger
@@ -664,8 +671,7 @@ export class CustomerController {
             lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
             email: req.body.email ? req.body.email : null,
             facebookId: req.body.providerId,
-            avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
-            isBusinessAccount: true
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newCustomer = await CustomerModel.create(data);
@@ -714,8 +720,7 @@ export class CustomerController {
             lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
             email: req.body.email,
             googleId: req.body.providerId,
-            avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
-            isBusinessAccount: true
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newCustomer = await CustomerModel.create(data);
@@ -755,6 +760,120 @@ export class CustomerController {
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerLoginApple:
+   *       required:
+   *           - appleCode
+   *           - appleId
+   *       properties:
+   *           appleCode:
+   *               type: string
+   *           appleId:
+   *               type: string
+   *           email:
+   *               type: string
+   *           fullName:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/login-apple:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     name: customer-login-apple
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerLoginApple'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public loginApple = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      let accessTokenData: IAccessTokenData;
+      let accessToken: string;
+      let refreshTokenData: IRefreshTokenData;
+      let refreshToken: string;
+      let profile: any;
+      const clientSecret = await generateAppleToken();
+      const response: any = await validateAppleCode(req.body.appleCode, clientSecret);
+      if (response.response.error) {
+        return next(
+          new CustomError(customerErrorDetails.E_3006('Incorrect apple information'), HttpStatus.BAD_REQUEST)
+        );
+      }
+      const appleInfor = jwt.decode(response.response.id_token);
+      if (appleInfor.sub !== req.body.appleId && response.expires_in !== 0) {
+        return next(new CustomError(customerErrorDetails.E_3006('Incorrect apple id'), HttpStatus.BAD_REQUEST));
+      }
+      const customer = await CustomerModel.findOne({
+        where: {
+          appleId: req.body.appleId
+        }
+      });
+
+      if (!customer) {
+        const password = await generatePWD(8);
+        const data: any = {
+          firstName: req.body.fullName.split(' ')[0] ? req.body.fullName.split(' ')[0] : 'unknown',
+          lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
+          email: req.body.email ? req.body.email : null,
+          appleId: req.body.appleId,
+          isBusinessAccount: false
+        };
+        data.password = await hash(password, PASSWORD_SALT_ROUNDS);
+        const newCustomer = await CustomerModel.create(data);
+        accessTokenData = {
+          userId: newCustomer.id,
+          userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
+          userType: 'customer'
+        };
+        accessToken = await createAccessToken(accessTokenData);
+        refreshTokenData = {
+          userId: newCustomer.id,
+          userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
+          userType: 'customer',
+          accessToken
+        };
+        refreshToken = await createRefreshToken(refreshTokenData);
+        profile = await CustomerModel.scope('safe').findOne({
+          where: { appleId: newCustomer.appleId }
+        });
+        return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+      }
+      accessTokenData = {
+        userId: customer.id,
+        userName: `${customer.firstName} ${customer.lastName}`,
+        userType: 'customer'
+      };
+      accessToken = await createAccessToken(accessTokenData);
+      refreshTokenData = {
+        userId: customer.id,
+        userName: `${customer.firstName} ${customer.lastName}`,
+        userType: 'customer',
+        accessToken
+      };
+      refreshToken = await createRefreshToken(refreshTokenData);
+      profile = await CustomerModel.scope('safe').findOne({
+        where: { appleId: customer.appleId }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
     } catch (error) {
       return next(error);
     }

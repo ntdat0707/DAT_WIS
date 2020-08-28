@@ -29,10 +29,7 @@ const changePasswordSchema = Joi.object({
 });
 
 const loginSocialSchema = Joi.object({
-  provider: Joi.string()
-    .valid(ESocialType.FACEBOOK, ESocialType.GOOGLE, ESocialType.APPLE)
-    .required()
-    .label('provider'),
+  provider: Joi.string().valid(ESocialType.FACEBOOK, ESocialType.GOOGLE).required().label('provider'),
   providerId: Joi.string().required().label('providerId'),
   token: Joi.string().required().label('token'),
   email: Joi.string().email().allow('', null).label('email'),

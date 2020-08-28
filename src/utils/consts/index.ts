@@ -30,8 +30,7 @@ enum EServiceStatus {
 
 enum ESocialType {
   FACEBOOK = 'facebook',
-  GOOGLE = 'google',
-  APPLE = 'apple'
+  GOOGLE = 'google'
 }
 
 enum EWeekDays {
