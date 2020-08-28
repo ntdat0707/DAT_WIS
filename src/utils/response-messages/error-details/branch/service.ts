@@ -35,6 +35,10 @@ const serviceErrorDetails = {
   E_1205(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1204', 'cateServiceId out of company', detail);
     return e;
+  },
+  E_1206(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1206', 'serviceImageId not exists', detail);
+    return e;
   }
 };
 

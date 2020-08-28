@@ -10,6 +10,8 @@ class ServiceModel extends Model {
   public salePrice: number;
   public duration: number;
   public color: string;
+  public serviceCode: string;
+  public name: string;
   public isAllowedMarketplace!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
