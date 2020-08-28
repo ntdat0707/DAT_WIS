@@ -5,13 +5,13 @@ import HttpStatus from 'http-status-codes';
 import { generalErrorDetails } from '../../response-messages/error-details';
 import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
 import { logger } from '../../logger';
-import { verifyAcessToken } from '../../jwt';
+import { verifyAccessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
 import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/postgres/models';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
-interface IStaffAuthenicationPayload {
+interface IStaffAuthenticationPayload {
   id: string;
   firstName: string;
   lastName: string;
@@ -101,7 +101,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
     }
 
     const accessToken = accessTokenBearer.slice(7, accessTokenBearer.length).trimLeft();
-    const accessTokenData = await verifyAcessToken(accessToken);
+    const accessTokenData = await verifyAccessToken(accessToken);
     //Invalid token
     if (accessTokenData instanceof CustomError) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
@@ -176,11 +176,11 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
  * Check staff logined
  *
  * @param {string} accessTokenBearer
- * @returns {(Promise<IStaffAuthenicationPayload | CustomError>)}
+ * @returns {(Promise<IStaffAuthenticationPayload | CustomError>)}
  */
-const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenicationPayload | CustomError> => {
+const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenticationPayload | CustomError> => {
   try {
-    let staffAuthenicationPayload: IStaffAuthenicationPayload;
+    let staffAuthenticationPayload: IStaffAuthenticationPayload;
     //missing token
     if (!accessTokenBearer) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0002()) });
@@ -193,7 +193,7 @@ const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenicat
     }
 
     const accessToken = accessTokenBearer.slice(7, accessTokenBearer.length).trimLeft();
-    const accessTokenData = await verifyAcessToken(accessToken);
+    const accessTokenData = await verifyAccessToken(accessToken);
     //Invalid token
     if (accessTokenData instanceof CustomError) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
@@ -230,10 +230,10 @@ const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthenicat
         const workingLocationIds = workingLocations.map((location) => location.id);
         staffPayload.workingLocationIds = workingLocationIds;
 
-        staffAuthenicationPayload = staffPayload;
+        staffAuthenticationPayload = staffPayload;
       }
     }
-    return staffAuthenicationPayload;
+    return staffAuthenticationPayload;
   } catch (error) {
     throw error;
   }

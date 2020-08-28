@@ -7,15 +7,14 @@ require('dotenv').config();
 import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { staffErrorDetails, generalErrorDetails } from '../../../utils/response-messages/error-details';
-import { buildSuccessMessage, buildErrorMessage } from '../../../utils/response-messages';
-import { logger } from '../../../utils/logger';
+import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   createAccessToken,
   createRefreshToken,
   IAccessTokenData,
   IRefreshTokenData,
   destroyTokens,
-  verifyAcessToken,
+  verifyAccessToken,
   verifyRefreshToken
 } from '../../../utils/jwt';
 import { sequelize, StaffModel, CompanyModel, LocationModel } from '../../../repositories/postgres/models';
@@ -24,11 +23,12 @@ import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import {
   createBusinessAccountSchema,
   loginSchema,
-  refreshTokensChema,
   emailSchema,
   changePasswordSchema,
+  refreshTokenSchema,
   loginSocialSchema
 } from '../configs/validate-schemas';
+
 import { IStaffRecoveryPasswordTemplate } from '../../../utils/emailer/templates';
 import { sendEmail } from '../../../utils/emailer';
 import { redis, EKeys } from '../../../repositories/redis';
@@ -39,7 +39,6 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import { generatePWD } from '../../../utils/lib/generatePassword';
 
-const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const fontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
@@ -246,26 +245,21 @@ export class AuthController {
    *         $ref: '#/definitions/StaffRefreshToken'
    *     responses:
    *       200:
-   *         description: Sucess
+   *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad requests - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
   public refreshTokens = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const inputRefreshTokenBearer = req.body.refreshToken;
-      const validateErrors = validate(inputRefreshTokenBearer, refreshTokensChema);
+      const inputRefreshToken = req.body.refreshToken;
+      const validateErrors = validate(inputRefreshToken, refreshTokenSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      if (!inputRefreshTokenBearer.startsWith('Bearer ')) {
-        logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0005()) });
-        return res.status(HttpStatus.UNAUTHORIZED).send(buildErrorMessage(generalErrorDetails.E_0005()));
-      }
-      const inputRefreshToken = inputRefreshTokenBearer.slice(7, inputRefreshTokenBearer.length).trimLeft();
 
       const oldRefreshToken = await verifyRefreshToken(inputRefreshToken);
       if (oldRefreshToken instanceof CustomError) return next(oldRefreshToken);
-      const oldAccessToken = await verifyAcessToken(oldRefreshToken.accessToken);
+      const oldAccessToken = await verifyAccessToken(oldRefreshToken.accessToken);
       if (oldAccessToken instanceof CustomError) return next(oldAccessToken);
       const staff = await StaffModel.findOne({ where: { id: oldAccessToken.userId } });
       if (!staff) return next(staffErrorDetails.E_4000());
@@ -760,7 +754,9 @@ export class AuthController {
    *       400:
    *         description: Bad request - input invalid format, header is invalid
    *       500:
-   *         description: Internal server errors
+   *         description: |
+   *           </br> xxx1: Something error
+   *           </br> xxx2: Internal server errors
    */
 
   public verifyTokenStaff = async (req: Request, res: Response, next: NextFunction) => {
@@ -768,7 +764,7 @@ export class AuthController {
       if (!req.body.token) {
         return next(new CustomError(generalErrorDetails.E_0002()));
       }
-      const accessTokenData = await verifyAcessToken(req.body.token);
+      const accessTokenData = await verifyAccessToken(req.body.token);
       if (accessTokenData instanceof CustomError) {
         return next(new CustomError(generalErrorDetails.E_0003()));
       } else {
