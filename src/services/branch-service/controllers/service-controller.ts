@@ -380,7 +380,7 @@ export class ServiceController {
             as: 'locations',
             required: true,
             where: {
-              id: (req.query.locationIds as []).length ? req.query.locationIds : workingLocationIds
+              id: (req.query.locationIds as [])?.length ? req.query.locationIds : workingLocationIds
             }
           },
           {
