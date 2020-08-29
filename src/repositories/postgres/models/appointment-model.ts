@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 
-import { EAppointmentStatus } from '../../../utils/consts';
+import { EAppointmentStatus, AppointmentBookingSource } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
 class AppointmentModel extends Model {
@@ -12,6 +12,7 @@ class AppointmentModel extends Model {
   public date!: Date;
   public isPrimary!: boolean;
   public cancelReason: string;
+  public bookingSource: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -70,6 +71,11 @@ AppointmentModel.init(
       field: 'cancel_reason',
       type: DataTypes.STRING,
       allowNull: true
+    },
+    bookingSource: {
+      field: 'booking_source',
+      type: DataTypes.ENUM(...Object.keys(AppointmentBookingSource)),
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',

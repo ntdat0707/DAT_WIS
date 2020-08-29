@@ -65,3 +65,7 @@ export enum BusinessType {
   BABER_SHOP = 'BABER_SHOP',
   MASSAGE = 'MASSAGE'
 }
+export enum AppointmentBookingSource {
+  STAFF = 'STAFF',
+  MARKETPLACE = 'MARKETPLACE'
+}

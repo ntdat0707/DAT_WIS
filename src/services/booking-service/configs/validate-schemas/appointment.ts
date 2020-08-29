@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EAppointmentStatus } from '../../../../utils/consts';
+import { EAppointmentStatus, AppointmentBookingSource } from '../../../../utils/consts';
 
 const createAppointmentDetailSchema = Joi.object({
   serviceId: Joi.string()
@@ -40,6 +40,9 @@ const createAppointmentSchema = Joi.object({
     })
     .label('customerId'),
   date: Joi.string().isoDate().required(),
+  bookingSource: Joi.string()
+    .valid(...Object.keys(AppointmentBookingSource))
+    .required(),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails')
 });
 

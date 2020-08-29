@@ -69,11 +69,15 @@ export class AppointmentController extends BaseController {
    *           - locationId
    *           - date
    *           - appointmentDetails
+   *           - bookingSource
    *       properties:
    *           locationId:
    *               type: string
    *           customerId:
    *               type: string
+   *           bookingSource:
+   *               type: string
+   *               enum: [MARKETPLACE, STAFF]
    *           date:
    *               type: string
    *               format: date-time
@@ -104,7 +108,7 @@ export class AppointmentController extends BaseController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       403:
    *         description: Forbidden
    *       500:
@@ -114,8 +118,8 @@ export class AppointmentController extends BaseController {
    *  Steps:
    *    1. Validate format body data
    *    2. Check customer exist
-   *    3. Check Servcie, staff, resource match input data
-   *    4. create appointment and appoitnment detail
+   *    3. Check service, staff, resource match input data
+   *    4. create appointment and appointment detail
    */
   public createAppointment = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
@@ -124,7 +128,8 @@ export class AppointmentController extends BaseController {
         locationId: req.body.locationId,
         customerId: req.body.customerId,
         date: req.body.date,
-        appointmentDetails: req.body.appointmentDetails
+        appointmentDetails: req.body.appointmentDetails,
+        bookingSource: req.body.bookingSource
       };
       //validate req.body
       const validateErrors = validate(dataInput, createAppointmentSchema);
@@ -160,7 +165,6 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
-      if (appointmentDetails instanceof CustomError) return next(appointmentDetails);
       //insert appointment here
       const appointmentData = {
         id: appointmentId,
