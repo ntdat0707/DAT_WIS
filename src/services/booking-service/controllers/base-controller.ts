@@ -12,10 +12,10 @@ export class BaseController {
   protected verifyAppointmentDetails = async (
     appointmentDetails: IAppointmentDetailInput[],
     locationId: string
-  ): Promise<IAppointmentDetail[] | CustomError> => {
+  ): Promise<IAppointmentDetail[]> => {
     try {
       if (!appointmentDetails || appointmentDetails.length < 1)
-        return new CustomError(bookingErrorDetails.E_2000(), HttpStatus.BAD_REQUEST);
+        throw new CustomError(bookingErrorDetails.E_2000(), HttpStatus.BAD_REQUEST);
       const serviceTasks = [];
       const resourceTasks = [];
       const staffTasks = [];
@@ -98,10 +98,10 @@ export class BaseController {
         if (e) staffs.push(e);
       });
       if (servicesFind.length !== appointmentDetails.length) {
-        return new CustomError(bookingErrorDetails.E_2001('Service not match'), HttpStatus.BAD_REQUEST);
+        throw new CustomError(bookingErrorDetails.E_2001('Service not match'), HttpStatus.BAD_REQUEST);
       }
       if (staffs.length !== appointmentDetails.length) {
-        return new CustomError(bookingErrorDetails.E_2001('Staff not match'), HttpStatus.BAD_REQUEST);
+        throw new CustomError(bookingErrorDetails.E_2001('Staff not match'), HttpStatus.BAD_REQUEST);
       }
       for (let j = 0; j < appointmentDetails.length; j++) {
         const tmpStaffIds: string[] = [];
@@ -110,12 +110,12 @@ export class BaseController {
         });
         const staffIds = [...new Set(tmpStaffIds)];
         if (staffIds.length !== appointmentDetails[j].staffIds.length) {
-          return new CustomError(bookingErrorDetails.E_2001('Staff not match'), HttpStatus.BAD_REQUEST);
+          throw new CustomError(bookingErrorDetails.E_2001('Staff not match'), HttpStatus.BAD_REQUEST);
         }
         // verify resource
         if (appointmentDetails[j].resourceId) {
           if (!resourcesFind[j]) {
-            return new CustomError(bookingErrorDetails.E_2001('Resource not match'), HttpStatus.BAD_REQUEST);
+            throw new CustomError(bookingErrorDetails.E_2001('Resource not match'), HttpStatus.BAD_REQUEST);
           }
         }
       }
