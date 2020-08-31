@@ -170,7 +170,8 @@ export class AppointmentController extends BaseController {
         id: appointmentId,
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
-        customerId: dataInput.customerId ? dataInput.customerId : null
+        customerId: dataInput.customerId ? dataInput.customerId : null,
+        bookingSource: dataInput.bookingSource
       };
       // start transaction
       transaction = await sequelize.transaction();
