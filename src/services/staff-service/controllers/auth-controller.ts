@@ -255,16 +255,19 @@ export class AuthController {
     try {
       const inputRefreshToken = req.body.refreshToken;
       const validateErrors = validate(inputRefreshToken, refreshTokenSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
 
       const oldRefreshToken = await verifyRefreshToken(inputRefreshToken);
-      if (oldRefreshToken instanceof CustomError) return next(oldRefreshToken);
-      const oldAccessToken = await verifyAccessToken(oldRefreshToken.accessToken);
-      if (oldAccessToken instanceof CustomError) return next(oldAccessToken);
-      const staff = await StaffModel.findOne({ where: { id: oldAccessToken.userId } });
-      if (!staff) return next(staffErrorDetails.E_4000());
+      const staff = await StaffModel.findOne({ where: { id: oldRefreshToken.userId } });
+      if (!staff) {
+        throw new CustomError(staffErrorDetails.E_4000());
+      }
       const isDestroy = await destroyTokens(inputRefreshToken);
-      if (isDestroy instanceof CustomError) return next(isDestroy);
+      if (isDestroy instanceof CustomError) {
+        throw isDestroy;
+      }
 
       const newAccessTokenData: IAccessTokenData = {
         userId: staff.id,

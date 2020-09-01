@@ -113,9 +113,9 @@ async function createRefreshToken(data: IRefreshTokenData): Promise<string> {
  * @param {string} refreshToken
  * @returns {(Promise<IRefreshTokenData | CustomError>)}
  */
-async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenData | CustomError> {
+async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenData> {
   try {
-    return new Promise((resolve, _reject) => {
+    return new Promise((resolve, reject) => {
       const verifyOptions: jwt.SignOptions = {
         expiresIn: parseInt(refreshTokenExpiresIn, 10),
         algorithm
@@ -126,11 +126,11 @@ async function verifyRefreshToken(refreshToken: string): Promise<IRefreshTokenDa
         verifyOptions,
         async (err, refreshTokenData: IRefreshTokenData) => {
           if (err instanceof TokenExpiredError) {
-            resolve(new CustomError(generalErrorDetails.E_0008()));
+            reject(new CustomError(generalErrorDetails.E_0008()));
           }
-          if (err) return resolve(new CustomError(generalErrorDetails.E_0005()));
+          if (err) return reject(new CustomError(generalErrorDetails.E_0005()));
           const tokenStoraged = await redis.getData(`${EKeys.REFRESH_TOKEN}-${refreshToken}`);
-          if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_0005()));
+          if (!tokenStoraged) return reject(new CustomError(generalErrorDetails.E_0005()));
           resolve(refreshTokenData);
         }
       );
