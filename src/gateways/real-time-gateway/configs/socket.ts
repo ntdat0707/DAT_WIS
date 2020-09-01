@@ -8,7 +8,8 @@ enum Events {
   LOCK_SERVICE = 'lock-service',
   UN_LOCK_SERVICE = 'un-lock-service',
   LOCK_RESOURCE = 'lock-resource',
-  UN_LOCK_RESOURCE = 'un-lock-resource'
+  UN_LOCK_RESOURCE = 'un-lock-resource',
+  LOCK_APPOINTMENT = 'lock-appointment'
 }
 
 enum SocketRoomPrefixes {

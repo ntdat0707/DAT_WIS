@@ -225,46 +225,80 @@ export class AppointmentController extends BaseController {
         transaction
       });
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
-      const findQuery: FindOptions = {
-        where: { id: appointmentId },
+      // const findQuery: FindOptions = {
+      //   where: { id: appointmentId },
+      //   include: [
+      //     {
+      //       model: AppointmentDetailModel,
+      //       as: 'appointmentDetails',
+      //       include: [
+      //         {
+      //           model: ServiceModel,
+      //           as: 'service'
+      //         },
+      //         {
+      //           model: ResourceModel,
+      //           as: 'resource'
+      //         },
+      //         {
+      //           model: StaffModel.scope('safe'),
+      //           as: 'staffs',
+      //           through: { attributes: [] }
+      //         }
+      //       ]
+      //     }
+      //   ],
+      //   transaction
+      // };
+      // if (dataInput.customerId)
+      //   findQuery.include.push({
+      //     model: CustomerModel,
+      //     as: 'customer'
+      //   });
+      const query: FindOptions = {
         include: [
           {
-            model: AppointmentDetailModel,
-            as: 'appointmentDetails',
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { id: appointmentId },
             include: [
               {
-                model: ServiceModel,
-                as: 'service'
+                model: LocationModel,
+                as: 'location',
+                required: true
               },
               {
-                model: ResourceModel,
-                as: 'resource'
-              },
-              {
-                model: StaffModel.scope('safe'),
-                as: 'staffs',
-                through: { attributes: [] }
+                model: CustomerModel,
+                as: 'customer',
+                required: false
               }
             ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
           }
         ],
         transaction
       };
-      if (dataInput.customerId)
-        findQuery.include.push({
-          model: CustomerModel,
-          as: 'customer'
-        });
-      const appointmentStoraged = await AppointmentModel.findOne(findQuery);
-      await this.pushNotifyLockAppointmentData({
-        locationId: appointmentData.locationId,
-        serviceData: serviceDataNotify,
-        resourceData: resourceDataNotify,
-        staffData: staffDataNotify
-      });
+      const listappointmentDetail: any = await AppointmentDetailModel.findAll(query);
+      await this.pushNotifyLockAppointmentData(listappointmentDetail);
       //commit transaction
       await transaction.commit();
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentStoraged));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(listappointmentDetail));
     } catch (error) {
       //rollback transaction
       if (transaction) {
