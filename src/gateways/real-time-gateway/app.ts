@@ -68,7 +68,7 @@ export default class RealTimeGateway {
         EQueueNames.LOCK_APPOINTMENT_DATA,
         async (messageObj: any) => {
           const msg = messageObj.content.toString();
-          const data: IManagementLockAppointmentData = JSON.parse(msg);
+          const data: IManagementLockAppointmentData[] = JSON.parse(msg);
           this.pushNotifyLockAppointmentData(data);
         },
         { noAck: true }
@@ -102,12 +102,12 @@ export default class RealTimeGateway {
   //   }
   // };
 
-  private pushNotifyLockAppointmentData = (data: IManagementLockAppointmentData) => {
+  private pushNotifyLockAppointmentData = (data: IManagementLockAppointmentData[]) => {
     try {
-      if (data.appointmentDetails && data.appointmentDetails.length > 0) {
-        for (const appointmentDetail of data.appointmentDetails) {
-          if (appointmentDetail.id) {
-            const room = SocketRoomPrefixes.APPOINTMENT + appointmentDetail.id;
+      if (data && data.length > 0) {
+        for (const appointmentDetail of data) {
+          if (appointmentDetail.appointmentDetails) {
+            const room = SocketRoomPrefixes.APPOINTMENT + appointmentDetail.appointmentDetails.appointment.locationId;
             this.io.to(room).emit(Events.LOCK_APPOINTMENT, buildSocketSuccessMessage(appointmentDetail));
           }
         }

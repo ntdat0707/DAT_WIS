@@ -183,7 +183,7 @@ interface IManagementLockAppointmentData {
       updateAt: Date;
       deletedAt: any;
     };
-  }[];
+  };
 }
 
 export { EAppointmentStatus, AppointmentStatusRules, IManagementLockAppointmentData };
