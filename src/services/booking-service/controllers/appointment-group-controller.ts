@@ -22,6 +22,7 @@ import {
 
 import { createAppointmentGroupSchema, appointmentGroupIdSchema } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
+import { FindOptions } from 'sequelize';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -206,6 +207,46 @@ export class AppointmentGroupController extends BaseController {
           }
         ]
       });
+      const query: FindOptions = {
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { appointmentGroupId: newAppointmentGroupId },
+            include: [
+              {
+                model: LocationModel,
+                as: 'location',
+                required: true
+              },
+              {
+                model: CustomerModel,
+                as: 'customer',
+                required: false
+              }
+            ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          }
+        ]
+      };
+      const listappointmentDetail: any = await AppointmentDetailModel.findAll(query);
+      await this.pushNotifyLockAppointmentData(listappointmentDetail);
       res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentGroupStoraged));
     } catch (error) {
       if (transaction) await transaction.rollback();

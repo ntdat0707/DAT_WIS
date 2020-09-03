@@ -174,7 +174,7 @@ export class BaseController {
     try {
       const dataNotify: IManagementLockAppointmentData[] = [];
       appointmentDetail.map((item: any) => {
-        dataNotify.push(Object.assign({ appointmentDetails: item }));
+        dataNotify.push(Object.assign(item));
       });
       await emit(EQueueNames.LOCK_APPOINTMENT_DATA, dataNotify);
     } catch (error) {

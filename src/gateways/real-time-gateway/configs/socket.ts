@@ -13,7 +13,8 @@ enum Events {
 }
 
 enum SocketRoomPrefixes {
-  APPOINTMENT = 'appointment-'
+  APPOINTMENT = 'appointment-',
+  EDIT_APPOINTMENT = 'edit-appoinment-'
 }
 
 /**
