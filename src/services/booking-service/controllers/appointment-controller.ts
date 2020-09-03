@@ -294,11 +294,11 @@ export class AppointmentController extends BaseController {
         ],
         transaction
       };
-      const listappointmentDetail: any = await AppointmentDetailModel.findAll(query);
-      await this.pushNotifyLockAppointmentData(listappointmentDetail);
+      const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
+      await this.pushNotifyLockAppointmentData(listAppointmentDetail);
       //commit transaction
       await transaction.commit();
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(listappointmentDetail));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       //rollback transaction
       if (transaction) {
@@ -556,6 +556,46 @@ export class AppointmentController extends BaseController {
       });
       //commit transaction
       await transaction.commit();
+      const query: FindOptions = {
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { id: data.appointmentId },
+            include: [
+              {
+                model: LocationModel,
+                as: 'location',
+                required: true
+              },
+              {
+                model: CustomerModel,
+                as: 'customer',
+                required: false
+              }
+            ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          }
+        ]
+      };
+      const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
+      await this.pushNotifyEditAppointmentData(listAppointmentDetail);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(newAppointmentStatus));
     } catch (error) {
       if (transaction) {
