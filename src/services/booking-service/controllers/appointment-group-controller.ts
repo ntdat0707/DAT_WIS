@@ -245,8 +245,8 @@ export class AppointmentGroupController extends BaseController {
           }
         ]
       };
-      const listappointmentDetail: any = await AppointmentDetailModel.findAll(query);
-      await this.pushNotifyLockAppointmentData(listappointmentDetail);
+      const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
+      await this.pushNotifyLockAppointmentData(listAppointmentDetail);
       res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentGroupStoraged));
     } catch (error) {
       if (transaction) await transaction.rollback();

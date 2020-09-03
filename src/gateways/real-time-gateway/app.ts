@@ -56,8 +56,18 @@ export default class RealTimeGateway {
         if (appointmentRooms.length > 0) {
           socket.join(appointmentRooms);
         }
+      })
+      .on(Events.CONNECT, (socket: Socket) => {
+        const appointmentRooms = getRoomsFromStrings(
+          socket.request.staffPayload.workingLocationIds,
+          SocketRoomPrefixes.EDIT_APPOINTMENT
+        );
+        if (appointmentRooms.length > 0) {
+          socket.join(appointmentRooms);
+        }
       });
     await this.lockAppointmentData();
+    await this.editAppointmentData();
   }
   private lockAppointmentData = async () => {
     try {
@@ -70,6 +80,25 @@ export default class RealTimeGateway {
           const msg = messageObj.content.toString();
           const data: IManagementLockAppointmentData[] = JSON.parse(msg);
           this.pushNotifyLockAppointmentData(data);
+        },
+        { noAck: true }
+      );
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  private editAppointmentData = async () => {
+    try {
+      if (!this.openRabbitMQ) this.openRabbitMQ = await amqp.connect(rabbitmqURL);
+      const ch = await this.openRabbitMQ.createChannel();
+      await ch.assertQueue(EQueueNames.EDIT_APPOINTMENT_DATA, { durable: false });
+      await ch.consume(
+        EQueueNames.EDIT_APPOINTMENT_DATA,
+        async (messageObj: any) => {
+          const msg = messageObj.content.toString();
+          const data: IManagementLockAppointmentData[] = JSON.parse(msg);
+          this.pushNotifyEditAppointmentData(data);
         },
         { noAck: true }
       );
@@ -107,6 +136,18 @@ export default class RealTimeGateway {
       if (data && data.length > 0) {
         const room = SocketRoomPrefixes.APPOINTMENT + data[0].appointment.locationId;
         this.io.to(room).emit(Events.LOCK_APPOINTMENT, buildSocketSuccessMessage(data));
+      }
+    } catch (error) {
+      const e = buildErrorDetail('0001', 'Internal server error', error.message || '');
+      logger.error({ label: LOG_LABEL, message: JSON.stringify(e) });
+    }
+  };
+
+  private pushNotifyEditAppointmentData = (data: IManagementLockAppointmentData[]) => {
+    try {
+      if (data && data.length > 0) {
+        const room = SocketRoomPrefixes.EDIT_APPOINTMENT + data[0].appointment.locationId;
+        this.io.to(room).emit(Events.EDIT_APPOINTMENT, buildSocketSuccessMessage(data));
       }
     } catch (error) {
       const e = buildErrorDetail('0001', 'Internal server error', error.message || '');

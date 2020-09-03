@@ -181,4 +181,16 @@ export class BaseController {
       throw error;
     }
   };
+
+  protected pushNotifyEditAppointmentData = async (appointmentDetail: any[]) => {
+    try {
+      const dataNotify: IManagementLockAppointmentData[] = [];
+      appointmentDetail.map((item: any) => {
+        dataNotify.push(Object.assign(item));
+      });
+      await emit(EQueueNames.EDIT_APPOINTMENT_DATA, dataNotify);
+    } catch (error) {
+      throw error;
+    }
+  };
 }
