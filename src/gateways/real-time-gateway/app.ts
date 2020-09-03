@@ -105,12 +105,8 @@ export default class RealTimeGateway {
   private pushNotifyLockAppointmentData = (data: IManagementLockAppointmentData[]) => {
     try {
       if (data && data.length > 0) {
-        for (const appointmentDetail of data) {
-          if (appointmentDetail.appointmentDetails) {
-            const room = SocketRoomPrefixes.APPOINTMENT + appointmentDetail.appointmentDetails.appointment.locationId;
-            this.io.to(room).emit(Events.LOCK_APPOINTMENT, buildSocketSuccessMessage(appointmentDetail));
-          }
-        }
+        const room = SocketRoomPrefixes.APPOINTMENT + data[0].appointmentDetails.appointment.locationId;
+        this.io.to(room).emit(Events.LOCK_APPOINTMENT, buildSocketSuccessMessage(data));
       }
     } catch (error) {
       const e = buildErrorDetail('0001', 'Internal server error', error.message || '');
