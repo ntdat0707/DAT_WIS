@@ -27,5 +27,11 @@ export class LocationRoutes {
       isAuthenticated,
       this.locationController.createLocationWorkingTime
     );
+    this.router.put(
+      '/update-location/:locationId?',
+      isAuthenticated,
+      uploadAsMiddleware('photo'),
+      this.locationController.updateLocation
+    );
   }
 }
