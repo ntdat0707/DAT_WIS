@@ -178,6 +178,7 @@ export class StaffController {
    *           - lastName
    *           - mainLocationId
    *           - workingLocationIds
+   *           - gender
    *       properties:
    *           mainLocationId:
    *               type: string

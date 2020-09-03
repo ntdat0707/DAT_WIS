@@ -15,7 +15,12 @@ import {
   LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
-import { createLocationSchema, locationIdSchema, createLocationWorkingTimeSchema } from '../configs/validate-schemas';
+import {
+  createLocationSchema,
+  locationIdSchema,
+  createLocationWorkingTimeSchema,
+  updateLocationSchema
+} from '../configs/validate-schemas';
 import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
@@ -23,6 +28,25 @@ import _ from 'lodash';
 import moment from 'moment';
 
 export class LocationController {
+  /**
+   * @swagger
+   * definitions:
+   *   WorkingTimeDetail:
+   *       required:
+   *           - day
+   *           - enabled
+   *           - range
+   *       properties:
+   *           day:
+   *               type: string
+   *           enabled:
+   *               type: boolean
+   *           range:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   */
   /**
    * @swagger
    * /branch/location/create-location:
@@ -68,6 +92,11 @@ export class LocationController {
    *     - in: "formData"
    *       name: "longitude"
    *       type: number
+   *     - in: "formData"
+   *       name: "workingTimes"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/WorkingTimeDetail'
    *     responses:
    *       200:
    *         description:
@@ -90,7 +119,8 @@ export class LocationController {
         ward: req.body.ward,
         address: req.body.address,
         latitude: req.body.latitude,
-        longitude: req.body.longitude
+        longitude: req.body.longitude,
+        workingTimes: req.body.workingTimes
       };
 
       const validateErrors = validate(data, createLocationSchema);
@@ -103,6 +133,30 @@ export class LocationController {
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
+      if (req.body.workingTimes && req.body.workingTimes.length > 0) {
+        if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
+          return next(
+            new CustomError(locationErrorDetails.E_1002('Weekday do not allow duplicate value'), HttpStatus.BAD_REQUEST)
+          );
+        }
+        const even = (element: any) => {
+          return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
+        };
+        const checkValidWoringTime = await req.body.workingTimes.some(even);
+        if (checkValidWoringTime) {
+          return next(
+            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+          );
+        }
+        const workingsTimes = (req.body.workingTimes as []).map((value: any) => ({
+          locationId: location.id,
+          weekday: value.day,
+          startTime: value.range[0],
+          endTime: value.range[1],
+          isEnabled: value.enabled
+        }));
+        await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
+      }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
       //commit transaction
       await transaction.commit();
@@ -134,7 +188,16 @@ export class LocationController {
   public getAllLocations = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
-      const locations = await LocationModel.findAll({ where: { companyId } });
+      const locations = await LocationModel.findAll({
+        where: { companyId },
+        include: [
+          {
+            model: LocationWorkingHourModel,
+            as: 'workingTimes',
+            required: false
+          }
+        ]
+      });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
       return next(error);
@@ -182,7 +245,14 @@ export class LocationController {
       const query: FindOptions = {
         where: {
           companyId: companyId
-        }
+        },
+        include: [
+          {
+            model: LocationWorkingHourModel,
+            as: 'workingTimes',
+            required: false
+          }
+        ]
       };
       const locations = await paginate(
         LocationModel,
@@ -385,7 +455,7 @@ export class LocationController {
         return next(
           new CustomError(
             locationErrorDetails.E_1001(`Can not access to this ${body.locationId}`),
-            HttpStatus.NOT_FOUND
+            HttpStatus.BAD_REQUEST
           )
         );
       }
@@ -423,6 +493,188 @@ export class LocationController {
       const locationWorkingHour = await LocationWorkingHourModel.bulkCreate(workingsTimes);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationWorkingHour));
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   WorkingTimeDetail:
+   *       required:
+   *           - day
+   *           - enabled
+   *           - range
+   *       properties:
+   *           day:
+   *               type: string
+   *           enabled:
+   *               type: boolean
+   *           range:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   */
+  /**
+   * @swagger
+   * /branch/location/update-location/{locationId}:
+   *   put:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: updateLocation
+   *     consumes:
+   *     - multipart/form-data
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: "name"
+   *       type: string
+   *     - in: "formData"
+   *       name: "phone"
+   *       type: string
+   *     - in: "formData"
+   *       name: "email"
+   *       type: string
+   *     - in: "formData"
+   *       name: "city"
+   *       type: string
+   *     - in: "formData"
+   *       name: "district"
+   *       type: string
+   *     - in: "formData"
+   *       name: "ward"
+   *       type: string
+   *     - in: "formData"
+   *       name: "address"
+   *       type: string
+   *     - in: "formData"
+   *       name: "latitude"
+   *       type: number
+   *     - in: "formData"
+   *       name: "longitude"
+   *       type: number
+   *     - in: "formData"
+   *       name: "status"
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: "workingTimes"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/WorkingTimeDetail'
+   *     responses:
+   *       200:
+   *         description:
+   *       400:
+   *         description:
+   *       404:
+   *         description:
+   *       500:
+   *         description:
+   */
+  public updateLocation = async ({ params, body, file }: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const { workingLocationIds, companyId } = res.locals.staffPayload;
+      let validateErrors: any;
+      validateErrors = validate(params.locationId, locationIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      validateErrors = validate(body, updateLocationSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const location = await LocationModel.findOne({
+        where: {
+          id: params.locationId,
+          companyId: companyId
+        }
+      });
+      if (!location)
+        return next(
+          new CustomError(
+            locationErrorDetails.E_1000(`locationId ${params.locationId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+
+      // start transaction
+      transaction = await sequelize.transaction();
+      if (body.workingTimes && body.workingTimes.length > 0) {
+        if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
+          return next(
+            new CustomError(locationErrorDetails.E_1002('Weekday do not allow duplicate value'), HttpStatus.BAD_REQUEST)
+          );
+        }
+        if (!(workingLocationIds as string[]).includes(params.locationId)) {
+          return next(
+            new CustomError(
+              locationErrorDetails.E_1001(`Can not access to this ${params.locationId}`),
+              HttpStatus.BAD_REQUEST
+            )
+          );
+        }
+        const even = (element: any) => {
+          return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
+        };
+        const checkValidWoringTime = await body.workingTimes.some(even);
+        if (checkValidWoringTime) {
+          return next(
+            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+          );
+        }
+        const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
+          where: {
+            locationId: params.locationId
+          }
+        });
+        const workingsTimes = (body.workingTimes as []).map((value: any) => ({
+          locationId: params.locationId,
+          weekday: value.day,
+          startTime: value.range[0],
+          endTime: value.range[1],
+          isEnabled: value.enabled
+        }));
+        if (existLocationWorkingHour) {
+          await LocationWorkingHourModel.destroy({ where: { locationId: params.locationId }, transaction });
+          await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
+        } else {
+          await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
+        }
+      }
+      const data: any = {
+        name: body.name ? body.name : location.name,
+        phone: body.phone ? body.phone : location.phone,
+        email: body.email,
+        city: body.city,
+        district: body.district,
+        ward: body.ward,
+        address: body.address,
+        latitude: body.latitude,
+        longitude: body.longitude
+      };
+      if (file) data.photo = (file as any).location;
+      await LocationModel.update(data, { where: { id: params.locationId }, transaction });
+      //commit transaction
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
