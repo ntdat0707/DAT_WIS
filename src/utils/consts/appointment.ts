@@ -81,100 +81,60 @@ const AppointmentStatusRules = {
 // }
 
 interface IManagementLockAppointmentData {
-  appointmentDetails: {
+  id: string;
+  appointmentId: string;
+  startTime: Date;
+  serviceId: string;
+  resourceId: any;
+  duration: any;
+  status: string;
+  createdAt: Date;
+  updateAt: Date;
+  deletedAt: any;
+  appointment: {
     id: string;
-    appointmentId: string;
-    startTime: Date;
-    serviceId: string;
-    resourceId: any;
-    duration: any;
+    customerId: string;
+    locationId: string;
+    appointmentGroupId: any;
+    isPrimary: boolean;
     status: string;
+    date: Date;
+    cancelReason: any;
+    bookingSource: string;
     createdAt: Date;
     updateAt: Date;
     deletedAt: any;
-    appointment: {
+    location: {
       id: string;
-      customerId: string;
-      locationId: string;
-      appointmentGroupId: any;
-      isPrimary: boolean;
-      status: string;
-      date: Date;
-      cancelReason: any;
-      bookingSource: string;
-      createdAt: Date;
-      updateAt: Date;
-      deletedAt: any;
-      location: {
-        id: string;
-        companyId: string;
-        name: string;
-        phone: string;
-        email: string;
-        photo: any;
-        status: string;
-        city: any;
-        district: any;
-        ward: any;
-        address: any;
-        latitude: any;
-        longitude: any;
-        createdAt: Date;
-        updateAt: Date;
-        deletedAt: any;
-      };
-      customer: {
-        id: string;
-        firstName: string;
-        lastName: any;
-        gender: number;
-        phone: any;
-        email: string;
-        birthDate: any;
-        passportNumber: any;
-        address: any;
-        companyId: any;
-        password: any;
-        otpCode: any;
-        facebookId: any;
-        appleId: any;
-        googleId: any;
-        avatarPath: any;
-        createdAt: Date;
-        updateAt: Date;
-        deletedAt: any;
-      };
-    };
-    service: {
-      id: string;
+      companyId: string;
       name: string;
+      phone: string;
+      email: string;
+      photo: any;
       status: string;
-      cateServiceId: string;
-      serviceCode: string;
-      description: string;
-      salePrice: number;
-      duration: number;
-      color: string;
-      isAllowedMarketplace: boolean;
+      city: any;
+      district: any;
+      ward: any;
+      address: any;
+      latitude: any;
+      longitude: any;
       createdAt: Date;
       updateAt: Date;
       deletedAt: any;
     };
-    resource: any;
-    staffs: {
+    customer: {
       id: string;
-      password: any;
       firstName: string;
       lastName: any;
       gender: number;
       phone: any;
-      email: any;
+      email: string;
       birthDate: any;
-      isAllowedMarketPlace: boolean;
       passportNumber: any;
-      groupStaffId: any;
-      isBusinessAccount: boolean;
-      mainLocationId: any;
+      address: any;
+      companyId: any;
+      password: any;
+      otpCode: any;
       facebookId: any;
       appleId: any;
       googleId: any;
@@ -183,6 +143,44 @@ interface IManagementLockAppointmentData {
       updateAt: Date;
       deletedAt: any;
     };
+  };
+  service: {
+    id: string;
+    name: string;
+    status: string;
+    cateServiceId: string;
+    serviceCode: string;
+    description: string;
+    salePrice: number;
+    duration: number;
+    color: string;
+    isAllowedMarketplace: boolean;
+    createdAt: Date;
+    updateAt: Date;
+    deletedAt: any;
+  };
+  resource: any;
+  staffs: {
+    id: string;
+    password: any;
+    firstName: string;
+    lastName: any;
+    gender: number;
+    phone: any;
+    email: any;
+    birthDate: any;
+    isAllowedMarketPlace: boolean;
+    passportNumber: any;
+    groupStaffId: any;
+    isBusinessAccount: boolean;
+    mainLocationId: any;
+    facebookId: any;
+    appleId: any;
+    googleId: any;
+    avatarPath: any;
+    createdAt: Date;
+    updateAt: Date;
+    deletedAt: any;
   };
 }
 
