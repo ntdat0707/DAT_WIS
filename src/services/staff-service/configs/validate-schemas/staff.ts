@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { EGender } from '../../../../utils/consts';
 
 const staffIdSchema = Joi.string()
   .guid({
@@ -11,7 +12,7 @@ export const createStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
-  gender: Joi.number().required(),
+  gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   phone: Joi.string().required(),
   birthDate: Joi.string().isoDate().required(),
   passportNumber: Joi.string().required(),
@@ -36,10 +37,10 @@ export const createStaffSchema = Joi.object({
 });
 export const updateStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
-  isAllowedMarketPlace: Joi.boolean().required().label('isAllowMarketPlace'),
+  isAllowedMarketPlace: Joi.boolean().required().label('isAllowedMarketPlace'),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
-  gender: Joi.number().required(),
+  gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   birthDate: Joi.string().isoDate().required(),
   passportNumber: Joi.string().required(),
   address: Joi.string(),

@@ -171,54 +171,52 @@ export class StaffController {
 
   /**
    * @swagger
-   * definitions:
-   *   staffCreate:
-   *       required:
-   *           - firstName
-   *           - lastName
-   *           - mainLocationId
-   *           - workingLocationIds
-   *           - gender
-   *       properties:
-   *           mainLocationId:
-   *               type: string
-   *           firstName:
-   *               type: string
-   *           lastName:
-   *               type: string
-   *           gender:
-   *               type: integer
-   *           phone:
-   *               type: string
-   *           birthDate:
-   *               type: string
-   *           passportNumber:
-   *               type: string
-   *           address:
-   *               type: string
-   *           workingLocationIds:
-   *               type: array
-   *               items:
-   *                   type: string
-   *
-   *
-   */
-
-  /**
-   * @swagger
    * /staff/create:
    *   post:
    *     tags:
    *       - Staff
    *     security:
    *       - Bearer: []
-   *     name: updateStatus
+   *     name: createStaff
+   *     consumes:
+   *     - multipart/form-data
    *     parameters:
-   *     - in: "body"
-   *       name: "body"
+   *     - in: "formData"
+   *       name: "avatar"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: mainLocationId
+   *       type: string
    *       required: true
-   *       schema:
-   *         $ref: '#/definitions/staffCreate'
+   *     - in: "formData"
+   *       name: firstName
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: lastName
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: gender
+   *       type: integer
+   *       required: true
+   *     - in: "formData"
+   *       name: phone
+   *       type: string
+   *     - in: "formData"
+   *       name: birthDate
+   *       type: string
+   *     - in: "formData"
+   *       name: passportNumber
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: workingLocationIds
+   *       type: array
+   *       required: true
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -237,7 +235,7 @@ export class StaffController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const profile = {
+      const profile: any = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
@@ -266,7 +264,8 @@ export class StaffController {
           );
         }
       }
-      await StaffModel.create(profile, { transaction });
+      if (req.file) profile.avatarPath = (req.file as any).location;
+      const staff = await StaffModel.create(profile, { transaction });
       if (req.body.workingLocationIds) {
         const workingLocationData = (req.body.workingLocationIds as []).map((x) => ({
           locationId: x,
@@ -276,7 +275,7 @@ export class StaffController {
       }
       //commit transaction
       await transaction.commit();
-      return res.status(HttpStatus.OK).send();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       //rollback transaction
       if (transaction) {
@@ -285,40 +284,6 @@ export class StaffController {
       return next(error);
     }
   };
-  /**
-   * @swagger
-   * definitions:
-   *   staffUpdate:
-   *       required:
-   *           - firstName
-   *           - lastName
-   *           - workingLocationIds
-   *       properties:
-   *           isAllowedMarketPlace:
-   *               type: boolean
-   *           firstName:
-   *               type: string
-   *           lastName:
-   *               type: string
-   *           gender:
-   *               type: integer
-   *           birthDate:
-   *               type: string
-   *           passportNumber:
-   *               type: string
-   *           address:
-   *               type: string
-   *           workingLocationIds:
-   *               type: array
-   *               items:
-   *                   type: string
-   *           serviceIds:
-   *               type: array
-   *               items:
-   *                   type: string
-   *
-   *
-   */
 
   /**
    * @swagger
@@ -329,15 +294,36 @@ export class StaffController {
    *     security:
    *       - Bearer: []
    *     name: updateStaff
+   *     consumes:
+   *     - multipart/form-data
    *     parameters:
    *     - in: "path"
    *       name: "staffId"
    *       required: true
-   *     - in: "body"
-   *       name: "body"
-   *       required: true
-   *       schema:
-   *         $ref: '#/definitions/staffUpdate'
+   *     - in: "formData"
+   *       name: "avatar"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: firstName
+   *       type: string
+   *     - in: "formData"
+   *       name: lastName
+   *       type: string
+   *     - in: "formData"
+   *       name: gender
+   *       type: integer
+   *     - in: "formData"
+   *       name: birthDate
+   *       type: string
+   *     - in: "formData"
+   *       name: passportNumber
+   *       type: string
+   *     - in: "formData"
+   *       name: workingLocationIds
+   *       type: array
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -356,7 +342,7 @@ export class StaffController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      const profile = {
+      const profile: any = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
@@ -365,6 +351,7 @@ export class StaffController {
         address: req.body.address,
         isAllowedMarketPlace: req.body.isAllowedMarketPlace
       };
+      if (req.file) profile.avatarPath = (req.file as any).location;
 
       if (req.body.workingLocationIds) {
         const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
@@ -413,7 +400,8 @@ export class StaffController {
       const handleServiceIds = await this.handleEditStaffServices(req.params.staffId, req.body.serviceIds);
       if (handleServiceIds.serviceIdsAdded.length) {
         await ServiceStaffModel.bulkCreate(
-          handleServiceIds.serviceIdsAdded.map((serviceId) => ({ staffId: req.params.staffId, serviceId: serviceId }))
+          handleServiceIds.serviceIdsAdded.map((serviceId) => ({ staffId: req.params.staffId, serviceId: serviceId })),
+          { transaction: transaction }
         );
       }
       if (handleServiceIds.serviceIdsRemoved.length) {
@@ -421,7 +409,8 @@ export class StaffController {
           where: {
             serviceId: handleServiceIds.serviceIdsRemoved,
             staffId: req.params.staffId
-          }
+          },
+          transaction: transaction
         });
       }
       //commit transaction
