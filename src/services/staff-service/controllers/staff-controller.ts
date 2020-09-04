@@ -212,6 +212,9 @@ export class StaffController {
    *       type: string
    *       required: true
    *     - in: "formData"
+   *       name: color
+   *       type: string
+   *     - in: "formData"
    *       name: workingLocationIds
    *       type: array
    *       required: true
@@ -244,6 +247,7 @@ export class StaffController {
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
         address: req.body.address,
+        color: req.body.color,
         id: uuidv4()
       };
       if (!res.locals.staffPayload.workingLocationIds.includes(profile.mainLocationId))
@@ -317,7 +321,13 @@ export class StaffController {
    *       name: birthDate
    *       type: string
    *     - in: "formData"
+   *       name: phone
+   *       type: string
+   *     - in: "formData"
    *       name: passportNumber
+   *       type: string
+   *     - in: "formData"
+   *       name: color
    *       type: string
    *     - in: "formData"
    *       name: workingLocationIds
@@ -349,6 +359,8 @@ export class StaffController {
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
         address: req.body.address,
+        phone: req.body.phone,
+        color: req.body.color,
         isAllowedMarketPlace: req.body.isAllowedMarketPlace
       };
       if (req.file) profile.avatarPath = (req.file as any).location;

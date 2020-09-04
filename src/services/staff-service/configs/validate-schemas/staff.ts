@@ -13,10 +13,11 @@ export const createStaffSchema = Joi.object({
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
-  phone: Joi.string().required(),
+  phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   birthDate: Joi.string().isoDate().required(),
   passportNumber: Joi.string().required(),
   address: Joi.string(),
+  color: Joi.string(),
   mainLocationId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -44,6 +45,8 @@ export const updateStaffSchema = Joi.object({
   birthDate: Joi.string().isoDate().required(),
   passportNumber: Joi.string().required(),
   address: Joi.string(),
+  color: Joi.string(),
+  phone: Joi.string().regex(/^\d+$/).disallow('', null).label('phone'),
   workingLocationIds: Joi.array()
     .min(1)
     .required()
