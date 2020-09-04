@@ -14,6 +14,7 @@ class StaffModel extends Model {
   public isBusinessAccount: boolean;
   public mainLocationId: string;
   public address: string;
+  public color: string;
   public facebookId: string;
   public googleId: string;
   public appleId: string;
@@ -91,6 +92,11 @@ StaffModel.init(
     address: {
       field: 'address',
       type: DataTypes.STRING
+    },
+    color: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'color'
     },
     facebookId: {
       type: DataTypes.STRING,
