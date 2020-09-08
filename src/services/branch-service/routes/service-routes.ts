@@ -26,5 +26,6 @@ export class ServiceRoutes {
       uploadAsMiddleware({ name: 'photo[]', maxCount: 5 }),
       this.serviceController.updateService
     );
+    this.router.get('/search-services',this.serviceController.searchService);
   }
 }

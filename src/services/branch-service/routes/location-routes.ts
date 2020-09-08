@@ -33,5 +33,6 @@ export class LocationRoutes {
       uploadAsMiddleware('photo'),
       this.locationController.updateLocation
     );
+    this.router.get('/search/location-by-city',this.locationController.searchLocationsByCity);
   }
 }

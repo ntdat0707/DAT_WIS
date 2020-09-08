@@ -849,4 +849,26 @@ export class ServiceController {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /branch/service/search-services:
+   *   get:
+   *     name: searchService
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public searchService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const services: any = await ServiceModel.findAll({ order: ['name', 'ASC'] });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }

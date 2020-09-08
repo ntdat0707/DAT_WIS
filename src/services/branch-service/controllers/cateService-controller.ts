@@ -374,4 +374,30 @@ export class CateServiceController {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /branch/cate-service/search-without-company:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: searchCateService
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       404:
+   *         description: service cate gory not found
+   *       500:
+   *         description: internal error
+   */
+  public searchCateService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const cateServices = await CateServiceModel.findAll({order:['name','ASC']});
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }

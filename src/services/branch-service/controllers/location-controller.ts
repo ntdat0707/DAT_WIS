@@ -328,6 +328,7 @@ export class LocationController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /branch/location/delete/{locationId}:
@@ -632,7 +633,7 @@ export class LocationController {
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
@@ -678,4 +679,71 @@ export class LocationController {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /branch/location/search/{cityName}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: searchLocationsByCity
+   *     parameters:
+   *     - in: path
+   *       name: cityName
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public searchLocationsByCity = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const cityName = req.path;
+      const locations = await LocationModel.findAll({
+        where: {
+          city: { like: '%' + cityName + '%' }
+        },
+        order:['city','ASC']
+      });
+      if (!locations)
+        return next(new CustomError(locationErrorDetails.E_1000(`City ${cityName} not found`), HttpStatus.NOT_FOUND));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  // /**
+  //  * @swagger
+  //  * /branch/location/search-cate-service:
+  //  *   get:
+  //  *     tags:
+  //  *       - Branch
+  //  *     name: searchLocationsByCateService
+  //  *     responses:
+  //  *       200:
+  //  *         description: success
+  //  *       400:
+  //  *         description: Bad requests - input invalid format, header is invalid
+  //  *       500:
+  //  *         description: Internal server errors
+  //  */
+  // public searchLocationsByCateService = async (req: Request, res: Response, next: NextFunction) => {
+  //   try {
+  //     const locations = await LocationModel.findAll({
+  //       where: {
+  //         city: { like: '%' + cityName + '%' }
+  //       }
+  //     });
+  //     if (!locations)
+  //       return next(new CustomError(locationErrorDetails.E_1000(`City ${cityName} not found`), HttpStatus.NOT_FOUND));
+  //     return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+  //   } catch (error) {
+  //     return next(error);
+  //   }
+  // };
 }
