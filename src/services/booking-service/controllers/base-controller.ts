@@ -2,7 +2,7 @@ import HttpStatus from 'http-status-codes';
 
 import { CustomError } from '../../../utils/error-handlers';
 import { bookingErrorDetails } from '../../../utils/response-messages/error-details';
-import { IManagementLockAppointmentData } from '../../../utils/consts';
+import { IManagementLockAppointmentData, IManagementEditAppointmentDetailData } from '../../../utils/consts';
 import { emit, EQueueNames } from '../../../utils/event-queues';
 import { StaffModel, ServiceModel, ResourceModel, LocationModel } from '../../../repositories/postgres/models';
 
@@ -189,6 +189,15 @@ export class BaseController {
         dataNotify.push(Object.assign(item));
       });
       await emit(EQueueNames.EDIT_APPOINTMENT_DATA, dataNotify);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  protected pushNotifyEditAppointmentDetailData = async (appointmentDetail: any) => {
+    try {
+      const dataNotify: IManagementEditAppointmentDetailData = Object.assign(appointmentDetail);
+      await emit(EQueueNames.EDIT_APPOINTMENT_DETAIL_DATA, dataNotify);
     } catch (error) {
       throw error;
     }
