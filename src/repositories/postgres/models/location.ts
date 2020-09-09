@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-import { ELocationStatus } from '../../../utils/consts';
+import { ELocationStatus, EPayment, EParkingStatus, EFavorite } from '../../../utils/consts';
 
 class LocationModel extends Model {
   public id: string;
@@ -16,6 +16,13 @@ class LocationModel extends Model {
   public address: string;
   public latitude: number;
   public longitude: number;
+  public title: string;
+  public payment: EPayment;
+  public parking: EParkingStatus;
+  public rating: number;
+  public recoveryRooms: number;
+  public totalBookings: number;
+  public favorite: EFavorite;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -27,88 +34,123 @@ LocationModel.init(
       field: 'id',
       type: DataTypes.UUIDV4,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
+      primaryKey: true
     },
     companyId: {
       field: 'company_id',
       type: DataTypes.UUIDV4,
-      allowNull: false,
+      allowNull: false
     },
     name: {
       field: 'name',
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     phone: {
       field: 'phone',
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     email: {
       field: 'email',
-      type: DataTypes.STRING,
+      type: DataTypes.STRING
     },
     photo: {
       field: 'photo',
-      type: DataTypes.STRING,
+      type: DataTypes.STRING
     },
     status: {
       field: 'status',
       type: DataTypes.ENUM(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE),
-      defaultValue: ELocationStatus.ACTIVE,
+      defaultValue: ELocationStatus.ACTIVE
     },
     city: {
       field: 'city',
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     district: {
       field: 'district',
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     ward: {
       field: 'ward',
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     address: {
       field: 'address',
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     latitude: {
       field: 'latitude',
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     longitude: {
       field: 'longitude',
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
+    },
+    title: {
+      field: 'title',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    payment: {
+      field: 'payment',
+      type: DataTypes.ENUM(EPayment.CASH, EPayment.CARD,EPayment.ALL),
+      defaultValue: EPayment.ALL
+    },
+    parking: {
+      field: 'parking',
+      type: DataTypes.ENUM(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE),
+      defaultValue: EParkingStatus.ACTIVE
+    },
+    rating: {
+      field: 'rating',
+      type: DataTypes.FLOAT(1, 5),
+      allowNull: true
+    },
+    recoveryRooms: {
+      field: 'recovery_rooms',
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true
+    },
+    totalBookings: {
+      field: 'totalBookings',
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true
+    },
+    favorite: {
+      field: 'favorite',
+      type: DataTypes.ENUM(EFavorite.ACTIVE, EFavorite.INACTIVE),
+      defaultValue: EFavorite.INACTIVE
     },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
     },
     updatedAt: {
       field: 'updated_at',
       type: 'TIMESTAMP',
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
     },
     deletedAt: {
       field: 'deleted_at',
       type: 'TIMESTAMP',
-      defaultValue: null,
-    },
+      defaultValue: null
+    }
   },
   {
     sequelize,
     freezeTableName: true,
     tableName: 'location',
     timestamps: true,
-    paranoid: true,
+    paranoid: true
   }
 );
 

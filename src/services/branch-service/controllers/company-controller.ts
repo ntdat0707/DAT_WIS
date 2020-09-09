@@ -25,6 +25,8 @@ export class CompanyController {
    *               type: string
    *           phone:
    *               type: string
+   *           description:
+   *               type: string
    *           businessType:
    *               type: string
    *               enum: [DENTAL, SPA, BEAUTY_SALON, NAIL_SALON, BABER_SHOP, MASSAGE]
@@ -81,6 +83,7 @@ export class CompanyController {
       company = await company.update({
         businessType: data.businessType,
         phone: data.phone,
+        description:data.description,
         businessName: data.businessName
       });
 

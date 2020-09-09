@@ -93,6 +93,21 @@ export class LocationController {
    *       name: "longitude"
    *       type: number
    *     - in: "formData"
+   *       name: "title"
+   *       type: string
+   *     - in: "formData"
+   *       name: "payment"
+   *       type: string
+   *       enum:
+   *          - Cash
+   *          - Card  
+   *     - in: "formData"
+   *       name: "parking"
+   *       type: string
+   *       enum:
+   *          - Active
+   *          - Inactive 
+   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -120,6 +135,9 @@ export class LocationController {
         address: req.body.address,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
+        title: req.body.title,
+        payment:req.body.payment,
+        parking:req.body.parking,
         workingTimes: req.body.workingTimes
       };
 
@@ -145,7 +163,7 @@ export class LocationController {
         const checkValidWoringTime = await req.body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
         const workingsTimes = (req.body.workingTimes as []).map((value: any) => ({
@@ -466,7 +484,7 @@ export class LocationController {
       const checkValidWoringTime = await body.workingTimes.some(even);
       if (checkValidWoringTime) {
         return next(
-          new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+          new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
         );
       }
 
@@ -570,6 +588,24 @@ export class LocationController {
    *       type: string
    *       required: true
    *     - in: "formData"
+   *       name: "title"
+   *       type: string
+   *     - in: "formData"
+   *       name: "payment"
+   *       type: string
+   *       enum:
+   *          - Cash
+   *          - Card  
+   *     - in: "formData"
+   *       name: "parking"
+   *       type: string
+   *       enum:
+   *          - Active
+   *          - Inactive 
+   *     - in: "formData"
+   *       name: "recoveryRooms"
+   *       type: number
+   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -664,7 +700,11 @@ export class LocationController {
         ward: body.ward,
         address: body.address,
         latitude: body.latitude,
-        longitude: body.longitude
+        longitude: body.longitude,
+        title: body.title,
+        payment:body.payment,
+        parking:body.parking,
+        recoveryRooms: body.recoveryRooms,
       };
       if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });

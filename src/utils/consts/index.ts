@@ -19,10 +19,22 @@ enum EGender {
   UNISEX = 2
 }
 
+enum EPayment{
+  CASH = 'cash',
+  CARD = 'card',
+  ALL = 'all'
+}
+
 enum ELocationStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive'
 }
+
+enum EParkingStatus{
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
+}
+
 enum EServiceStatus {
   ACTIVE = 'active',
   IN_ACTIVE = 'in_active'
@@ -31,6 +43,11 @@ enum EServiceStatus {
 enum ESocialType {
   FACEBOOK = 'facebook',
   GOOGLE = 'google'
+}
+
+enum EFavorite {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
 }
 
 enum EWeekDays {
@@ -54,6 +71,9 @@ export {
   AppointmentStatusRules,
   ESocialType,
   EWeekDays,
+  EPayment,
+  EParkingStatus,
+  EFavorite,
   IManagementLockAppointmentData
 };
 

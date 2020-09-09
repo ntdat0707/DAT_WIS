@@ -3,6 +3,7 @@ import sequelize from '../configs/db-connector';
 import { BusinessType } from '../../../utils/consts';
 class CompanyModel extends Model {
   public id: string;
+  public description!: string;
   public ownerId: string;
   public businessType?: string;
   public businessName: string;
@@ -39,6 +40,11 @@ CompanyModel.init(
       field: 'phone',
       type: DataTypes.STRING,
       allowNull: true
+    },
+    description: {
+      field: 'description',
+      type: DataTypes.STRING,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',

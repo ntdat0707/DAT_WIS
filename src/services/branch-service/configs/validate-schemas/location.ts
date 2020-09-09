@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EWeekDays, ELocationStatus } from '../../../../utils/consts';
+import { EWeekDays, ELocationStatus, EPayment, EParkingStatus } from '../../../../utils/consts';
 
 const createLocationSchema = Joi.object({
   name: Joi.string().required().label('name'),
@@ -11,6 +11,9 @@ const createLocationSchema = Joi.object({
   address: Joi.string().label('address'),
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
+  title: Joi.string().label('title'),
+  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD,EPayment.ALL).label('payment'),
+  parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
   workingTimes: Joi.array()
     .length(7)
     .unique()
@@ -100,6 +103,9 @@ const updateLocationSchema = Joi.object({
   address: Joi.string().label('address'),
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
+  title: Joi.string().label('title'),
+  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD,EPayment.ALL).label('payment'),
+  parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
   status: Joi.string().required().label('status').valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE),
   workingTimes: Joi.array()
     .length(7)
