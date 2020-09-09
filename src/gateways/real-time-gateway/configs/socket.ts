@@ -10,12 +10,14 @@ enum Events {
   LOCK_RESOURCE = 'lock-resource',
   UN_LOCK_RESOURCE = 'un-lock-resource',
   LOCK_APPOINTMENT = 'lock-appointment',
-  EDIT_APPOINTMENT = 'edit-appointment'
+  EDIT_APPOINTMENT = 'edit-appointment',
+  EDIT_APPOINTMENT_DETAIL = 'edit-appointment-detail'
 }
 
 enum SocketRoomPrefixes {
   APPOINTMENT = 'appointment-',
-  EDIT_APPOINTMENT = 'edit-appoinment-'
+  EDIT_APPOINTMENT = 'edit-appoinment-',
+  EDIT_APPOINTMENT_DETAIL = 'edit-appoinment-detail-'
 }
 
 /**
