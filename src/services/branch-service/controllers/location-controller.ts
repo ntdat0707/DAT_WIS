@@ -100,7 +100,8 @@ export class LocationController {
    *       type: string
    *       enum:
    *          - Cash
-   *          - Card  
+   *          - Card
+   *          - All  
    *     - in: "formData"
    *       name: "parking"
    *       type: string

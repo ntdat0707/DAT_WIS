@@ -16,12 +16,12 @@ class LocationModel extends Model {
   public address: string;
   public latitude: number;
   public longitude: number;
-  public title: string;
-  public payment: EPayment;
-  public parking: EParkingStatus;
-  public rating: number;
-  public recoveryRooms: number;
-  public totalBookings: number;
+  public title?: string;
+  public payment?: EPayment;
+  public parking?: EParkingStatus;
+  public rating?: number;
+  public recoveryRooms?: number;
+  public totalBookings?: number;
   public favorite: EFavorite;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
@@ -87,12 +87,12 @@ LocationModel.init(
     latitude: {
       field: 'latitude',
       type: DataTypes.STRING,
-      allowNull: true
+      defaultValue: 0
     },
     longitude: {
       field: 'longitude',
       type: DataTypes.STRING,
-      allowNull: true
+      defaultValue: 0
     },
     title: {
       field: 'title',
@@ -111,18 +111,18 @@ LocationModel.init(
     },
     rating: {
       field: 'rating',
-      type: DataTypes.FLOAT(1, 5),
-      allowNull: true
+      type: DataTypes.FLOAT,
+      defaultValue: 0
     },
     recoveryRooms: {
       field: 'recovery_rooms',
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     },
     totalBookings: {
-      field: 'totalBookings',
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true
+      field: 'total_bookings',
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     },
     favorite: {
       field: 'favorite',
