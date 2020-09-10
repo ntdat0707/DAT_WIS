@@ -5,12 +5,16 @@ import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
-import { createResourceSchema, resourceIdSchema, updateResourceSchema } from '../configs/validate-schemas/resource';
-import { ResourceModel, LocationModel, ServiceModel, sequelize } from '../../../repositories/postgres/models';
-import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
+import {
+  createResourceSchema,
+  resourceIdSchema,
+  updateResourceSchema,
+  locationIdsSchema
+} from '../configs/validate-schemas/resource';
+import { ResourceModel, LocationModel, ServiceModel } from '../../../repositories/postgres/models';
 import { resourceErrorDetails } from '../../../utils/response-messages/error-details/branch/resource';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
-import { FindOptions, Transaction } from 'sequelize/types';
+import { FindOptions } from 'sequelize/types';
 import { paginate } from '../../../utils/paginator';
 
 export class ResourceController {
@@ -30,10 +34,6 @@ export class ResourceController {
    *               type: string
    *           description:
    *               type: string
-   *           serviceIds:
-   *               type: array
-   *               items:
-   *                  type: string
    *
    */
 
@@ -63,7 +63,6 @@ export class ResourceController {
    *         description:
    */
   public createResource = async ({ body }: Request, res: Response, next: NextFunction) => {
-    let transaction: Transaction;
     try {
       const validateErrors = validate(body, createResourceSchema);
       if (validateErrors) {
@@ -75,17 +74,9 @@ export class ResourceController {
         excerpt: body.excerpt,
         name: body.name
       };
-      transaction = await sequelize.transaction();
-      const resource = await ResourceModel.create(data, { transaction });
-      const serviceResourceData = (body.serviceIds as []).map((x) => ({ serviceId: x, resourceId: resource.id }));
-      await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
-      await transaction.commit();
-
+      const resource = await ResourceModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));
     } catch (error) {
-      if (transaction) {
-        await transaction.rollback();
-      }
       return next(error);
     }
   };
@@ -158,6 +149,11 @@ export class ResourceController {
    *       required: true
    *       schema:
    *          type: integer
+   *     - in: query
+   *       name: locationIds
+   *       type: array
+   *       items:
+   *        type: string
    *     responses:
    *       200:
    *         description: success
@@ -174,8 +170,13 @@ export class ResourceController {
         pageNum: req.query.pageNum,
         pageSize: req.query.pageSize
       };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      let validateErrors: any;
+      validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (req.query.locationIds && req.query.locationIds.length > 0) {
+        validateErrors = validate(req.query.locationIds, locationIdsSchema);
+        if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const query: FindOptions = {
         include: [
           {
@@ -190,7 +191,7 @@ export class ResourceController {
           }
         ],
         where: {
-          locationId: workingLocationIds
+          locationId: (req.query.locationIds as []).length ? req.query.locationIds : workingLocationIds
         }
       };
       const resources = await paginate(
@@ -338,10 +339,6 @@ export class ResourceController {
    *               type: string
    *           description:
    *               type: string
-   *           serviceIds:
-   *               type: array
-   *               items:
-   *                  type: string
    *
    */
   /**
@@ -370,7 +367,6 @@ export class ResourceController {
    *         description:
    */
   public updateResource = async ({ body }: Request, res: Response, next: NextFunction) => {
-    let transaction: Transaction;
     try {
       const { workingLocationIds } = res.locals.staffPayload;
       const validateErrors = validate(body, updateResourceSchema);
@@ -399,18 +395,9 @@ export class ResourceController {
         excerpt: body.excerpt,
         name: body.name
       };
-      transaction = await sequelize.transaction();
-      await ServiceResourceModel.destroy({ where: { resourceId: body.resourceId } });
       await ResourceModel.update(data, { where: { id: body.resourceId } });
-      const serviceResourceData = (body.serviceIds as []).map((x) => ({ serviceId: x, resourceId: body.resourceId }));
-      await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
-      await transaction.commit();
-
       return res.status(HttpStatus.OK).send();
     } catch (error) {
-      if (transaction) {
-        await transaction.rollback();
-      }
       return next(error);
     }
   };
