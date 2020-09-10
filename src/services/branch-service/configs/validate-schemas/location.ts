@@ -12,8 +12,9 @@ const createLocationSchema = Joi.object({
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
   title: Joi.string().label('title'),
-  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD,EPayment.ALL).label('payment'),
+  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
   parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
+  openedAt: Joi.string().isoDate(),
   workingTimes: Joi.array()
     .length(7)
     .unique()
@@ -52,6 +53,13 @@ const locationIdSchema = Joi.string()
   })
   .required()
   .label('locationId');
+
+const companyIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('companyId');
 
 const createLocationWorkingTimeSchema = Joi.object({
   locationId: Joi.string()
@@ -104,7 +112,7 @@ const updateLocationSchema = Joi.object({
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
   title: Joi.string().label('title'),
-  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD,EPayment.ALL).label('payment'),
+  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
   parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
   status: Joi.string().required().label('status').valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE),
   workingTimes: Joi.array()
@@ -139,4 +147,16 @@ const updateLocationSchema = Joi.object({
     .label('workingTimes')
 });
 
-export { createLocationSchema, locationIdSchema, createLocationWorkingTimeSchema, updateLocationSchema };
+const filterNearestSchema = Joi.object({
+  latitude: Joi.number().required().label('latitude'),
+  longitude: Joi.number().required().label('longitude')
+});
+
+export {
+  createLocationSchema,
+  locationIdSchema,
+  createLocationWorkingTimeSchema,
+  updateLocationSchema,
+  filterNearestSchema,
+  companyIdSchema
+};

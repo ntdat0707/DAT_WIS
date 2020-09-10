@@ -14,7 +14,8 @@ import {
   ServiceModel,
   ResourceModel,
   StaffModel,
-  LocationModel
+  LocationModel,
+  CustomerModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -23,6 +24,7 @@ import {
   appointmentDetailIdSchema
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
+import { FindOptions } from 'sequelize';
 
 export class AppointmentDetailController extends BaseController {
   /**
@@ -248,8 +250,52 @@ export class AppointmentDetailController extends BaseController {
         staffId: id
       }));
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      const query: FindOptions = {
+        where: {
+          id: appointmentDetail.id
+        },
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            include: [
+              {
+                model: LocationModel,
+                as: 'location',
+                required: true
+              },
+              {
+                model: CustomerModel,
+                as: 'customer',
+                required: false
+              }
+            ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          }
+        ],
+        transaction
+      };
+      const appointmentDetailData: any = await AppointmentDetailModel.findOne(query);
+      appointmentDetailData.oldAppointmentDetailId = req.body.appointmentDetailId;
+      await this.pushNotifyEditAppointmentDetailData(appointmentDetailData);
       await transaction.commit();
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetail));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetailData));
     } catch (error) {
       if (transaction) await transaction.rollback();
       return next(error);

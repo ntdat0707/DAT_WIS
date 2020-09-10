@@ -33,6 +33,10 @@ export class LocationRoutes {
       uploadAsMiddleware('photo'),
       this.locationController.updateLocation
     );
-    this.router.get('/search/location-by-city',this.locationController.searchLocationsByCity);
+    this.router.get('/search-by-city', this.locationController.searchLocationsByCity);
+    this.router.get('/get-location-detail', this.locationController.getLocationDetail);
+    this.router.get('/filter-nearest-user', this.locationController.filterNearestLocation);
+    this.router.get('/filter-newest-locations', this.locationController.filterNewestLocations);
+    this.router.get('/get-location-by-service-provider', this.locationController.getLocationByServiceProvider);
   }
 }

@@ -22,10 +22,10 @@ class LocationModel extends Model {
   public rating?: number;
   public recoveryRooms?: number;
   public totalBookings?: number;
-  public favorite: EFavorite;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
+  public openedAt?: Date;
 }
 
 LocationModel.init(
@@ -124,11 +124,6 @@ LocationModel.init(
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
-    favorite: {
-      field: 'favorite',
-      type: DataTypes.ENUM(EFavorite.ACTIVE, EFavorite.INACTIVE),
-      defaultValue: EFavorite.INACTIVE
-    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
@@ -143,7 +138,12 @@ LocationModel.init(
       field: 'deleted_at',
       type: 'TIMESTAMP',
       defaultValue: null
-    }
+    },
+    openedAt: {
+      field: 'opened_at',
+      type: 'TIMESTAMP',
+      defaultValue: null
+    },
   },
   {
     sequelize,

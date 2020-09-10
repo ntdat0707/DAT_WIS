@@ -377,7 +377,7 @@ export class CateServiceController {
 
   /**
    * @swagger
-   * /branch/cate-service/search-without-company:
+   * /branch/cate-service/search-all-cate-service:
    *   get:
    *     tags:
    *       - Branch
@@ -394,7 +394,7 @@ export class CateServiceController {
    */
   public searchCateService = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const cateServices = await CateServiceModel.findAll({order:['name','ASC']});
+      const cateServices = await CateServiceModel.findAll({order:[['name','ASC']]});
       return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
     } catch (error) {
       return next(error);

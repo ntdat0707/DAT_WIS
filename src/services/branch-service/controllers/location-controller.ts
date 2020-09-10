@@ -10,18 +10,19 @@ import {
   sequelize,
   LocationModel,
   LocationStaffModel,
-  CompanyModel,
   StaffModel,
-  LocationWorkingHourModel
+  LocationWorkingHourModel,
+  CompanyModel
 } from '../../../repositories/postgres/models';
 
 import {
   createLocationSchema,
   locationIdSchema,
   createLocationWorkingTimeSchema,
-  updateLocationSchema
+  updateLocationSchema,
+  filterNearestSchema,
 } from '../configs/validate-schemas';
-import { FindOptions } from 'sequelize/types';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -101,13 +102,17 @@ export class LocationController {
    *       enum:
    *          - Cash
    *          - Card
-   *          - All  
+   *          - All
    *     - in: "formData"
    *       name: "parking"
    *       type: string
    *       enum:
    *          - Active
-   *          - Inactive 
+   *          - Inactive
+   *     - in: "formData"
+   *       name: "openedAt"
+   *       type: string
+   *       format: date-time
    *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
@@ -137,8 +142,9 @@ export class LocationController {
         latitude: req.body.latitude,
         longitude: req.body.longitude,
         title: req.body.title,
-        payment:req.body.payment,
-        parking:req.body.parking,
+        payment: req.body.payment,
+        parking: req.body.parking,
+        openedAt: req.body.openedAt,
         workingTimes: req.body.workingTimes
       };
 
@@ -596,13 +602,13 @@ export class LocationController {
    *       type: string
    *       enum:
    *          - Cash
-   *          - Card  
+   *          - Card
    *     - in: "formData"
    *       name: "parking"
    *       type: string
    *       enum:
    *          - Active
-   *          - Inactive 
+   *          - Inactive
    *     - in: "formData"
    *       name: "recoveryRooms"
    *       type: number
@@ -703,9 +709,9 @@ export class LocationController {
         latitude: body.latitude,
         longitude: body.longitude,
         title: body.title,
-        payment:body.payment,
-        parking:body.parking,
-        recoveryRooms: body.recoveryRooms,
+        payment: body.payment,
+        parking: body.parking,
+        recoveryRooms: body.recoveryRooms
       };
       if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
@@ -723,13 +729,13 @@ export class LocationController {
 
   /**
    * @swagger
-   * /branch/location/search/{cityName}:
+   * /branch/location/search-by-city:
    *   get:
    *     tags:
    *       - Branch
    *     name: searchLocationsByCity
    *     parameters:
-   *     - in: path
+   *     - in: query
    *       name: cityName
    *       schema:
    *          type: string
@@ -743,12 +749,12 @@ export class LocationController {
    */
   public searchLocationsByCity = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const cityName = req.path;
+      const cityName = req.query.cityName;
       const locations = await LocationModel.findAll({
         where: {
-          city: { like: '%' + cityName + '%' }
+          city: { [Op.like]: '%' + cityName + '%' }
         },
-        order:['city','ASC']
+        order: [['city', 'ASC']]
       });
       if (!locations)
         return next(new CustomError(locationErrorDetails.E_1000(`City ${cityName} not found`), HttpStatus.NOT_FOUND));
@@ -758,33 +764,205 @@ export class LocationController {
     }
   };
 
-  // /**
-  //  * @swagger
-  //  * /branch/location/search-cate-service:
-  //  *   get:
-  //  *     tags:
-  //  *       - Branch
-  //  *     name: searchLocationsByCateService
-  //  *     responses:
-  //  *       200:
-  //  *         description: success
-  //  *       400:
-  //  *         description: Bad requests - input invalid format, header is invalid
-  //  *       500:
-  //  *         description: Internal server errors
-  //  */
-  // public searchLocationsByCateService = async (req: Request, res: Response, next: NextFunction) => {
-  //   try {
-  //     const locations = await LocationModel.findAll({
-  //       where: {
-  //         city: { like: '%' + cityName + '%' }
-  //       }
-  //     });
-  //     if (!locations)
-  //       return next(new CustomError(locationErrorDetails.E_1000(`City ${cityName} not found`), HttpStatus.NOT_FOUND));
-  //     return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
-  //   } catch (error) {
-  //     return next(error);
-  //   }
-  // };
+  /**
+   * @swagger
+   * /branch/location/get-location-detail/{locationId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: getLocationDetail
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getLocationDetail = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const locationId = req.params.locationId;
+      const validateErrors = validate(locationId, locationIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const location: any = await LocationModel.findOne({
+        where: {
+          id: locationId
+        }
+      });
+      if (!location)
+        return next(
+          new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
+        );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/filter-nearest-user:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: filterNearestLocation
+   *     parameters:
+   *     - in: query
+   *       name: latitude
+   *       schema:
+   *          type: number
+   *     - in: query
+   *       name: longitude
+   *       schema:
+   *          type: number
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public filterNearestLocation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = {
+        latitude: req.query.latitude,
+        longitude: req.query.longitude
+      };
+      const validateErrors = validate(dataInput, filterNearestSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
+      const locations = (await LocationModel.findAll())
+        .map((location: any) => ({
+          name: location.name,
+          phone: location.phone,
+          photo: location.photo,
+          address: location.address,
+          status: location.status,
+          companyId: location.companyId,
+          city: location.city,
+          district: location.district,
+          ward: location.ward,
+          email: location.email,
+          title: location.title,
+          payment: location.payment,
+          distance: this.calcCrow(
+            Number(dataInput.latitude),
+            Number(dataInput.longitude),
+            location.latitude,
+            location.longitude
+          ),
+          type: 'kilometers'
+        }))
+        .sort((locationX: any, locationY: any) => locationX.distance - locationY.distance);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // km
+    const dLat = this.toRad(lat2 - lat1);
+    const dLon = this.toRad(lon2 - lon1);
+    lat1 = this.toRad(lat1);
+    lat2 = this.toRad(lat2);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c;
+    return d;
+  }
+
+  // Converts numeric degrees to radians
+  toRad(Value: number) {
+    return (Value * Math.PI) / 180;
+  }
+
+  /**
+   * @swagger
+   * /branch/location/filter-newest-locations:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: filterNewestLocations
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public filterNewestLocations = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const locations = await LocationModel.findAll({
+        order: [['openedAt', 'DESC']]
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+    } catch (err) {
+      return next(err);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/get-location-by-service-provider:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: getLocationByServiceProvider
+   *     parameters:
+   *     - in: query
+   *       name: businessName
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: businessType
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const locations: any = await LocationModel.findAll({
+        include: [
+          {
+            model: CompanyModel,
+            as: 'company',
+            where: {
+              [Op.or]: [
+                Sequelize.literal(
+                  `unaccent("company"."business_name") ilike unaccent('%${req.query.businessName}%')`
+                ),
+                Sequelize.literal(
+                  `unaccent("company"."business_type") ilike unaccent('%${req.query.businessType}%')`
+                )
+              ]
+            }
+          }
+        ]
+      });
+      if (!locations)
+        return next(
+          new CustomError(locationErrorDetails.E_1000(`Business Name ${req.query.businessName} not found`), HttpStatus.NOT_FOUND)
+        );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
