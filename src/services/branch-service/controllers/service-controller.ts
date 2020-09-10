@@ -476,7 +476,7 @@ export class ServiceController {
             as: 'locations',
             required: true,
             where: {
-              id: (data.locationIds as []).length ? data.locationIds : workingLocationIds
+              id: (data.locationIds as [])?.length ? data.locationIds : workingLocationIds
             }
           }
         ]

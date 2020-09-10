@@ -191,7 +191,7 @@ export class ResourceController {
           }
         ],
         where: {
-          locationId: (req.query.locationIds as []).length ? req.query.locationIds : workingLocationIds
+          locationId: (req.query.locationIds as [])?.length ? req.query.locationIds : workingLocationIds
         }
       };
       const resources = await paginate(
