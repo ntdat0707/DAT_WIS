@@ -254,8 +254,6 @@ export class AppointmentDetailController extends BaseController {
         where: {
           id: appointmentDetail.id
         },
-        raw: true,
-        nest: true,
         include: [
           {
             model: AppointmentModel,
@@ -294,7 +292,7 @@ export class AppointmentDetailController extends BaseController {
         transaction
       };
       const appointmentDetailData: any = await AppointmentDetailModel.findOne(query);
-      const dataNotify: any = appointmentDetailData;
+      const dataNotify: any = appointmentDetailData.get({ plain: true });
       dataNotify.oldAppointmentDetailId = req.body.appointmentDetailId;
       await this.pushNotifyEditAppointmentDetailData(dataNotify);
       await transaction.commit();
