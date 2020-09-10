@@ -55,7 +55,7 @@ const AppointmentStatusRules = {
     no_show: false
   },
   no_show: {
-    new: false,
+    new: true,
     confirmed: false,
     arrived: false,
     in_service: false,

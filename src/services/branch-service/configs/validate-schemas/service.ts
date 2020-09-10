@@ -20,17 +20,19 @@ const createServiceSchema = Joi.object({
   salePrice: Joi.number().allow(null, ''),
   color: Joi.string().required().label('color'),
   duration: Joi.number().required(),
-  staffIds: Joi.array()
-    .items(
-      Joi.string().guid({
-        version: ['uuidv4']
-      })
-    )
-    .min(1)
-    .required(),
+  staffIds: Joi.array().items(
+    Joi.string().guid({
+      version: ['uuidv4']
+    })
+  ),
   name: Joi.string().required(),
   serviceCode: Joi.string().required().allow('', null),
-  isAllowedMarketplace: Joi.boolean().required().label('isAllowedMarketplace')
+  isAllowedMarketplace: Joi.boolean().required().label('isAllowedMarketplace'),
+  resourceIds: Joi.array().items(
+    Joi.string().guid({
+      version: ['uuidv4']
+    })
+  )
 });
 
 const createCateServiceSchema = Joi.object({
@@ -66,7 +68,6 @@ const createServicesSchema = Joi.object({
         version: ['uuidv4']
       })
     )
-    .required()
     .label('staffIds'),
   serviceDetails: Joi.array()
     .min(1)
@@ -154,7 +155,12 @@ const updateServiceSchema = Joi.object({
   name: Joi.string().disallow('', null),
   serviceCode: Joi.string().disallow('', null),
   isAllowedMarketplace: Joi.boolean().required().label('isAllowedMarketplace'),
-  status: Joi.string().required().label('status').valid(EServiceStatus.ACTIVE, EServiceStatus.IN_ACTIVE)
+  status: Joi.string().required().label('status').valid(EServiceStatus.ACTIVE, EServiceStatus.IN_ACTIVE),
+  resourceIds: Joi.array().items(
+    Joi.string().guid({
+      version: ['uuidv4']
+    })
+  )
 });
 export {
   createCateServiceSchema,
