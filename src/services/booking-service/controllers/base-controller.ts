@@ -196,7 +196,7 @@ export class BaseController {
 
   protected pushNotifyEditAppointmentDetailData = async (appointmentDetail: any) => {
     try {
-      const dataNotify: IManagementEditAppointmentDetailData = Object.assign(appointmentDetail);
+      const dataNotify: IManagementEditAppointmentDetailData = appointmentDetail;
       await emit(EQueueNames.EDIT_APPOINTMENT_DETAIL_DATA, dataNotify);
     } catch (error) {
       throw error;
