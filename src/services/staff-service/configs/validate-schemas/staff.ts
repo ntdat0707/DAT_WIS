@@ -34,7 +34,15 @@ export const createStaffSchema = Joi.object({
         })
         .required()
     )
-    .label('workingLocationIds')
+    .label('workingLocationIds'),
+  serviceIds: Joi.array()
+    .min(1)
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+    .label('serviceIds')
 });
 export const updateStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
@@ -59,7 +67,6 @@ export const updateStaffSchema = Joi.object({
     )
     .label('workingLocationIds'),
   serviceIds: Joi.array()
-    .required()
     .items(
       Joi.string().guid({
         version: ['uuidv4']
