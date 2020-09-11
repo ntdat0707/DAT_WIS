@@ -12,7 +12,8 @@ import {
   LocationStaffModel,
   StaffModel,
   LocationWorkingHourModel,
-  CompanyModel
+  CompanyModel,
+  ServiceModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -1022,11 +1023,22 @@ export class LocationController {
           {
             model: CompanyModel,
             as: 'company',
-            required: true,
+            attributes:[],
+            required:true,
             include: [
               {
                 model: CateServiceModel,
-                as: 'cateServices'
+                as: 'cateServices',
+                attributes:[],
+                required:true,
+                include:[
+                  {
+                    model:ServiceModel,
+                    as: 'services',
+                    required:true,
+                    attributes:[]
+                  }
+                ]
               }
             ]
           }
@@ -1034,13 +1046,27 @@ export class LocationController {
         where: {
           [Op.or]: [
             Sequelize.literal(`unaccent("LocationModel"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."address") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."ward") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."district") ilike ANY(ARRAY[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("company->cateServices"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company->cateServices->services"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("company"."business_type") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("company"."business_name") ilike ANY(ARRAY[${keywordsQuery}])`)
+            Sequelize.literal(`unaccent("company"."business_name") ilike ANY(ARRAY[${keywordsQuery}])`),
+
+            // Sequelize.literal(`unaccent("LocationModel"."name") ilike ${keywordsQuery})`),
+            // Sequelize.literal(`unaccent("LocationModel"."address") ilike ${keywordsQuery})`),
+            // Sequelize.literal(`unaccent("LocationModel"."ward") ilike ${keywordsQuery})`),
+            // Sequelize.literal(`unaccent("LocationModel"."district") ilike ${keywordsQuery})`),
+            // Sequelize.literal(`unaccent("company->cateServices"."name") ilike ${keywordsQuery})`),
+            // Sequelize.literal(`unaccent("company->cateServices->services"."name") ilike${keywordsQuery})`),
+            // Sequelize.literal(`unaccent("company"."business_type") ilike ${keywordsQuery})`),
+            // Sequelize.literal(`unaccent("company"."business_name") ilike ${keywordsQuery})`),
           ]
         },
         attributes: { exclude: ['company'] },
-        group: ['LocationModel.id', 'company.id', 'company->cateServices.id']
+        // group: ['LocationModel.id', 'company.id', 'company->cateServices.id','company->cateServices->services.id']
+        group: ['LocationModel.id']
       };
 
       // const query2 = (
@@ -1079,7 +1105,7 @@ export class LocationController {
         }
       };
       console.log('Location Length', locationIds.length);
-      
+
       const locations = await paginate(
         LocationModel,
         query1,

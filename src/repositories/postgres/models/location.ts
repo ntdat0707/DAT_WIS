@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-import { ELocationStatus, EPayment, EParkingStatus, EFavorite } from '../../../utils/consts';
+import { ELocationStatus, EPayment, EParkingStatus } from '../../../utils/consts';
 
 class LocationModel extends Model {
   public id: string;
