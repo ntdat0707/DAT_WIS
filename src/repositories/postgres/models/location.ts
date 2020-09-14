@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-import { ELocationStatus, EPayment, EParkingStatus, EFavorite } from '../../../utils/consts';
+import { ELocationStatus } from '../../../utils/consts';
 
 class LocationModel extends Model {
   public id: string;
@@ -16,16 +16,9 @@ class LocationModel extends Model {
   public address: string;
   public latitude: number;
   public longitude: number;
-  public title?: string;
-  public payment?: EPayment;
-  public parking?: EParkingStatus;
-  public rating?: number;
-  public recoveryRooms?: number;
-  public totalBookings?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
-  public readonly deletedAt: Date;
-  public openedAt?: Date;
+  public readonly deletedAt: Date; 
 }
 
 LocationModel.init(
@@ -94,36 +87,7 @@ LocationModel.init(
       type: DataTypes.STRING,
       defaultValue: 0
     },
-    title: {
-      field: 'title',
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    payment: {
-      field: 'payment',
-      type: DataTypes.ENUM(EPayment.CASH, EPayment.CARD,EPayment.ALL),
-      defaultValue: EPayment.ALL
-    },
-    parking: {
-      field: 'parking',
-      type: DataTypes.ENUM(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE),
-      defaultValue: EParkingStatus.ACTIVE
-    },
-    rating: {
-      field: 'rating',
-      type: DataTypes.FLOAT,
-      defaultValue: 0
-    },
-    recoveryRooms: {
-      field: 'recovery_rooms',
-      type: DataTypes.INTEGER,
-      defaultValue: 0
-    },
-    totalBookings: {
-      field: 'total_bookings',
-      type: DataTypes.INTEGER,
-      defaultValue: 0
-    },
+    
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
@@ -138,12 +102,7 @@ LocationModel.init(
       field: 'deleted_at',
       type: 'TIMESTAMP',
       defaultValue: null
-    },
-    openedAt: {
-      field: 'opened_at',
-      type: 'TIMESTAMP',
-      defaultValue: null
-    },
+    }
   },
   {
     sequelize,

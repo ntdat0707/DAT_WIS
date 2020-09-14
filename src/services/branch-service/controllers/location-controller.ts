@@ -12,17 +12,18 @@ import {
   LocationStaffModel,
   StaffModel,
   LocationWorkingHourModel,
-  CompanyModel
+  CompanyModel,
+  CateServiceModel,
+  ServiceModel
 } from '../../../repositories/postgres/models';
 
 import {
   createLocationSchema,
   locationIdSchema,
   createLocationWorkingTimeSchema,
-  updateLocationSchema,
-  filterNearestSchema,
+  updateLocationSchema
 } from '../configs/validate-schemas';
-import { FindOptions, Op, Sequelize } from 'sequelize';
+import { FindOptions, Op, Sequelize, NUMBER } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -804,74 +805,13 @@ export class LocationController {
     }
   };
 
-  /**
-   * @swagger
-   * /branch/location/filter-nearest-user:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: filterNearestLocation
-   *     parameters:
-   *     - in: query
-   *       name: latitude
-   *       schema:
-   *          type: number
-   *     - in: query
-   *       name: longitude
-   *       schema:
-   *          type: number
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public filterNearestLocation = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const dataInput = {
-        latitude: req.query.latitude,
-        longitude: req.query.longitude
-      };
-      const validateErrors = validate(dataInput, filterNearestSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-
-      const locations = (await LocationModel.findAll())
-        .map((location: any) => ({
-          name: location.name,
-          phone: location.phone,
-          photo: location.photo,
-          address: location.address,
-          status: location.status,
-          companyId: location.companyId,
-          city: location.city,
-          district: location.district,
-          ward: location.ward,
-          email: location.email,
-          title: location.title,
-          payment: location.payment,
-          distance: this.calcCrow(
-            Number(dataInput.latitude),
-            Number(dataInput.longitude),
-            location.latitude,
-            location.longitude
-          ),
-          type: 'kilometers'
-        }))
-        .sort((locationX: any, locationY: any) => locationX.distance - locationY.distance);
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
   calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
-    const R = 6371; // km
-    const dLat = this.toRad(lat2 - lat1);
-    const dLon = this.toRad(lon2 - lon1);
-    lat1 = this.toRad(lat1);
-    lat2 = this.toRad(lat2);
+    const R = 6371; // km 
+    const toRad = (value: number) => (value * Math.PI) / 180; // Converts numeric degrees to radians 
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    lat1 = toRad(lat1);
+    lat2 = toRad(lat2);
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -879,11 +819,6 @@ export class LocationController {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c;
     return d;
-  }
-
-  // Converts numeric degrees to radians
-  toRad(Value: number) {
-    return (Value * Math.PI) / 180;
   }
 
   /**
@@ -921,13 +856,32 @@ export class LocationController {
    *     name: getLocationByServiceProvider
    *     parameters:
    *     - in: query
-   *       name: businessName
+   *       name: keyword
    *       schema:
    *          type: string
    *     - in: query
-   *       name: businessType
+   *       name: pageNum
+   *       required: true
    *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: latitude
+   *       schema:
+   *          type: number
+   *     - in: query
+   *       name: longitude
+   *       schema:
+   *          type: number
+   *     - in: query
+   *       name: order
+   *       schema: 
    *          type: string
+   *          enum: [ nearest, newest ]
    *     responses:
    *       200:
    *         description: success
@@ -938,29 +892,105 @@ export class LocationController {
    */
   public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const locations: any = await LocationModel.findAll({
+      // let locations: any[] = [];
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const keywords: string = req.query.keyword as string;
+      const keywordsQuery = keywords
+        .split(' ')
+        .filter((x: string) => x)
+        .map((keyword: string) => `unaccent('%${keyword}%')`) 
+        .join(',');      
+      let locationResults: any = (await LocationModel.findAll({
         include: [
           {
             model: CompanyModel,
             as: 'company',
-            where: {
-              [Op.or]: [
-                Sequelize.literal(
-                  `unaccent("company"."business_name") ilike unaccent('%${req.query.businessName}%')`
-                ),
-                Sequelize.literal(
-                  `unaccent("company"."business_type") ilike unaccent('%${req.query.businessType}%')`
-                )
-              ]
-            }
+            required: true,
+            attributes: [],
+            include: [
+              {
+                model: CateServiceModel,
+                as: 'cateServices',
+                required: true,
+                attributes: [],
+                include: [
+                  {
+                    model: ServiceModel,
+                    as: 'services',
+                    required: true, 
+                    attributes: [],
+                  }
+                ]
+              }
+            ]
           }
-        ]
-      });
-      if (!locations)
-        return next(
-          new CustomError(locationErrorDetails.E_1000(`Business Name ${req.query.businessName} not found`), HttpStatus.NOT_FOUND)
-        );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+        ],
+        where: {
+          [Op.or]: [
+            Sequelize.literal(`unaccent("LocationModel"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."address") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."ward") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."district") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company->cateServices"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company->cateServices->services"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company"."business_type") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company"."business_name") ilike ANY(ARRAY[${keywordsQuery}])`)
+          ]
+        },
+        group: ['LocationModel.id']
+      }));
+
+      if (
+        req.query.latitude
+        && req.query.longtitude
+        && !Number.isNaN(+(req.query.latitude))
+        && !Number.isNaN(+(req.query.longitude))
+      ) {
+        const latitude: number = +req.query.latitude;
+        const longitude: number = +req.query.longitude;
+        locationResults = locationResults.map((location:any) => ({
+          ...location,
+          distance: this.calcCrow(latitude, longitude, location.latitude, location.longitude)
+        })).sort((locationX: any, locationY: any) => {
+          return locationX.distance - locationY.distance; 
+        });
+      }
+      // const locations = await LocationModel.findAll({...query});
+      const locationIds = locationResults.map((item:any) => item.id);
+      console.log(locationIds);      
+
+      const query: FindOptions = {
+        where: {
+          id: {
+            [Op.in]: locationIds 
+          }
+        }
+      };
+      
+
+      if (!!locationIds.length) {
+        query.order = Sequelize.literal(`(${
+          locationIds
+            .map((id: any) => (`"id" = \'${id}\'`))
+            .join(', ')
+        }) DESC`) 
+      }
+
+      const locations = await paginate(
+        LocationModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
       return next(error);
     }
