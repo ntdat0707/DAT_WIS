@@ -777,7 +777,7 @@ export class AuthController {
         if (!staff) {
           return next(new CustomError(generalErrorDetails.E_0003()));
         }
-        return res.status(HttpStatus.OK).send();
+        return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
       }
     } catch (error) {
       return next(error);

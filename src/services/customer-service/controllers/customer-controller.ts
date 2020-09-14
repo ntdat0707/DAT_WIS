@@ -508,7 +508,7 @@ export class CustomerController {
         if (!customer) {
           return next(new CustomError(generalErrorDetails.E_0003()));
         }
-        return res.status(HttpStatus.OK).send();
+        return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
       }
     } catch (error) {
       return next(error);
