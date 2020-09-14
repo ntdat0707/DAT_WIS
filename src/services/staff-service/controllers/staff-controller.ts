@@ -220,6 +220,11 @@ export class StaffController {
    *       required: true
    *       items:
    *          type: string
+   *     - in: "formData"
+   *       name: serviceIds
+   *       type: array
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -277,6 +282,13 @@ export class StaffController {
         }));
         await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
       }
+      if (req.body.serviceIds) {
+        const serviceStaffData = (req.body.serviceIds as []).map((x) => ({
+          serviceId: x,
+          staffId: profile.id
+        }));
+        await ServiceStaffModel.bulkCreate(serviceStaffData, { transaction });
+      }
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
@@ -331,6 +343,11 @@ export class StaffController {
    *       type: string
    *     - in: "formData"
    *       name: workingLocationIds
+   *       type: array
+   *       items:
+   *          type: string
+   *     - in: "formData"
+   *       name: serviceIds
    *       type: array
    *       items:
    *          type: string
@@ -408,22 +425,26 @@ export class StaffController {
           transaction: transaction
         });
       }
-
-      const handleServiceIds = await this.handleEditStaffServices(req.params.staffId, req.body.serviceIds);
-      if (handleServiceIds.serviceIdsAdded.length) {
-        await ServiceStaffModel.bulkCreate(
-          handleServiceIds.serviceIdsAdded.map((serviceId) => ({ staffId: req.params.staffId, serviceId: serviceId })),
-          { transaction: transaction }
-        );
-      }
-      if (handleServiceIds.serviceIdsRemoved.length) {
-        await ServiceStaffModel.destroy({
-          where: {
-            serviceId: handleServiceIds.serviceIdsRemoved,
-            staffId: req.params.staffId
-          },
-          transaction: transaction
-        });
+      if (req.body.serviceIds) {
+        const handleServiceIds = await this.handleEditStaffServices(req.params.staffId, req.body.serviceIds);
+        if (handleServiceIds.serviceIdsAdded.length) {
+          await ServiceStaffModel.bulkCreate(
+            handleServiceIds.serviceIdsAdded.map((serviceId) => ({
+              staffId: req.params.staffId,
+              serviceId: serviceId
+            })),
+            { transaction: transaction }
+          );
+        }
+        if (handleServiceIds.serviceIdsRemoved.length) {
+          await ServiceStaffModel.destroy({
+            where: {
+              serviceId: handleServiceIds.serviceIdsRemoved,
+              staffId: req.params.staffId
+            },
+            transaction: transaction
+          });
+        }
       }
       //commit transaction
       await transaction.commit();
