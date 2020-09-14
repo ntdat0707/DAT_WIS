@@ -35,7 +35,6 @@ export class LocationRoutes {
     );
     this.router.get('/search-by-city', this.locationController.searchLocationsByCity);
     this.router.get('/get-location-detail', this.locationController.getLocationDetail);
-    this.router.get('/filter-nearest-user', this.locationController.filterNearestLocation);
     this.router.get('/filter-newest-locations', this.locationController.filterNewestLocations);
     this.router.post('/get-location-by-service-provider', this.locationController.getLocationByServiceProvider);
   }

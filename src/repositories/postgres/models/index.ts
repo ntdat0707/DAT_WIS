@@ -117,6 +117,7 @@ export {
   LocationModel,
   ServiceModel,
   ResourceModel,
+  CateServiceModel,
   LocationStaffModel,
   LocationDetailModel,
   AppointmentModel,

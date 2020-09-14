@@ -2,33 +2,20 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 require('dotenv').config();
 
-import { validate, baseValidateSchemas } from '../../../utils/validator';
+import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 // import { customerErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   sequelize,
-  LocationModel,
-  LocationStaffModel,
-  StaffModel,
-  LocationWorkingHourModel,
-  CompanyModel,
-  ServiceModel, LocationDetailModel
+  LocationDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
-  createLocationSchema,
-  locationIdSchema,
-  createLocationWorkingTimeSchema,
-  updateLocationSchema,
-  filterNearestSchema, createLocationDetailSchema
+  createLocationDetailSchema
 } from '../configs/validate-schemas';
-import { FindOptions, Op, Sequelize } from 'sequelize';
-import { paginate } from '../../../utils/paginator';
-import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
-import moment from 'moment';
-import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';s
+
 export class LocationDetailController {
     /**
      * @swagger

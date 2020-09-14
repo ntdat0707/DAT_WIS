@@ -18,10 +18,10 @@ const sequelize = new Sequelize(
     },
     logging: false,
     dialectOptions: {
-      // ssl: {
-      //   require: process.env.POSTGRESQL_TLS === 'true',
-      //   rejectUnauthorized: false
-      // }
+      ssl: {
+        require: process.env.POSTGRESQL_TLS === 'true',
+        rejectUnauthorized: false
+      }
     }
   }
 );
