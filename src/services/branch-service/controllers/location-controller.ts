@@ -13,7 +13,7 @@ import {
   StaffModel,
   LocationWorkingHourModel,
   CompanyModel,
-  ServiceModel
+  ServiceModel, LocationDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -29,7 +29,8 @@ import { locationErrorDetails } from '../../../utils/response-messages/error-det
 import _ from 'lodash';
 import moment from 'moment';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-
+import uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 export class LocationController {
   /**
    * @swagger
@@ -112,6 +113,18 @@ export class LocationController {
    *          - Active
    *          - Inactive
    *     - in: "formData"
+   *       name: "rating"
+   *       type: number 
+   *     - in: "formData"
+   *       name: "recoveryRooms"
+   *       type: number
+   *     - in: "formData"
+   *       name: "totalBookings"
+   *       type: number
+   *     - in: "formData"
+   *       name: "gender"
+   *       type: number
+   *     - in: "formData"
    *       name: "openedAt"
    *       type: string
    *       format: date-time
@@ -143,10 +156,10 @@ export class LocationController {
         address: req.body.address,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
-        title: req.body.title,
-        payment: req.body.payment,
-        parking: req.body.parking,
-        openedAt: req.body.openedAt,
+        // title: req.body.title,
+        // payment: req.body.payment,
+        // parking: req.body.parking,
+        // openedAt: req.body.openedAt,
         workingTimes: req.body.workingTimes
       };
 
@@ -159,7 +172,23 @@ export class LocationController {
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
       // start transaction
       transaction = await sequelize.transaction();
+      
       const location = await LocationModel.create(data, { transaction });
+      
+      let dataLocationDetail = [];
+      dataLocationDetail.push({
+        id: uuidv4(),
+        title: req.body.title,
+        payment: req.body.payment,
+        parking: req.body.parking,
+        rating: req.body.rating,
+        recoveryRooms: req.body.recoveryRooms ,
+        totalBookings:req.body.totalBookings,
+        gender:req.body.gender,
+        openedAt: req.body.openedAt,
+      });
+
+      await LocationDetailModel.bulkCreate(dataLocationDetail, { transaction });
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -1023,20 +1052,20 @@ export class LocationController {
           {
             model: CompanyModel,
             as: 'company',
-            attributes:[],
-            required:true,
+            attributes: [],
+            required: true,
             include: [
               {
                 model: CateServiceModel,
                 as: 'cateServices',
-                attributes:[],
-                required:true,
-                include:[
+                attributes: [],
+                required: true,
+                include: [
                   {
-                    model:ServiceModel,
+                    model: ServiceModel,
                     as: 'services',
-                    required:true,
-                    attributes:[]
+                    required: true,
+                    attributes: []
                   }
                 ]
               }
@@ -1052,7 +1081,7 @@ export class LocationController {
             Sequelize.literal(`unaccent("company->cateServices"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("company->cateServices->services"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("company"."business_type") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("company"."business_name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company"."business_name") ilike ANY(ARRAY[${keywordsQuery}])`)
 
             // Sequelize.literal(`unaccent("LocationModel"."name") ilike ${keywordsQuery})`),
             // Sequelize.literal(`unaccent("LocationModel"."address") ilike ${keywordsQuery})`),

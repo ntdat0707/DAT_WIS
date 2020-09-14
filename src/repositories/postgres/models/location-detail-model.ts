@@ -11,6 +11,7 @@ class LocationDetailModel extends Model {
   public rating?: number;
   public recoveryRooms?: number;
   public totalBookings?: number;
+  public gender?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -28,6 +29,11 @@ LocationDetailModel.init(
       field: 'location_id',
       type: DataTypes.UUIDV4,
       allowNull: false
+    },
+    gender: {
+      type: DataTypes.TINYINT,
+      field: 'gender',
+      defaultValue: 0
     },
     payment: {
       field: 'payment',
