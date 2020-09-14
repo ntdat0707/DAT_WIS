@@ -52,7 +52,6 @@ export class CustomerController {
    *               type: string
    *           gender:
    *               type: integer
-   *               required: true
    *               enum: [0, 1, 2]
    *           phone:
    *               required: true

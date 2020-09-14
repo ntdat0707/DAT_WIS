@@ -16,13 +16,19 @@ import { ServiceImageModel } from './service-image';
 import { LocationServiceModel } from './location-service';
 import { AppointmentGroupModel } from './appointment-group-model';
 import { LocationWorkingHourModel } from './location-working-hour-model';
-import { LocationInformationModel } from './location-information';
+import { CompanyDetailModel } from './company-detail-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
+CompanyModel.hasOne(CompanyDetailModel,{foreignKey: 'companyId',sourceKey:'id',as:'companyDetail'});
+CompanyDetailModel.belongsTo(CompanyModel,{foreignKey: 'companyId',as:'companyDetail'});
+
 CompanyModel.hasMany(LocationModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'locations' });
 LocationModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+CompanyModel.hasMany(CateServiceModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'cateServices' });
+CateServiceModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
 StaffModel.belongsToMany(LocationModel, { through: LocationStaffModel, as: 'workingLocations', foreignKey: 'staffId' });
 LocationModel.belongsToMany(StaffModel, { through: LocationStaffModel, as: 'staffs', foreignKey: 'locationId' });
@@ -108,6 +114,7 @@ export {
   sequelize,
   StaffModel,
   CompanyModel,
+  CompanyDetailModel,
   CustomerModel,
   LocationModel,
   ServiceModel,

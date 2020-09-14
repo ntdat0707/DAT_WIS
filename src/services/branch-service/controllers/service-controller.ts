@@ -24,6 +24,7 @@ import { FindOptions, Transaction, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
+import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 
 export class ServiceController {
   /**
@@ -87,6 +88,11 @@ export class ServiceController {
    *       name: isAllowedMarketplace
    *       type: boolean
    *       required: true
+   *     - in: "formData"
+   *       name: resourceIds
+   *       type: array
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description:
@@ -97,7 +103,7 @@ export class ServiceController {
    *       500:
    *         description:
    */
-  public createService = async ({ body, files, query }: Request, res: Response, next: NextFunction) => {
+  public createService = async ({ body, files }: Request, res: Response, next: NextFunction) => {
     let transaction: Transaction;
     try {
       const diff = _.difference(body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
@@ -112,28 +118,6 @@ export class ServiceController {
       const validateErrors = validate(body, createServiceSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      }
-      const staffs = await StaffModel.findAll({
-        where: { id: body.staffIds },
-        attributes: ['id'],
-        include: [
-          {
-            model: LocationModel,
-            as: 'workingLocations',
-            where: {
-              id: body.locationIds
-            },
-            through: {
-              attributes: ['id']
-            }
-          }
-        ]
-      });
-      const staffIds = staffs.map((staff) => staff.id);
-      // .then((staffs) => staffs.map((staff) => staff.id));
-
-      if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
-        return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
       }
 
       let serviceCode: string = body.serviceCode;
@@ -163,10 +147,7 @@ export class ServiceController {
 
       transaction = await sequelize.transaction();
       const service = await ServiceModel.create(data, { transaction });
-      const prepareServiceStaff = (body.staffIds as []).map((id) => ({
-        serviceId: service.id,
-        staffId: id
-      }));
+
       if (files.length) {
         const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
           serviceId: service.id,
@@ -184,12 +165,43 @@ export class ServiceController {
         locationId: locationId,
         serviceId: service.id
       }));
-
       await LocationServiceModel.bulkCreate(locationService, { transaction: transaction });
 
-      await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
-      await transaction.commit();
+      if (body.staffIds && body.staffIds.length > 0) {
+        const staffs = await StaffModel.findAll({
+          where: { id: body.staffIds },
+          attributes: ['id'],
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              where: {
+                id: body.locationIds
+              },
+              through: {
+                attributes: ['id']
+              }
+            }
+          ]
+        });
 
+        const staffIds = staffs.map((staff) => staff.id);
+        // .then((staffs) => staffs.map((staff) => staff.id));
+
+        if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
+          return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+        }
+        const prepareServiceStaff = (body.staffIds as []).map((id) => ({
+          serviceId: service.id,
+          staffId: id
+        }));
+        await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
+      }
+      if (body.resourceIds && body.resourceIds.length > 0) {
+        const serviceResourceData = (body.resourceIds as []).map((x) => ({ resourceId: x, serviceId: service.id }));
+        await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
+      }
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       if (transaction) {
@@ -464,7 +476,7 @@ export class ServiceController {
             as: 'locations',
             required: true,
             where: {
-              id: (data.locationIds as []).length ? data.locationIds : workingLocationIds
+              id: (data.locationIds as [])?.length ? data.locationIds : workingLocationIds
             }
           }
         ]
@@ -702,6 +714,11 @@ export class ServiceController {
    *       name: status
    *       type: string
    *       required: true
+   *     - in: "formData"
+   *       name: resourceIds
+   *       type: array
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description:
@@ -802,6 +819,29 @@ export class ServiceController {
         }
       }
 
+      if (body.resourceIds && body.resourceIds.length > 0) {
+        const curServiceResources = await ServiceResourceModel.findAll({
+          where: { serviceId: params.serviceId },
+          transaction
+        });
+        const currentResourceIds = curServiceResources.map((resource) => resource.resourceId);
+        const removeResourceIds = _.difference(currentResourceIds, body.resourceIds);
+        if (removeResourceIds.length > 0) {
+          await ServiceResourceModel.destroy({
+            where: { serviceId: params.serviceId, resourceId: removeResourceIds },
+            transaction
+          });
+        }
+        const addResourceIds = _.difference(body.resourceIds, currentResourceIds);
+        if (addResourceIds.length > 0) {
+          const serviceResource = (addResourceIds as []).map((resourceId: string) => ({
+            resourceId: resourceId,
+            serviceId: service.id
+          }));
+          await ServiceResourceModel.bulkCreate(serviceResource, { transaction: transaction });
+        }
+      }
+
       const data: any = {
         description: body.description,
         salePrice: !isNaN(parseInt(body.salePrice, 10)) ? body.salePrice : service.salePrice,
@@ -854,6 +894,8 @@ export class ServiceController {
    * @swagger
    * /branch/service/search-services:
    *   get:
+   *     tags:
+   *       - Branch
    *     name: searchService
    *     responses:
    *       200:

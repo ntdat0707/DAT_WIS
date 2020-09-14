@@ -530,6 +530,9 @@ export class AppointmentController extends BaseController {
       if (data.status === EAppointmentStatus.CANCEL) {
         const validateReasonErrors = validate(req.body.cancelReason, appointmentCancelReasonSchema);
         if (validateReasonErrors) {
+          if (transaction) {
+            await transaction.rollback();
+          }
           return next(new CustomError(validateReasonErrors, HttpStatus.BAD_REQUEST));
         }
         await AppointmentModel.update(

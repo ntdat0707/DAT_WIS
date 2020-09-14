@@ -21,7 +21,8 @@ import {
   createLocationSchema,
   locationIdSchema,
   createLocationWorkingTimeSchema,
-  updateLocationSchema
+  updateLocationSchema,
+  filterNearestSchema
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, NUMBER } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -828,6 +829,17 @@ export class LocationController {
    *     tags:
    *       - Branch
    *     name: filterNewestLocations
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
    *     responses:
    *       200:
    *         description: success
@@ -838,10 +850,26 @@ export class LocationController {
    */
   public filterNewestLocations = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
       const locations = await LocationModel.findAll({
         order: [['openedAt', 'DESC']]
       });
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+
+      const locationsPaginate = await paginate(
+        LocationModel,
+        locations,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationsPaginate));
     } catch (err) {
       return next(err);
     }
@@ -850,7 +878,7 @@ export class LocationController {
   /**
    * @swagger
    * /branch/location/get-location-by-service-provider:
-   *   get:
+   *   post:
    *     tags:
    *       - Branch
    *     name: getLocationByServiceProvider
@@ -858,7 +886,7 @@ export class LocationController {
    *     - in: query
    *       name: keyword
    *       schema:
-   *          type: string
+   *          type: integer
    *     - in: query
    *       name: pageNum
    *       required: true
@@ -890,6 +918,8 @@ export class LocationController {
    *       500:
    *         description: Internal server errors
    */
+
+  //////
   public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // let locations: any[] = [];

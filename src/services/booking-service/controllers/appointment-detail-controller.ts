@@ -292,8 +292,9 @@ export class AppointmentDetailController extends BaseController {
         transaction
       };
       const appointmentDetailData: any = await AppointmentDetailModel.findOne(query);
-      appointmentDetailData.oldAppointmentDetailId = req.body.appointmentDetailId;
-      await this.pushNotifyEditAppointmentDetailData(appointmentDetailData);
+      const dataNotify: any = appointmentDetailData.get({ plain: true });
+      dataNotify.oldAppointmentDetailId = req.body.appointmentDetailId;
+      await this.pushNotifyEditAppointmentDetailData(dataNotify);
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetailData));
     } catch (error) {
