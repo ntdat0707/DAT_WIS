@@ -894,6 +894,8 @@ export class ServiceController {
    * @swagger
    * /branch/service/search-services:
    *   get:
+   *     tags:
+   *       - Branch
    *     name: searchService
    *     responses:
    *       200:
