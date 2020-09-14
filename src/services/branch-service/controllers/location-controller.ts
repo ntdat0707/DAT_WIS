@@ -22,9 +22,8 @@ import {
   locationIdSchema,
   createLocationWorkingTimeSchema,
   updateLocationSchema,
-  filterNearestSchema
 } from '../configs/validate-schemas';
-import { FindOptions, Op, Sequelize, NUMBER } from 'sequelize';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -155,7 +154,9 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      if (req.file) data.photo = (req.file as any).location;
+      if (req.file) {
+        data.photo = (req.file as any).location;
+      }
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
       // start transaction
       transaction = await sequelize.transaction();
@@ -919,7 +920,6 @@ export class LocationController {
    *         description: Internal server errors
    */
 
-  //////
   public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // let locations: any[] = [];
@@ -933,11 +933,15 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const keywords: string = req.query.keyword as string;
-      const keywordsQuery = keywords
+      let keywordsQuery = keywords
         .split(' ')
         .filter((x: string) => x)
         .map((keyword: string) => `unaccent('%${keyword}%')`) 
-        .join(',');      
+        .join(',');
+
+      if (!keywordsQuery) {
+        keywordsQuery = "\'%%\'";
+      } 
       let locationResults: any = (await LocationModel.findAll({
         include: [
           {
@@ -995,7 +999,6 @@ export class LocationController {
       }
       // const locations = await LocationModel.findAll({...query});
       const locationIds = locationResults.map((item:any) => item.id);
-      console.log(locationIds);      
 
       const query: FindOptions = {
         where: {
@@ -1004,14 +1007,15 @@ export class LocationController {
           }
         }
       };
-      
+
+      // console.log('LOCATIONS', (await LocationModel.findAll({})).length);
 
       if (!!locationIds.length) {
         query.order = Sequelize.literal(`(${
           locationIds
             .map((id: any) => (`"id" = \'${id}\'`))
             .join(', ')
-        }) DESC`) 
+        }) DESC`); 
       }
 
       const locations = await paginate(
