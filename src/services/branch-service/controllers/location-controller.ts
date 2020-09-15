@@ -12,7 +12,7 @@ import {
   LocationStaffModel,
   CompanyModel,
   StaffModel,
-  LocationWorkingHourModel
+  LocationWorkingHourModel, ServiceModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -26,6 +26,7 @@ import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
 import moment from 'moment';
+import { CateServiceModel } from 'src/repositories/postgres/models/cate-service';
 
 export class LocationController {
   /**
@@ -675,6 +676,65 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+  
+  /**
+   * @swagger
+   * /branch/location/market-place/get-location/{locationId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: getLocationMarketPlace
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+  public getLocationMarketPlace = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = {
+        locationId: _req.params.locationId
+      };
+
+      const validateErrors = validate(data.locationId, locationIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
+      const location = await LocationModel.findOne({
+        raw: true,
+        where: { id: data.locationId }
+      });
+
+      const locations = await LocationModel.findAll({
+        raw: true,
+        where: { companyId: location.companyId }
+      });
+
+      const cateServices = await CateServiceModel.findAll({
+        raw: true,
+        where: {
+          companyId: location.companyId
+        },
+        include: [
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: true
+          }
+        ]
+      });
+
+      let locationDetails = { locations: locations, locationInformation: location, cateServices: cateServices };
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
+    } catch (error) {
       return next(error);
     }
   };

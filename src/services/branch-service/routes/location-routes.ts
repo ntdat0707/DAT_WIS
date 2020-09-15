@@ -33,5 +33,6 @@ export class LocationRoutes {
       uploadAsMiddleware('photo'),
       this.locationController.updateLocation
     );
+    this.router.get('/market-place/get-location/:locationId', this.locationController.getLocationMarketPlace);
   }
 }
