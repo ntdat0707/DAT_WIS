@@ -44,23 +44,26 @@ deploy: &deploy
         - ip addr show
         - apt update && apt install -y netcat
         - |
-          # Install Nodejs
-          nvm install $(cat .nvmrc)
-          nvm alias default $(cat .nvmrc)
-          npm install -g yarn
+          cd ~
+          wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
+          tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
+          sudo mv ~/doctl /usr/local/bin
         - |
-          echo 'setup environment'
-          export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
+          cp ./env/staging.env ./.env
+          docker-compose up -d --build wisere
+          docker tag wisere registry.digitalocean.com/wisere/wisere
+        - |
+          doctl auth init -t $DO_KEY
+          doctl registry login
 
-        - |
-          yarn
-          echo "lint"
-        - yarn run typecheck && yarn run lint
+
+      
       services:
         - docker
 pipelines:
   default:
     - <<: *lint
+    - <<: *deploy
   branches:
     master:
       - <<: *lint
