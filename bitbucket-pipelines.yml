@@ -37,7 +37,7 @@ deploy: &deploy
         - package-node
       # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
       size: 2x
-      name: install nodejs and yarn
+      name: Install doctl DO
       script:
         # Get ip address
         # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
@@ -48,7 +48,11 @@ deploy: &deploy
           wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
           tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
           mv ~/doctl /usr/local/bin
+  - step:
+      name: Preparing env
+      script:
         - |
+          ls -a
           cp ./env/staging.env ./.env
           docker-compose up -d --build wisere
           docker tag wisere registry.digitalocean.com/wisere/wisere
