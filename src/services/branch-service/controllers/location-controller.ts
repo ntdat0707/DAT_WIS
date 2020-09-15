@@ -29,9 +29,9 @@ import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
 import moment from 'moment';
-
-import uuid from 'uuid';
 import { v4 as uuidv4 } from 'uuid';
+import { EOrder } from '../../../utils/consts';
+
 export class LocationController {
   /**
    * @swagger
@@ -157,10 +157,6 @@ export class LocationController {
         address: req.body.address,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
-        // title: req.body.title,
-        // payment: req.body.payment,
-        // parking: req.body.parking,
-        // openedAt: req.body.openedAt,
         workingTimes: req.body.workingTimes
       };
 
@@ -763,43 +759,6 @@ export class LocationController {
 
   /**
    * @swagger
-   * /branch/location/search-by-city:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: searchLocationsByCity
-   *     parameters:
-   *     - in: query
-   *       name: cityName
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public searchLocationsByCity = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const cityName = req.query.cityName;
-      const locations = await LocationModel.findAll({
-        where: {
-          city: { [Op.like]: '%' + cityName + '%' }
-        },
-        order: [['city', 'ASC']]
-      });
-      if (!locations)
-        return next(new CustomError(locationErrorDetails.E_1000(`City ${cityName} not found`), HttpStatus.NOT_FOUND));
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
    * /branch/location/get-location-detail/{locationId}:
    *   get:
    *     tags:
@@ -822,16 +781,19 @@ export class LocationController {
     try {
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const location: any = await LocationModel.findOne({
         where: {
           id: locationId
         }
       });
-      if (!location)
+      if (!location) {
         return next(
           new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
         );
+      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
       return next(error);
@@ -853,59 +815,6 @@ export class LocationController {
     const d = R * c;
     return d;
   }
-
-  /**
-   * @swagger
-   * /branch/location/filter-newest-locations:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: filterNewestLocations
-   *     parameters:
-   *     - in: query
-   *       name: pageNum
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public filterNewestLocations = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const fullPath = req.headers['x-base-url'] + req.originalUrl;
-      const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
-      };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-
-      const locations = await LocationModel.findAll({
-        order: [['openedAt', 'DESC']]
-      });
-
-      const locationsPaginate = await paginate(
-        LocationModel,
-        locations,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
-        fullPath
-      );
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationsPaginate));
-    } catch (err) {
-      return next(err);
-    }
-  };
 
   /**
    * @swagger
@@ -938,6 +847,10 @@ export class LocationController {
    *       schema:
    *          type: number
    *     - in: query
+   *       name: cityName
+   *       schema:
+   *          type: string
+   *     - in: query
    *       name: order
    *       schema: 
    *          type: string
@@ -963,6 +876,7 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
+      
       const keywords: string = req.query.keyword as string;
       let keywordsQuery = keywords
         .split(' ')
@@ -972,8 +886,9 @@ export class LocationController {
 
       if (!keywordsQuery) {
         keywordsQuery = '\'%%\'';
-      } 
-      let locationResults: any = (await LocationModel.findAll({
+      }
+
+      const queryLocations: FindOptions = {
         include: [
           {
             model: CompanyModel,
@@ -1011,10 +926,25 @@ export class LocationController {
           ]
         },
         group: ['LocationModel.id']
-      }));
+      };
+
+      if (req.query.order === EOrder.NEWEST) {
+        queryLocations.order =  [['"LocationModel"."openedAt"', 'DESC']];
+      }
+
+      if (!!req.query.cityName) {
+        queryLocations.where = {
+          ...queryLocations.where,
+          city: {
+            [Op.like]: `%${req.query.cityName}%` 
+          }
+        }; 
+      }
+      let locationResults: any = await LocationModel.findAll(queryLocations);
 
       if (
-        req.query.latitude
+        req.query.order === EOrder.NEAREST
+        && req.query.latitude
         && req.query.longtitude
         && !Number.isNaN(+(req.query.latitude))
         && !Number.isNaN(+(req.query.longitude))
@@ -1028,7 +958,7 @@ export class LocationController {
           return locationX.distance - locationY.distance; 
         });
       }
-      // const locations = await LocationModel.findAll({...query});
+
       const locationIds = locationResults.map((item:any) => item.id);
 
       const query: FindOptions = {
@@ -1038,8 +968,6 @@ export class LocationController {
           }
         }
       };
-
-      // console.log('LOCATIONS', (await LocationModel.findAll({})).length);
 
       if (!!locationIds.length) {
         query.order = Sequelize.literal(`(${

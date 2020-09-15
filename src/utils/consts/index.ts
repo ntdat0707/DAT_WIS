@@ -65,6 +65,11 @@ enum EWeekDays {
   SUNDAY = 'sunday'
 }
 
+enum EOrder {
+  NEAREST = 'nearest',
+  NEWEST = 'newest'
+}
+
 export {
   buildingEnvs,
   EServiceStatus,
@@ -79,6 +84,7 @@ export {
   EPayment,
   EParkingStatus,
   EFavorite,
+  EOrder,
   IManagementLockAppointmentData,
   IManagementEditAppointmentDetailData
 };
@@ -91,6 +97,7 @@ export enum BusinessType {
   BABER_SHOP = 'BABER_SHOP',
   MASSAGE = 'MASSAGE'
 }
+
 export enum AppointmentBookingSource {
   STAFF = 'STAFF',
   MARKETPLACE = 'MARKETPLACE'
