@@ -46,6 +46,7 @@ deploy: &deploy
         - |
           wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz -P ~/
           tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
+          ls -a ~
           mv ~/doctl /usr/local/bin
 
         - |
