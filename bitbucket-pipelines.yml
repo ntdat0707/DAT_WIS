@@ -37,7 +37,7 @@ deploy: &deploy
         - package-node
       # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
       size: 2x
-      name: Install doctl DO
+      name: Install doctl Digital Ocean
       script:
         # Get ip address
         # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
@@ -52,6 +52,7 @@ deploy: &deploy
         - docker
   - step:
       name: Preparing env
+      size: 2x
       script:
         - |
           ls -a
@@ -61,7 +62,6 @@ deploy: &deploy
         - |
           doctl auth init -t 034fc3138ce0f18eb53248127c08c3fe481d1aeaec7f5323d4e64431171135ed
           doctl registry login
-
       services:
         - docker
 pipelines:
