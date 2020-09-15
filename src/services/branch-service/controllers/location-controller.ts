@@ -704,8 +704,7 @@ export class LocationController {
       const data = {
         locationId: _req.params.locationId
       };
-/////test 
-/////Test 3
+
       const validateErrors = validate(data.locationId, locationIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
