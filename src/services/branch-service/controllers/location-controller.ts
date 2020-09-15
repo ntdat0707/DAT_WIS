@@ -936,10 +936,11 @@ export class LocationController {
         queryLocations.where = {
           ...queryLocations.where,
           city: {
-            [Op.like]: `%${req.query.cityName}%` 
+            [Op.iLike]: `%${req.query.cityName}%` 
           }
         }; 
       }
+
       let locationResults: any = await LocationModel.findAll(queryLocations);
 
       if (
