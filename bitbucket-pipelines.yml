@@ -6,56 +6,56 @@ definitions:
     package-node: ./node_modules
 lint: &lint
   - step:
-    caches:
-      - package-node
-    # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
-    size: 2x
-    name: install nodejs and yarn
-    script:
-      # Get ip address
-      # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
-      - ip addr show
-      - apt update && apt install -y netcat
-      - |
-        # Install Nodejs
-        nvm install $(cat .nvmrc)
-        nvm alias default $(cat .nvmrc)
-      - |
-        echo 'setup environment'
-        export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
+      caches:
+        - package-node
+      # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
+      size: 2x
+      name: install nodejs and yarn
+      script:
+        # Get ip address
+        # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
+        - ip addr show
+        - apt update && apt install -y netcat
+        - |
+          # Install Nodejs
+          nvm install $(cat .nvmrc)
+          nvm alias default $(cat .nvmrc)
+        - |
+          echo 'setup environment'
+          export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
 
-      - |
-        yarn
-        echo "lint"
-      - yarn run typecheck && yarn run lint
-    services:
-      - docker
+        - |
+          yarn
+          echo "lint"
+        - yarn run typecheck && yarn run lint
+      services:
+        - docker
 deploy: &deploy
   - step:
-    caches:
-      - package-node
-    # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
-    size: 2x
-    name: install nodejs and yarn
-    script:
-      # Get ip address
-      # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
-      - ip addr show
-      - apt update && apt install -y netcat
-      - |
-        # Install Nodejs
-        nvm install $(cat .nvmrc)
-        nvm alias default $(cat .nvmrc)
-      - |
-        echo 'setup environment'
-        export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
+      caches:
+        - package-node
+      # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
+      size: 2x
+      name: install nodejs and yarn
+      script:
+        # Get ip address
+        # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
+        - ip addr show
+        - apt update && apt install -y netcat
+        - |
+          # Install Nodejs
+          nvm install $(cat .nvmrc)
+          nvm alias default $(cat .nvmrc)
+        - |
+          echo 'setup environment'
+          export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
 
-      - |
-        yarn
-        echo "lint"
-      - yarn run typecheck && yarn run lint
-    services:
-      - docker
+        - |
+          yarn
+          echo "lint"
+        - yarn run typecheck && yarn run lint
+      services:
+        - docker
 pipelines:
   default:
     - <<: *lint
