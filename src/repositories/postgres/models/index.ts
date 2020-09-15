@@ -52,7 +52,7 @@ ServiceModel.belongsTo(CateServiceModel, { foreignKey: 'cateServiceId', as: 'cat
 ServiceModel.hasMany(ServiceImageModel, { foreignKey: 'serviceId', sourceKey: 'id', as: 'images' });
 ServiceResourceModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
 
-LocationModel.hasOne(LocationDetailModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'location-information' });
+LocationModel.hasOne(LocationDetailModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'location-detail' });
 LocationDetailModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location'  });
 
 // Appointment

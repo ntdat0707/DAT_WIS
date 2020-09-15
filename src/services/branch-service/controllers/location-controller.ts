@@ -22,7 +22,7 @@ import {
   createLocationSchema,
   locationIdSchema,
   createLocationWorkingTimeSchema,
-  updateLocationSchema,
+  updateLocationSchema
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -115,7 +115,7 @@ export class LocationController {
    *          - Inactive
    *     - in: "formData"
    *       name: "rating"
-   *       type: number 
+   *       type: number
    *     - in: "formData"
    *       name: "recoveryRooms"
    *       type: number
@@ -171,23 +171,23 @@ export class LocationController {
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
       // start transaction
       transaction = await sequelize.transaction();
-      
       const location = await LocationModel.create(data, { transaction });
-      
+
       let dataLocationDetail = [];
       dataLocationDetail.push({
         id: uuidv4(),
+        locationId: location.id,
         title: req.body.title,
         payment: req.body.payment,
         parking: req.body.parking,
         rating: req.body.rating,
-        recoveryRooms: req.body.recoveryRooms ,
-        totalBookings:req.body.totalBookings,
-        gender:req.body.gender,
-        openedAt: req.body.openedAt,
+        recoveryRooms: req.body.recoveryRooms,
+        totalBookings: req.body.totalBookings,
+        gender: req.body.gender,
+        openedAt: req.body.openedAt
       });
-
       await LocationDetailModel.bulkCreate(dataLocationDetail, { transaction });
+
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -203,6 +203,7 @@ export class LocationController {
             new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
+
         const workingsTimes = (req.body.workingTimes as []).map((value: any) => ({
           locationId: location.id,
           weekday: value.day,
@@ -214,8 +215,22 @@ export class LocationController {
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
       //commit transaction
+
       await transaction.commit();
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+      let newLocation = await LocationModel.findOne({
+        where: { id: location.id },
+        include: [
+          {
+            model: LocationDetailModel,
+            as: 'location-detail',
+            required: true
+          }
+        ]
+      });
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
+
+      //  return newLocation;
     } catch (error) {
       //rollback transaction
       if (transaction) {
@@ -801,8 +816,8 @@ export class LocationController {
   };
 
   calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
-    const R = 6371; // km 
-    const toRad = (value: number) => (value * Math.PI) / 180; // Converts numeric degrees to radians 
+    const R = 6371; // km
+    const toRad = (value: number) => (value * Math.PI) / 180; // Converts numeric degrees to radians
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     lat1 = toRad(lat1);
@@ -852,7 +867,7 @@ export class LocationController {
    *          type: string
    *     - in: query
    *       name: order
-   *       schema: 
+   *       schema:
    *          type: string
    *          enum: [ nearest, newest ]
    *     responses:
@@ -881,7 +896,7 @@ export class LocationController {
       let keywordsQuery = keywords
         .split(' ')
         .filter((x: string) => x)
-        .map((keyword: string) => `unaccent('%${keyword}%')`) 
+        .map((keyword: string) => `unaccent('%${keyword}%')`)
         .join(',');
 
       if (!keywordsQuery) {
@@ -952,12 +967,14 @@ export class LocationController {
       ) {
         const latitude: number = +req.query.latitude;
         const longitude: number = +req.query.longitude;
-        locationResults = locationResults.map((location:any) => ({
-          ...location,
-          distance: this.calcCrow(latitude, longitude, location.latitude, location.longitude)
-        })).sort((locationX: any, locationY: any) => {
-          return locationX.distance - locationY.distance; 
-        });
+        locationResults = locationResults
+          .map((location: any) => ({
+            ...location,
+            distance: this.calcCrow(latitude, longitude, location.latitude, location.longitude)
+          }))
+          .sort((locationX: any, locationY: any) => {
+            return locationX.distance - locationY.distance;
+          });
       }
 
       const locationIds = locationResults.map((item:any) => item.id);
@@ -965,17 +982,13 @@ export class LocationController {
       const query: FindOptions = {
         where: {
           id: {
-            [Op.in]: locationIds 
+            [Op.in]: locationIds
           }
         }
       };
 
       if (!!locationIds.length) {
-        query.order = Sequelize.literal(`(${
-          locationIds
-            .map((id: any) => (`"id" = \'${id}\'`))
-            .join(', ')
-        }) DESC`); 
+        query.order = Sequelize.literal(`(${locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')}) DESC`);
       }
 
       const locations = await paginate(
