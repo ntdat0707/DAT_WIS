@@ -44,7 +44,7 @@ deploy: &deploy
         - ip addr show
         - apt update && apt install -y netcat
         - |
-          wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz -O ~
+          wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz -P ~/
           tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
           mv ~/doctl /usr/local/bin
 
