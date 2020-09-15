@@ -12,7 +12,8 @@ import {
   LocationStaffModel,
   CompanyModel,
   StaffModel,
-  LocationWorkingHourModel, ServiceModel
+  LocationWorkingHourModel,
+  ServiceModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -679,7 +680,7 @@ export class LocationController {
       return next(error);
     }
   };
-  
+
   /**
    * @swagger
    * /branch/location/market-place/get-location/{locationId}:
@@ -704,7 +705,7 @@ export class LocationController {
       const data = {
         locationId: _req.params.locationId
       };
-      //////
+      //////1111
       const validateErrors = validate(data.locationId, locationIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
@@ -732,7 +733,7 @@ export class LocationController {
         ]
       });
 
-      let locationDetails = { locations: locations, locationInformation: location, cateServices: cateServices };
+      const locationDetails = { locations: locations, locationInformation: location, cateServices: cateServices };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
       return next(error);
