@@ -46,6 +46,7 @@ deploy: &deploy
           # Install Nodejs
           nvm install $(cat .nvmrc)
           nvm alias default $(cat .nvmrc)
+          npm install -g yarn
         - |
           echo 'setup environment'
           export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
