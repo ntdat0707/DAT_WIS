@@ -48,6 +48,8 @@ deploy: &deploy
           wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz
           tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
           mv ~/doctl /usr/local/bin
+      services:
+        - docker
   - step:
       name: Preparing env
       script:
@@ -57,11 +59,9 @@ deploy: &deploy
           docker-compose up -d --build wisere
           docker tag wisere registry.digitalocean.com/wisere/wisere
         - |
-          doctl auth init -t $DO_KEY
+          doctl auth init -t 034fc3138ce0f18eb53248127c08c3fe481d1aeaec7f5323d4e64431171135ed
           doctl registry login
 
-
-      
       services:
         - docker
 pipelines:
