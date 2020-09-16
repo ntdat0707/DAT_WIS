@@ -89,7 +89,7 @@ export class AuthController {
     try {
       // start transaction
       transaction = await sequelize.transaction();
-      const data = {
+      const data: any = {
         email: req.body.email,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -106,6 +106,7 @@ export class AuthController {
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
       const staffId = uuidv4();
       const companyId = uuidv4();
+      data.onboardStep = 0;
       await StaffModel.create({ ...data, ...{ isBusinessAccount: true, id: staffId } }, { transaction });
       await CompanyModel.create({ id: companyId, ownerId: staffId }, { transaction });
       //commit transaction

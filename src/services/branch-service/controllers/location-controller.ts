@@ -158,6 +158,8 @@ export class LocationController {
         await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
+      await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
+
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
@@ -437,8 +439,9 @@ export class LocationController {
    *         description: Server internal error
    */
   public createLocationWorkingTime = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
-      const { workingLocationIds } = res.locals.staffPayload;
+      const { workingLocationIds, companyId } = res.locals.staffPayload;
       const body = {
         locationId: req.body.locationId,
         workingTimes: req.body.workingTimes
@@ -490,9 +493,18 @@ export class LocationController {
         endTime: value.range[1],
         isEnabled: value.enabled
       }));
-      const locationWorkingHour = await LocationWorkingHourModel.bulkCreate(workingsTimes);
+
+      transaction = await sequelize.transaction();
+      const locationWorkingHour = await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
+
+      const company = await CompanyModel.findOne({ where: { id: companyId } });
+      await StaffModel.update({ onboardStep: 2 }, { where: { id: company.ownerId }, transaction });
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationWorkingHour));
     } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

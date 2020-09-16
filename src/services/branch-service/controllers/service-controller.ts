@@ -15,7 +15,13 @@ import {
   updateServiceSchema
 } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
-import { StaffModel, LocationModel, sequelize, ResourceModel } from '../../../repositories/postgres/models';
+import {
+  StaffModel,
+  LocationModel,
+  sequelize,
+  ResourceModel,
+  CompanyModel
+} from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
@@ -634,7 +640,8 @@ export class ServiceController {
         await LocationServiceModel.create(locationService, { transaction: transaction });
         await ServiceStaffModel.bulkCreate(serviceStaff, { transaction });
       }
-
+      const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
+      await StaffModel.update({ onboardStep: 4 }, { where: { id: company.ownerId }, transaction });
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
