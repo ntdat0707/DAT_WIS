@@ -31,6 +31,10 @@ lint: &lint
         - yarn run typecheck && yarn run lint
       services:
         - docker
+  - step:
+      name: test
+      script: 
+        - echo 'hello'
 deploy: &deploy
   - step:
       caches:
@@ -49,7 +53,7 @@ deploy: &deploy
           wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
           tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
           ls -a ~
-          mv ~/doctl /usr/local/bin
+          ln -s ~/doctl /usr/local/bin/doctl
 
         - |
           ls -a
