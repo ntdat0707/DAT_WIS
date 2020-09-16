@@ -27,5 +27,4 @@ export class StaffRoutes {
     );
     this.router.post('/get-staffs-multiple-service',this.staffController.getStaffsServices);
   }
-
 }

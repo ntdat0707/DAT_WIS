@@ -107,7 +107,7 @@ export class LocationDetailController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       transaction = await sequelize.transaction();
-      let locationDetail = await LocationDetailModel.create(
+      const locationDetail = await LocationDetailModel.create(
         {
           locationId:data.locationId,
           title: data.title,

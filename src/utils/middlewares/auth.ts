@@ -30,7 +30,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
         res.locals.customerPayload = customerAuthenticationPayload;
       }
     } else {
-      res.locals. = staffAuthenticationPayload;
+      res.locals.staffPayload = staffAuthenticationPayload;
     }
 
     next();

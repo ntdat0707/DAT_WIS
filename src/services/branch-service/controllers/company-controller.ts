@@ -63,8 +63,6 @@ export class CompanyController {
     let transaction = null;
     try {
       const { companyId, id } = res.locals.staffPayload;
-
-      console.log('Staff payload:::', res.locals.staffPayload);
       const data: any = {
         ...body
       };
@@ -72,23 +70,12 @@ export class CompanyController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      console.log('Pass check customer');
       let company = await CompanyModel.findOne({
         where: {
           id: companyId,
           ownerId: id
         }
       });
-
-      // if (!company) {
-      //   return next(
-      //     new CustomError(companyErrorDetails.E_4000(`company ${companyId} not found`), HttpStatus.NOT_FOUND)
-      //   );
-      // }
-
-      // company = await company.update({
-      //   phone: data.phone,
-      // });
 
       if (!company) {
         const newCompanyId = uuidv4();

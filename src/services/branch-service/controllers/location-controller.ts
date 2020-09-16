@@ -10,9 +10,9 @@ import {
   sequelize,
   LocationModel,
   LocationStaffModel,
+  CompanyModel,
   StaffModel,
   LocationWorkingHourModel,
-  CompanyModel,
   LocationDetailModel,
   CateServiceModel,
   ServiceModel
@@ -165,9 +165,7 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      if (req.file) {
-        data.photo = (req.file as any).location;
-      }
+      if (req.file) data.photo = (req.file as any).location;
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
       // start transaction
       transaction = await sequelize.transaction();
@@ -200,7 +198,7 @@ export class LocationController {
         const checkValidWoringTime = await req.body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
           );
         }
 
@@ -215,7 +213,6 @@ export class LocationController {
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
       //commit transaction
-
       await transaction.commit();
       let newLocation = await LocationModel.findOne({
         where: { id: location.id },
@@ -229,8 +226,6 @@ export class LocationController {
       });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
-
-      //  return newLocation;
     } catch (error) {
       //rollback transaction
       if (transaction) {
@@ -398,7 +393,6 @@ export class LocationController {
       return next(error);
     }
   };
-
   /**
    * @swagger
    * /branch/location/delete/{locationId}:
@@ -536,7 +530,7 @@ export class LocationController {
       const checkValidWoringTime = await body.workingTimes.some(even);
       if (checkValidWoringTime) {
         return next(
-          new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
+          new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
         );
       }
 
@@ -721,7 +715,7 @@ export class LocationController {
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
           );
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({

@@ -14,6 +14,7 @@ class MainRoutes {
   private cateServiceRoutes = new CateServiceRoutes().router;
   private companyRoutes = new CompanyRoutes().router;
   private companyDetailRoutes = new CompanyDetailRoutes().router;
+
   constructor() {
     this.config();
   }
