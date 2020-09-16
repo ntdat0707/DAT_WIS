@@ -56,7 +56,7 @@ deploy: &deploy
           ln -s ~/doctl /usr/local/bin/doctl
 
         - |
-          ls -a
+          cd $BITBUCKET_CLONE_DIR
           cp ./env/staging.env ./.env
           docker-compose up -d --build wisere
           docker tag wisere registry.digitalocean.com/wisere/wisere
