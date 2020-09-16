@@ -24,10 +24,22 @@ enum EGender {
   UNISEX = 2
 }
 
+enum EPayment{
+  CASH = 'cash',
+  CARD = 'card',
+  ALL = 'all'
+}
+
 enum ELocationStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive'
 }
+
+enum EParkingStatus{
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
+}
+
 enum EServiceStatus {
   ACTIVE = 'active',
   IN_ACTIVE = 'in_active'
@@ -38,6 +50,11 @@ enum ESocialType {
   GOOGLE = 'google'
 }
 
+enum EFavorite {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
+}
+
 enum EWeekDays {
   MONDAY = 'monday',
   TUESDAY = 'tuesday',
@@ -46,6 +63,11 @@ enum EWeekDays {
   FRIDAY = 'friday',
   SATURDAY = 'saturday',
   SUNDAY = 'sunday'
+}
+
+enum EOrder {
+  NEAREST = 'nearest',
+  NEWEST = 'newest'
 }
 
 export {
@@ -59,6 +81,10 @@ export {
   AppointmentStatusRules,
   ESocialType,
   EWeekDays,
+  EPayment,
+  EParkingStatus,
+  EFavorite,
+  EOrder,
   IManagementLockAppointmentData,
   IManagementEditAppointmentDetailData
 };
@@ -71,6 +97,7 @@ export enum BusinessType {
   BABER_SHOP = 'BABER_SHOP',
   MASSAGE = 'MASSAGE'
 }
+
 export enum AppointmentBookingSource {
   STAFF = 'STAFF',
   MARKETPLACE = 'MARKETPLACE'

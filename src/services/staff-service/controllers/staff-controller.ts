@@ -27,7 +27,8 @@ import {
   createStaffSchema,
   filterStaffSchema,
   createStaffsSchema,
-  updateStaffSchema
+  updateStaffSchema,
+  getStaffMultipleService
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
@@ -812,6 +813,82 @@ export class StaffController {
         await transaction.rollback();
       }
       return next(error);
+    }
+  };
+ 
+  /**
+   * @swagger
+   * definitions:
+   *   StaffMultipleService:
+   *       required:
+   *           - mainLocationId
+   *           - serviceIds
+   *       properties:
+   *           mainLocationId:
+   *               type: string
+   *           serviceIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   */
+
+  /**
+   * @swagger
+   * /staff/get-staffs-multiple-service:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: getStaffsServices
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/StaffMultipleService'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getStaffsServices = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = { ...req.body };
+      console.log('ServiceIDs:::', req.body);
+      const validateErrors = validate(dataInput, getStaffMultipleService);
+      // const serviceIds = req.query.serviceIds;
+
+      const listService = dataInput.serviceIds.toString().split(',').join();
+      console.log('listService::', listService);
+
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
+      const staffIds = await ServiceStaffModel.findAll({
+        where: {
+          serviceId: {
+            [Op.in]: dataInput.serviceIds
+          }
+        }
+      }).then((services) => services.map((service) => service.staffId));
+      const staffs = await StaffModel.findAll({
+        where: {
+          mainLocationId: dataInput.mainLocationId,
+          id: {
+            [Op.in]: staffIds
+          }
+        }
+      });
+
+      if (!staffs) {
+        return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
+      }
+
+      res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+    } catch (error) {
+      return error;
     }
   };
 }

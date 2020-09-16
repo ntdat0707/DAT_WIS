@@ -160,6 +160,7 @@ export class AppointmentController extends BaseController {
           );
         }
       }
+      
       const appointmentId = uuidv4();
       const appointmentDetails = await this.verifyAppointmentDetails(
         dataInput.appointmentDetails,
@@ -879,6 +880,248 @@ export class AppointmentController extends BaseController {
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointment));
     } catch (error) {
+      return next(error);
+    }
+  };
+
+   /**
+   * @swagger
+   * definitions:
+   *   CreateAppointmentDetailMarketPlace:
+   *       required:
+   *           - serviceId
+   *           - resourceId
+   *           - staffIds
+   *           - startTime
+   *       properties:
+   *           serviceId:
+   *               type: string
+   *           resourceId:
+   *               type: string
+   *           staffIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *           startTime:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
+   *
+   */
+
+  /**
+   * @swagger
+   * definitions:
+   *   CreateAppointmentMarketPlace:
+   *       required:
+   *           - locationId
+   *           - date
+   *           - appointmentDetails
+   *           - bookingSource
+   *       properties:
+   *           locationId:
+   *               type: string
+   *           customerId:
+   *               type: string
+   *           bookingSource:
+   *               type: string
+   *               enum: [MARKETPLACE, STAFF]
+   *           date:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
+   *           appointmentDetails:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CreateAppointmentDetailMarketPlace'
+   *
+   */
+
+  /**
+   * @swagger
+   * /booking/appointment-marketplace/create-appointment-marketplace:
+   *   post:
+   *     tags:
+   *       - Booking
+   *     name: createAppointmentMarketPlace
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CreateAppointmentMarketPlace'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       403:
+   *         description: Forbidden
+   *       500:
+   *         description: Internal server errors
+   */
+  /**
+   *  Steps:
+   *    1. Validate format body data
+   *    2. Check customer exist
+   *    3. Check service, staff, resource match input data
+   *    4. create appointment and appointment detail
+   */
+  public createAppointmentMarketPlace = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const dataInput = {
+        locationId: req.body.locationId,
+        customerId: req.body.customerId,
+        date: req.body.date,
+        appointmentDetails: req.body.appointmentDetails,
+        bookingSource: req.body.bookingSource
+      };
+      //validate req.body
+      const validateErrors = validate(dataInput, createAppointmentSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      // Check location
+      const { workingLocationIds, companyId } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(dataInput.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${dataInput.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+
+
+      if (dataInput.customerId) {
+        const customer = await CustomerModel.findOne({ where: { id: dataInput.customerId, companyId } });
+        if (!customer) {
+          return next(
+            new CustomError(
+              customerErrorDetails.E_3001(
+                `Can not find customer ${dataInput.customerId} in location ${dataInput.locationId}`
+              ),
+              HttpStatus.BAD_REQUEST
+            )
+          );
+        }
+      }
+      
+      const appointmentId = uuidv4();
+      const appointmentDetails = await this.verifyAppointmentDetails(
+        dataInput.appointmentDetails,
+        dataInput.locationId
+      );
+      //insert appointment here
+      const appointmentData = {
+        id: appointmentId,
+        locationId: dataInput.locationId,
+        status: EAppointmentStatus.NEW,
+        customerId: dataInput.customerId ? dataInput.customerId : null,
+        bookingSource: dataInput.bookingSource
+      };
+      // start transaction
+      transaction = await sequelize.transaction();
+      await AppointmentModel.create(appointmentData, { transaction });
+
+      const appointmentDetailData: any[] = [];
+      const appointmentDetailStaffData = [];
+      const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
+      const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      for (let i = 0; i < appointmentDetails.length; i++) {
+        serviceDataNotify.push({
+          id: appointmentDetails[i].serviceId,
+          time: {
+            start: appointmentDetails[i].startTime,
+            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+          }
+        });
+        if (appointmentDetails[i].resourceId)
+          resourceDataNotify.push({
+            id: appointmentDetails[i].resourceId,
+            time: {
+              start: appointmentDetails[i].startTime,
+              end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+            }
+          });
+        staffDataNotify.push({
+          ids: appointmentDetails[i].staffIds,
+          time: {
+            start: appointmentDetails[i].startTime,
+            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+          }
+        });
+        const appointmentDetailId = uuidv4();
+        appointmentDetailData.push({
+          id: appointmentDetailId,
+          appointmentId,
+          serviceId: appointmentDetails[i].serviceId,
+          resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
+          startTime: appointmentDetails[i].startTime,
+          duration: appointmentDetails[i].duration
+        });
+        for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
+          appointmentDetailStaffData.push({
+            appointmentDetailId,
+            staffId: appointmentDetails[i].staffIds[j]
+          });
+        }
+      }
+      await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
+        transaction
+      });
+      await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      const query: FindOptions = {
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { id: appointmentId },
+            include: [
+              {
+                model: LocationModel,
+                as: 'location',
+                required: true
+              },
+              {
+                model: CustomerModel,
+                as: 'customer',
+                required: false
+              }
+            ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          }
+        ],
+        transaction
+      };
+      const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
+      await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      //commit transaction
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
