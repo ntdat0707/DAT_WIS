@@ -1,8 +1,12 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
+import { BusinessType } from '../../../utils/consts';
 class CompanyModel extends Model {
   public id: string;
   public ownerId: string;
+  public businessType?: string;
+  public businessName: string;
+  public phone: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -20,6 +24,21 @@ CompanyModel.init(
       field: 'owner_id',
       type: DataTypes.UUIDV4,
       allowNull: false
+    },
+    businessType: {
+      field: 'business_type',
+      type: DataTypes.ENUM(...Object.keys(BusinessType)),
+      allowNull: true
+    },
+    businessName: {
+      field: 'business_name',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    phone: {
+      field: 'phone',
+      type: DataTypes.STRING,
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',
