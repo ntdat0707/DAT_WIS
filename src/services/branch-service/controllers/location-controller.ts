@@ -1032,6 +1032,7 @@ export class LocationController {
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       let staffs: any = [];
       let locations: any = [];
+      let locationWorkingTimes: any = [];
       let location: any = await LocationModel.findOne({
         raw: true,
         where: { id: data.locationId },
@@ -1054,10 +1055,12 @@ export class LocationController {
               model: LocationWorkingHourModel,
               as: 'workingTimes',
               required: true,
-              attributes: [ 'weekday', 'startTime', 'endTime']
+              where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
+              order: [['weekday', 'DESC']],
+              attributes: ['weekday', 'startTime', 'endTime']
             }
           ],
-          attributes: [ 'name', 'ward', 'district', 'city'],
+          attributes: ['name', 'ward', 'district', 'city'],
           group: [
             'LocationModel.id',
             'workingTimes.id',
@@ -1067,7 +1070,17 @@ export class LocationController {
           ]
         });
 
-        console.log('LocationInfor::', location);
+        // locationWorkingTimes = (
+        //   await LocationWorkingHourModel.findAll({
+        //     where: { locationId: location.id, [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
+        //     order: [['weekday', 'DESC']],
+        //     attributes: ['weekday', 'startTime', 'endTime']
+        //   })
+        // ).map((locationWorkingTime: any) => ({
+        //   workingTime: `${locationWorkingTime.weekday} - ${locationWorkingTime[1].weekday},${locationWorkingTime[0].startTime} - ${locationWorkingTime.endTime}`
+        // }));
+
+        console.log('Location working time::', locationWorkingTimes);
         staffs = await StaffModel.findAll({
           raw: true,
           where: { mainLocationId: data.locationId },
@@ -1080,6 +1093,7 @@ export class LocationController {
       const locationDetails = {
         locations: locations,
         locationInformation: location,
+        //workingTimes: locationWorkingTimes,
         staffs: staffs
       };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
