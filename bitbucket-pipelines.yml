@@ -35,7 +35,7 @@ lint: &lint
       name: test
       script: 
         - echo 'hello'
-deploy: &deploy
+build-image: &build-image
   - step:
       caches:
         - package-node
@@ -65,14 +65,26 @@ deploy: &deploy
           doctl registry login
       services:
         - docker
+deploy: &deploy
+  - step:
+    name: deploy to server via ssh
+    script:
+      - mkdir -p ~/.ssh
+      - cat my_known_hosts >> ~/.ssh/known_hosts
+      - (umask  077 ; echo $SSH_KEY | base64 --decode > ~/.ssh/id_rsa)
+      - echo $SSH_KEY
+      - cat ~/.ssh/id_rsa
+      - ssh root@221.133.14.73  -T 'bash -s' < .bitbucket-pipeline/deploy.sh 'echo "connected to `host` as user"'
+
 pipelines:
   default:
     - <<: *lint
+    - <<: *build-image
     - <<: *deploy
   branches:
     master:
       - <<: *lint
-      - <<: *deploy
+      - <<: *build-image
     develop:
       - step:
           caches:
@@ -105,16 +117,16 @@ pipelines:
           script:
             - mkdir -p ~/.ssh
             - cat my_known_hosts >> ~/.ssh/known_hosts
-            - (umask  077 ; echo $MY_SSH_KEY | base64 --decode > ~/.ssh/id_rsa)
-            - echo $MY_SSH_KEY
+            - (umask  077 ; echo $SSH_KEY | base64 --decode > ~/.ssh/id_rsa)
+            - echo $SSH_KEY
             - cat ~/.ssh/id_rsa
-            - ssh root@221.133.14.73  -T 'bash -s' < .bitbucket-pineline/deploy.sh 'echo "connected to `host` as user"'
-          #   - pipe: atlassian/ssh-run:0.1.1
-          #     variables:
-          #       SSH_USER: 'root'
-          #       SERVER: '221.133.14.73'
-          #       MODE: 'script'
-          #       SSH_KEY: $MY_SSH_KEY
-          #       EXTRA_ARGS: '-t'
-          #       COMMAND: 'myscript.sh'
-          #       DEBUG: 'v'
+            - ssh root@221.133.14.73  -T 'bash -s' < .bitbucket-pipeline/deploy.sh 'echo "connected to `host` as user"'
+            # - pipe: atlassian/ssh-run:0.1.1
+            #   variables:
+            #     SSH_USER: 'root'
+            #     SERVER: '221.133.14.73'
+            #     MODE: 'script'
+            #     SSH_KEY: $MY_SSH_KEY
+            #     EXTRA_ARGS: '-t'
+            #     COMMAND: 'myscript.sh'
+            #     DEBUG: 'v'
