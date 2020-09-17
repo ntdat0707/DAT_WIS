@@ -198,7 +198,7 @@ export class LocationController {
         const checkValidWoringTime = await req.body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
 
@@ -530,7 +530,7 @@ export class LocationController {
       const checkValidWoringTime = await body.workingTimes.some(even);
       if (checkValidWoringTime) {
         return next(
-          new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+          new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
         );
       }
 
@@ -715,7 +715,7 @@ export class LocationController {
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
@@ -863,7 +863,7 @@ export class LocationController {
    *       name: order
    *       schema:
    *          type: string
-   *          enum: [ nearest, newest ]
+   *          enum: [ nearest, newest, price_lowest, price_highest ]
    *     responses:
    *       200:
    *         description: success
@@ -885,37 +885,40 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      
-      const keywords: string = req.query.keyword as string;
+
+      let keywords: string = req.query.keyword as string;
       let keywordsQuery = keywords
         .split(' ')
         .filter((x: string) => x)
         .map((keyword: string) => `unaccent('%${keyword}%')`)
         .join(',');
-
       if (!keywordsQuery) {
         keywordsQuery = '\'%%\'';
       }
-
       const queryLocations: FindOptions = {
         include: [
           {
             model: CompanyModel,
             as: 'company',
-            attributes: [],
             required: true,
+            attributes: ['businessName'],
             include: [
               {
                 model: CateServiceModel,
                 as: 'cateServices',
-                attributes: [],
                 required: true,
+                attributes: ['name'],
                 include: [
                   {
                     model: ServiceModel,
                     as: 'services',
                     required: true,
-                    attributes: []
+                    attributes: ['name', 'sale_price', 'unit_price'],
+                    where: {
+                      [Op.or]: [
+                        Sequelize.literal(`unaccent("company->cateServices->services"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+                      ]
+                    }
                   }
                 ]
               }
@@ -926,52 +929,78 @@ export class LocationController {
           [Op.or]: [
             Sequelize.literal(`unaccent("LocationModel"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("LocationModel"."address") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("LocationModel"."ward") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("LocationModel"."district") ilike ANY(ARRAY[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("company->cateServices"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("company->cateServices->services"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("company"."business_type") ilike ANY(ARRAY[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("company"."business_name") ilike ANY(ARRAY[${keywordsQuery}])`)
           ]
         },
-        group: ['LocationModel.id']
+        attributes: { exclude: ['CreatedAt', 'updatedAt', 'deletedAt'] },
+        group: ['LocationModel.id', 'company.id', '"company->cateServices"."id"', '"company->cateServices->services"."id"']
       };
-
-      if (req.query.order === EOrder.NEWEST) {
-        queryLocations.order =  [['"LocationModel"."openedAt"', 'DESC']];
-      }
 
       if (!!req.query.cityName) {
         queryLocations.where = {
           ...queryLocations.where,
           city: {
-            [Op.iLike]: `%${req.query.cityName}%` 
+            [Op.iLike]: `%${req.query.cityName}%`
           }
-        }; 
+        };
+      }
+
+      if (req.query.order === EOrder.NEWEST) {
+        queryLocations.order = [['"LocationModel"."openedAt"', 'DESC']];
       }
 
       let locationResults: any = await LocationModel.findAll(queryLocations);
-
+      locationResults = locationResults.map((location: any) => {
+        location = location.dataValues;
+        if (location.company.cateServices
+           && Array.isArray(location.company.cateServices)
+           && Array.isArray(location.company.cateServices.services)) {
+          location.service = location.company.cateServices[0].services[0]; 
+        }
+        return location;
+      });
       if (
-        req.query.order === EOrder.NEAREST
-        && req.query.latitude
-        && req.query.longtitude
-        && !Number.isNaN(+(req.query.latitude))
-        && !Number.isNaN(+(req.query.longitude))
+        req.query.latitude &&
+        req.query.longitude &&
+        !Number.isNaN(+req.query.latitude) &&
+        !Number.isNaN(+req.query.longitude)
       ) {
         const latitude: number = +req.query.latitude;
         const longitude: number = +req.query.longitude;
         locationResults = locationResults
-          .map((location: any) => ({
-            ...location,
-            distance: this.calcCrow(latitude, longitude, location.latitude, location.longitude)
-          }))
+          .map((location: any) => {
+            location.distance = this.calcCrow(latitude, longitude, location.latitude, location.longitude);
+            return location;
+          });
+
+        if (req.query.order === EOrder.NEAREST) {
+          console.log(locationResults);
+          locationResults = locationResults
+            .sort((locationX: any, locationY: any) => {
+              return locationX.distance - locationY.distance;
+            });    
+        }
+      }
+
+      if (req.query.order === EOrder.PRICE_LOWEST) {
+        locationResults = locationResults
           .sort((locationX: any, locationY: any) => {
-            return locationX.distance - locationY.distance;
+            console.log(locationX);
+            return locationX.service.price - locationY.service.price;
           });
       }
 
-      const locationIds = locationResults.map((item:any) => item.id);
+      if (req.query.order === EOrder.PRICE_HIGHEST) {
+        locationResults = locationResults
+          .sort((locationX: any, locationY: any) => {
+            return locationY.service.price - locationX.service.price;
+          });
+      }
+
+      // console.log(locationResults);
+
+      const locationIds = locationResults.map((item: any) => item.id);
 
       const query: FindOptions = {
         where: {
@@ -991,12 +1020,18 @@ export class LocationController {
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
+      
+      locations.data = this.paginate(locationResults, Number(paginateOptions.pageSize), Number(paginateOptions.pageNum)); 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
       return next(error);
     }
   };
-  
+
+  private paginate = (array: any[], pageSize:number, pageNumber: number) => {
+    return array.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+  }
+
   /**
    * @swagger
    * /branch/location/market-place/get-location/{locationId}:
@@ -1021,7 +1056,6 @@ export class LocationController {
       const data = {
         locationId: _req.params.locationId
       };
-      //////11112222
       const validateErrors = validate(data.locationId, locationIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 

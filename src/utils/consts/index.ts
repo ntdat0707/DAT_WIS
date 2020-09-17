@@ -67,7 +67,9 @@ enum EWeekDays {
 
 enum EOrder {
   NEAREST = 'nearest',
-  NEWEST = 'newest'
+  NEWEST = 'newest',
+  PRICE_LOWEST = 'price_lowest',
+  PRICE_HIGHEST = 'price_highest'
 }
 
 export {
