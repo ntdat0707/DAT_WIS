@@ -11,11 +11,11 @@ import {
   LocationModel,
   LocationStaffModel,
   StaffModel,
-  LocationWorkingHourModel,
   CompanyModel,
   LocationDetailModel,
   CateServiceModel,
-  ServiceModel
+  ServiceModel,
+  LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -834,7 +834,7 @@ export class LocationController {
   /**
    * @swagger
    * /branch/location/get-location-by-service-provider:
-   *   post:
+   *   get:
    *     tags:
    *       - Branch
    *     name: getLocationByServiceProvider
@@ -891,7 +891,7 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      
+
       const keywords: string = req.query.keyword as string;
       let keywordsQuery = keywords
         .split(' ')
@@ -900,7 +900,7 @@ export class LocationController {
         .join(',');
 
       if (!keywordsQuery) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       }
 
       const queryLocations: FindOptions = {
@@ -944,26 +944,26 @@ export class LocationController {
       };
 
       if (req.query.order === EOrder.NEWEST) {
-        queryLocations.order =  [['"LocationModel"."openedAt"', 'DESC']];
+        queryLocations.order = [['"LocationModel"."openedAt"', 'DESC']];
       }
 
       if (!!req.query.cityName) {
         queryLocations.where = {
           ...queryLocations.where,
           city: {
-            [Op.iLike]: `%${req.query.cityName}%` 
+            [Op.iLike]: `%${req.query.cityName}%`
           }
-        }; 
+        };
       }
 
       let locationResults: any = await LocationModel.findAll(queryLocations);
 
       if (
-        req.query.order === EOrder.NEAREST
-        && req.query.latitude
-        && req.query.longtitude
-        && !Number.isNaN(+(req.query.latitude))
-        && !Number.isNaN(+(req.query.longitude))
+        req.query.order === EOrder.NEAREST &&
+        req.query.latitude &&
+        req.query.longitude &&
+        !Number.isNaN(+req.query.latitude) &&
+        !Number.isNaN(+req.query.longitude)
       ) {
         const latitude: number = +req.query.latitude;
         const longitude: number = +req.query.longitude;
@@ -977,7 +977,7 @@ export class LocationController {
           });
       }
 
-      const locationIds = locationResults.map((item:any) => item.id);
+      const locationIds = locationResults.map((item: any) => item.id);
 
       const query: FindOptions = {
         where: {
@@ -1002,7 +1002,7 @@ export class LocationController {
       return next(error);
     }
   };
-  
+
   /**
    * @swagger
    * /branch/location/market-place/get-location/{locationId}:
@@ -1027,35 +1027,61 @@ export class LocationController {
       const data = {
         locationId: _req.params.locationId
       };
-      //////11112222
+
       const validateErrors = validate(data.locationId, locationIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-
-      const location = await LocationModel.findOne({
+      let staffs: any = [];
+      let locations: any = [];
+      let location: any = await LocationModel.findOne({
         raw: true,
-        where: { id: data.locationId }
-      });
-
-      const locations = await LocationModel.findAll({
-        raw: true,
-        where: { companyId: location.companyId }
-      });
-
-      const cateServices = await CateServiceModel.findAll({
-        raw: true,
-        where: {
-          companyId: location.companyId
-        },
+        where: { id: data.locationId },
         include: [
           {
-            model: ServiceModel,
-            as: 'services',
-            required: true
+            model: LocationDetailModel,
+            as: 'location-detail',
+            required: true,
+            attributes: ['title']
           }
-        ]
+        ],
+        attributes: ['id', 'companyId', 'name', 'phone', 'email', 'photo', 'address', 'ward', 'district', 'city']
       });
 
-      const locationDetails = { locations: locations, locationInformation: location, cateServices: cateServices };
+      if (location) {
+        locations = await LocationModel.findAll({
+          where: { companyId: location.companyId, name: { [Op.like]: '%Elite%' } },
+          include: [
+            {
+              model: LocationWorkingHourModel,
+              as: 'workingTimes',
+              required: true,
+              attributes: [ 'weekday', 'startTime', 'endTime']
+            }
+          ],
+          attributes: [ 'name', 'ward', 'district', 'city'],
+          group: [
+            'LocationModel.id',
+            'workingTimes.id',
+            'workingTimes.start_time',
+            'workingTimes.end_time',
+            'workingTimes.weekday'
+          ]
+        });
+
+        console.log('LocationInfor::', location);
+        staffs = await StaffModel.findAll({
+          raw: true,
+          where: { mainLocationId: data.locationId },
+          attributes: ['firstName', 'avatarPath']
+        });
+      } else {
+        location = [];
+      }
+
+      const locationDetails = {
+        locations: locations,
+        locationInformation: location,
+        staffs: staffs
+      };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
       return next(error);

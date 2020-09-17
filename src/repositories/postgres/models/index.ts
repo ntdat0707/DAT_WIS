@@ -22,8 +22,8 @@ import { LocationDetailModel } from './location-detail-model';
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
-CompanyModel.hasOne(CompanyDetailModel,{foreignKey: 'companyId',sourceKey:'id',as:'companyDetail'});
-CompanyDetailModel.belongsTo(CompanyModel,{foreignKey: 'companyId',as:'companyDetail'});
+CompanyModel.hasOne(CompanyDetailModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'companyDetail' });
+CompanyDetailModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'companyDetail' });
 
 CompanyModel.hasMany(LocationModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'locations' });
 LocationModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
@@ -33,6 +33,9 @@ CateServiceModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company
 
 StaffModel.belongsToMany(LocationModel, { through: LocationStaffModel, as: 'workingLocations', foreignKey: 'staffId' });
 LocationModel.belongsToMany(StaffModel, { through: LocationStaffModel, as: 'staffs', foreignKey: 'locationId' });
+
+// LocationModel.hasMany(StaffModel, { foreignKey: 'mainLocationId', sourceKey: 'id', as: 'staffs' });
+// StaffModel.belongsTo(StaffModel, { foreignKey: 'mainLocationId', as: 'location' });
 
 ServiceModel.belongsToMany(StaffModel, { through: ServiceStaffModel, as: 'staffs', foreignKey: 'serviceId' });
 StaffModel.belongsToMany(ServiceModel, { through: ServiceStaffModel, as: 'services', foreignKey: 'staffId' });
@@ -53,7 +56,7 @@ ServiceModel.hasMany(ServiceImageModel, { foreignKey: 'serviceId', sourceKey: 'i
 ServiceResourceModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
 
 LocationModel.hasOne(LocationDetailModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'location-detail' });
-LocationDetailModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location'  });
+LocationDetailModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
 // Appointment
 AppointmentModel.hasMany(AppointmentDetailModel, {
@@ -102,6 +105,7 @@ AppointmentModel.belongsTo(AppointmentGroupModel, { foreignKey: 'appointmentGrou
 
 LocationModel.hasMany(AppointmentGroupModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'appointmentGroups' });
 AppointmentGroupModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
 LocationModel.hasMany(LocationWorkingHourModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'workingTimes' });
 LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
