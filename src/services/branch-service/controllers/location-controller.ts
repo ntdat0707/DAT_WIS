@@ -147,6 +147,7 @@ export class LocationController {
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
+      // console.log(req);
       const data: any = {
         name: req.body.name,
         phone: req.body.phone,
@@ -887,36 +888,64 @@ export class LocationController {
       }
 
       let keywords: string = req.query.keyword as string;
-      let keywordsQuery = keywords
+      keywords = keywords
         .split(' ')
         .filter((x: string) => x)
-        .map((keyword: string) => `unaccent('%${keyword}%')`)
-        .join(',');
-      if (!keywordsQuery) {
+        .join(' ');
+
+      let keywordsQuery: string = '';
+
+      if (!keywords) {
         keywordsQuery = '\'%%\'';
+      } else {
+        keywordsQuery = `unaccent('%${keywords}%')`;
       }
+
       const queryLocations: FindOptions = {
         include: [
           {
+            model: LocationDetailModel,
+            as: 'location-detail',
+            required: true,
+            attributes: {exclude: ['createdAt', 'updateAt', 'deleteAt']}
+          },
+          {
             model: CompanyModel,
             as: 'company',
-            required: true,
+            required: false,
             attributes: ['businessName'],
             include: [
               {
                 model: CateServiceModel,
                 as: 'cateServices',
-                required: true,
+                required: false,
                 attributes: ['name'],
                 include: [
                   {
                     model: ServiceModel,
                     as: 'services',
-                    required: true,
-                    attributes: ['name', 'sale_price', 'unit_price'],
+                    required: false,
+                    attributes: {exclude:['createdAt', 'updatedAt', 'deleteAt']},
                     where: {
-                      [Op.or]: [
-                        Sequelize.literal(`unaccent("company->cateServices->services"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+                      [Op.and]: [
+                        {
+                          [Op.or]: [
+                            Sequelize.literal(
+                              `unaccent("company->cateServices->services"."name") ilike any(array[${keywordsQuery}])`
+                            ),
+                            Sequelize.literal(
+                              '"company->cateServices->services"."name" notnull'
+                            )
+                          ]
+                        },
+                        {
+                          [Op.or]: [
+                            Sequelize.literal('"company->cateServices"."name" notnull'),
+                            Sequelize.literal(
+                              `unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`
+                            )
+                          ]
+                        }
                       ]
                     }
                   }
@@ -927,14 +956,70 @@ export class LocationController {
         ],
         where: {
           [Op.or]: [
-            Sequelize.literal(`unaccent("LocationModel"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("LocationModel"."address") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("company->cateServices"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("company"."business_name") ilike ANY(ARRAY[${keywordsQuery}])`)
+            {
+              [Op.and]: [
+                Sequelize.literal(
+                  `unaccent("company->cateServices->services"."name") ilike any(array[${keywordsQuery}])`
+                ),
+                Sequelize.literal('"company->cateServices"."name" notnull'),
+                Sequelize.literal('"company"."business_name" notnull'),
+                {
+                  [Op.or]: [
+                    Sequelize.literal('"LocationModel"."address" notnull'),
+                    Sequelize.literal('"LocationModel"."name" notnull')
+                  ]
+                }
+              ]
+            },
+            {
+              [Op.and]: [
+                Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(
+                  `unaccent("company->cateServices->services"."name") not ilike any(array[${keywordsQuery}])`
+                ),
+                Sequelize.literal('"company"."business_name" notnull'),
+                {
+                  [Op.or]: [
+                    Sequelize.literal('"LocationModel"."address" notnull'),
+                    Sequelize.literal('"LocationModel"."name" notnull')
+                  ]
+                }
+              ]
+            },
+            {
+              [Op.and]: [
+                Sequelize.literal(`unaccent("company"."business_name") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(`unaccent("company->cateServices"."name") not ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(
+                  `unaccent("company->cateServices->services"."name") not ilike any(array[${keywordsQuery}])`
+                ),
+                {
+                  [Op.or]: [
+                    Sequelize.literal('"LocationModel"."address" notnull'),
+                    Sequelize.literal('"LocationModel"."name" notnull')
+                  ]
+                }
+              ]
+            },
+            {
+              [Op.and]: [
+                {
+                  [Op.or]: [
+                    Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
+                    Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`)
+                  ]
+                },
+                Sequelize.literal(`unaccent("company"."business_name") not ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(`unaccent("company->cateServices"."name") not ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(
+                  `unaccent("company->cateServices->services"."name") not ilike any(array[${keywordsQuery}])`
+                )
+              ]
+            }
           ]
         },
         attributes: { exclude: ['CreatedAt', 'updatedAt', 'deletedAt'] },
-        group: ['LocationModel.id', 'company.id', '"company->cateServices"."id"', '"company->cateServices->services"."id"']
+        group: ['LocationModel.id', 'location-detail.id',  'company.id', 'company->cateServices.id', 'company->cateServices->services.id']
       };
 
       if (!!req.query.cityName) {
@@ -951,15 +1036,40 @@ export class LocationController {
       }
 
       let locationResults: any = await LocationModel.findAll(queryLocations);
+
       locationResults = locationResults.map((location: any) => {
         location = location.dataValues;
-        if (location.company.cateServices
-           && Array.isArray(location.company.cateServices)
-           && Array.isArray(location.company.cateServices.services)) {
-          location.service = location.company.cateServices[0].services[0]; 
+        if (location.company) {
+          location.company = location.company.dataValues;
+          if (location.company.cateServices
+             && Array.isArray(location.company.cateServices)
+          ) {
+            location.company.cateServices.map((cateService: any) => {
+              cateService = cateService.dataValues;
+              if (cateService.services
+                 && Array.isArray(cateService.services)
+              ) {
+                location.service = cateService.services[0].dataValues;
+                cateService.services.map((service: any) => {
+                  return service.dataValues;
+                });
+              }
+              return cateService;
+            });
+            location.company.cateServices = undefined;
+          }
         }
+        location = {
+          ...location,
+          ...location['location-detail'].dataValues,
+          ['location-detail']: undefined
+        };
         return location;
       });
+
+      console.log(locationResults);
+
+
       if (
         req.query.latitude &&
         req.query.longitude &&
@@ -968,34 +1078,33 @@ export class LocationController {
       ) {
         const latitude: number = +req.query.latitude;
         const longitude: number = +req.query.longitude;
-        locationResults = locationResults
-          .map((location: any) => {
-            location.distance = this.calcCrow(latitude, longitude, location.latitude, location.longitude);
-            return location;
-          });
+        locationResults = locationResults.map((location: any) => {
+          location.distance = this.calcCrow(latitude, longitude, location.latitude, location.longitude).toFixed(2);
+          location.unitOfLength = 'kilometers';
+          return location;
+        });
 
         if (req.query.order === EOrder.NEAREST) {
-          console.log(locationResults);
-          locationResults = locationResults
-            .sort((locationX: any, locationY: any) => {
-              return locationX.distance - locationY.distance;
-            });    
+          locationResults = locationResults.sort((locationX: any, locationY: any) => {
+            return locationX.distance - locationY.distance;
+          });
         }
       }
 
       if (req.query.order === EOrder.PRICE_LOWEST) {
-        locationResults = locationResults
-          .sort((locationX: any, locationY: any) => {
-            console.log(locationX);
-            return locationX.service.price - locationY.service.price;
-          });
+        locationResults = locationResults.sort((locationX: any, locationY: any) => {
+          if (!locationX.service) { return -1; }
+          if (!locationY.service) { return 1; }
+          return locationX.service.salePrice - locationY.service.salePrice;
+        });
       }
 
       if (req.query.order === EOrder.PRICE_HIGHEST) {
-        locationResults = locationResults
-          .sort((locationX: any, locationY: any) => {
-            return locationY.service.price - locationX.service.price;
-          });
+        locationResults = locationResults.sort((locationX: any, locationY: any) => {
+          if (!locationX.service) { return -1; }
+          if (!locationY.service) { return 1; }
+          return locationY.service.salePrice - locationX.service.salePrice;
+        });
       }
 
       // console.log(locationResults);
@@ -1020,17 +1129,21 @@ export class LocationController {
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
-      
-      locations.data = this.paginate(locationResults, Number(paginateOptions.pageSize), Number(paginateOptions.pageNum)); 
+
+      locations.data = this.paginate(
+        locationResults,
+        Number(paginateOptions.pageSize),
+        Number(paginateOptions.pageNum)
+      );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
       return next(error);
     }
   };
 
-  private paginate = (array: any[], pageSize:number, pageNumber: number) => {
+  private paginate = (array: any[], pageSize: number, pageNumber: number) => {
     return array.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
-  }
+  };
 
   /**
    * @swagger
