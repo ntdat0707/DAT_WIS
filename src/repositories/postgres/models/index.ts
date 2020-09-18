@@ -16,6 +16,8 @@ import { ServiceImageModel } from './service-image';
 import { LocationServiceModel } from './location-service';
 import { AppointmentGroupModel } from './appointment-group-model';
 import { LocationWorkingHourModel } from './location-working-hour-model';
+import { PipelineModel } from './pipeline-model';
+import { PipelineStageModel } from './pipeline-stage-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -97,6 +99,12 @@ LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as
 CompanyModel.hasMany(CustomerModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customers' });
 CustomerModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
+PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipeline_ id', sourceKey: 'id', as: 'pipeline_stage' });
+PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipeline_ id', as: 'pipeline' });
+
+StaffModel.hasMany(PipelineModel, { foreignKey: 'staff_id', sourceKey: 'id', as: 'pipeline' });
+PipelineModel.belongsTo(StaffModel, { foreignKey: 'staff_id', as: 'staff' });
+
 export {
   sequelize,
   StaffModel,
@@ -110,5 +118,7 @@ export {
   AppointmentDetailModel,
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
-  LocationWorkingHourModel
+  LocationWorkingHourModel,
+  PipelineModel,
+  PipelineStageModel
 };
