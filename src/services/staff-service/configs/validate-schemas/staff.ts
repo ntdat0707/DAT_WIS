@@ -112,4 +112,21 @@ export const createStaffsSchema = Joi.object({
     .label('staffDetails')
 });
 
-export { staffIdSchema, filterStaffSchema };
+const getStaffMultipleService = Joi.object({
+  mainLocationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('mainLocationId'),
+  serviceIds: Joi.array()
+    .min(1)
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+    .label('serviceIds')
+});
+
+export { staffIdSchema, filterStaffSchema, getStaffMultipleService };

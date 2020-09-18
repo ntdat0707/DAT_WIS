@@ -25,6 +25,7 @@ export class StaffRoutes {
       uploadAsMiddleware('avatar'),
       this.staffController.updateStaff
     );
-    this.router.post('/complete-onboard', isAuthenticated, this.staffController.completeOnboard);
+    this.router.post('/get-staffs-multiple-service',this.staffController.getStaffsServices);
   }
+
 }

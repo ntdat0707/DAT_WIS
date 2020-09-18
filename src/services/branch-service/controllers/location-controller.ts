@@ -10,8 +10,11 @@ import {
   sequelize,
   LocationModel,
   LocationStaffModel,
-  CompanyModel,
   StaffModel,
+  CompanyModel,
+  LocationDetailModel,
+  CateServiceModel,
+  ServiceModel,
   LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
@@ -21,11 +24,13 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema
 } from '../configs/validate-schemas';
-import { FindOptions } from 'sequelize/types';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
 import moment from 'moment';
+import { v4 as uuidv4 } from 'uuid';
+import { EOrder } from '../../../utils/consts';
 
 export class LocationController {
   /**
@@ -93,6 +98,38 @@ export class LocationController {
    *       name: "longitude"
    *       type: number
    *     - in: "formData"
+   *       name: "title"
+   *       type: string
+   *     - in: "formData"
+   *       name: "payment"
+   *       type: string
+   *       enum:
+   *          - Cash
+   *          - Card
+   *          - All
+   *     - in: "formData"
+   *       name: "parking"
+   *       type: string
+   *       enum:
+   *          - Active
+   *          - Inactive
+   *     - in: "formData"
+   *       name: "rating"
+   *       type: number
+   *     - in: "formData"
+   *       name: "recoveryRooms"
+   *       type: number
+   *     - in: "formData"
+   *       name: "totalBookings"
+   *       type: number
+   *     - in: "formData"
+   *       name: "gender"
+   *       type: number
+   *     - in: "formData"
+   *       name: "openedAt"
+   *       type: string
+   *       format: date-time
+   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -128,11 +165,29 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      if (req.file) data.photo = (req.file as any).location;
+      if (req.file) {
+        data.photo = (req.file as any).location;
+      }
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
+
+      let dataLocationDetail = [];
+      dataLocationDetail.push({
+        id: uuidv4(),
+        locationId: location.id,
+        title: req.body.title,
+        payment: req.body.payment,
+        parking: req.body.parking,
+        rating: req.body.rating,
+        recoveryRooms: req.body.recoveryRooms,
+        totalBookings: req.body.totalBookings,
+        gender: req.body.gender,
+        openedAt: req.body.openedAt
+      });
+      await LocationDetailModel.bulkCreate(dataLocationDetail, { transaction });
+
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -145,9 +200,10 @@ export class LocationController {
         const checkValidWoringTime = await req.body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
+
         const workingsTimes = (req.body.workingTimes as []).map((value: any) => ({
           locationId: location.id,
           weekday: value.day,
@@ -161,8 +217,22 @@ export class LocationController {
       await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
 
       //commit transaction
+
       await transaction.commit();
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+      let newLocation = await LocationModel.findOne({
+        where: { id: location.id },
+        include: [
+          {
+            model: LocationDetailModel,
+            as: 'location-detail',
+            required: true
+          }
+        ]
+      });
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
+
+      //  return newLocation;
     } catch (error) {
       //rollback transaction
       if (transaction) {
@@ -330,6 +400,7 @@ export class LocationController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /branch/location/delete/{locationId}:
@@ -468,7 +539,7 @@ export class LocationController {
       const checkValidWoringTime = await body.workingTimes.some(even);
       if (checkValidWoringTime) {
         return next(
-          new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+          new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
         );
       }
 
@@ -581,6 +652,24 @@ export class LocationController {
    *       type: string
    *       required: true
    *     - in: "formData"
+   *       name: "title"
+   *       type: string
+   *     - in: "formData"
+   *       name: "payment"
+   *       type: string
+   *       enum:
+   *          - Cash
+   *          - Card
+   *     - in: "formData"
+   *       name: "parking"
+   *       type: string
+   *       enum:
+   *          - Active
+   *          - Inactive
+   *     - in: "formData"
+   *       name: "recoveryRooms"
+   *       type: number
+   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -644,7 +733,7 @@ export class LocationController {
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
@@ -675,7 +764,11 @@ export class LocationController {
         ward: body.ward,
         address: body.address,
         latitude: body.latitude,
-        longitude: body.longitude
+        longitude: body.longitude,
+        title: body.title,
+        payment: body.payment,
+        parking: body.parking,
+        recoveryRooms: body.recoveryRooms
       };
       if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
@@ -687,6 +780,336 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/get-location-detail/{locationId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: getLocationDetail
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getLocationDetail = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const locationId = req.params.locationId;
+      const validateErrors = validate(locationId, locationIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const location: any = await LocationModel.findOne({
+        where: {
+          id: locationId
+        }
+      });
+      if (!location) {
+        return next(
+          new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
+        );
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // km
+    const toRad = (value: number) => (value * Math.PI) / 180; // Converts numeric degrees to radians
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    lat1 = toRad(lat1);
+    lat2 = toRad(lat2);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c;
+    return d;
+  }
+
+  /**
+   * @swagger
+   * /branch/location/get-location-by-service-provider:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: getLocationByServiceProvider
+   *     parameters:
+   *     - in: query
+   *       name: keyword
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: latitude
+   *       schema:
+   *          type: number
+   *     - in: query
+   *       name: longitude
+   *       schema:
+   *          type: number
+   *     - in: query
+   *       name: cityName
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: order
+   *       schema:
+   *          type: string
+   *          enum: [ nearest, newest ]
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // let locations: any[] = [];
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+
+      const keywords: string = req.query.keyword as string;
+      let keywordsQuery = keywords
+        .split(' ')
+        .filter((x: string) => x)
+        .map((keyword: string) => `unaccent('%${keyword}%')`)
+        .join(',');
+
+      if (!keywordsQuery) {
+        keywordsQuery = "'%%'";
+      }
+
+      const queryLocations: FindOptions = {
+        include: [
+          {
+            model: CompanyModel,
+            as: 'company',
+            attributes: [],
+            required: true,
+            include: [
+              {
+                model: CateServiceModel,
+                as: 'cateServices',
+                attributes: [],
+                required: true,
+                include: [
+                  {
+                    model: ServiceModel,
+                    as: 'services',
+                    required: true,
+                    attributes: []
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        where: {
+          [Op.or]: [
+            Sequelize.literal(`unaccent("LocationModel"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."address") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."ward") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."district") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company->cateServices"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company->cateServices->services"."name") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company"."business_type") ilike ANY(ARRAY[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("company"."business_name") ilike ANY(ARRAY[${keywordsQuery}])`)
+          ]
+        },
+        group: ['LocationModel.id']
+      };
+
+      if (req.query.order === EOrder.NEWEST) {
+        queryLocations.order = [['"LocationModel"."openedAt"', 'DESC']];
+      }
+
+      if (!!req.query.cityName) {
+        queryLocations.where = {
+          ...queryLocations.where,
+          city: {
+            [Op.iLike]: `%${req.query.cityName}%`
+          }
+        };
+      }
+
+      let locationResults: any = await LocationModel.findAll(queryLocations);
+
+      if (
+        req.query.order === EOrder.NEAREST &&
+        req.query.latitude &&
+        req.query.longitude &&
+        !Number.isNaN(+req.query.latitude) &&
+        !Number.isNaN(+req.query.longitude)
+      ) {
+        const latitude: number = +req.query.latitude;
+        const longitude: number = +req.query.longitude;
+        locationResults = locationResults
+          .map((location: any) => ({
+            ...location,
+            distance: this.calcCrow(latitude, longitude, location.latitude, location.longitude)
+          }))
+          .sort((locationX: any, locationY: any) => {
+            return locationX.distance - locationY.distance;
+          });
+      }
+
+      const locationIds = locationResults.map((item: any) => item.id);
+
+      const query: FindOptions = {
+        where: {
+          id: {
+            [Op.in]: locationIds
+          }
+        }
+      };
+
+      if (!!locationIds.length) {
+        query.order = Sequelize.literal(`(${locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')}) DESC`);
+      }
+
+      const locations = await paginate(
+        LocationModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/get-location/{locationId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: getLocationMarketPlace
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+  public getLocationMarketPlace = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = {
+        locationId: _req.params.locationId
+      };
+
+      const validateErrors = validate(data.locationId, locationIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      let staffs: any = [];
+      let locations: any = [];
+      let locationWorkingTimes: any = [];
+      let location: any = await LocationModel.findOne({
+        raw: true,
+        where: { id: data.locationId },
+        include: [
+          {
+            model: LocationDetailModel,
+            as: 'location-detail',
+            required: true,
+            attributes: ['title']
+          }
+        ],
+        attributes: ['id', 'companyId', 'name', 'phone', 'email', 'photo', 'address', 'ward', 'district', 'city']
+      });
+
+      if (location) {
+        locations = await LocationModel.findAll({
+          where: { companyId: location.companyId, name: { [Op.like]: '%Elite%' } },
+          include: [
+            {
+              model: LocationWorkingHourModel,
+              as: 'workingTimes',
+              required: true,
+              where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
+              order: [['weekday', 'DESC']],
+              attributes: ['weekday', 'startTime', 'endTime']
+            }
+          ],
+          attributes: ['name', 'ward', 'district', 'city'],
+          group: [
+            'LocationModel.id',
+            'workingTimes.id',
+            'workingTimes.start_time',
+            'workingTimes.end_time',
+            'workingTimes.weekday'
+          ]
+        });
+
+        // locationWorkingTimes = (
+        //   await LocationWorkingHourModel.findAll({
+        //     where: { locationId: location.id, [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
+        //     order: [['weekday', 'DESC']],
+        //     attributes: ['weekday', 'startTime', 'endTime']
+        //   })
+        // ).map((locationWorkingTime: any) => ({
+        //   workingTime: `${locationWorkingTime.weekday} - ${locationWorkingTime[1].weekday},${locationWorkingTime[0].startTime} - ${locationWorkingTime.endTime}`
+        // }));
+
+        console.log('Location working time::', locationWorkingTimes);
+        staffs = await StaffModel.findAll({
+          raw: true,
+          where: { mainLocationId: data.locationId },
+          attributes: ['firstName', 'avatarPath']
+        });
+      } else {
+        location = [];
+      }
+
+      const locationDetails = {
+        locations: locations,
+        locationInformation: location,
+        //workingTimes: locationWorkingTimes,
+        staffs: staffs
+      };
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
+    } catch (error) {
       return next(error);
     }
   };

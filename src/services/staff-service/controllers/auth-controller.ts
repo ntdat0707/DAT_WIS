@@ -179,18 +179,22 @@ export class AuthController {
         password: req.body.password
       };
       const validateErrors = validate(data, loginSchema);
+     
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+    
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff)
         return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
+        
       if (!staff.isBusinessAccount) {
         return next(new CustomError(staffErrorDetails.E_4008(), HttpStatus.NOT_FOUND));
       }
+    
       const match = await compare(data.password, staff.password);
       if (!match)
         return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
       //create tokens
-
+    
       const accessTokenData: IAccessTokenData = {
         userId: staff.id,
         userName: `${staff.firstName} ${staff.lastName}`,
@@ -204,6 +208,7 @@ export class AuthController {
         accessToken
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
+    
       const profile = await StaffModel.scope('safe').findOne({
         where: { email: data.email },
         include: [
@@ -214,7 +219,9 @@ export class AuthController {
           }
         ]
       });
+
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+
     } catch (error) {
       return next(error);
     }
