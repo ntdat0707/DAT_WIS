@@ -15,7 +15,7 @@ export class LocationRoutes {
     this.router.post(
       '/create-location',
       isAuthenticated,
-      uploadAsMiddleware('photo'),
+      uploadAsMiddleware({ name: 'photo', maxCount: 5 }),
       this.locationController.createLocation
     );
     this.router.get('/get-all-locations', isAuthenticated, this.locationController.getAllLocations);
@@ -30,7 +30,7 @@ export class LocationRoutes {
     this.router.put(
       '/update-location/:locationId?',
       isAuthenticated,
-      uploadAsMiddleware('photo'),
+      uploadAsMiddleware({ name: 'photo', maxCount: 5 }),
       this.locationController.updateLocation
     );
     this.router.get('/market-place/get-location/:locationId', this.locationController.getLocationMarketPlace);

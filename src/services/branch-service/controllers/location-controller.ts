@@ -31,6 +31,7 @@ import _ from 'lodash';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import { EOrder } from '../../../utils/consts';
+import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 
 export class LocationController {
   /**
@@ -66,7 +67,9 @@ export class LocationController {
    *     parameters:
    *     - in: "formData"
    *       name: "photo"
-   *       type: file
+   *       type: array
+   *       items:
+   *          type: file
    *       description: The file to upload.
    *     - in: "formData"
    *       name: "name"
@@ -147,6 +150,8 @@ export class LocationController {
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
+      console.log('ReqBody::', req.body);
+      console.log('Check list images::', req.files.length);
       const data: any = {
         name: req.body.name,
         phone: req.body.phone,
@@ -165,13 +170,19 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      if (req.file) {
-        data.photo = (req.file as any).location;
-      }
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
+
+      if (req.files.length) {
+        const images = (req.files as Express.Multer.File[]).map((x: any, index: number) => ({
+          locationId: location.id,
+          path: x.location,
+          isAvatar: index === 0 ? true : false
+        }));
+        await LocationImageModel.bulkCreate(images, { transaction: transaction });
+      }
 
       let dataLocationDetail = [];
       dataLocationDetail.push({
@@ -606,8 +617,15 @@ export class LocationController {
    *       required: true
    *     - in: "formData"
    *       name: "photo"
-   *       type: file
+   *       type: array
+   *       items:
+   *           type: file
    *       description: The file to upload.
+   *     - in: "formData"
+   *       name: "deleteImages"
+   *       type: array
+   *       items:
+   *           type: string
    *     - in: "formData"
    *       name: "name"
    *       type: string
@@ -658,6 +676,16 @@ export class LocationController {
    *       name: "recoveryRooms"
    *       type: number
    *     - in: "formData"
+   *       name: "totalBookings"
+   *       type: number
+   *     - in: "formData"
+   *       name: "gender"
+   *       type: number
+   *     - in: "formData"
+   *       name: "openedAt"
+   *       type: string
+   *       format: date-time
+   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -672,7 +700,7 @@ export class LocationController {
    *       500:
    *         description:
    */
-  public updateLocation = async ({ params, body, file }: Request, res: Response, next: NextFunction) => {
+  public updateLocation = async ({ params, body, files }: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
       const { workingLocationIds, companyId } = res.locals.staffPayload;
@@ -681,16 +709,22 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
+
+      let deleteImagesArray = body.deleteImages.toString().split(',');
+      body.deleteImages = deleteImagesArray;
+
       validateErrors = validate(body, updateLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
+
       const location = await LocationModel.findOne({
         where: {
           id: params.locationId,
           companyId: companyId
         }
       });
+
       if (!location)
         return next(
           new CustomError(
@@ -715,9 +749,13 @@ export class LocationController {
             )
           );
         }
+
+        console.log('Pass Working Location::');
+
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
         };
+
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
@@ -729,6 +767,9 @@ export class LocationController {
             locationId: params.locationId
           }
         });
+
+        console.log('Pass exist Location::');
+
         const workingsTimes = (body.workingTimes as []).map((value: any) => ({
           locationId: params.locationId,
           weekday: value.day,
@@ -743,6 +784,9 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
+
+      console.log('Pass workingTImes::');
+
       const data: any = {
         name: body.name ? body.name : location.name,
         phone: body.phone ? body.phone : location.phone,
@@ -752,14 +796,47 @@ export class LocationController {
         ward: body.ward,
         address: body.address,
         latitude: body.latitude,
-        longitude: body.longitude,
+        longitude: body.longitude
+      };
+
+      const dataDetails: any = {
         title: body.title,
         payment: body.payment,
         parking: body.parking,
-        recoveryRooms: body.recoveryRooms
+        recoveryRooms: body.recoveryRooms,
+        totalBookings: body.totalBookings,
+        gender: body.gender,
+        openedAt: body.openedAt
       };
-      if (file) data.photo = (file as any).location;
+      // if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
+      await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
+
+      //delete Images
+      if (body.deleteImages && body.deleteImages.length > 0) {
+        const locationImages = await LocationImageModel.findAll({
+          where: {
+            id: { [Op.in]: body.deleteImages }
+          }
+        });
+
+        if (body.deleteImages.length !== locationImages.length) {
+          return next(new CustomError(locationErrorDetails.E_1006(), HttpStatus.NOT_FOUND));
+        }
+
+        await LocationImageModel.destroy({ where: { id: { [Op.in]: body.deleteImages } }, transaction });
+      }
+
+      if (files) {
+        const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
+          locationId: location.id,
+          path: x.location,
+          isAvatar: index === 0 ? true : false
+        }));
+
+        await LocationImageModel.bulkCreate(images, { transaction: transaction });
+      }
+
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
@@ -1034,7 +1111,7 @@ export class LocationController {
       let locations: any = [];
       let locationWorkingTimes: any = [];
       let location: any = await LocationModel.findOne({
-        raw: true,
+        // raw: true,
         where: { id: data.locationId },
         include: [
           {
@@ -1042,10 +1119,17 @@ export class LocationController {
             as: 'location-detail',
             required: true,
             attributes: ['title']
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            where: { locationId: data.locationId },
+            attributes: ['path', 'is_avatar']
           }
         ],
         attributes: ['id', 'companyId', 'name', 'phone', 'email', 'photo', 'address', 'ward', 'district', 'city']
       });
+      console.log('Location::', location);
 
       if (location) {
         locations = await LocationModel.findAll({
@@ -1060,7 +1144,7 @@ export class LocationController {
               attributes: ['weekday', 'startTime', 'endTime']
             }
           ],
-          attributes: ['name', 'ward', 'district', 'city'],
+          attributes: ['name', 'ward', 'district', 'city', 'address'],
           group: [
             'LocationModel.id',
             'workingTimes.id',
@@ -1069,16 +1153,13 @@ export class LocationController {
             'workingTimes.weekday'
           ]
         });
-
-        // locationWorkingTimes = (
-        //   await LocationWorkingHourModel.findAll({
-        //     where: { locationId: location.id, [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
-        //     order: [['weekday', 'DESC']],
-        //     attributes: ['weekday', 'startTime', 'endTime']
-        //   })
-        // ).map((locationWorkingTime: any) => ({
-        //   workingTime: `${locationWorkingTime.weekday} - ${locationWorkingTime[1].weekday},${locationWorkingTime[0].startTime} - ${locationWorkingTime.endTime}`
-        // }));
+        location = location.dataValues;
+        location = {
+          ...location,
+          ...location['location-detail'].dataValues,
+          ...location['locationImages'].dataValues,
+          ['location-detail']: undefined
+        };
 
         console.log('Location working time::', locationWorkingTimes);
         staffs = await StaffModel.findAll({
@@ -1087,13 +1168,12 @@ export class LocationController {
           attributes: ['firstName', 'avatarPath']
         });
       } else {
-        location = [];
+        location = {};
       }
 
       const locationDetails = {
         locations: locations,
         locationInformation: location,
-        //workingTimes: locationWorkingTimes,
         staffs: staffs
       };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));

@@ -73,6 +73,7 @@ const createLocationDetailSchema = Joi.object({
   totalBookings: Joi.number().label('totalBookings'),
   openedAt: Joi.string().isoDate()
 });
+
 const createLocationWorkingTimeSchema = Joi.object({
   locationId: Joi.string()
     .guid({
@@ -124,9 +125,18 @@ const updateLocationSchema = Joi.object({
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
   title: Joi.string().label('title'),
-  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
-  parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
-  status: Joi.string().required().label('status').valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE),
+  deleteImages: Joi.array()
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+    .label('deleteImages')
+    .allow(null),
+   
+  // payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
+  // parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
+  status: Joi.string().required().label('status').valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE).label('status'),
   workingTimes: Joi.array()
     .length(7)
     .unique()

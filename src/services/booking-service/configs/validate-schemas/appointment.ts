@@ -43,7 +43,17 @@ const createAppointmentSchema = Joi.object({
   bookingSource: Joi.string()
     .valid(...Object.keys(AppointmentBookingSource))
     .required(),
-  appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails')
+  appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
+  appointmentGroupId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('appointmentGroupId'),
+  relatedAppointmentId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('relatedAppointmentId')
 });
 
 const filterAppointmentDetailChema = Joi.object({
