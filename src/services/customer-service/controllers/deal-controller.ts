@@ -4,10 +4,17 @@ import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
 import { PipelineModel, PipelineStageModel, sequelize } from '../../../repositories/postgres/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { createPipelineSchema, updatePipelineSchema, pipelineIdSchema } from '../configs/validate-schemas/deal';
-import { pipelineErrorDetails } from '../../../utils/response-messages/error-details';
+import { 
+  createPipelineSchema,
+  updatePipelineSchema,
+  pipelineIdSchema,
+  createPipelineStageSchema,
+  updatePipelineStageSchema,
+  pipelineStageIdSchema 
+} from '../configs/validate-schemas/deal';
+import { pipelineErrorDetails, pipelineStageErrorDetails } from '../../../utils/response-messages/error-details/pipeline';
 
-export class DealCotroller {
+export class DealController {
   /**
    * @swagger
    * /customer/deal/all-pipeline:
@@ -29,7 +36,8 @@ export class DealCotroller {
    */
   public getAllPipeline = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const pipeline = await PipelineModel.findAll();
+      const staffId = res.locals.staffPayload.id;
+      const pipeline = await PipelineModel.findAll({ where: { staffId: staffId } });
       return res.status(httpStatus.OK).send(buildSuccessMessage(pipeline));
     } catch (error) {
       return next(error);
@@ -41,8 +49,6 @@ export class DealCotroller {
    * definitions:
    *   pipelineCreate:
    *       properties:
-   *           staffId:
-   *               type: string
    *           name:
    *               type: string
    *           rottingIn:
@@ -77,7 +83,6 @@ export class DealCotroller {
     try {
       transaction = await sequelize.transaction();
       const data: any = {
-        staffId: req.body.staffId,
         name: req.body.name,
         rottingIn: req.body.rottingIn
       };
@@ -85,7 +90,8 @@ export class DealCotroller {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const pipeline = await PipelineModel.create(data, { transaction });
+      const staffId = res.locals.staffPayload.id;
+      const pipeline = await PipelineModel.create({ ...data, ...{ staffId: staffId } }, { transaction });
       await transaction.commit();
       return res.status(httpStatus.OK).send(buildSuccessMessage(pipeline));
     } catch (error) {
@@ -209,4 +215,214 @@ export class DealCotroller {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /customer/deal/get-pipelineStage/{pipelineId}:
+   *   get:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: getPipelineStageByPipelineId
+   *     parameters:
+   *     - in: path
+   *       name: pipelineId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getPipelineStageByPipelineId = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const pipelineId = req.params.pipelineId;
+      const validateErrors = validate(pipelineId, pipelineIdSchema);
+      if(validateErrors){
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const pipelineStage = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId } });
+      if(!pipelineStage){
+        return next(
+          new CustomError(pipelineStageErrorDetails.E_3102(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
+        );
+      }
+      return res.status(httpStatus.OK).send(buildSuccessMessage(pipelineStage));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   pipelineStageCreate:
+   *       properties:
+   *           pipelineId:
+   *               type: string
+   *           name:
+   *               type: string
+   *           rottingIn:
+   *               type: integer
+   */
+  /**
+   * @swagger
+   * /customer/deal/create-pipelineStage:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: createPipelineStage
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/pipelineStageCreate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public createPipelineStage = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      transaction = await sequelize.transaction();
+      const data: any = {
+        pipelineId: req.body.pipelineId,
+        name: req.body.name,
+        rottingIn: req.body.rottingIn
+      };
+      const validateErrors = validate(data, createPipelineStageSchema);
+      if(validateErrors){
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const pipelineStage = await PipelineStageModel.create(data, { transaction });
+      transaction.commit();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(pipelineStage));
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   pipelineStageUpdate:
+   *       properties:
+   *           name:
+   *               type: string
+   *           rottingIn:
+   *               type: integer
+   *
+   */
+
+  /**
+   * @swagger
+   * /customer/deal/update-pipelineStage/{pipelineStageId}:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: updatePipelineStage
+   *     parameters:
+   *     - in: "path"
+   *       name: "pipelineStageId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/pipelineStageUpdate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updatePipelineStage = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      transaction = await sequelize.transaction();
+      const pipelineStageId = req.params.pipelineStageId;
+      const data: any = {
+        name: req.body.name,
+        rottingIn: req.body.rottingIn
+      };
+      const validateErrors = validate(data, updatePipelineStageSchema);
+      if(validateErrors){
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const pipelineStage = await PipelineStageModel.findOne({ where: { id: pipelineStageId } });
+      if(!pipelineStage){
+        throw new CustomError(pipelineStageErrorDetails.E_3102(`pipelineId ${pipelineStageId} not found`), httpStatus.NOT_FOUND);
+      }
+      await pipelineStage.update(data, { transaction });
+      transaction.commit();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(pipelineStage));
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/deal/delete-pipelineStage/{pipelineStageId}:
+   *   delete:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: deletePipelineStage
+   *     parameters:
+   *     - in: path
+   *       name: pipelineStageId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public deletePipelineStage = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const pipelineStageId = req.params.pipelineStageId;
+      const validateErrors = validate(pipelineStageId, pipelineStageIdSchema);
+      if(validateErrors){
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const pipelineStage = await PipelineStageModel.findOne({ where: { id: pipelineStageId } });
+      if(!pipelineStage){
+        return next(
+          new CustomError(pipelineStageErrorDetails.E_3102(`pipelineStageId ${pipelineStageId} not found`), httpStatus.NOT_FOUND)
+        );
+      }
+      await PipelineStageModel.destroy({ where: { id: pipelineStageId } });
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
 }
