@@ -1,3 +1,4 @@
+import Joi from 'joi';
 const createPipelineSchema = Joi.object({
   staffId: Joi.string()
     .guid({
