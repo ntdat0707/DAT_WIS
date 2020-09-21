@@ -1,4 +1,4 @@
-import TsMap from 'ts-map'
+import TsMap from 'ts-map';
 interface Iavailable{
     available: boolean
 };
