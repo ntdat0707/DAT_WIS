@@ -10,7 +10,8 @@ import {
   pipelineIdSchema,
   createPipelineStageSchema,
   updatePipelineStageSchema,
-  pipelineStageIdSchema 
+  pipelineStageIdSchema,
+  settingPipelineStageSchema
 } from '../configs/validate-schemas/deal';
 import { pipelineErrorDetails, pipelineStageErrorDetails } from '../../../utils/response-messages/error-details/pipeline';
 
@@ -243,8 +244,8 @@ export class DealController {
       const validateErrors = validate(pipelineId, pipelineIdSchema);
       if(validateErrors){
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
-      }
-      const pipelineStage = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId } });
+      };
+      const pipelineStage = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId }, order: ['order'] });
       if(!pipelineStage){
         return next(
           new CustomError(pipelineStageErrorDetails.E_3102(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
@@ -266,6 +267,8 @@ export class DealController {
    *           name:
    *               type: string
    *           rottingIn:
+   *               type: integer
+   *           order:
    *               type: integer
    */
   /**
@@ -298,7 +301,8 @@ export class DealController {
       const data: any = {
         pipelineId: req.body.pipelineId,
         name: req.body.name,
-        rottingIn: req.body.rottingIn
+        rottingIn: req.body.rottingIn,
+        order: req.body.order
       };
       const validateErrors = validate(data, createPipelineStageSchema);
       if(validateErrors){
@@ -324,6 +328,8 @@ export class DealController {
    *           name:
    *               type: string
    *           rottingIn:
+   *               type: integer
+   *           order:
    *               type: integer
    *
    */
@@ -361,7 +367,8 @@ export class DealController {
       const pipelineStageId = req.params.pipelineStageId;
       const data: any = {
         name: req.body.name,
-        rottingIn: req.body.rottingIn
+        rottingIn: req.body.rottingIn,
+        order: req.body.order
       };
       const validateErrors = validate(data, updatePipelineStageSchema);
       if(validateErrors){
@@ -421,6 +428,105 @@ export class DealController {
       await PipelineStageModel.destroy({ where: { id: pipelineStageId } });
       return res.status(httpStatus.OK).send();
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   pipelineStageSetting:
+   *       properties:
+   *           id:
+   *              type: string
+   *           name:
+   *               type: string
+   *           rottingIn:
+   *               type: integer
+   *           order:
+   *               type: integer
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   settingStage:
+   *       required:
+   *           name
+   *           listPipelineStage
+   *       properties:
+   *           name:
+   *               type: string
+   *           listPipelineStage:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/pipelineStageSetting'
+   */
+
+  /**
+   * @swagger
+   * /customer/deal/setting-pipelineStage/{pipelineId}:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: settingPipelineStage
+   *     parameters:
+   *     - in: "path"
+   *       name: "pipelineId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/settingStage'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public settingPipelineStage = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      transaction = await sequelize.transaction();
+      const validateErrors = validate(req.body, settingPipelineStageSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const pipeline = await PipelineModel.findOne({ where: { id: req.params.pipelineId } });
+      if(!pipeline){
+        throw new CustomError(pipelineErrorDetails.E_3101(`pipelineId ${req.params.pipelineId} not found`), httpStatus.NOT_FOUND);
+      }
+      await pipeline.update({ ... { name: req.body.name} }, { transaction });
+      for(let i = 0; i < req.body.listPipelineStage.length; i++){
+        const data = {
+          name: req.body.listPipelineStage[i].name,
+          rottingIn: req.body.listPipelineStage[i].rottingIn,
+          order: req.body.listPipelineStage[i].order,
+          pipelineId: req.params.pipelineId
+        }
+        if(!req.body.listPipelineStage[i].id){
+          await PipelineStageModel.create(data, { transaction });
+        }
+        else{
+          const pipelineStage = await PipelineStageModel.findOne({ where: { id: req.body.listPipelineStage[i].id } });
+          if(!pipelineStage){
+            throw new CustomError(pipelineStageErrorDetails.E_3102(`pipelineStageId ${req.body.listPipelineStage[i].id} not found`), httpStatus.NOT_FOUND);
+          }
+          await pipelineStage.update(data, { transaction });
+        }
+      }
+      await transaction.commit();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

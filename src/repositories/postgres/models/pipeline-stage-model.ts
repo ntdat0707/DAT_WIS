@@ -6,6 +6,7 @@ class PipelineStageModel extends Model {
   public pipelineId!: string;
   public name!: string;
   public rottingIn: number;
+  public order: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -20,7 +21,7 @@ PipelineStageModel.init(
       primaryKey: true
     },
     pipelineId: {
-      field: 'pipeline_ id',
+      field: 'pipeline_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
@@ -32,6 +33,10 @@ PipelineStageModel.init(
     rottingIn: {
       type: DataTypes.TINYINT,
       field: 'rotting_in'
+    },
+    order: {
+      type: DataTypes.TINYINT,
+      field: 'order'
     },
     createdAt: {
       field: 'created_at',

@@ -24,12 +24,14 @@ const createPipelineStageSchema = Joi.object({
     .required()
     .label('pipelineId'),
   name: Joi.string().required().label('name'),
-  rottingIn: Joi.number().integer().required().label('rottingIn')
+  rottingIn: Joi.number().integer().required().label('rottingIn'),
+  order: Joi.number().integer().required().label('order')
 });
 
 const updatePipelineStageSchema = Joi.object({
   name: Joi.string().required().label('name'),
-  rottingIn: Joi.number().integer().required().label('rottingIn')
+  rottingIn: Joi.number().integer().required().label('rottingIn'),
+  order: Joi.number().integer().required().label('order')
 });
 
 const pipelineStageIdSchema = Joi.string()
@@ -39,4 +41,32 @@ const pipelineStageIdSchema = Joi.string()
   .required()
   .label('pipelineStageId');
 
-export { createPipelineSchema, updatePipelineSchema, pipelineIdSchema, createPipelineStageSchema, updatePipelineStageSchema, pipelineStageIdSchema };
+const settingPipelineStageSchema = Joi.object({
+  name: Joi.string().required().label('name'),
+  listPipelineStage: Joi.array()
+  .min(1)
+  .required()
+  .items(
+    Joi.object({
+      id: Joi.string()
+        .guid({
+          version: ['uuidv4']
+        })
+        .allow(null, ''),
+      name: Joi.string().required(),
+      rottingIn: Joi.number().integer().required(),
+      order: Joi.number().integer().required()
+    })
+  )
+  .label('listPipelineStage')
+});
+  
+  
+export { 
+  createPipelineSchema,
+  updatePipelineSchema,
+  pipelineIdSchema,
+  createPipelineStageSchema,
+  updatePipelineStageSchema,
+  pipelineStageIdSchema,
+  settingPipelineStageSchema };

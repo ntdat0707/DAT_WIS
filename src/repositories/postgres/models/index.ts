@@ -99,11 +99,11 @@ LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as
 CompanyModel.hasMany(CustomerModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customers' });
 CustomerModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
-PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipeline_ id', sourceKey: 'id', as: 'pipeline_stage' });
-PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipeline_ id', as: 'pipeline' });
+PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipeline_stage' });
+PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipelineId', as: 'pipeline' });
 
-StaffModel.hasMany(PipelineModel, { foreignKey: 'staff_id', sourceKey: 'id', as: 'pipeline' });
-PipelineModel.belongsTo(StaffModel, { foreignKey: 'staff_id', as: 'staff' });
+StaffModel.hasMany(PipelineModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'pipeline' });
+PipelineModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 
 export {
   sequelize,

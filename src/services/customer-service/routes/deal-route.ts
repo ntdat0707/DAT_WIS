@@ -20,5 +20,6 @@ export class DealRoutes {
     this.router.post('/create-pipelineStage', isAuthenticated, this.dealController.createPipelineStage);
     this.router.put('/update-pipelineStage/:pipelineStageId?', isAuthenticated, this.dealController.updatePipelineStage);
     this.router.delete('/delete-pipelineStage/:pipelineStageId?', isAuthenticated, this.dealController.deletePipelineStage);
+    this.router.post('/setting-pipelineStage/:pipelineId?', isAuthenticated, this.dealController.settingPipelineStage);
   }
 }
