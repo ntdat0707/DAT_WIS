@@ -10,14 +10,13 @@ import {
   sequelize,
   LocationModel,
   LocationStaffModel,
-  CompanyModel,
   StaffModel,
-  LocationWorkingHourModel,
   CompanyModel,
   LocationDetailModel,
   CateServiceModel,
   ServiceModel,
-  LocationWorkingHourModel
+  LocationWorkingHourModel,
+  CompanyDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -152,8 +151,8 @@ export class LocationController {
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      console.log('ReqBody::', req.body);
-      console.log('Check list images::', req.files.length);
+      // console.log('ReqBody::', req.body);
+      // console.log('Check list images::', req.files.length);
       const data: any = {
         name: req.body.name,
         phone: req.body.phone,
@@ -234,7 +233,7 @@ export class LocationController {
         include: [
           {
             model: LocationDetailModel,
-            as: 'location-detail',
+            as: 'locationDetail',
             required: true
           }
         ]
@@ -748,7 +747,7 @@ export class LocationController {
           );
         }
 
-        console.log('Pass Working Location::');
+       // console.log('Pass Working Location::');
 
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
@@ -766,7 +765,7 @@ export class LocationController {
           }
         });
 
-        console.log('Pass exist Location::');
+       // console.log('Pass exist Location::');
 
         const workingsTimes = (body.workingTimes as []).map((value: any) => ({
           locationId: params.locationId,
@@ -783,7 +782,7 @@ export class LocationController {
         }
       }
 
-      console.log('Pass workingTImes::');
+     // console.log('Pass workingTImes::');
 
       const data: any = {
         name: body.name ? body.name : location.name,
@@ -908,7 +907,7 @@ export class LocationController {
 
   /**
    * @swagger
-   * /branch/location/get-location-by-service-provider:
+   * /branch/location/market-place/get-location-by-service-provider:
    *   get:
    *     tags:
    *       - Branch
@@ -976,7 +975,7 @@ export class LocationController {
       let keywordsQuery: string = '';
 
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -987,7 +986,7 @@ export class LocationController {
             model: LocationDetailModel,
             as: 'location-detail',
             required: true,
-            attributes: {exclude: ['createdAt', 'updateAt', 'deleteAt']}
+            attributes: { exclude: ['createdAt', 'updateAt', 'deleteAt'] }
           },
           {
             model: CompanyModel,
@@ -1005,7 +1004,7 @@ export class LocationController {
                     model: ServiceModel,
                     as: 'services',
                     required: false,
-                    attributes: {exclude:['createdAt', 'updatedAt', 'deleteAt']},
+                    attributes: { exclude: ['createdAt', 'updatedAt', 'deleteAt'] },
                     where: {
                       [Op.and]: [
                         {
@@ -1013,9 +1012,7 @@ export class LocationController {
                             Sequelize.literal(
                               `unaccent("company->cateServices->services"."name") ilike any(array[${keywordsQuery}])`
                             ),
-                            Sequelize.literal(
-                              '"company->cateServices->services"."name" notnull'
-                            )
+                            Sequelize.literal('"company->cateServices->services"."name" notnull')
                           ]
                         },
                         {
@@ -1099,7 +1096,13 @@ export class LocationController {
           ]
         },
         attributes: { exclude: ['CreatedAt', 'updatedAt', 'deletedAt'] },
-        group: ['LocationModel.id', 'location-detail.id',  'company.id', 'company->cateServices.id', 'company->cateServices->services.id']
+        group: [
+          'LocationModel.id',
+          'location-detail.id',
+          'company.id',
+          'company->cateServices.id',
+          'company->cateServices->services.id'
+        ]
       };
 
       if (!!req.query.cityName) {
@@ -1121,14 +1124,10 @@ export class LocationController {
         location = location.dataValues;
         if (location.company) {
           location.company = location.company.dataValues;
-          if (location.company.cateServices
-             && Array.isArray(location.company.cateServices)
-          ) {
+          if (location.company.cateServices && Array.isArray(location.company.cateServices)) {
             location.company.cateServices.map((cateService: any) => {
               cateService = cateService.dataValues;
-              if (cateService.services
-                 && Array.isArray(cateService.services)
-              ) {
+              if (cateService.services && Array.isArray(cateService.services)) {
                 location.service = cateService.services[0].dataValues;
                 cateService.services.map((service: any) => {
                   return service.dataValues;
@@ -1147,8 +1146,7 @@ export class LocationController {
         return location;
       });
 
-      console.log(locationResults);
-
+     // console.log(locationResults);
 
       if (
         req.query.latitude &&
@@ -1173,16 +1171,24 @@ export class LocationController {
 
       if (req.query.order === EOrder.PRICE_LOWEST) {
         locationResults = locationResults.sort((locationX: any, locationY: any) => {
-          if (!locationX.service) { return -1; }
-          if (!locationY.service) { return 1; }
+          if (!locationX.service) {
+            return -1;
+          }
+          if (!locationY.service) {
+            return 1;
+          }
           return locationX.service.salePrice - locationY.service.salePrice;
         });
       }
 
       if (req.query.order === EOrder.PRICE_HIGHEST) {
         locationResults = locationResults.sort((locationX: any, locationY: any) => {
-          if (!locationX.service) { return -1; }
-          if (!locationY.service) { return 1; }
+          if (!locationX.service) {
+            return -1;
+          }
+          if (!locationY.service) {
+            return 1;
+          }
           return locationY.service.salePrice - locationX.service.salePrice;
         });
       }
@@ -1254,13 +1260,28 @@ export class LocationController {
       let staffs: any = [];
       let locations: any = [];
       let locationWorkingTimes: any = [];
+      let services: any = [];
       let location: any = await LocationModel.findOne({
         // raw: true,
         where: { id: data.locationId },
         include: [
           {
+            model: CompanyModel,
+            as: 'company',
+            required: true,
+            attributes:['ownerId'],
+            include: [
+              {
+                model: CompanyDetailModel,
+                as: 'companyDetail',
+                required: true,
+                attributes: ['businessType', 'businessName', 'description']
+              }
+            ]
+          },
+          {
             model: LocationDetailModel,
-            as: 'location-detail',
+            as: 'locationDetail',
             required: true,
             attributes: ['title']
           },
@@ -1273,7 +1294,7 @@ export class LocationController {
         ],
         attributes: ['id', 'companyId', 'name', 'phone', 'email', 'photo', 'address', 'ward', 'district', 'city']
       });
-      console.log('Location::', location);
+     // console.log('Location::', location);
 
       if (location) {
         locations = await LocationModel.findAll({
@@ -1297,19 +1318,44 @@ export class LocationController {
             'workingTimes.weekday'
           ]
         });
+        //Get Data reply type merge
         location = location.dataValues;
         location = {
           ...location,
-          ...location['location-detail'].dataValues,
+          ...location['locationDetail'].dataValues,
           ...location['locationImages'].dataValues,
-          ['location-detail']: undefined
+          ...location['company'].dataValues,
+          ...location['company']['companyDetail'].dataValues,
+          ['locationDetail']: undefined,
+          ['company']:undefined,
+          ['companyDetail']:undefined,
         };
 
-        console.log('Location working time::', locationWorkingTimes);
+      //  console.log('Location working time::', locationWorkingTimes);
         staffs = await StaffModel.findAll({
           raw: true,
           where: { mainLocationId: data.locationId },
           attributes: ['firstName', 'avatarPath']
+        });
+
+        services = await CateServiceModel.findAll({
+          where: { companyId: location.companyId },
+          attributes: ['name'],
+          include: [
+            {
+              model: ServiceModel,
+              as: 'services',
+              required: true,
+              attributes:['name','duration','sale_price']
+            }
+          ],
+          group: [
+            'CateServiceModel.id',
+            'services.id',
+            'services.duration',
+            'services.name',  
+            'services.sale_price'
+          ]
         });
       } else {
         location = {};
@@ -1318,6 +1364,7 @@ export class LocationController {
       const locationDetails = {
         locations: locations,
         locationInformation: location,
+        services: services,
         staffs: staffs
       };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));

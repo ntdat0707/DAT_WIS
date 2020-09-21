@@ -857,12 +857,12 @@ export class StaffController {
   public getStaffsServices = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput = { ...req.body };
-      console.log('ServiceIDs:::', req.body);
+    //  console.log('ServiceIDs:::', req.body);
       const validateErrors = validate(dataInput, getStaffMultipleService);
       // const serviceIds = req.query.serviceIds;
 
       const listService = dataInput.serviceIds.toString().split(',').join();
-      console.log('listService::', listService);
+    //  console.log('listService::', listService);
 
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
