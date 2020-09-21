@@ -966,17 +966,17 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      let keywords: string = req.query.keyword as string;
-      keywords = keywords
-        .split(' ')
-        .filter((x: string) => x)
-        .join(' ');
-
+      let keywords: string = req.query.keyword as string ;
       let keywordsQuery: string = '';
 
       if (!keywords) {
         keywordsQuery = "'%%'";
       } else {
+        keywords = keywords
+        .split(' ')
+        .filter((x: string) => x)
+        .join(' ');
+
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
 
@@ -986,7 +986,7 @@ export class LocationController {
             model: LocationDetailModel,
             as: 'locationDetail',
             required: true,
-            attributes: { exclude: ['createdAt', 'updateAt', 'deleteAt'] }
+            attributes: {exclude: ['id', 'createdAt', 'updateAt', 'deleteAt']}
           },
           {
             model: CompanyModel,
@@ -1146,8 +1146,6 @@ export class LocationController {
         return location;
       });
 
-      // console.log(locationResults);
-
       if (
         req.query.latitude &&
         req.query.longitude &&
@@ -1193,10 +1191,8 @@ export class LocationController {
         });
       }
 
-      // console.log(locationResults);
-
       const locationIds = locationResults.map((item: any) => item.id);
-
+      console.log(locationIds);
       const query: FindOptions = {
         where: {
           id: {
@@ -1208,6 +1204,8 @@ export class LocationController {
       if (!!locationIds.length) {
         query.order = Sequelize.literal(`(${locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')}) DESC`);
       }
+
+      console.log(await LocationModel.findAll(query));
 
       const locations = await paginate(
         LocationModel,
@@ -1221,6 +1219,7 @@ export class LocationController {
         Number(paginateOptions.pageSize),
         Number(paginateOptions.pageNum)
       );
+
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
       return next(error);
