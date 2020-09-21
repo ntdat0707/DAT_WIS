@@ -4,7 +4,7 @@ import HttpStatus from 'http-status-codes';
 import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
-import _ from 'lodash';
+import _, { find } from 'lodash';
 require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
@@ -20,7 +20,8 @@ import {
   LocationStaffModel,
   AppointmentModel,
   AppointmentDetailModel,
-  CompanyModel
+  CompanyModel,
+  LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -29,7 +30,7 @@ import {
   filterStaffSchema,
   createStaffsSchema,
   updateStaffSchema,
-  getStaffMultipleService
+  getStaffMultipleService,
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
@@ -894,4 +895,67 @@ export class StaffController {
       return error;
     }
   };
+
+/**
+   * @swagger
+   * definitions:
+   *   StaffAvailableTimeSlots:
+   *       required:
+   *           - staffId
+   *           - workDay
+   *       properties:
+   *           staffId:
+   *               type: string
+   *           workDay:
+   *               type: string
+   */
+
+  /**
+   * @swagger
+   * /staff/get-staff-available-time:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: getStaffAvailableTimeSlots
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/StaffAvailableTimeSlots'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getStaffAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = { ...req.body }
+      console.log('staffid:::', req.body.staffId);
+      const validateErrors = validate(dataInput.staffId, staffIdSchema);
+      const workDay = dataInput.workDay;
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const working_time = await  StaffModel.findAll({
+        //attributes:['weekday','start_time','end_time'],
+        include: [
+          {
+            model: LocationModel,
+          }
+        ],
+        where: {
+          id: dataInput.staffId
+        }
+      })
+      if (!working_time){
+        return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
+      }
+      res.status(HttpStatus.OK).send(buildSuccessMessage(working_time));
+    } catch(error){
+      return error;
+    }
+  } 
 }
+

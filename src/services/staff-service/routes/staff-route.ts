@@ -26,6 +26,7 @@ export class StaffRoutes {
       this.staffController.updateStaff
     );
     this.router.post('/get-staffs-multiple-service',this.staffController.getStaffsServices);
+    this.router.post('/get-staff-available-time',this.staffController.getStaffAvailableTimeSlots);
   }
 
 }
