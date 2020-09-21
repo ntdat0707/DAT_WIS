@@ -1331,10 +1331,10 @@ export class LocationController {
         location = location.dataValues;
         location = {
           ...location,
-          ...location['locationDetail'].dataValues,
-          ...location['locationImages'].dataValues,
-          ...location['company'].dataValues,
-          ...location['company']['companyDetail'].dataValues,
+          ...(location['locationDetail'] || {dataValues: {}}).dataValues,
+          ...(location['locationImages'] || {dataValues: {}}).dataValues,
+          ...(location['company'] || {dataValues: {}}).dataValues,
+          ...(location['company']['companyDetail'] || {dataValues: {}}).dataValues,
           ['locationDetail']: undefined,
           ['company']: undefined,
           ['companyDetail']: undefined
