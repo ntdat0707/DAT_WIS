@@ -970,7 +970,7 @@ export class LocationController {
       let keywordsQuery: string = '';
 
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywords = keywords
         .split(' ')
@@ -985,8 +985,14 @@ export class LocationController {
           {
             model: LocationDetailModel,
             as: 'locationDetail',
-            required: true,
+            required: false,
             attributes: {exclude: ['id', 'createdAt', 'updateAt', 'deleteAt']}
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            attributes: ['path', 'is_avatar']
           },
           {
             model: CompanyModel,
@@ -1018,9 +1024,8 @@ export class LocationController {
                         {
                           [Op.or]: [
                             Sequelize.literal('"company->cateServices"."name" notnull'),
-                            Sequelize.literal(
-                              `unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`
-                            )
+                            Sequelize.literal('"company"."business_name" notnull')
+
                           ]
                         }
                       ]
@@ -1099,6 +1104,9 @@ export class LocationController {
         group: [
           'LocationModel.id',
           'locationDetail.id',
+          'locationImages.id',
+          'locationImages.path',
+          'locationImages.is_avatar',
           'company.id',
           'company->cateServices.id',
           'company->cateServices->services.id'
@@ -1140,9 +1148,11 @@ export class LocationController {
         }
         location = {
           ...location,
-          ...location['locationDetail'].dataValues,
+          ...(location['locationImages'] || {dataValues: {}}).dataValues,
+          ...(location['locationDetail'] || {dataValues: {}}).dataValues,
           ['locationDetail']: undefined
         };
+
         return location;
       });
 
@@ -1192,7 +1202,6 @@ export class LocationController {
       }
 
       const locationIds = locationResults.map((item: any) => item.id);
-      console.log(locationIds);
       const query: FindOptions = {
         where: {
           id: {
@@ -1204,8 +1213,6 @@ export class LocationController {
       if (!!locationIds.length) {
         query.order = Sequelize.literal(`(${locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')}) DESC`);
       }
-
-      console.log(await LocationModel.findAll(query));
 
       const locations = await paginate(
         LocationModel,
@@ -1222,6 +1229,7 @@ export class LocationController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
+      console.log(error);
       return next(error);
     }
   };
@@ -1258,6 +1266,7 @@ export class LocationController {
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       let staffs: any = [];
       let locations: any = [];
+      // let locationWorkingTimes: any = [];
       let services: any = [];
       let location: any = await LocationModel.findOne({
         // raw: true,
