@@ -853,6 +853,7 @@ export class ServiceController {
         isAllowedMarketplace: body.isAllowedMarketplace,
         status: body.status
       };
+
       if (body.deleteImages && body.deleteImages.length > 0) {
         const serviceImages = await ServiceImageModel.findAll({
           where: {

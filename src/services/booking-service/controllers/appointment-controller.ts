@@ -23,7 +23,8 @@ import {
   AppointmentDetailModel,
   AppointmentModel,
   LocationModel,
-  AppointmentDetailStaffModel
+  AppointmentDetailStaffModel,
+  AppointmentGroupModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -74,6 +75,10 @@ export class AppointmentController extends BaseController {
    *           locationId:
    *               type: string
    *           customerId:
+   *               type: string
+   *           appointmentGroupId:
+   *               type: string
+   *           relatedAppointmentId:
    *               type: string
    *           bookingSource:
    *               type: string
@@ -129,7 +134,9 @@ export class AppointmentController extends BaseController {
         customerId: req.body.customerId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
-        bookingSource: req.body.bookingSource
+        bookingSource: req.body.bookingSource,
+        appointmentGroupId: req.body.appointmentGroupId,
+        relatedAppointmentId: req.body.relatedAppointmentId
       };
       //validate req.body
       const validateErrors = validate(dataInput, createAppointmentSchema);
@@ -166,15 +173,56 @@ export class AppointmentController extends BaseController {
         dataInput.locationId
       );
       //insert appointment here
-      const appointmentData = {
+      const appointmentData: any = {
         id: appointmentId,
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
         customerId: dataInput.customerId ? dataInput.customerId : null,
         bookingSource: dataInput.bookingSource
       };
+
+      if (dataInput.appointmentGroupId) {
+        const appointmentGroup = await AppointmentGroupModel.findOne({
+          where: {
+            id: dataInput.appointmentGroupId
+          }
+        });
+
+        if (!appointmentGroup) {
+          return next(
+            new CustomError(
+              bookingErrorDetails.E_2007(`appointment group ${dataInput.appointmentGroupId} not found`),
+              HttpStatus.NOT_FOUND
+            )
+          );
+        }
+        appointmentData.appointmentGroupId = dataInput.appointmentGroupId;
+      }
+
       // start transaction
       transaction = await sequelize.transaction();
+      if (dataInput.relatedAppointmentId) {
+        const appointment = await AppointmentModel.findOne({
+          where: {
+            id: dataInput.relatedAppointmentId
+          }
+        });
+
+        if (!appointment) {
+          return next(
+            new CustomError(
+              bookingErrorDetails.E_2002(`appointment ${dataInput.relatedAppointmentId} not found`),
+              HttpStatus.NOT_FOUND
+            )
+          );
+        }
+        const appointmentGroupId = uuidv4();
+        appointmentData.appointmentGroupId = appointmentGroupId;
+        await AppointmentModel.update(
+          { appointmentGroupId: appointmentGroupId },
+          { where: { id: dataInput.relatedAppointmentId }, transaction }
+        );
+      }
       await AppointmentModel.create(appointmentData, { transaction });
 
       const appointmentDetailData: any[] = [];
