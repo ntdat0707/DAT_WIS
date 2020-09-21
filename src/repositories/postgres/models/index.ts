@@ -19,6 +19,8 @@ import { LocationWorkingHourModel } from './location-working-hour-model';
 import { CompanyDetailModel } from './company-detail-model';
 import { LocationDetailModel } from './location-detail-model';
 import { LocationImageModel } from './location-image';
+import { CountryModel } from './country-model';
+import { CityModel } from './city-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -116,6 +118,9 @@ CustomerModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' }
 LocationModel.hasMany(LocationImageModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'locationImages' });
 LocationImageModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
+CountryModel.hasMany(CityModel, { foreignKey: 'countryId', sourceKey: 'id', as: 'cities' });
+CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
+
 export {
   sequelize,
   StaffModel,
@@ -133,5 +138,7 @@ export {
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
   LocationWorkingHourModel,
-  LocationImageModel
+  LocationImageModel,
+  CountryModel,
+  CityModel
 };

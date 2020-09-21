@@ -1,16 +1,18 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class CountryModel extends Model {
+class CityModel extends Model {
   public id: string;
-  public name!: string;
+  public name: string;
+  public cityCode!: string;
+  public countryId!: string;
   public countryCode!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-CountryModel.init(
+CityModel.init(
   {
     id: {
       field: 'id',
@@ -21,12 +23,17 @@ CountryModel.init(
     name: {
       field: 'name',
       type: DataTypes.STRING,
+      allowNull: true
+    },
+    countryId: {
+      field: 'country_id',
+      type: DataTypes.UUIDV4,
       allowNull: false
     },
     countryCode: {
       field: 'country_code',
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
@@ -47,10 +54,10 @@ CountryModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'country',
+    tableName: 'city',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { CountryModel };
+export { CityModel };

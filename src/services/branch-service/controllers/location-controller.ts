@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 require('dotenv').config();
-
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 // import { customerErrorDetails } from '../../../utils/response-messages/error-details';
@@ -16,7 +15,8 @@ import {
   CateServiceModel,
   ServiceModel,
   LocationWorkingHourModel,
-  CompanyDetailModel
+  CompanyDetailModel,
+  CountryModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -747,7 +747,7 @@ export class LocationController {
           );
         }
 
-       // console.log('Pass Working Location::');
+        // console.log('Pass Working Location::');
 
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
@@ -765,7 +765,7 @@ export class LocationController {
           }
         });
 
-       // console.log('Pass exist Location::');
+        // console.log('Pass exist Location::');
 
         const workingsTimes = (body.workingTimes as []).map((value: any) => ({
           locationId: params.locationId,
@@ -782,7 +782,7 @@ export class LocationController {
         }
       }
 
-     // console.log('Pass workingTImes::');
+      // console.log('Pass workingTImes::');
 
       const data: any = {
         name: body.name ? body.name : location.name,
@@ -984,7 +984,7 @@ export class LocationController {
         include: [
           {
             model: LocationDetailModel,
-            as: 'location-detail',
+            as: 'locationDetail',
             required: true,
             attributes: { exclude: ['createdAt', 'updateAt', 'deleteAt'] }
           },
@@ -1098,7 +1098,7 @@ export class LocationController {
         attributes: { exclude: ['CreatedAt', 'updatedAt', 'deletedAt'] },
         group: [
           'LocationModel.id',
-          'location-detail.id',
+          'locationDetail.id',
           'company.id',
           'company->cateServices.id',
           'company->cateServices->services.id'
@@ -1140,13 +1140,13 @@ export class LocationController {
         }
         location = {
           ...location,
-          ...location['location-detail'].dataValues,
-          ['location-detail']: undefined
+          ...location['locationDetail'].dataValues,
+          ['locationDetail']: undefined
         };
         return location;
       });
 
-     // console.log(locationResults);
+      // console.log(locationResults);
 
       if (
         req.query.latitude &&
@@ -1259,7 +1259,6 @@ export class LocationController {
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       let staffs: any = [];
       let locations: any = [];
-      let locationWorkingTimes: any = [];
       let services: any = [];
       let location: any = await LocationModel.findOne({
         // raw: true,
@@ -1269,7 +1268,7 @@ export class LocationController {
             model: CompanyModel,
             as: 'company',
             required: true,
-            attributes:['ownerId'],
+            attributes: ['ownerId'],
             include: [
               {
                 model: CompanyDetailModel,
@@ -1282,19 +1281,21 @@ export class LocationController {
           {
             model: LocationDetailModel,
             as: 'locationDetail',
-            required: true,
+            required: false,
             attributes: ['title']
           },
           {
             model: LocationImageModel,
             as: 'locationImages',
-            where: { locationId: data.locationId },
-            attributes: ['path', 'is_avatar']
+            //where: { locationId: data.locationId },
+            required: false,
+            attributes: ['path', 'is_avatar'],
+            limit: 10
           }
         ],
         attributes: ['id', 'companyId', 'name', 'phone', 'email', 'photo', 'address', 'ward', 'district', 'city']
       });
-     // console.log('Location::', location);
+      // console.log('Location::', location);
 
       if (location) {
         locations = await LocationModel.findAll({
@@ -1327,11 +1328,11 @@ export class LocationController {
           ...location['company'].dataValues,
           ...location['company']['companyDetail'].dataValues,
           ['locationDetail']: undefined,
-          ['company']:undefined,
-          ['companyDetail']:undefined,
+          ['company']: undefined,
+          ['companyDetail']: undefined
         };
 
-      //  console.log('Location working time::', locationWorkingTimes);
+        //  console.log('Location working time::', locationWorkingTimes);
         staffs = await StaffModel.findAll({
           raw: true,
           where: { mainLocationId: data.locationId },
@@ -1346,16 +1347,10 @@ export class LocationController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes:['name','duration','sale_price']
+              attributes: ['name', 'duration', 'sale_price']
             }
           ],
-          group: [
-            'CateServiceModel.id',
-            'services.id',
-            'services.duration',
-            'services.name',  
-            'services.sale_price'
-          ]
+          group: ['CateServiceModel.id', 'services.id', 'services.duration', 'services.name', 'services.sale_price']
         });
       } else {
         location = {};
