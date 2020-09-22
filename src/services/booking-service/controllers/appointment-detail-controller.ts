@@ -15,7 +15,8 @@ import {
   ResourceModel,
   StaffModel,
   LocationModel,
-  CustomerModel
+  CustomerModel,
+  CustomerWisereModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -268,6 +269,11 @@ export class AppointmentDetailController extends BaseController {
               {
                 model: CustomerModel,
                 as: 'customer',
+                required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
                 required: false
               }
             ]

@@ -17,7 +17,8 @@ import {
   ServiceModel,
   ResourceModel,
   LocationModel,
-  CustomerModel
+  CustomerModel,
+  CustomerWisereModel
 } from '../../../repositories/postgres/models';
 
 import { createAppointmentGroupSchema, appointmentGroupIdSchema } from '../configs/validate-schemas';
@@ -224,6 +225,11 @@ export class AppointmentGroupController extends BaseController {
                 model: CustomerModel,
                 as: 'customer',
                 required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
+                required: false
               }
             ]
           },
@@ -302,6 +308,11 @@ export class AppointmentGroupController extends BaseController {
               {
                 model: CustomerModel,
                 as: 'customer'
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
+                required: false
               },
               {
                 model: AppointmentDetailModel,

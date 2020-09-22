@@ -34,11 +34,40 @@ const createAppointmentSchema = Joi.object({
     })
     .required()
     .label('locationId'),
+  customerWisereId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('customerWisereId'),
+  date: Joi.string().isoDate().required(),
+  bookingSource: Joi.string()
+    .valid(...Object.keys(AppointmentBookingSource))
+    .required(),
+  appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
+  appointmentGroupId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('appointmentGroupId'),
+  relatedAppointmentId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('relatedAppointmentId')
+});
+
+const customerCreateAppointmentSchema = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
   customerId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .label('customerId'),
+    .label('customerWisereId'),
   date: Joi.string().isoDate().required(),
   bookingSource: Joi.string()
     .valid(...Object.keys(AppointmentBookingSource))
@@ -233,5 +262,6 @@ export {
   updateAppointmentDetailSchema,
   appointmentDetailIdSchema,
   createAppointmentGroupSchema,
-  appointmentGroupIdSchema
+  appointmentGroupIdSchema,
+  customerCreateAppointmentSchema
 };

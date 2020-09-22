@@ -24,7 +24,8 @@ import {
   AppointmentModel,
   LocationModel,
   AppointmentDetailStaffModel,
-  AppointmentGroupModel
+  AppointmentGroupModel,
+  CustomerWisereModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -33,9 +34,11 @@ import {
   updateAppointmentStatusSchema,
   appointmentCancelReasonSchema,
   updateAppointmentSchema,
-  appointmentIdSchema
+  appointmentIdSchema,
+  customerCreateAppointmentSchema
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
+import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 export class AppointmentController extends BaseController {
   /**
    * @swagger
@@ -74,7 +77,7 @@ export class AppointmentController extends BaseController {
    *       properties:
    *           locationId:
    *               type: string
-   *           customerId:
+   *           customerWisereId:
    *               type: string
    *           appointmentGroupId:
    *               type: string
@@ -131,7 +134,7 @@ export class AppointmentController extends BaseController {
     try {
       const dataInput = {
         locationId: req.body.locationId,
-        customerId: req.body.customerId,
+        customerWisereId: req.body.customerWisereId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
         bookingSource: req.body.bookingSource,
@@ -154,13 +157,15 @@ export class AppointmentController extends BaseController {
         );
       }
 
-      if (dataInput.customerId) {
-        const customer = await CustomerModel.findOne({ where: { id: dataInput.customerId, companyId } });
-        if (!customer) {
+      if (dataInput.customerWisereId) {
+        const customerWisere = await CustomerWisereModel.findOne({
+          where: { id: dataInput.customerWisereId, companyId }
+        });
+        if (!customerWisere) {
           return next(
             new CustomError(
               customerErrorDetails.E_3001(
-                `Can not find customer ${dataInput.customerId} in location ${dataInput.locationId}`
+                `Can not find customerWisere ${dataInput.customerWisereId} in location ${dataInput.locationId}`
               ),
               HttpStatus.BAD_REQUEST
             )
@@ -177,7 +182,7 @@ export class AppointmentController extends BaseController {
         id: appointmentId,
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
-        customerId: dataInput.customerId ? dataInput.customerId : null,
+        customerWisereId: dataInput.customerWisereId ? dataInput.customerWisereId : null,
         bookingSource: dataInput.bookingSource
       };
 
@@ -320,6 +325,11 @@ export class AppointmentController extends BaseController {
                 model: CustomerModel,
                 as: 'customer',
                 required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
+                required: false
               }
             ]
           },
@@ -435,6 +445,11 @@ export class AppointmentController extends BaseController {
               {
                 model: CustomerModel,
                 as: 'customer',
+                required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
                 required: false
               }
             ]
@@ -623,6 +638,11 @@ export class AppointmentController extends BaseController {
               {
                 model: CustomerModel,
                 as: 'customer',
+                required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
                 required: false
               }
             ]
@@ -927,6 +947,328 @@ export class AppointmentController extends BaseController {
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointment));
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerCreateAppointmentDetail:
+   *       required:
+   *           - serviceId
+   *           - resourceId
+   *           - staffIds
+   *           - startTime
+   *       properties:
+   *           serviceId:
+   *               type: string
+   *           resourceId:
+   *               type: string
+   *           staffIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *           startTime:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
+   *
+   */
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerCreateAppointment:
+   *       required:
+   *           - locationId
+   *           - date
+   *           - appointmentDetails
+   *           - bookingSource
+   *       properties:
+   *           locationId:
+   *               type: string
+   *           customerId:
+   *               type: string
+   *           appointmentGroupId:
+   *               type: string
+   *           relatedAppointmentId:
+   *               type: string
+   *           bookingSource:
+   *               type: string
+   *               enum: [MARKETPLACE, STAFF]
+   *           date:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
+   *           appointmentDetails:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CustomerCreateAppointmentDetail'
+   *
+   */
+
+  /**
+   * @swagger
+   * /booking/appointment/customer-create-appointment:
+   *   post:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: customerCreateAppointment
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerCreateAppointment'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       403:
+   *         description: Forbidden
+   *       500:
+   *         description: Internal server errors
+   */
+  /**
+   *  Steps:
+   *    1. Validate format body data
+   *    2. Check customer exist
+   *    3. Check service, staff, resource match input data
+   *    4. create appointment and appointment detail
+   */
+  public customerCreateAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const dataInput = {
+        locationId: req.body.locationId,
+        customerId: req.body.customerId,
+        date: req.body.date,
+        appointmentDetails: req.body.appointmentDetails,
+        bookingSource: req.body.bookingSource,
+        appointmentGroupId: req.body.appointmentGroupId,
+        relatedAppointmentId: req.body.relatedAppointmentId
+      };
+      //validate req.body
+      const validateErrors = validate(dataInput, customerCreateAppointmentSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+
+      const location = await LocationModel.findOne({
+        where: {
+          id: dataInput.locationId
+        }
+      });
+
+      if (!location) {
+        return next(
+          new CustomError(
+            locationErrorDetails.E_1000(`Can not find location ${dataInput.locationId}`),
+            HttpStatus.BAD_REQUEST
+          )
+        );
+      }
+
+      if (dataInput.customerId) {
+        const customer = await CustomerModel.findOne({ where: { id: dataInput.customerId } });
+        if (!customer) {
+          return next(
+            new CustomError(
+              customerErrorDetails.E_3001(`Can not find customer ${dataInput.customerId}`),
+              HttpStatus.BAD_REQUEST
+            )
+          );
+        }
+      }
+      const appointmentId = uuidv4();
+      const appointmentDetails = await this.verifyAppointmentDetails(
+        dataInput.appointmentDetails,
+        dataInput.locationId
+      );
+      //insert appointment here
+      const appointmentData: any = {
+        id: appointmentId,
+        locationId: dataInput.locationId,
+        status: EAppointmentStatus.NEW,
+        customerId: dataInput.customerId ? dataInput.customerId : null,
+        bookingSource: dataInput.bookingSource
+      };
+
+      if (dataInput.appointmentGroupId) {
+        const appointmentGroup = await AppointmentGroupModel.findOne({
+          where: {
+            id: dataInput.appointmentGroupId
+          }
+        });
+
+        if (!appointmentGroup) {
+          return next(
+            new CustomError(
+              bookingErrorDetails.E_2007(`appointment group ${dataInput.appointmentGroupId} not found`),
+              HttpStatus.NOT_FOUND
+            )
+          );
+        }
+        appointmentData.appointmentGroupId = dataInput.appointmentGroupId;
+      }
+
+      // start transaction
+      transaction = await sequelize.transaction();
+      if (dataInput.relatedAppointmentId) {
+        const appointment = await AppointmentModel.findOne({
+          where: {
+            id: dataInput.relatedAppointmentId
+          }
+        });
+
+        if (!appointment) {
+          return next(
+            new CustomError(
+              bookingErrorDetails.E_2002(`appointment ${dataInput.relatedAppointmentId} not found`),
+              HttpStatus.NOT_FOUND
+            )
+          );
+        }
+        const appointmentGroupId = uuidv4();
+        appointmentData.appointmentGroupId = appointmentGroupId;
+        await AppointmentModel.update(
+          { appointmentGroupId: appointmentGroupId },
+          { where: { id: dataInput.relatedAppointmentId }, transaction }
+        );
+      }
+      await AppointmentModel.create(appointmentData, { transaction });
+
+      const appointmentDetailData: any[] = [];
+      const appointmentDetailStaffData = [];
+      const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
+      const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      for (let i = 0; i < appointmentDetails.length; i++) {
+        serviceDataNotify.push({
+          id: appointmentDetails[i].serviceId,
+          time: {
+            start: appointmentDetails[i].startTime,
+            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+          }
+        });
+        if (appointmentDetails[i].resourceId)
+          resourceDataNotify.push({
+            id: appointmentDetails[i].resourceId,
+            time: {
+              start: appointmentDetails[i].startTime,
+              end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+            }
+          });
+        staffDataNotify.push({
+          ids: appointmentDetails[i].staffIds,
+          time: {
+            start: appointmentDetails[i].startTime,
+            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
+          }
+        });
+        const appointmentDetailId = uuidv4();
+        appointmentDetailData.push({
+          id: appointmentDetailId,
+          appointmentId,
+          serviceId: appointmentDetails[i].serviceId,
+          resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
+          startTime: appointmentDetails[i].startTime,
+          duration: appointmentDetails[i].duration
+        });
+        for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
+          appointmentDetailStaffData.push({
+            appointmentDetailId,
+            staffId: appointmentDetails[i].staffIds[j]
+          });
+        }
+      }
+      await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
+        transaction
+      });
+      await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      // const findQuery: FindOptions = {
+      //   where: { id: appointmentId },
+      //   include: [
+      //     {
+      //       model: AppointmentDetailModel,
+      //       as: 'appointmentDetails',
+      //       include: [
+      //         {
+      //           model: ServiceModel,
+      //           as: 'service'
+      //         },
+      //         {
+      //           model: ResourceModel,
+      //           as: 'resource'
+      //         },
+      //         {
+      //           model: StaffModel.scope('safe'),
+      //           as: 'staffs',
+      //           through: { attributes: [] }
+      //         }
+      //       ]
+      //     }
+      //   ],
+      //   transaction
+      // };
+      // if (dataInput.customerId)
+      //   findQuery.include.push({
+      //     model: CustomerModel,
+      //     as: 'customer'
+      //   });
+      const query: FindOptions = {
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { id: appointmentId },
+            include: [
+              {
+                model: LocationModel,
+                as: 'location',
+                required: true
+              },
+              {
+                model: CustomerModel,
+                as: 'customer',
+                required: false
+              }
+            ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          }
+        ],
+        transaction
+      };
+      const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
+      await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      //commit transaction
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
