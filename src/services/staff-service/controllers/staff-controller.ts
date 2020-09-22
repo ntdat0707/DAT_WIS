@@ -12,6 +12,8 @@ import { CustomError } from '../../../utils/error-handlers';
 import { staffErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
+import {iterator} from '../../../utils/iterator';
+import {timeSlots} from '../../../utils/time-slots';
 import {
   sequelize,
   StaffModel,
@@ -33,6 +35,8 @@ import {
   getStaffMultipleService,
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
+import { func } from 'joi';
+import { time } from 'cron';
 
 export class StaffController {
   /**
@@ -936,31 +940,67 @@ export class StaffController {
       const dataInput = { ...req.body };
       console.log('staffid:::', req.body.staffId);
       const validateErrors = validate(dataInput.staffId, staffIdSchema);
-      //const workDay = dataInput.workDay;
+      const workDay = dataInput.workDay;
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const working_time = await  StaffModel.findAll({
-        //attributes:['weekday','startTime','endTime'],
+      const workingTime = await  StaffModel.findOne({
+        attributes: [],
         include: [
           {
             model: LocationModel,
             as:'workingLocations',
             required: true,
+            through: { attributes: [] },
             include: [
               {
                 model: LocationWorkingHourModel,
                 as: 'workingTimes',
+                attributes: ['weekday','startTime','endTime','isEnabled']
               }
             ]
           },
         ],
         where: {
           id: dataInput.staffId
-        }
-      });
-      if (!working_time){
+        },
+        raw: false,
+        nest: true
+      })
+      const preData = JSON.stringify(workingTime.toJSON());
+      const simplyData = JSON.parse(preData);
+      const data = simplyData.workingLocations["0"].workingTimes;
+      //console.log(data);
+      const dayOfWeek = moment(workDay).day();
+      let day;
+      switch(dayOfWeek){
+        case 0: 
+           day = 'sunday';
+           break;
+        case 1:
+           day = 'monday';
+           break;
+        case 2:
+           day = 'tuesday';
+           break;
+        case 3:
+           day = 'wednesday';
+           break;
+        case 4:
+           day = 'thursday';
+           break;
+        case 5:
+           day = 'friday';
+           break;
+        case 6:
+           day = 'saturday';
+      }
+      const workTime = iterator(data,day);
+      //console.log(workTime);
+      const timeSlot = timeSlots(workTime.startTime,workTime.endTime,5);
+      //console.log(timeSlot);
+      if (!workingTime){
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
-      res.status(HttpStatus.OK).send(buildSuccessMessage(working_time));
+      res.status(HttpStatus.OK).send(buildSuccessMessage(data));
     } catch(error){
       return error;
     }
