@@ -65,6 +65,37 @@ build-image: &build-image
           doctl registry login
       services:
         - docker
+build-2: &build-2
+  - step:
+      caches:
+        - package-node
+      # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
+      size: 2x
+      name: Install doctl Digital Ocean
+      script:
+        # Get ip address
+        # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
+        - ip addr show
+        - apt update && apt install -y netcat
+        - |
+          pwd
+          cd ~
+          wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
+          tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
+          ls -a ~
+          ln -s ~/doctl /usr/local/bin/doctl
+
+        - |
+          cd $BITBUCKET_CLONE_DIR
+          cp ./env/staging.env ./.env
+          docker-compose up -d --build wisere
+          docker tag wisere registry.digitalocean.com/wisere/wisere
+        - |
+          doctl auth init -t 034fc3138ce0f18eb53248127c08c3fe481d1aeaec7f5323d4e64431171135ed
+          doctl registry login
+      services:
+        - docker
+
 deploy: &deploy
   - step:
     name: deploy to server via ssh
@@ -80,6 +111,7 @@ pipelines:
   default:
     - <<: *lint
     - <<: *build-image
+    - <<: *build-2
     - <<: *deploy
   branches:
     master:
