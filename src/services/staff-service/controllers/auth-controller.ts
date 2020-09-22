@@ -163,7 +163,7 @@ export class AuthController {
           pipelineId: pipelineId1,
           name: "Demo Scheduled",
           rottingIn: 0,
-          order: 3
+          order: 4
         },
         {
           pipelineId: pipelineId2,
