@@ -12,8 +12,8 @@ import { CustomError } from '../../../utils/error-handlers';
 import { staffErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
-import {iterator} from '../../../utils/iterator';
-import {timeSlots} from '../../../utils/time-slots';
+import { iterator } from '../../../utils/iterator';
+import { timeSlots } from '../../../utils/time-slots';
 import {
   sequelize,
   StaffModel,
@@ -23,7 +23,8 @@ import {
   AppointmentModel,
   AppointmentDetailModel,
   CompanyModel,
-  LocationWorkingHourModel
+  LocationWorkingHourModel,
+  AppointmentDetailStaffModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -823,7 +824,7 @@ export class StaffController {
       return next(error);
     }
   };
- 
+
   /**
    * @swagger
    * definitions:
@@ -900,19 +901,19 @@ export class StaffController {
     }
   };
 
-/**
-   * @swagger
-   * definitions:
-   *   StaffAvailableTimeSlots:
-   *       required:
-   *           - staffId
-   *           - workDay
-   *       properties:
-   *           staffId:
-   *               type: string
-   *           workDay:
-   *               type: string
-   */
+  /**
+     * @swagger
+     * definitions:
+     *   StaffAvailableTimeSlots:
+     *       required:
+     *           - staffId
+     *           - workDay
+     *       properties:
+     *           staffId:
+     *               type: string
+     *           workDay:
+     *               type: string
+     */
 
   /**
    * @swagger
@@ -942,19 +943,19 @@ export class StaffController {
       const validateErrors = validate(dataInput.staffId, staffIdSchema);
       const workDay = dataInput.workDay;
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const workingTime = await  StaffModel.findOne({
+      const workingTime = await StaffModel.findOne({
         attributes: [],
         include: [
           {
             model: LocationModel,
-            as:'workingLocations',
+            as: 'workingLocations',
             required: true,
             through: { attributes: [] },
             include: [
               {
                 model: LocationWorkingHourModel,
                 as: 'workingTimes',
-                attributes: ['weekday','startTime','endTime','isEnabled']
+                attributes: ['weekday', 'startTime', 'endTime', 'isEnabled']
               }
             ]
           },
@@ -970,40 +971,58 @@ export class StaffController {
       const data = simplyData.workingLocations["0"].workingTimes;
       //console.log(data);
       const dayOfWeek = moment(workDay).day();
+      const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
       let day;
-      switch(dayOfWeek){
-        case 0: 
-           day = 'sunday';
-           break;
+      switch (dayOfWeek) {
+        case 0:
+          day = 'sunday';
+          break;
         case 1:
-           day = 'monday';
-           break;
+          day = 'monday';
+          break;
         case 2:
-           day = 'tuesday';
-           break;
+          day = 'tuesday';
+          break;
         case 3:
-           day = 'wednesday';
-           break;
+          day = 'wednesday';
+          break;
         case 4:
-           day = 'thursday';
-           break;
+          day = 'thursday';
+          break;
         case 5:
-           day = 'friday';
-           break;
+          day = 'friday';
+          break;
         case 6:
-           day = 'saturday';
+          day = 'saturday';
       }
-      const workTime = iterator(data,day);
-      //console.log(workTime);
-      const timeSlot = timeSlots(workTime.startTime,workTime.endTime,5);
-      //console.log(timeSlot);
-      if (!workingTime){
+      const workTime = iterator(data, day);
+      console.log(workTime);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 15);
+      console.log(timeSlot);
+      const doctorSchedule = await StaffModel.findAll({
+        attributes: [],
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            through: { attributes: [] },
+            attributes: ['duration',[sequelize.Sequelize.fn('DATE',sequelize.Sequelize.col('start_time')),'start_time']],
+            where: sequelize.Sequelize.where(sequelize.Sequelize.fn('Date',sequelize.Sequelize.col('start_time')),appointmentDay)
+          }
+        ],
+        where: {
+          id: dataInput.staffId
+        },
+        raw: false,
+        nest: true
+      })
+      const preData1 = JSON.stringify(doctorSchedule);
+      if (!workingTime) {
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
-      res.status(HttpStatus.OK).send(buildSuccessMessage(data));
-    } catch(error){
+      res.status(HttpStatus.OK).send(buildSuccessMessage(doctorSchedule));
+    } catch (error) {
       return error;
     }
-  } 
+  }
 }
-
