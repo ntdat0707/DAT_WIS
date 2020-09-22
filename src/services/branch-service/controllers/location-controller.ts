@@ -16,7 +16,7 @@ import {
   ServiceModel,
   LocationWorkingHourModel,
   CompanyDetailModel,
-  CountryModel
+  // CountryModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -907,7 +907,7 @@ export class LocationController {
 
   /**
    * @swagger
-   * /branch/location/market-place/get-location-by-service-provider:
+   * /branch/location/get-location-by-service-provider:
    *   get:
    *     tags:
    *       - Branch
@@ -966,16 +966,16 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      let keywords: string = req.query.keyword as string ;
+      let keywords: string = req.query.keyword as string;
       let keywordsQuery: string = '';
+      keywords = keywords
+      .split(' ')
+      .filter((x: string) => x)
+      .join(' ');
 
       if (!keywords) {
         keywordsQuery = '\'%%\'';
       } else {
-        keywords = keywords
-        .split(' ')
-        .filter((x: string) => x)
-        .join(' ');
 
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -986,13 +986,20 @@ export class LocationController {
             model: LocationDetailModel,
             as: 'locationDetail',
             required: false,
-            attributes: {exclude: ['id', 'createdAt', 'updateAt', 'deleteAt']}
+            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
           },
           {
             model: LocationImageModel,
             as: 'locationImages',
             required: false,
             attributes: ['path', 'is_avatar']
+          },
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: false,
+            attributes: { exclude: ['LocationServiceModel','createdAt', 'updatedAt', 'deletedAt'] },
+            where: Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
           },
           {
             model: CompanyModel,
@@ -1004,98 +1011,26 @@ export class LocationController {
                 model: CateServiceModel,
                 as: 'cateServices',
                 required: false,
-                attributes: ['name'],
-                include: [
-                  {
-                    model: ServiceModel,
-                    as: 'services',
-                    required: false,
-                    attributes: { exclude: ['createdAt', 'updatedAt', 'deleteAt'] },
-                    where: {
-                      [Op.and]: [
-                        {
-                          [Op.or]: [
-                            Sequelize.literal(
-                              `unaccent("company->cateServices->services"."name") ilike any(array[${keywordsQuery}])`
-                            ),
-                            Sequelize.literal('"company->cateServices->services"."name" notnull')
-                          ]
-                        },
-                        {
-                          [Op.or]: [
-                            Sequelize.literal('"company->cateServices"."name" notnull'),
-                            Sequelize.literal('"company"."business_name" notnull')
-
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                ]
+                attributes: ['name']
               }
             ]
           }
         ],
         where: {
-          [Op.or]: [
+          [Op.and]: [
+            (!keywords
+              ? Sequelize.literal(`unaccent("LocationModel"."city") ilike '%Ho Chi Minh%'`)
+              : undefined
+            ),
             {
-              [Op.and]: [
+              [Op.or]: [
+                Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
                 Sequelize.literal(
-                  `unaccent("company->cateServices->services"."name") ilike any(array[${keywordsQuery}])`
+                  `unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`
                 ),
-                Sequelize.literal('"company->cateServices"."name" notnull'),
-                Sequelize.literal('"company"."business_name" notnull'),
-                {
-                  [Op.or]: [
-                    Sequelize.literal('"LocationModel"."address" notnull'),
-                    Sequelize.literal('"LocationModel"."name" notnull')
-                  ]
-                }
-              ]
-            },
-            {
-              [Op.and]: [
-                Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(
-                  `unaccent("company->cateServices->services"."name") not ilike any(array[${keywordsQuery}])`
-                ),
-                Sequelize.literal('"company"."business_name" notnull'),
-                {
-                  [Op.or]: [
-                    Sequelize.literal('"LocationModel"."address" notnull'),
-                    Sequelize.literal('"LocationModel"."name" notnull')
-                  ]
-                }
-              ]
-            },
-            {
-              [Op.and]: [
                 Sequelize.literal(`unaccent("company"."business_name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("company->cateServices"."name") not ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(
-                  `unaccent("company->cateServices->services"."name") not ilike any(array[${keywordsQuery}])`
-                ),
-                {
-                  [Op.or]: [
-                    Sequelize.literal('"LocationModel"."address" notnull'),
-                    Sequelize.literal('"LocationModel"."name" notnull')
-                  ]
-                }
-              ]
-            },
-            {
-              [Op.and]: [
-                {
-                  [Op.or]: [
-                    Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
-                    Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`)
-                  ]
-                },
-                Sequelize.literal(`unaccent("company"."business_name") not ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("company->cateServices"."name") not ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(
-                  `unaccent("company->cateServices->services"."name") not ilike any(array[${keywordsQuery}])`
-                )
+                Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`),
               ]
             }
           ]
@@ -1105,11 +1040,12 @@ export class LocationController {
           'LocationModel.id',
           'locationDetail.id',
           'locationImages.id',
+          'services.id',
+          'services->LocationServiceModel.id',
           'locationImages.path',
           'locationImages.is_avatar',
           'company.id',
-          'company->cateServices.id',
-          'company->cateServices->services.id'
+          'company->cateServices.id'
         ]
       };
 
@@ -1135,12 +1071,6 @@ export class LocationController {
           if (location.company.cateServices && Array.isArray(location.company.cateServices)) {
             location.company.cateServices.map((cateService: any) => {
               cateService = cateService.dataValues;
-              if (cateService.services && Array.isArray(cateService.services)) {
-                location.service = cateService.services[0].dataValues;
-                cateService.services.map((service: any) => {
-                  return service.dataValues;
-                });
-              }
               return cateService;
             });
             location.company.cateServices = undefined;
@@ -1148,8 +1078,10 @@ export class LocationController {
         }
         location = {
           ...location,
-          ...(location['locationImages'] || {dataValues: {}}).dataValues,
-          ...(location['locationDetail'] || {dataValues: {}}).dataValues,
+          ...(location['locationImages'] || { dataValues: {} }).dataValues,
+          ...(location['locationDetail'] || { dataValues: {} }).dataValues,
+          service: (location['services'] || [])[0],
+          ['services']: undefined,
           ['locationDetail']: undefined
         };
 
@@ -1320,7 +1252,7 @@ export class LocationController {
           ],
           attributes: ['name', 'ward', 'district', 'city', 'address'],
           group: [
-            'LocationModel.id',
+            'Location Model.id',
             'workingTimes.id',
             'workingTimes.start_time',
             'workingTimes.end_time',
@@ -1331,10 +1263,10 @@ export class LocationController {
         location = location.dataValues;
         location = {
           ...location,
-          ...(location['locationDetail'] || {dataValues: {}}).dataValues,
-          ...(location['locationImages'] || {dataValues: {}}).dataValues,
-          ...(location['company'] || {dataValues: {}}).dataValues,
-          ...(location['company']['companyDetail'] || {dataValues: {}}).dataValues,
+          ...(location['locationDetail'] || { dataValues: {} }).dataValues,
+          ...(location['locationImages'] || { dataValues: {} }).dataValues,
+          ...(location['company'] || { dataValues: {} }).dataValues,
+          ...(location['company']['companyDetail'] || { dataValues: {} }).dataValues,
           ['locationDetail']: undefined,
           ['company']: undefined,
           ['companyDetail']: undefined
