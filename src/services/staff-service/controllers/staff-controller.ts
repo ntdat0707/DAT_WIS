@@ -939,16 +939,19 @@ export class StaffController {
       //const workDay = dataInput.workDay;
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const working_time = await  StaffModel.findAll({
-        //attributes:['weekday','start_time','end_time'],
+        //attributes:['weekday','startTime','endTime'],
         include: [
           {
             model: LocationModel,
             as:'workingLocations',
             required: true,
+            include: [
+              {
+                model: LocationWorkingHourModel,
+                as: 'workingTimes',
+              }
+            ]
           },
-          {
-            
-          }
         ],
         where: {
           id: dataInput.staffId
