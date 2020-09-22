@@ -3,6 +3,7 @@ require('dotenv').config();
 
 import { AppointmentController } from '../controllers/appointment-controller';
 import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
+import { isAuthenticated as isAuthenticatedCustomer } from '../../../utils/middlewares/customer/auth';
 export class AppointmentRoutes {
   public router: express.Router = express.Router();
   private appointmentController = new AppointmentController();
@@ -25,5 +26,10 @@ export class AppointmentRoutes {
       this.appointmentController.deleteAppointment
     );
     this.router.get('/get-appointment/:appointmentId?', isAuthenticated, this.appointmentController.getAppointment);
+    this.router.post(
+      '/customer-create-appointment',
+      isAuthenticatedCustomer,
+      this.appointmentController.customerCreateAppointment
+    );
   }
 }

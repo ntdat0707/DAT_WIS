@@ -6,6 +6,7 @@ import sequelize from '../configs/db-connector';
 class AppointmentModel extends Model {
   public id: string;
   public customerId: string;
+  public customerWisereId: string;
   public locationId!: string;
   public appointmentGroupId: string;
   public status!: string;
@@ -28,6 +29,11 @@ AppointmentModel.init(
     },
     customerId: {
       field: 'customer_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    customerWisereId: {
+      field: 'customer_wisere_id',
       type: DataTypes.UUIDV4,
       allowNull: true
     },
