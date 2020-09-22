@@ -933,7 +933,7 @@ export class StaffController {
    */
   public getStaffAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const dataInput = { ...req.body }
+      const dataInput = { ...req.body };
       console.log('staffid:::', req.body.staffId);
       const validateErrors = validate(dataInput.staffId, staffIdSchema);
       //const workDay = dataInput.workDay;
@@ -943,12 +943,17 @@ export class StaffController {
         include: [
           {
             model: LocationModel,
+            as:'workingLocations',
+            required: true,
+          },
+          {
+            
           }
         ],
         where: {
           id: dataInput.staffId
         }
-      })
+      });
       if (!working_time){
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
