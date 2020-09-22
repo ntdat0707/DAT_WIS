@@ -17,7 +17,7 @@ import {
   verifyAccessToken,
   verifyRefreshToken
 } from '../../../utils/jwt';
-import { sequelize, StaffModel, CompanyModel, LocationModel } from '../../../repositories/postgres/models';
+import { sequelize, StaffModel, CompanyModel, LocationModel, PipelineModel, PipelineStageModel } from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import {
@@ -109,6 +109,154 @@ export class AuthController {
       data.onboardStep = 0;
       await StaffModel.create({ ...data, ...{ isBusinessAccount: true, id: staffId } }, { transaction });
       await CompanyModel.create({ id: companyId, ownerId: staffId }, { transaction });
+      const pipelineId1 = uuidv4();
+      const pipelineId2 = uuidv4();
+      const pipelineId3 = uuidv4();
+      const pipelineId4 = uuidv4();
+      const dataPipeline = [
+        {
+          id: pipelineId1,
+          name: "Tradition",
+          rottingIn: 0,
+          staffId: staffId
+        },
+        {
+          id: pipelineId2,
+          name: "Basic",
+          rottingIn: 0,
+          staffId: staffId
+        },
+        {
+          id: pipelineId3,
+          name: "SMS branding name",
+          rottingIn: 0,
+          staffId: staffId
+        },
+        {
+          id: pipelineId4,
+          name: "Appointment",
+          rottingIn: 0,
+          staffId: staffId
+        }
+      ]
+      await PipelineModel.bulkCreate(dataPipeline, { transaction });
+      const dataStage = [
+        {
+          pipelineId: pipelineId1,
+          name: "Onsite",
+          rottingIn: 0,
+          order: 1
+        },
+        {
+          pipelineId: pipelineId1,
+          name: "Interactive",
+          rottingIn: 0,
+          order: 2
+        },
+        {
+          pipelineId: pipelineId1,
+          name: "Proposal made",
+          rottingIn: 0,
+          order: 3
+        },
+        {
+          pipelineId: pipelineId1,
+          name: "Demo Scheduled",
+          rottingIn: 0,
+          order: 3
+        },
+        {
+          pipelineId: pipelineId2,
+          name: "Lead-in",
+          rottingIn: 0,
+          order: 1
+        },
+        {
+          pipelineId: pipelineId2,
+          name: "Contact made",
+          rottingIn: 0,
+          order: 2
+        },
+        {
+          pipelineId: pipelineId2,
+          name: "Demo Scheduled",
+          rottingIn: 0,
+          order: 3
+        },
+        {
+          pipelineId: pipelineId2,
+          name: "Proposal made",
+          rottingIn: 0,
+          order: 4
+        },
+        {
+          pipelineId: pipelineId2,
+          name: "Negotiation Started",
+          rottingIn: 0,
+          order: 5
+        },
+        {
+          pipelineId: pipelineId3,
+          name: "Contact made",
+          rottingIn: 0,
+          order: 1
+        },
+        {
+          pipelineId: pipelineId3,
+          name: "SMS sent",
+          rottingIn: 0,
+          order: 2
+        },
+        {
+          pipelineId: pipelineId3,
+          name: "Filter",
+          rottingIn: 0,
+          order: 3
+        },
+        {
+          pipelineId: pipelineId3,
+          name: "Interactive",
+          rottingIn: 0,
+          order: 4
+        },
+        {
+          pipelineId: pipelineId3,
+          name: "Proposal made",
+          rottingIn: 0,
+          order: 5
+        },
+        {
+          pipelineId: pipelineId3,
+          name: "Negotiation Started",
+          rottingIn: 0,
+          order: 6
+        },
+        {
+          pipelineId: pipelineId4,
+          name: "New",
+          rottingIn: 0,
+          order: 1
+        },
+        {
+          pipelineId: pipelineId4,
+          name: "Confirmed",
+          rottingIn: 0,
+          order: 2
+        },
+        {
+          pipelineId: pipelineId4,
+          name: "Purchased",
+          rottingIn: 0,
+          order: 3
+        },
+        {
+          pipelineId: pipelineId4,
+          name: "Treatment Planning",
+          rottingIn: 0,
+          order: 4
+        }
+      ]
+      await PipelineStageModel.bulkCreate(dataStage, { transaction });
       //commit transaction
       await transaction.commit();
       const dataSendMail: IStaffRegisterAccountTemplate = {
