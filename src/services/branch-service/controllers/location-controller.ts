@@ -966,7 +966,7 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      let keywords: string = req.query.keyword as string;
+      let keywords: string = (req.query.keyword || '') as string;
       let keywordsQuery: string = '';
       keywords = keywords
       .split(' ')
@@ -995,13 +995,6 @@ export class LocationController {
             attributes: ['path', 'is_avatar']
           },
           {
-            model: ServiceModel,
-            as: 'services',
-            required: false,
-            attributes: { exclude: ['LocationServiceModel','createdAt', 'updatedAt', 'deletedAt'] },
-            where: Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
-          },
-          {
             model: CompanyModel,
             as: 'company',
             required: false,
@@ -1014,14 +1007,26 @@ export class LocationController {
                 attributes: ['name']
               }
             ]
+          },
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: false,
+            attributes: { exclude: ['LocationServiceModel','createdAt', 'updatedAt', 'deletedAt'] },
+            where: {
+              [Op.and]: [
+                Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal('"company->cateServices"."id" = "services"."cate_service_id"')
+              ]
+            }
           }
         ],
         where: {
           [Op.and]: [
-            (!keywords
-              ? Sequelize.literal(`unaccent("LocationModel"."city") ilike '%Ho Chi Minh%'`)
-              : undefined
-            ),
+            // (!keywords
+            //   ? Sequelize.literal(`unaccent("LocationModel"."city") ilike '%Ho Chi Minh%'`)
+            //   : undefined
+            // ),
             {
               [Op.or]: [
                 Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
@@ -1097,7 +1102,12 @@ export class LocationController {
         const latitude: number = +req.query.latitude;
         const longitude: number = +req.query.longitude;
         locationResults = locationResults.map((location: any) => {
-          location.distance = this.calcCrow(latitude, longitude, location.latitude, location.longitude).toFixed(2);
+          location.distance = this.calcCrow(
+            latitude,
+            longitude,
+            location.latitude,
+            location.longitude
+          ).toFixed(2);
           location.unitOfLength = 'kilometers';
           return location;
         });
@@ -1112,10 +1122,10 @@ export class LocationController {
       if (req.query.order === EOrder.PRICE_LOWEST) {
         locationResults = locationResults.sort((locationX: any, locationY: any) => {
           if (!locationX.service) {
-            return -1;
+            return 1;
           }
           if (!locationY.service) {
-            return 1;
+            return -1;
           }
           return locationX.service.salePrice - locationY.service.salePrice;
         });
@@ -1124,10 +1134,10 @@ export class LocationController {
       if (req.query.order === EOrder.PRICE_HIGHEST) {
         locationResults = locationResults.sort((locationX: any, locationY: any) => {
           if (!locationX.service) {
-            return -1;
+            return 1;
           }
           if (!locationY.service) {
-            return 1;
+            return -1;
           }
           return locationY.service.salePrice - locationX.service.salePrice;
         });
@@ -1142,9 +1152,11 @@ export class LocationController {
         }
       };
 
-      if (!!locationIds.length) {
-        query.order = Sequelize.literal(`(${locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')}) DESC`);
-      }
+      // if (!!locationIds.length) {
+      //   query.order = Sequelize.literal(`(${
+      //     locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')
+      //   }) DESC`);
+      // }
 
       const locations = await paginate(
         LocationModel,
