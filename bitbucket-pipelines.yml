@@ -89,8 +89,12 @@ pipelines:
   default:
     - <<: *lint
     - <<: *build-image
-    - <<: *deploy
   branches:
+    develop:
+      - <<: *lint
+      - <<: *build-image
+      - <<: *deploy
     master:
       - <<: *lint
       - <<: *build-image
+      - <<: *deploy
