@@ -936,7 +936,7 @@ export class StaffController {
       const dataInput = { ...req.body }
       console.log('staffid:::', req.body.staffId);
       const validateErrors = validate(dataInput.staffId, staffIdSchema);
-      const workDay = dataInput.workDay;
+      //const workDay = dataInput.workDay;
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const working_time = await  StaffModel.findAll({
         //attributes:['weekday','start_time','end_time'],
