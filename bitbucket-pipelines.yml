@@ -69,12 +69,21 @@ deploy: &deploy
   - step:
       name: deploy to server via ssh
       script:
-        - mkdir -p ~/.ssh
-        - cp ./.bitbucket-pipeline/known_hosts  ~/.ssh/known_hosts
-        - (umask  077 ; echo $SSH_KEY | base64 --decode > ~/.ssh/id_rsa)
-        - echo $SSH_KEY
-        - cat ~/.ssh/id_rsa
-        - ssh root@128.199.111.189  -T 'bash -s' < .bitbucket-pipeline/deploy.sh 'echo "connected to `host` as user"'
+        - pipe: atlassian/ssh-run:0.1.1
+          variables:
+            SSH_USER: 'root'
+            SERVER: '128.199.111.189'
+            MODE: 'script'
+            SSH_KEY: $SSH_KEY
+            EXTRA_ARGS: '-t'
+            COMMAND: './.bitbucket-pipeline/deploy.sh'
+            DEBUG: 'v'
+        # - mkdir -p ~/.ssh
+        # - cp ./.bitbucket-pipeline/known_hosts  ~/.ssh/known_hosts
+        # - (umask  077 ; echo $SSH_KEY | base64 --decode > ~/.ssh/id_rsa)
+        # - echo $SSH_KEY
+        # - cat ~/.ssh/id_rsa
+        # - ssh root@128.199.111.189  -T 'bash -s' < ./.bitbucket-pipeline/deploy.sh 'echo "connected to `host` as user"'
 
 pipelines:
   default:
