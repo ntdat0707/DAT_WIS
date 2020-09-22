@@ -15,8 +15,7 @@ import {
   CateServiceModel,
   ServiceModel,
   LocationWorkingHourModel,
-  CompanyDetailModel,
-  CountryModel
+  CompanyDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -34,6 +33,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 
+import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 export class LocationController {
   /**
    * @swagger
@@ -182,6 +182,7 @@ export class LocationController {
           path: x.location,
           isAvatar: index === 0 ? true : false
         }));
+
         await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
 
@@ -1336,8 +1337,19 @@ export class LocationController {
         staffs = await StaffModel.findAll({
           raw: true,
           where: { mainLocationId: data.locationId },
-          attributes: ['firstName', 'avatarPath']
+          attributes: ['firstName', 'avatarPath'],
+          order: Sequelize.literal(
+            'case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"'
+          )
         });
+
+        const serviceIds: any = (
+          await LocationServiceModel.findAll({
+            raw: true,
+            where: { locationId: data.locationId },
+            attributes: ['service_id']
+          })
+        ).map((serviceId: any) => serviceId.service_id);
 
         services = await CateServiceModel.findAll({
           where: { companyId: location.companyId },
@@ -1347,11 +1359,13 @@ export class LocationController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes: ['name', 'duration', 'sale_price']
+              attributes: ['id', 'name', 'duration', 'sale_price'],
+              where: { id: serviceIds }
             }
           ],
           group: ['CateServiceModel.id', 'services.id', 'services.duration', 'services.name', 'services.sale_price']
         });
+        console.log('Services:::', services.length);
       } else {
         location = {};
       }
@@ -1359,12 +1373,13 @@ export class LocationController {
       const locationDetails = {
         locations: locations,
         locationInformation: location,
-        services: services,
+        cateServices: services,
         staffs: staffs
       };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
-      return next(error);
+      return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      // return next(error);
     }
   };
 }
