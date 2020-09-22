@@ -70,7 +70,7 @@ deploy: &deploy
       name: deploy to server via ssh
       script:
         - mkdir -p ~/.ssh
-        - cat my_known_hosts >> ~/.ssh/known_hosts
+        # - cat my_known_hosts >> ~/.ssh/known_hosts
         - (umask  077 ; echo $SSH_KEY | base64 --decode > ~/.ssh/id_rsa)
         - echo $SSH_KEY
         - cat ~/.ssh/id_rsa
@@ -85,48 +85,3 @@ pipelines:
     master:
       - <<: *lint
       - <<: *build-image
-    develop:
-      - step:
-          caches:
-            - docker # adds docker layer caching
-            - package-node
-          name: install nodejs and yarn
-          script:
-            # Get ip address
-            # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
-            - ip addr show
-            - apt update && apt install -y netcat
-            - |
-              # Install Nodejs
-              nvm install $(cat .nvmrc)
-              nvm alias default $(cat .nvmrc)
-            - |
-              echo 'setup environment'
-              export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
-
-            - |
-              yarn 
-              cat .env
-              yarn build
-
-            - yarn run test
-          services:
-            - docker
-      - step:
-          name: deploy to server via ssh
-          script:
-            - mkdir -p ~/.ssh
-            # - cat my_known_hosts >> ~/.ssh/known_hosts
-            - (umask  077 ; echo $SSH_KEY | base64 --decode > ~/.ssh/id_rsa)
-            - echo $SSH_KEY
-            - cat ~/.ssh/id_rsa
-            - ssh root@221.133.14.73  -T 'bash -s' < .bitbucket-pipeline/deploy.sh 'echo "connected to `host` as user"'
-            # - pipe: atlassian/ssh-run:0.1.1
-            #   variables:
-            #     SSH_USER: 'root'
-            #     SERVER: '221.133.14.73'
-            #     MODE: 'script'
-            #     SSH_KEY: $MY_SSH_KEY
-            #     EXTRA_ARGS: '-t'
-            #     COMMAND: 'myscript.sh'
-            #     DEBUG: 'v'
