@@ -117,7 +117,6 @@ export class AppointmentDetailController extends BaseController {
           resourceId: data.resourceId ? data.resourceId : null,
           startTime: data.startTime,
           appointmentId: data.appointmentId,
-          abc: data.resourceId,
           duration: checkAppointmentDetail[0].duration
         },
         { transaction }

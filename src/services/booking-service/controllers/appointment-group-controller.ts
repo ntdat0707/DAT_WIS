@@ -33,7 +33,7 @@ export class AppointmentGroupController extends BaseController {
    *           - appointmentDetails
    *           - isPrimary
    *       properties:
-   *           customerId:
+   *           customerWisereId:
    *               type: string
    *           isPrimary:
    *               type: boolean
@@ -140,7 +140,7 @@ export class AppointmentGroupController extends BaseController {
           appointmentGroupId: newAppointmentGroupId,
           locationId: data.locationId,
           date: data.date,
-          customerId: apptData.customerId ? apptData.customerId : null,
+          customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
           isPrimary: apptData.isPrimary === true ? true : false
         });
 
