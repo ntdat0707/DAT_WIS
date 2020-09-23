@@ -52,7 +52,7 @@ build-image: &build-image
         - apt update && apt install -y netcat
         - |
           pwd
-          if test -f "~/doctl/doctl-1.45.1-linux-amd64.tar.gz"; then
+          if test -f ~/doctl/doctl-1.45.1-linux-amd64.tar.gz ; then
             echo "doctl exists."
           else
             mkdir -p ~/doctl && cd ~/doctl
@@ -97,7 +97,6 @@ deploy: &deploy
 pipelines:
   default:
     - <<: *lint
-    - <<: *build-image
   branches:
     develop:
       - <<: *lint
