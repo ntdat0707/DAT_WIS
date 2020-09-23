@@ -320,6 +320,11 @@ export class ServiceController {
             model: ResourceModel,
             as: 'resources',
             required: false
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
           }
         ]
       });
@@ -406,6 +411,11 @@ export class ServiceController {
             as: 'cateService',
             required: true,
             attributes: []
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
           }
         ]
       };

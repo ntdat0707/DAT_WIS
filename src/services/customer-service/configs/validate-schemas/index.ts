@@ -1,4 +1,19 @@
-import { createCustomerSchema } from './customer';
+import {
+  createCustomerWisereSchema,
+  customerWireseIdSchema,
+  updateCustomerWisereSchema,
+  loginSchema,
+  loginSocialSchema,
+  registerCustomerSchema
+} from './customer';
 
 import { updateShippingAddressSchema } from './shipping-address';
-export { createCustomerSchema, updateShippingAddressSchema };
+export {
+  createCustomerWisereSchema,
+  updateShippingAddressSchema,
+  customerWireseIdSchema,
+  updateCustomerWisereSchema,
+  loginSchema,
+  loginSocialSchema,
+  registerCustomerSchema
+};
