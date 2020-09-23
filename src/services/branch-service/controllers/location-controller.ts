@@ -1225,13 +1225,13 @@ export class LocationController {
             model: CompanyModel,
             as: 'company',
             required: true,
-            attributes: ['ownerId'],
+            attributes: ['id','ownerId'],
             include: [
               {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
                 required: true,
-                attributes: ['businessType', 'businessName', 'description']
+                attributes: ['id','businessType', 'businessName', 'description']
               }
             ]
           },
@@ -1239,14 +1239,14 @@ export class LocationController {
             model: LocationDetailModel,
             as: 'locationDetail',
             required: false,
-            attributes: ['title']
+            attributes: ['id','title']
           },
           {
             model: LocationImageModel,
             as: 'locationImages',
             //where: { locationId: data.locationId },
             required: false,
-            attributes: ['path', 'is_avatar'],
+            attributes: ['id','path', 'is_avatar'],
             limit: 10
           }
         ],
@@ -1266,7 +1266,7 @@ export class LocationController {
               attributes: ['weekday', 'startTime', 'endTime']
             }
           ],
-          attributes: ['name', 'ward', 'district', 'city', 'address'],
+          attributes: ['id','name', 'ward', 'district', 'city', 'address'],
           group: [
             'LocationModel.id',
             'workingTimes.id',
@@ -1306,7 +1306,7 @@ export class LocationController {
 
         cateServices = await CateServiceModel.findAll({
           where: { companyId: location.companyId },
-          attributes: ['name'],
+          attributes: ['id','name'],
           include: [
             {
               model: ServiceModel,

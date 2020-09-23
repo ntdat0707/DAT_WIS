@@ -1,10 +1,10 @@
 //
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op } from 'sequelize';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
-import _ from 'lodash';
+import _, { at } from 'lodash';
 require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
@@ -815,16 +815,16 @@ export class StaffController {
       return next(error);
     }
   };
- 
+
   /**
    * @swagger
    * definitions:
    *   StaffMultipleService:
    *       required:
-   *           - mainLocationId
+   *           - locationId
    *           - serviceIds
    *       properties:
-   *           mainLocationId:
+   *           locationId:
    *               type: string
    *           serviceIds:
    *               type: array
@@ -857,36 +857,40 @@ export class StaffController {
   public getStaffsServices = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput = { ...req.body };
-    //  console.log('ServiceIDs:::', req.body);
+      //  console.log('ServiceIDs:::', req.body);
       const validateErrors = validate(dataInput, getStaffMultipleService);
       // const serviceIds = req.query.serviceIds;
-
-      const listService = dataInput.serviceIds.toString().split(',').join();
-    //  console.log('listService::', listService);
-
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
-      const staffIds = await ServiceStaffModel.findAll({
-        where: {
-          serviceId: {
-            [Op.in]: dataInput.serviceIds
+      const staffs: any = await StaffModel.findAll({
+        include: [
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: true,
+            where: { id: dataInput.serviceIds },
+            through: { attributes: [] },
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt', 'isAllowedMarketplace'] }
+          },
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            required: true,
+            where: { id: dataInput.locationId },
+            through: { attributes: [] },
+            attributes: ['id', 'name']
           }
-        }
-      }).then((services) => services.map((service) => service.staffId));
-      const staffs = await StaffModel.findAll({
-        where: {
-          mainLocationId: dataInput.mainLocationId,
-          id: {
-            [Op.in]: staffIds
-          }
-        }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+        order: Sequelize.literal(
+          'case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"'
+        )
       });
-
       if (!staffs) {
         return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
       }
 
-      res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return error;
     }

@@ -113,12 +113,12 @@ export const createStaffsSchema = Joi.object({
 });
 
 const getStaffMultipleService = Joi.object({
-  mainLocationId: Joi.string()
+  locationId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
     .required()
-    .label('mainLocationId'),
+    .label('locationId'),
   serviceIds: Joi.array()
     .min(1)
     .items(
