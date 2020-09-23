@@ -39,6 +39,7 @@ build-image: &build-image
   - step:
       caches:
         - package-node
+        - docker
       # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
       size: 2x
       name: Install doctl Digital Ocean
@@ -68,6 +69,8 @@ build-image: &build-image
         - docker
 deploy: &deploy
   - step:
+      caches:
+        - docker
       name: deploy to server via ssh
       script:
         - pipe: atlassian/ssh-run:0.1.1
