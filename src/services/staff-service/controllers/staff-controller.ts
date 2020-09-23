@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
-import moment from 'moment';
+import moment, { duration } from 'moment';
 import _, { find } from 'lodash';
 require('dotenv').config();
 
@@ -969,7 +969,6 @@ export class StaffController {
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingLocations["0"].workingTimes;
-      //console.log(data);
       const dayOfWeek = moment(workDay).day();
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
       let day;
@@ -996,10 +995,7 @@ export class StaffController {
           day = 'saturday';
       }
       const workTime = iterator(data, day);
-      console.log(workTime);
       const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 15);
-      console.log(timeSlot);
-      console.log(appointmentDay);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
         include: [
@@ -1007,28 +1003,58 @@ export class StaffController {
             model: AppointmentDetailModel,
             as: 'appointmentDetails',
             through: { attributes: [] },
-            attributes: ['duration','start_time','status'],
+            attributes: ['duration', 'start_time', 'status'],
             where: {
               [Op.and]: [
-                sequelize.Sequelize.where(sequelize.Sequelize.fn('DATE',sequelize.Sequelize.col('start_time')),appointmentDay),
-                {[Op.not]: [
-                  {status: {[Op.like]: 'cancel'}}
-                ]}
-              ] 
+                sequelize.Sequelize.where(sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')), appointmentDay),
+                {
+                  [Op.not]: [
+                    { status: { [Op.like]: 'cancel' } }
+                  ]
+                }
+              ]
             }
           }
         ],
         where: {
-            id: dataInput.staffId,
+          id: dataInput.staffId,
         },
       })
-      const preData1 = JSON.stringify(doctorSchedule);
-      const preData2 = JSON.parse(preData1);
-      console.log(preData2.rows[0].appointmentDetails);
+      const preDataFirst = JSON.stringify(doctorSchedule);
+      const preDataSecond = JSON.parse(preDataFirst);
+      preDataSecond.rows[0].appointmentDetails.forEach((obj: any, i: any) => {
+        obj.start_time = moment(obj.start_time).format('HH:mm').toString();
+        let firstTimeSlot = parseInt(obj.start_time.split(':').join(''));
+        let finalTimeSlot = firstTimeSlot;
+        if (obj.duration >= 60) {
+          let hour = Math.floor(obj.duration / 60);
+          let minute = Math.round(((obj.duration / 60) - hour) * 60);
+          let finalTimeSlotM = (finalTimeSlot % 100) + minute;
+          let finalTimeSlotH = Math.floor(finalTimeSlot / 100) + hour;
+          let finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
+          finalTimeSlot = parseInt(finalTimeSlotString);
+        }
+
+        let finTimeSlot = moment(finalTimeSlot, "hmm").format('HH:mm');
+        let firstTime = moment(firstTimeSlot, "hmm").format('HH:mm');
+        if (timeSlot.hasOwnProperty(obj.start_time)) {
+          timeSlot[firstTime] = false;
+          timeSlot[finTimeSlot] = false;
+        }
+        Object.keys(timeSlot).forEach((key: any, index: any) => {
+          let indexStart = Object.keys(timeSlot).indexOf(firstTime);
+          let indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot)
+          if (index > indexStart && index < indexEndTime) {
+            timeSlot[key] = false;
+          }
+        });
+        //console.log(timeSlot);
+      });
+
       if (!workingTime) {
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
-      res.status(HttpStatus.OK).send(buildSuccessMessage(doctorSchedule));
+      res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot));
     } catch (error) {
       return error;
     }
