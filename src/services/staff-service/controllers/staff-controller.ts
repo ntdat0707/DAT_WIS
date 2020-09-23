@@ -999,24 +999,32 @@ export class StaffController {
       console.log(workTime);
       const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 15);
       console.log(timeSlot);
-      const doctorSchedule = await StaffModel.findAll({
+      console.log(appointmentDay);
+      const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
         include: [
           {
             model: AppointmentDetailModel,
             as: 'appointmentDetails',
             through: { attributes: [] },
-            attributes: ['duration',[sequelize.Sequelize.fn('DATE',sequelize.Sequelize.col('start_time')),'start_time']],
-            where: sequelize.Sequelize.where(sequelize.Sequelize.fn('Date',sequelize.Sequelize.col('start_time')),appointmentDay)
+            attributes: ['duration','start_time','status'],
+            where: {
+              [Op.and]: [
+                sequelize.Sequelize.where(sequelize.Sequelize.fn('DATE',sequelize.Sequelize.col('start_time')),appointmentDay),
+                {[Op.not]: [
+                  {status: {[Op.like]: 'cancel'}}
+                ]}
+              ] 
+            }
           }
         ],
         where: {
-          id: dataInput.staffId
+            id: dataInput.staffId,
         },
-        raw: false,
-        nest: true
       })
       const preData1 = JSON.stringify(doctorSchedule);
+      const preData2 = JSON.parse(preData1);
+      console.log(preData2.rows[0].appointmentDetails);
       if (!workingTime) {
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
