@@ -66,7 +66,12 @@ const locationErrorDetails = {
   E_1006(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1006', 'location Images Ids not exists', detail);
     return e;
-  }
+  },
+
+  E_1007(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1007', 'location detail is null', detail);
+    return e;
+  },
 };
 
 export { locationErrorDetails };

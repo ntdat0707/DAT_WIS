@@ -15,8 +15,7 @@ import {
   CateServiceModel,
   ServiceModel,
   LocationWorkingHourModel,
-  CompanyDetailModel,
-  // CountryModel
+  CompanyDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -34,6 +33,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 
+import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 export class LocationController {
   /**
    * @swagger
@@ -182,6 +182,7 @@ export class LocationController {
           path: x.location,
           isAvatar: index === 0 ? true : false
         }));
+
         await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
 
@@ -1215,7 +1216,7 @@ export class LocationController {
       let staffs: any = [];
       let locations: any = [];
       // let locationWorkingTimes: any = [];
-      let services: any = [];
+      let cateServices: any = [];
       let location: any = await LocationModel.findOne({
         // raw: true,
         where: { id: data.locationId },
@@ -1251,7 +1252,6 @@ export class LocationController {
         ],
         attributes: ['id', 'companyId', 'name', 'phone', 'email', 'photo', 'address', 'ward', 'district', 'city']
       });
-      // console.log('Location::', location);
 
       if (location) {
         locations = await LocationModel.findAll({
@@ -1296,7 +1296,15 @@ export class LocationController {
           order: Sequelize.literal('case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"')
         });
 
-        services = await CateServiceModel.findAll({
+        const serviceIds: any = (
+          await LocationServiceModel.findAll({
+            raw: true,
+            where: { locationId: data.locationId },
+            attributes: ['id', 'service_id']
+          })
+        ).map((serviceId: any) => serviceId.service_id);
+
+        cateServices = await CateServiceModel.findAll({
           where: { companyId: location.companyId },
           attributes: ['name'],
           include: [
@@ -1304,7 +1312,8 @@ export class LocationController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes: ['name', 'duration', 'sale_price']
+              attributes: ['id', 'name', 'duration', 'sale_price'],
+              where: { id: serviceIds }
             }
           ],
           group: ['CateServiceModel.id', 'services.id', 'services.duration', 'services.name', 'services.sale_price']
@@ -1316,12 +1325,13 @@ export class LocationController {
       const locationDetails = {
         locations: locations,
         locationInformation: location,
-        cateServices: services,
+        cateServices: cateServices,
         staffs: staffs
       };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
-      return next(error);
+      return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      // return next(error);
     }
   };
 }
