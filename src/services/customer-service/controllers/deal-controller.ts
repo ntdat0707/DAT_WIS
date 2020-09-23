@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
-import { validate } from '../../../utils/validator';
-import { PipelineModel, PipelineStageModel, sequelize } from '../../../repositories/postgres/models';
+import { baseValidateSchemas, validate } from '../../../utils/validator';
+import { CustomerModel, PipelineModel, PipelineStageModel, sequelize, DealModel } from '../../../repositories/postgres/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { 
   createPipelineSchema,
@@ -11,9 +11,12 @@ import {
   createPipelineStageSchema,
   updatePipelineStageSchema,
   pipelineStageIdSchema,
-  settingPipelineStageSchema
+  settingPipelineStageSchema,
+  filterDeal
 } from '../configs/validate-schemas/deal';
 import { pipelineErrorDetails, pipelineStageErrorDetails } from '../../../utils/response-messages/error-details/pipeline';
+import { FindOptions, Op } from 'sequelize';
+import { paginate } from '../../../utils/paginator';
 
 export class DealController {
   /**
@@ -206,8 +209,11 @@ export class DealController {
           new CustomError(pipelineErrorDetails.E_3101(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
         );
       }
-      const pipelineStage = await PipelineStageModel.findOne({ where: { pipelineId: pipelineId } });
+      const pipelineStage = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId } });
       if (pipelineStage) {
+        for(let i=0; i< pipelineStage.length; i++){
+          await DealModel.destroy({ where: { pipelineStageId: pipelineStage[i].id } });
+        }
         await PipelineStageModel.destroy({ where: { pipelineId: pipelineId } });
       }
       await PipelineModel.destroy({ where: { id: pipelineId } });
@@ -425,6 +431,10 @@ export class DealController {
           new CustomError(pipelineStageErrorDetails.E_3102(`pipelineStageId ${pipelineStageId} not found`), httpStatus.NOT_FOUND)
         );
       }
+      const deal = await DealModel.findOne({ where: { pipelineStageId: pipelineStageId } });
+      if(deal){
+        await DealModel.destroy({ where: { pipelineStageId: pipelineStageId } });
+      }
       await PipelineStageModel.destroy({ where: { id: pipelineStageId } });
       return res.status(httpStatus.OK).send();
     } catch (error) {
@@ -527,6 +537,122 @@ export class DealController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/deal/get-all-deal:
+   *   get:
+   *     summary: Get all deal
+   *     description: Get all deal
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: getAllDeal
+   *     parameters:
+   *       - in: query
+   *         name: customerId
+   *         schema:
+   *            type: string
+   *       - in: query
+   *         name: pipelineStageId
+   *         schema:
+   *            type: string
+   *       - in: query
+   *         name: pipelineId
+   *         schema:
+   *            type: string
+   *       - in: query
+   *         name: pageNum
+   *         required: true
+   *         schema:
+   *            type: integer
+   *       - in: query
+   *         name: pageSize
+   *         required: true
+   *         schema:
+   *            type: integer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAllDeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const conditions = {
+        staffId: res.locals.staffPayload.id,
+        customerId: req.query.customerId,
+        pipelineStageId: req.query.pipelineStageId,
+        pipelineId: req.query.pipelineId
+      }
+      let validateErrors : any;
+      validateErrors = validate(conditions, filterDeal);
+      if(validateErrors){
+        return new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors){
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const query: FindOptions = {
+        where: { createdBy: conditions.staffId },
+        include:[
+          {
+            model: CustomerModel,
+            as: 'customer'
+          }
+        ]
+      }
+      let conditionCustomerId = {};
+      if(conditions.customerId){
+        conditionCustomerId = { ...conditionCustomerId, ...{ [Op.eq]: conditions.customerId } };
+      }
+      if (conditionCustomerId.constructor === Object && Object.getOwnPropertySymbols(conditionCustomerId).length > 0) {
+        query.where = {
+          ...query.where,
+          ...{ customerId: conditionCustomerId }
+        }
+      }
+      let conditionPipelineStageId = {};
+      if(conditions.pipelineStageId){
+        conditionPipelineStageId = { ...conditionPipelineStageId, ...{ [Op.eq]: conditions.pipelineStageId } };
+      }
+      if (conditionPipelineStageId.constructor === Object && Object.getOwnPropertySymbols(conditionPipelineStageId).length > 0) {
+        query.where = {
+          ...query.where,
+          ...{ pipelineStageId: conditionPipelineStageId }
+        }
+      }
+      const conditionPipelineId = conditions.pipelineId
+        ?{
+          model: PipelineStageModel,
+          as: 'pipelineStage',
+          where: { pipelineId: conditions.pipelineId }
+        }
+        :{
+          model: PipelineStageModel,
+          as: 'pipelineStage'
+        }
+      query.include.push(conditionPipelineId);
+      const deal = await paginate(
+        DealModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
+    } catch (error) {
       return next(error);
     }
   };

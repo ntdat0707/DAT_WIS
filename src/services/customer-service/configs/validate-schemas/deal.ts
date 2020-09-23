@@ -60,7 +60,33 @@ const settingPipelineStageSchema = Joi.object({
   )
   .label('listPipelineStage')
 });
-  
+
+const filterDeal = Joi.object({
+  staffId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('staffId'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .allow(null, '')
+    .label('customerId'),
+  pipelineStageId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .allow(null, '')
+    .label('pipelineStageId'),
+  pipelineId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .allow(null, '')
+    .label('pipelineId')
+});
   
 export { 
   createPipelineSchema,
@@ -69,4 +95,6 @@ export {
   createPipelineStageSchema,
   updatePipelineStageSchema,
   pipelineStageIdSchema,
-  settingPipelineStageSchema };
+  settingPipelineStageSchema,
+  filterDeal
+};
