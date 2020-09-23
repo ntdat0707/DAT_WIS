@@ -51,7 +51,8 @@ build-image: &build-image
         - ip addr show
         - apt update && apt install -y netcat
         - |
-          pwd
+          ls -a ~/doctl
+        - |
           if [ -f ~/doctl/doctl-1.45.1-linux-amd64.tar.gz ]; then
             echo "doctl exists."
           else
@@ -59,7 +60,7 @@ build-image: &build-image
             wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
             tar xf ~/doctl/doctl-1.45.1-linux-amd64.tar.gz
           fi
-          ln -s ~/doctl/doctl /usr/local/bin/doctl
+        - ln -s ~/doctl/doctl /usr/local/bin/doctl
 
         - |
           cd $BITBUCKET_CLONE_DIR
