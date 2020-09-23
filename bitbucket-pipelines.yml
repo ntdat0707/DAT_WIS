@@ -4,7 +4,7 @@ options:
 definitions:
   caches:
     package-node: ./node_modules
-    doctl-cached: ~/doctl-1.45.1-linux-amd64.tar.gz
+    doctl-cached: ~/
 lint: &lint
   - step:
       caches:
@@ -52,11 +52,10 @@ build-image: &build-image
         - apt update && apt install -y netcat
         - |
           pwd
-          cd ~
+          mkdir -p ~/doctl && cd ~/doctl
           wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
-          tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
-          ls -a ~
-          ln -s ~/doctl /usr/local/bin/doctl
+          tar xf ~/doctl/doctl-1.45.1-linux-amd64.tar.gz
+          ln -s ~/doctl/doctl /usr/local/bin/doctl
 
         - |
           cd $BITBUCKET_CLONE_DIR
@@ -94,6 +93,7 @@ deploy: &deploy
 pipelines:
   default:
     - <<: *lint
+    - <<: *build-image
   branches:
     develop:
       - <<: *lint
