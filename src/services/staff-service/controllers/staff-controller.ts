@@ -1025,8 +1025,8 @@ export class StaffController {
       const preDataFirst = JSON.stringify(doctorSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
       console.log(preDataSecond);
-      console.log(preDataSecond.rows[0].appointmentDetails);
-      if (preDataSecond.rows[0].appointmentDetails.length != 0){
+      console.log(preDataSecond.count);
+      if (preDataSecond.count > 0){
       preDataSecond.rows[0].appointmentDetails.forEach((obj: any, i: any) => {
         obj.start_time = moment(obj.start_time).format('HH:mm').toString();
         let firstTimeSlot = parseInt(obj.start_time.split(':').join(''));
@@ -1076,13 +1076,11 @@ export class StaffController {
         //console.log(timeSlot);
       });
       res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot));
-    } else{
-      res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot));
-    }
-
+    } 
       if (!workingTime) {
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
+      res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot))
     } catch (error) {
       return error;
     }
