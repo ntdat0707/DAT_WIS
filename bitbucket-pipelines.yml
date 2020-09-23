@@ -63,6 +63,7 @@ build-image: &build-image
         - |
           doctl auth init -t 034fc3138ce0f18eb53248127c08c3fe481d1aeaec7f5323d4e64431171135ed
           doctl registry login
+          docker push registry.digitalocean.com/wisere/wisere
       services:
         - docker
 deploy: &deploy
