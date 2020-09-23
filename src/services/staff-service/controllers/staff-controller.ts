@@ -995,7 +995,9 @@ export class StaffController {
           day = 'saturday';
       }
       const workTime = iterator(data, day);
+      console.log(workTime);
       const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 15);
+      console.log(timeSlot);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
         include: [
@@ -1025,18 +1027,35 @@ export class StaffController {
       preDataSecond.rows[0].appointmentDetails.forEach((obj: any, i: any) => {
         obj.start_time = moment(obj.start_time).format('HH:mm').toString();
         let firstTimeSlot = parseInt(obj.start_time.split(':').join(''));
-        let finalTimeSlot = firstTimeSlot;
+        let finalTimeSlot;
         if (obj.duration >= 60) {
           let hour = Math.floor(obj.duration / 60);
           let minute = Math.round(((obj.duration / 60) - hour) * 60);
-          let finalTimeSlotM = (finalTimeSlot % 100) + minute;
-          let finalTimeSlotH = Math.floor(finalTimeSlot / 100) + hour;
+          let finalTimeSlotM = (firstTimeSlot % 100) + minute;
+          let finalTimeSlotH = Math.floor(firstTimeSlot / 100) + hour;
+          let finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
+          finalTimeSlot = parseInt(finalTimeSlotString);
+          
+        } else {
+          console.log(firstTimeSlot);
+          let hour = Math.floor(obj.duration / 60);
+          let minute = Math.round(((obj.duration / 60) - hour) * 60);
+          let finalTimeSlotM = (firstTimeSlot % 100) + minute;
+          let finalTimeSlotH= Math.round(firstTimeSlot/100) + hour;
+          if (finalTimeSlotM == 60){
+            finalTimeSlotH = Math.floor(firstTimeSlot / 100) + 1;
+            finalTimeSlotM = 0;
+          }
+          else if (finalTimeSlotM > 60) {
+            finalTimeSlotH = Math.floor(firstTimeSlot / 100) + 1;
+            finalTimeSlotM = finalTimeSlotM - 60;
+          }
           let finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
           finalTimeSlot = parseInt(finalTimeSlotString);
         }
-
-        let finTimeSlot = moment(finalTimeSlot, "hmm").format('HH:mm');
+        let finTimeSlot = moment(finalTimeSlot, "hhmm").format('HH:mm');
         let firstTime = moment(firstTimeSlot, "hmm").format('HH:mm');
+        console.log(firstTime);
         if (timeSlot.hasOwnProperty(obj.start_time)) {
           timeSlot[firstTime] = false;
           timeSlot[finTimeSlot] = false;
@@ -1044,10 +1063,11 @@ export class StaffController {
         Object.keys(timeSlot).forEach((key: any, index: any) => {
           let indexStart = Object.keys(timeSlot).indexOf(firstTime);
           let indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot)
-          if (index > indexStart && index < indexEndTime) {
+          if (index < indexEndTime && index > indexStart) {
             timeSlot[key] = false;
           }
         });
+        
         //console.log(timeSlot);
       });
 
