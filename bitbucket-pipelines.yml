@@ -99,7 +99,6 @@ deploy: &deploy
 pipelines:
   default:
     - <<: *lint
-    - <<: *build-image
   branches:
     develop:
       - <<: *lint
