@@ -4,7 +4,7 @@ options:
 definitions:
   caches:
     package-node: ./node_modules
-    doctl-cached: ~/
+    doctl-cached: ~/doctl
 lint: &lint
   - step:
       caches:
@@ -52,9 +52,13 @@ build-image: &build-image
         - apt update && apt install -y netcat
         - |
           pwd
-          mkdir -p ~/doctl && cd ~/doctl
-          wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
-          tar xf ~/doctl/doctl-1.45.1-linux-amd64.tar.gz
+          if test -f "~/doctl/doctl-1.45.1-linux-amd64.tar.gz"; then
+            echo "$FILE exists."
+          else
+            mkdir -p ~/doctl && cd ~/doctl
+            wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
+            tar xf ~/doctl/doctl-1.45.1-linux-amd64.tar.gz
+          fi
           ln -s ~/doctl/doctl /usr/local/bin/doctl
 
         - |
