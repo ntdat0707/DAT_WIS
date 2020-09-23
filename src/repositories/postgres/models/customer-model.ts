@@ -69,11 +69,6 @@ CustomerModel.init(
       allowNull: true,
       field: 'address'
     },
-    companyId: {
-      field: 'company_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
-    },
     password: {
       type: DataTypes.STRING,
       allowNull: true,

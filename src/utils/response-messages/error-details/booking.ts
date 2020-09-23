@@ -72,6 +72,36 @@ const bookingErrorDetails = {
   E_2006(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('2006', 'Appointment group must has only one primary appointment', detail);
     return e;
+  },
+  /**
+   * Appointment group not found
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2007(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2007', 'Appointment group not found', detail);
+    return e;
+  },
+  /**
+   * Location incorrect
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2008(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2008', 'Location incorrect in appointment', detail);
+    return e;
+  },
+  /**
+   * Disallow update customer
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2009(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2009', 'Disallow update customer in appointment', detail);
+    return e;
   }
 };
 

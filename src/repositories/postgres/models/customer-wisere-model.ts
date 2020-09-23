@@ -1,42 +1,30 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-class StaffModel extends Model {
+class CustomerWisereModel extends Model {
   public id: string;
   public firstName!: string;
   public lastName!: string;
   public gender: number;
-  public phone: string;
-  public password: string;
+  public phone!: string;
   public email: string;
   public birthDate: Date;
   public passportNumber: string;
-  public groupStaffId: string;
-  public isBusinessAccount: boolean;
-  public mainLocationId: string;
   public address: string;
-  public color: string;
-  public facebookId: string;
-  public googleId: string;
-  public appleId: string;
+  public companyId!: string;
+  public otpCode: string;
   public avatarPath: string;
-  public onboardStep: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-StaffModel.init(
+CustomerWisereModel.init(
   {
     id: {
       field: 'id',
       type: DataTypes.UUIDV4,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'password'
     },
     firstName: {
       type: DataTypes.STRING,
@@ -50,11 +38,12 @@ StaffModel.init(
     },
     gender: {
       type: DataTypes.TINYINT,
-      field: 'gender'
+      field: 'gender',
+      allowNull: false
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
       field: 'phone'
     },
     email: {
@@ -67,62 +56,29 @@ StaffModel.init(
       type: DataTypes.DATE,
       field: 'birth_date'
     },
-    isAllowedMarketPlace: {
-      type: DataTypes.BOOLEAN,
-      field: 'is_allowed_marketplace'
-    },
     passportNumber: {
       type: DataTypes.STRING,
       field: 'passport_number'
     },
-    groupStaffId: {
-      type: DataTypes.UUIDV4,
-      allowNull: true,
-      field: 'group_staff_id'
-    },
-    isBusinessAccount: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-      field: 'is_business_account'
-    },
-    mainLocationId: {
-      field: 'main_location_id',
-      type: DataTypes.UUIDV4
-    },
     address: {
-      field: 'address',
-      type: DataTypes.STRING
-    },
-    color: {
       type: DataTypes.STRING,
       allowNull: true,
-      field: 'color'
+      field: 'address'
     },
-    facebookId: {
+    companyId: {
+      field: 'company_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    otpCode: {
       type: DataTypes.STRING,
       allowNull: true,
-      field: 'facebook_id'
-    },
-    googleId: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'google_id'
-    },
-    appleId: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'apple_id'
+      field: 'otp_code'
     },
     avatarPath: {
       type: DataTypes.STRING,
       allowNull: true,
       field: 'avatar_path'
-    },
-    onboardStep: {
-      type: DataTypes.TINYINT,
-      field: 'onboard_step',
-      allowNull: true
     },
     createdAt: {
       field: 'created_at',
@@ -143,17 +99,11 @@ StaffModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'staff',
-    scopes: {
-      safe: {
-        attributes: {
-          exclude: ['password']
-        }
-      }
-    },
+    tableName: 'customer_wisere',
+    scopes: {},
     timestamps: true,
     paranoid: true
   }
 );
 
-export { StaffModel };
+export { CustomerWisereModel };
