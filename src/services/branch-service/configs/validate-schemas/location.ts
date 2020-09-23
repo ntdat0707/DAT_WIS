@@ -127,13 +127,16 @@ const updateLocationSchema = Joi.object({
   title: Joi.string().label('title'),
   deleteImages: Joi.array()
     .items(
-      Joi.string().guid({
-        version: ['uuidv4']
-      })
+      Joi
+        .string()
+        .guid({
+          version: ['uuidv4']
+        })
+        .allow(null, '')
     )
     .label('deleteImages')
     .allow(null),
-   
+
   // payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
   // parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
   status: Joi.string().required().label('status').valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE).label('status'),

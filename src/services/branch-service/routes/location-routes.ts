@@ -36,7 +36,7 @@ export class LocationRoutes {
     this.router.get('/market-place/get-location/:locationId', this.locationController.getLocationMarketPlace);
     this.router.get('/get-location-detail', this.locationController.getLocationDetail);
     this.router.get(
-      '/market-place/get-location-by-service-provider',
+      '/get-location-by-service-provider',
       this.locationController.getLocationByServiceProvider
     );
   }

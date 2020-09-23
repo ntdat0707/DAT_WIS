@@ -707,8 +707,8 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      let deleteImagesArray = body.deleteImages.toString().split(',');
-      body.deleteImages = deleteImagesArray;
+      const deleteImagesArray = (body.deleteImages || '').toString().split(',');
+      body.deleteImages = (deleteImagesArray[0] === '') ? [] : deleteImagesArray;
 
       validateErrors = validate(body, updateLocationSchema);
       if (validateErrors) {
@@ -842,6 +842,10 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
+      console.log(error.lineNumber);
+      console.log(error.name);
+      console.log(error.message);
+      console.log(error);
       return next(error);
     }
   };
@@ -1264,7 +1268,7 @@ export class LocationController {
           ],
           attributes: ['name', 'ward', 'district', 'city', 'address'],
           group: [
-            'Location Model.id',
+            'LocationModel.id',
             'workingTimes.id',
             'workingTimes.start_time',
             'workingTimes.end_time',
@@ -1288,7 +1292,8 @@ export class LocationController {
         staffs = await StaffModel.findAll({
           raw: true,
           where: { mainLocationId: data.locationId },
-          attributes: ['firstName', 'avatarPath']
+          attributes: ['firstName', 'avatarPath'],
+          order: Sequelize.literal('case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"')
         });
 
         services = await CateServiceModel.findAll({
@@ -1311,7 +1316,7 @@ export class LocationController {
       const locationDetails = {
         locations: locations,
         locationInformation: location,
-        services: services,
+        cateServices: services,
         staffs: staffs
       };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
