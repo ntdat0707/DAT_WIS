@@ -996,7 +996,7 @@ export class StaffController {
       }
       const workTime = iterator(data, day);
       console.log(workTime);
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 15);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       console.log(timeSlot);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
@@ -1024,6 +1024,8 @@ export class StaffController {
       })
       const preDataFirst = JSON.stringify(doctorSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
+      console.log(preDataSecond);
+      console.log(preDataSecond.rows[0].appointmentDetails);
       if (preDataSecond.rows[0].appointmentDetails.length != 0){
       preDataSecond.rows[0].appointmentDetails.forEach((obj: any, i: any) => {
         obj.start_time = moment(obj.start_time).format('HH:mm').toString();
@@ -1054,9 +1056,11 @@ export class StaffController {
           let finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
           finalTimeSlot = parseInt(finalTimeSlotString);
         }
-        let finTimeSlot = moment(finalTimeSlot, "hhmm").format('HH:mm');
+        let finTimeSlot = moment(finalTimeSlot, "hmm").format('HH:mm');
+        console.log(finTimeSlot);
         let firstTime = moment(firstTimeSlot, "hmm").format('HH:mm');
-        console.log(firstTime);
+        //console.log(firstTimeSlot);
+        //console.log(firstTime);
         if (timeSlot.hasOwnProperty(obj.start_time)) {
           timeSlot[firstTime] = false;
           timeSlot[finTimeSlot] = false;
