@@ -1253,6 +1253,7 @@ export class LocationController {
    *       500:
    *         description: Server internal errors
    */
+
   public getLocationMarketPlace = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const data = {
@@ -1339,7 +1340,7 @@ export class LocationController {
         staffs = await StaffModel.findAll({
           raw: true,
           where: { mainLocationId: data.locationId },
-          attributes: ['firstName', 'avatarPath'],
+          attributes: ['id', 'firstName', 'avatarPath'],
           order: Sequelize.literal('case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"')
         });
 
