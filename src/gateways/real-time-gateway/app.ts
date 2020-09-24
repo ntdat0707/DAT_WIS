@@ -136,30 +136,6 @@ export default class RealTimeGateway {
     }
   };
 
-  // private pushNotifyLockAppointmentData = (data: IManagementLockAppointmentData) => {
-  //   try {
-  //     if (data.services && data.services.locationId && data.services.data.length > 0) {
-  //       const room = SocketRoomPrefixes.APPOINTMENT + data.services.locationId;
-  //       this.io.to(room).emit(Events.LOCK_SERVICE, buildSocketSuccessMessage(data.services.data));
-  //     }
-  //     if (data.resources && data.resources.locationId && data.resources.data.length > 0) {
-  //       const room = SocketRoomPrefixes.APPOINTMENT + data.resources.locationId;
-  //       this.io.to(room).emit(Events.LOCK_RESOURCE, buildSocketSuccessMessage(data.resources.data));
-  //     }
-  //     if (data.staffs && data.staffs.length > 0) {
-  //       for (const staff of data.staffs) {
-  //         if (staff.locationId && staff.data && staff.data.length > 0) {
-  //           const room = SocketRoomPrefixes.APPOINTMENT + staff.locationId;
-  //           this.io.to(room).emit(Events.LOCK_STAFF, buildSocketSuccessMessage(staff.data));
-  //         }
-  //       }
-  //     }
-  //   } catch (error) {
-  //     const e = buildErrorDetail('0001', 'Internal server error', error.message || '');
-  //     logger.error({ label: LOG_LABEL, message: JSON.stringify(e) });
-  //   }
-  // };
-
   private pushNotifyLockAppointmentData = (data: IManagementLockAppointmentData[]) => {
     try {
       if (data && data.length > 0) {

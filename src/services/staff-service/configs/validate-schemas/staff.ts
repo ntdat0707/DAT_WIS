@@ -1,4 +1,4 @@
-import Joi from 'joi';
+import Joi, { required } from 'joi';
 import { EGender } from '../../../../utils/consts';
 
 const staffIdSchema = Joi.string()
@@ -129,4 +129,16 @@ const getStaffMultipleService = Joi.object({
     .label('serviceIds')
 });
 
-export { staffIdSchema, filterStaffSchema, getStaffMultipleService };
+const getStaffAvailableTimeSlots = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('mainLocationId'),
+  workDay: Joi.string()
+    .required()
+    .label('workDay')
+})
+
+export { staffIdSchema, filterStaffSchema, getStaffMultipleService,getStaffAvailableTimeSlots };
