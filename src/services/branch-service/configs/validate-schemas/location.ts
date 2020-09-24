@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EWeekDays, ELocationStatus, EPayment, EParkingStatus } from '../../../../utils/consts';
+import { EWeekDays, ELocationStatus, EPayment, EParkingStatus, EOrder } from '../../../../utils/consts';
 
 const createLocationSchema = Joi.object({
   name: Joi.string().required().label('name'),
@@ -172,9 +172,32 @@ const updateLocationSchema = Joi.object({
     .label('workingTimes')
 });
 
-const filterNearestSchema = Joi.object({
-  latitude: Joi.number().required().label('latitude'),
-  longitude: Joi.number().required().label('longitude')
+const searchSchema = Joi.object({
+  keywords: Joi.string()
+    .allow(null, '')
+    .label('keywords'),
+  customerId: Joi.string()
+    .uuid()
+    .allow(null, '')
+    .label('customerId'),
+  latitude: Joi.number()
+    .allow(null, '')
+    .label('latitude'),
+  longitude: Joi.number()
+    .allow(null, '')
+    .label('longitude'),
+  cityName: Joi.string()
+    .allow(null, '')
+    .label('cityName'),
+  order: Joi.string()
+    .valid(
+      EOrder.NEWEST,
+      EOrder.NEWEST,
+      EOrder.PRICE_LOWEST,
+      EOrder.PRICE_HIGHEST
+    )
+    .allow(null)
+    .label('order')
 });
 
 export {
@@ -182,7 +205,7 @@ export {
   locationIdSchema,
   createLocationWorkingTimeSchema,
   updateLocationSchema,
-  filterNearestSchema,
+  searchSchema,
   companyIdSchema,
   createLocationDetailSchema
 };

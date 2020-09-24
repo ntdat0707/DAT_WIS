@@ -15,14 +15,16 @@ import {
   CateServiceModel,
   ServiceModel,
   LocationWorkingHourModel,
-  CompanyDetailModel
+  CompanyDetailModel,
+  CustomerSearchModel
 } from '../../../repositories/postgres/models';
 
 import {
   createLocationSchema,
   locationIdSchema,
   createLocationWorkingTimeSchema,
-  updateLocationSchema
+  updateLocationSchema,
+  searchSchema
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -855,10 +857,7 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
-      console.log(error.lineNumber);
-      console.log(error.name);
-      console.log(error.message);
-      console.log(error);
+
       return next(error);
     }
   };
@@ -957,6 +956,10 @@ export class LocationController {
    *       schema:
    *          type: string
    *     - in: query
+   *       name: customerId
+   *       schema:
+   *          type: string
+   *     - in: query
    *       name: order
    *       schema:
    *          type: string
@@ -983,17 +986,35 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      let keywords: string = (req.query.keyword || '') as string;
+      const trimSpace = (text: string) => text.split(' ').filter((x: string) => x).join(' ');
+      const search = {
+        keywords: trimSpace(req.query.keyword.toString()),
+        customerId: req.query.customerId,
+        latitude: req.query.latitude,
+        longitude: req.query.longitude,
+        cityName: req.query.cityName,
+        order: req.query.order,
+      };
+
+      const validateErrorsSearch = validate(search, searchSchema);
+      if (validateErrorsSearch) {
+        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
+      }
+
+      if (search.customerId && search.keywords) {
+        req.query = {
+          ...req.query,
+          ...search
+        };
+        await this.createCustomerSearch(req, res, next);
+      }
+
+      const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
-      keywords = keywords
-      .split(' ')
-      .filter((x: string) => x)
-      .join(' ');
 
       if (!keywords) {
         keywordsQuery = '\'%%\'';
       } else {
-
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
 
@@ -1039,22 +1060,14 @@ export class LocationController {
           }
         ],
         where: {
-          [Op.and]: [
-            // (!keywords
-            //   ? Sequelize.literal(`unaccent("LocationModel"."city") ilike '%Ho Chi Minh%'`)
-            //   : undefined
-            // ),
-            {
-              [Op.or]: [
-                Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(
-                  `unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`
-                ),
-                Sequelize.literal(`unaccent("company"."business_name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`),
-              ]
-            }
+          [Op.or]: [
+            Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
+            Sequelize.literal(
+              `unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`
+            ),
+            Sequelize.literal(`unaccent("company"."business_name") ilike any(array[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`),
           ]
         },
         attributes: { exclude: ['CreatedAt', 'updatedAt', 'deletedAt'] },
@@ -1075,7 +1088,7 @@ export class LocationController {
         queryLocations.where = {
           ...queryLocations.where,
           city: {
-            [Op.iLike]: `%${req.query.cityName}%`
+            [Op.iLike]: `%${search.cityName}%`
           }
         };
       }
@@ -1111,13 +1124,13 @@ export class LocationController {
       });
 
       if (
-        req.query.latitude &&
-        req.query.longitude &&
-        !Number.isNaN(+req.query.latitude) &&
-        !Number.isNaN(+req.query.longitude)
+        search.latitude &&
+        search.longitude &&
+        !Number.isNaN(+search.latitude) &&
+        !Number.isNaN(+search.longitude)
       ) {
-        const latitude: number = +req.query.latitude;
-        const longitude: number = +req.query.longitude;
+        const latitude: number = +search.latitude;
+        const longitude: number = +search.longitude;
         locationResults = locationResults.map((location: any) => {
           location.distance = this.calcCrow(
             latitude,
@@ -1129,14 +1142,14 @@ export class LocationController {
           return location;
         });
 
-        if (req.query.order === EOrder.NEAREST) {
+        if (search.order === EOrder.NEAREST) {
           locationResults = locationResults.sort((locationX: any, locationY: any) => {
             return locationX.distance - locationY.distance;
           });
         }
       }
 
-      if (req.query.order === EOrder.PRICE_LOWEST) {
+      if (search.order === EOrder.PRICE_LOWEST) {
         locationResults = locationResults.sort((locationX: any, locationY: any) => {
           if (!locationX.service) {
             return 1;
@@ -1148,7 +1161,7 @@ export class LocationController {
         });
       }
 
-      if (req.query.order === EOrder.PRICE_HIGHEST) {
+      if (search.order === EOrder.PRICE_HIGHEST) {
         locationResults = locationResults.sort((locationX: any, locationY: any) => {
           if (!locationX.service) {
             return 1;
@@ -1197,6 +1210,28 @@ export class LocationController {
 
   private paginate = (array: any[], pageSize: number, pageNumber: number) => {
     return array.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+  };
+
+  private createCustomerSearch = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      transaction = await sequelize.transaction();
+
+      const customerSearch: any = [{
+        id: uuidv4(),
+        customerId : req.query.customerId,
+        keywords : req.query.keywords,
+        latitude : req.query.latitude,
+        longitude : req.query.longitude
+      }];
+      await CustomerSearchModel.bulkCreate(customerSearch, {transaction});
+      await transaction.commit();
+    } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
   };
 
   /**
