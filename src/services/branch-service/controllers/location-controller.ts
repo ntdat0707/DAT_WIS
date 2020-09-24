@@ -986,14 +986,18 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      const trimSpace = (text: string) => text.split(' ').filter((x: string) => x).join(' ');
+      const trimSpace = (text: string) =>
+        text
+          .split(' ')
+          .filter((x: string) => x)
+          .join(' ');
       const search = {
         keywords: trimSpace(req.query.keyword.toString()),
         customerId: req.query.customerId,
         latitude: req.query.latitude,
         longitude: req.query.longitude,
         cityName: req.query.cityName,
-        order: req.query.order,
+        order: req.query.order
       };
 
       const validateErrorsSearch = validate(search, searchSchema);
@@ -1061,12 +1065,10 @@ export class LocationController {
         where: {
           [Op.or]: [
             Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
-            Sequelize.literal(
-              `unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`
-            ),
+            Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("company"."business_name") ilike any(array[${keywordsQuery}])`),
             Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
-            Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`),
+            Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`)
           ]
         },
         attributes: { exclude: ['CreatedAt', 'updatedAt', 'deletedAt'] },
@@ -1122,12 +1124,7 @@ export class LocationController {
         return location;
       });
 
-      if (
-        search.latitude &&
-        search.longitude &&
-        !Number.isNaN(+search.latitude) &&
-        !Number.isNaN(+search.longitude)
-      ) {
+      if (search.latitude && search.longitude && !Number.isNaN(+search.latitude) && !Number.isNaN(+search.longitude)) {
         const latitude: number = +search.latitude;
         const longitude: number = +search.longitude;
         locationResults = locationResults.map((location: any) => {
@@ -1211,14 +1208,16 @@ export class LocationController {
     try {
       transaction = await sequelize.transaction();
 
-      const customerSearch: any = [{
-        id: uuidv4(),
-        customerId : req.query.customerId,
-        keywords : req.query.keywords,
-        latitude : req.query.latitude,
-        longitude : req.query.longitude
-      }];
-      await CustomerSearchModel.bulkCreate(customerSearch, {transaction});
+      const customerSearch: any = [
+        {
+          id: uuidv4(),
+          customerId: req.query.customerId,
+          keywords: req.query.keywords,
+          latitude: req.query.latitude,
+          longitude: req.query.longitude
+        }
+      ];
+      await CustomerSearchModel.bulkCreate(customerSearch, { transaction });
       await transaction.commit();
     } catch (error) {
       if (transaction) {
@@ -1273,7 +1272,7 @@ export class LocationController {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
                 required: true,
-                attributes: ['id', 'businessType', 'businessName', 'description']
+                attributes: ['businessType', 'businessName']
               }
             ]
           },
@@ -1281,14 +1280,14 @@ export class LocationController {
             model: LocationDetailModel,
             as: 'locationDetail',
             required: false,
-            attributes: ['id', 'title']
+            attributes: ['title', 'description']
           },
           {
             model: LocationImageModel,
             as: 'locationImages',
             //where: { locationId: data.locationId },
             required: false,
-            attributes: ['id', 'path', 'is_avatar'],
+            attributes: ['path', 'is_avatar'],
             limit: 10
           }
         ],
@@ -1337,7 +1336,9 @@ export class LocationController {
           raw: true,
           where: { mainLocationId: data.locationId },
           attributes: ['id', 'firstName', 'avatarPath'],
-          order: Sequelize.literal('case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"')
+          order: Sequelize.literal(
+            'case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"'
+          )
         });
 
         const serviceIds: any = (
