@@ -73,6 +73,11 @@ ServiceModel.init(
       allowNull: false,
       defaultValue: false
     },
+    allowGender: {
+      type: DataTypes.TINYINT,
+      field: 'allow_gender',
+      allowNull: true
+    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
