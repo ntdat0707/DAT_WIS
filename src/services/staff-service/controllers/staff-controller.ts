@@ -19,7 +19,8 @@ import {
   ServiceModel,
   LocationStaffModel,
   AppointmentModel,
-  AppointmentDetailModel
+  AppointmentDetailModel,
+  CompanyModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -804,6 +805,8 @@ export class StaffController {
         staffId: x.id
       }));
       await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
+      const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
+      await StaffModel.update({ onboardStep: 3 }, { where: { id: company.ownerId }, transaction });
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
@@ -893,6 +896,34 @@ export class StaffController {
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return error;
+    }
+  };
+  /**
+   * @swagger
+   * /staff/complete-onboard:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: complete-onboard
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: |
+   *           </br> xxx1: Something error
+   *           </br> xxx2: Internal server errors
+   */
+
+  public completeOnboard = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
+      await StaffModel.update({ onboardStep: 5 }, { where: { id: company.ownerId } });
+    } catch (error) {
+      return next(error);
     }
   };
 }
