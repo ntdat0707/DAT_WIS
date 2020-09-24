@@ -39,7 +39,7 @@ CustomerWisereModel.init(
     gender: {
       type: DataTypes.TINYINT,
       field: 'gender',
-      allowNull: false
+      allowNull: true
     },
     phone: {
       type: DataTypes.STRING,
