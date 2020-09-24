@@ -36,6 +36,8 @@ import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
+import { nomalizeRemoveAccent } from '../../../utils/text';
+
 export class LocationController {
   /**
    * @swagger
@@ -188,6 +190,8 @@ export class LocationController {
         await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
 
+      const pathName = nomalizeRemoveAccent(company.businessName) + '-' + nomalizeRemoveAccent(data.address);
+
       let dataLocationDetail = [];
       dataLocationDetail.push({
         id: uuidv4(),
@@ -199,7 +203,8 @@ export class LocationController {
         recoveryRooms: req.body.recoveryRooms,
         totalBookings: req.body.totalBookings,
         gender: req.body.gender,
-        openedAt: req.body.openedAt
+        openedAt: req.body.openedAt,
+        pathName: pathName
       });
       await LocationDetailModel.bulkCreate(dataLocationDetail, { transaction });
 
@@ -1016,7 +1021,7 @@ export class LocationController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }

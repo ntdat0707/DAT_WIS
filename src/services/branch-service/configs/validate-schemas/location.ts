@@ -8,7 +8,7 @@ const createLocationSchema = Joi.object({
   city: Joi.string().label('city'),
   district: Joi.string().label('district'),
   ward: Joi.string().label('ward'),
-  address: Joi.string().label('address'),
+  address: Joi.string().required().label('address'),
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
   workingTimes: Joi.array()
@@ -121,7 +121,7 @@ const updateLocationSchema = Joi.object({
   city: Joi.string().label('city'),
   district: Joi.string().label('district'),
   ward: Joi.string().label('ward'),
-  address: Joi.string().label('address'),
+  address: Joi.string().required().label('address'),
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
   title: Joi.string().label('title'),

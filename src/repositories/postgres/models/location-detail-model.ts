@@ -66,6 +66,11 @@ LocationDetailModel.init(
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
+    pathName: {
+      field: 'path_name',
+      type: DataTypes.STRING,
+      defaultValue: ''
+    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
