@@ -723,7 +723,7 @@ export class LocationController {
       }
 
       const deleteImagesArray = (body.deleteImages || '').toString().split(',');
-      body.deleteImages = (deleteImagesArray[0] === '') ? [] : deleteImagesArray;
+      body.deleteImages = deleteImagesArray[0] === '' ? [] : deleteImagesArray;
 
       validateErrors = validate(body, updateLocationSchema);
       if (validateErrors) {
@@ -1011,9 +1011,8 @@ export class LocationController {
 
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
-
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -1050,7 +1049,7 @@ export class LocationController {
             model: ServiceModel,
             as: 'services',
             required: false,
-            attributes: { exclude: ['LocationServiceModel','createdAt', 'updatedAt', 'deletedAt'] },
+            attributes: { exclude: ['LocationServiceModel', 'createdAt', 'updatedAt', 'deletedAt'] },
             where: {
               [Op.and]: [
                 Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
@@ -1132,12 +1131,7 @@ export class LocationController {
         const latitude: number = +search.latitude;
         const longitude: number = +search.longitude;
         locationResults = locationResults.map((location: any) => {
-          location.distance = this.calcCrow(
-            latitude,
-            longitude,
-            location.latitude,
-            location.longitude
-          ).toFixed(2);
+          location.distance = this.calcCrow(latitude, longitude, location.latitude, location.longitude).toFixed(2);
           location.unitOfLength = 'kilometers';
           return location;
         });
@@ -1273,13 +1267,13 @@ export class LocationController {
             model: CompanyModel,
             as: 'company',
             required: true,
-            attributes: ['id','ownerId'],
+            attributes: ['id', 'ownerId'],
             include: [
               {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
                 required: true,
-                attributes: ['id','businessType', 'businessName', 'description']
+                attributes: ['id', 'businessType', 'businessName', 'description']
               }
             ]
           },
@@ -1287,23 +1281,24 @@ export class LocationController {
             model: LocationDetailModel,
             as: 'locationDetail',
             required: false,
-            attributes: ['id','title']
+            attributes: ['id', 'title']
           },
           {
             model: LocationImageModel,
             as: 'locationImages',
             //where: { locationId: data.locationId },
             required: false,
-            attributes: ['id','path', 'is_avatar'],
+            attributes: ['id', 'path', 'is_avatar'],
             limit: 10
           }
         ],
         attributes: ['id', 'companyId', 'name', 'phone', 'email', 'photo', 'address', 'ward', 'district', 'city']
       });
+      console.log('Location::', location);
 
       if (location) {
         locations = await LocationModel.findAll({
-          where: { companyId: location.companyId, name: { [Op.like]: '%Elite%' } },
+          where: { companyId: location.companyId },
           include: [
             {
               model: LocationWorkingHourModel,
@@ -1314,7 +1309,7 @@ export class LocationController {
               attributes: ['weekday', 'startTime', 'endTime']
             }
           ],
-          attributes: ['id','name', 'ward', 'district', 'city', 'address'],
+          attributes: ['id', 'name', 'ward', 'district', 'city', 'address'],
           group: [
             'LocationModel.id',
             'workingTimes.id',
@@ -1323,7 +1318,8 @@ export class LocationController {
             'workingTimes.weekday'
           ]
         });
-        //Get Data reply type merge
+
+        console.log('Locations:::', locations);
         location = location.dataValues;
         location = {
           ...location,
@@ -1354,7 +1350,7 @@ export class LocationController {
 
         cateServices = await CateServiceModel.findAll({
           where: { companyId: location.companyId },
-          attributes: ['id','name'],
+          attributes: ['id', 'name'],
           include: [
             {
               model: ServiceModel,
@@ -1378,8 +1374,8 @@ export class LocationController {
       };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
-      return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
-      // return next(error);
+      // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      return next(error);
     }
   };
 }

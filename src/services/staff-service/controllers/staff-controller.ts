@@ -892,7 +892,6 @@ export class StaffController {
       if (!staffs) {
         return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
       }
-
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return error;
