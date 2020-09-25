@@ -24,7 +24,8 @@ import {
   locationIdSchema,
   createLocationWorkingTimeSchema,
   updateLocationSchema,
-  searchSchema
+  searchSchema,
+  pathNameSchema
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -192,7 +193,7 @@ export class LocationController {
 
       const pathName = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
 
-      let dataLocationDetail = [];
+      const dataLocationDetail = [];
       dataLocationDetail.push({
         id: uuidv4(),
         locationId: location.id,
@@ -238,7 +239,7 @@ export class LocationController {
 
       //commit transaction
       await transaction.commit();
-      let newLocation = await LocationModel.findOne({
+      const newLocation = await LocationModel.findOne({
         where: { id: location.id },
         include: [
           {
@@ -330,7 +331,7 @@ export class LocationController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
       const query: FindOptions = {
         where: {
           companyId: companyId
@@ -382,7 +383,7 @@ export class LocationController {
       const companyId = res.locals.staffPayload.companyId;
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
       const location: any = await LocationModel.findOne({
         where: {
           id: locationId,
@@ -408,10 +409,11 @@ export class LocationController {
           }
         ]
       });
-      if (!location)
+      if (!location) {
         return next(
           new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
         );
+      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
       return next(error);
@@ -444,7 +446,7 @@ export class LocationController {
       const { workingLocationIds } = res.locals.staffPayload;
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
       if (!(workingLocationIds as string[]).includes(locationId)) {
         return next(
           new CustomError(locationErrorDetails.E_1001(`Can not access to this ${locationId}`), HttpStatus.NOT_FOUND)
@@ -455,10 +457,11 @@ export class LocationController {
           id: locationId
         }
       });
-      if (!rowsDeleted)
+      if (!rowsDeleted) {
         return next(
           new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
         );
+      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(rowsDeleted));
     } catch (error) {
       return next(error);
@@ -534,7 +537,7 @@ export class LocationController {
         workingTimes: req.body.workingTimes
       };
       const validateErrors = validate(body, createLocationWorkingTimeSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
 
       if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
         return next(
@@ -743,13 +746,14 @@ export class LocationController {
       });
 
 
-      if (!location)
+      if (!location) {
         return next(
           new CustomError(
             locationErrorDetails.E_1000(`locationId ${params.locationId} not found`),
             HttpStatus.NOT_FOUND
           )
         );
+      }
 
       // start transaction
       transaction = await sequelize.transaction();
@@ -930,7 +934,8 @@ export class LocationController {
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) *
+      Math.cos(lat1) * Math.cos(lat2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c;
     return d;
@@ -938,11 +943,11 @@ export class LocationController {
 
   /**
    * @swagger
-   * /branch/location/get-location-by-service-provider:
+   * /branch/location/market-place/search:
    *   get:
    *     tags:
    *       - Branch
-   *     name: getLocationByServiceProvider
+   *     name: search
    *     parameters:
    *     - in: query
    *       name: keyword
@@ -988,7 +993,7 @@ export class LocationController {
    *         description: Internal server errors
    */
 
-  public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
+  public search = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // let locations: any[] = [];
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
@@ -1007,7 +1012,7 @@ export class LocationController {
           .filter((x: string) => x)
           .join(' ');
       const search = {
-        keywords: trimSpace(req.query.keyword.toString()),
+        keywords: trimSpace(req.query.keyword ? req.query.keywor.toString() : ''),
         customerId: req.query.customerId,
         latitude: req.query.latitude,
         longitude: req.query.longitude,
@@ -1129,9 +1134,9 @@ export class LocationController {
         }
         location = {
           ...location,
-          ...(location['locationImages'] || { dataValues: {} }).dataValues,
-          ...(location['locationDetail'] || { dataValues: {} }).dataValues,
-          service: (location['services'] || [])[0],
+          ...location.locationImages?.dataValues,
+          ...location.locationDetail?.dataValues,
+          service: (location.services || [])[0],
           ['services']: undefined,
           ['locationDetail']: undefined
         };
@@ -1209,7 +1214,6 @@ export class LocationController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
-      console.log(error);
       return next(error);
     }
   };
@@ -1218,7 +1222,7 @@ export class LocationController {
     return array.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
   };
 
-  private createCustomerSearch = async (req: Request, res: Response, next: NextFunction) => {
+  private createCustomerSearch = async (req: Request, _res: Response, next: NextFunction) => {
     let transaction = null;
     try {
       transaction = await sequelize.transaction();
@@ -1242,28 +1246,62 @@ export class LocationController {
     }
   };
 
-  // tslint:disable-next-line:no-shadowed-variable
-  private updatePathName= async (_: Request, __: Response, next: NextFunction)  => {
+  /**
+   * @swagger
+   * /branch/location/get-location-by-service-provider:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: getLocationByServiceProvider
+   *     parameters:
+   *     - in: query
+   *       name: keyword
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: latitude
+   *       schema:
+   *          type: number
+   *     - in: query
+   *       name: longitude
+   *       schema:
+   *          type: number
+   *     - in: query
+   *       name: cityName
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: customerId
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: order
+   *       schema:
+   *          type: string
+   *          enum: [ nearest, newest, price_lowest, price_highest ]
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const companies: any = await CompanyModel.findAll({
-        include: [{
-          model: LocationModel,
-          as: 'locations',
-          required: true,
-          include: [{
-            model: LocationDetailModel,
-            as: 'locationDetail',
-            required: true
-          }]
-        }]
-      });
-      for (const company of companies) {
-        for (const location of company.locations) {
-          const pathName = normalizeRemoveAccent(company.businessName) + '-' +  normalizeRemoveAccent(location.address);
-          await LocationDetailModel.update({pathName}, { where: { locationId: location.id }});
-        }
-      }
-    } catch(error) {
+      return await this.search(req, res, next);
+    } catch (error) {
       return next(error);
     }
   }
@@ -1287,26 +1325,25 @@ export class LocationController {
    *       500:
    *         description: Server internal errors
    */
-  public getLocationMarketPlace = async (_req: Request, res: Response, next: NextFunction) => {
+  public getLocationMarketPlace = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = {
-        pathName: _req.params.pathName
+        pathName: req.params.pathName
       };
-      const validateErrors = validate(data.pathName, locationIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const validateErrors = validate(data.pathName, pathNameSchema);
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
       let staffs: any = [];
       let locations: any = [];
       // let locationWorkingTimes: any = [];
       let cateServices: any = [];
       let location: any = await LocationModel.findOne({
         // raw: true,
-        where: { pathName: data.pathName },
         include: [
           {
             model: CompanyModel,
             as: 'company',
             required: true,
-            attributes: ['id', 'ownerId'],
+            attributes: ['ownerId'],
             include: [
               {
                 model: CompanyDetailModel,
@@ -1319,21 +1356,19 @@ export class LocationController {
           {
             model: LocationDetailModel,
             as: 'locationDetail',
-            required: false,
-            attributes: ['title', 'description']
+            required: true,
+            attributes: ['title', 'description'],
+            where: { pathName: data.pathName },
           },
           {
             model: LocationImageModel,
             as: 'locationImages',
-            //where: { locationId: data.locationId },
             required: false,
             attributes: ['path', 'is_avatar'],
-            limit: 10
           }
         ],
-        attributes: ['id', 'companyId', 'name', 'phone', 'email', 'photo', 'address', 'ward', 'district', 'city']
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
       });
-      console.log('Location::', location);
 
       if (location) {
         locations = await LocationModel.findAll({
@@ -1348,7 +1383,7 @@ export class LocationController {
               attributes: ['weekday', 'startTime', 'endTime']
             }
           ],
-          attributes: ['id', 'name', 'ward', 'district', 'city', 'address'],
+          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
           group: [
             'LocationModel.id',
             'workingTimes.id',
@@ -1358,17 +1393,16 @@ export class LocationController {
           ]
         });
 
-        console.log('Locations:::', locations);
         location = location.dataValues;
         location = {
           ...location,
-          ...(location['locationDetail'] || { dataValues: {} }).dataValues,
-          ...(location['locationImages'] || { dataValues: {} }).dataValues,
-          ...(location['company'] || { dataValues: {} }).dataValues,
-          ...(location['company']['companyDetail'] || { dataValues: {} }).dataValues,
-          ['locationDetail']: undefined,
+          ...location.locationDetail?.dataValues,
+          ...location.locationImages?.dataValues,
+          ...location.company?.dataValues,
+          ...location.company?.companyDetail?.dataValues,
           ['company']: undefined,
-          ['companyDetail']: undefined
+          ['companyDetail']: undefined,
+          ['locationDetail']: undefined,
         };
 
         //  console.log('Location working time::', locationWorkingTimes);
@@ -1385,7 +1419,7 @@ export class LocationController {
           await LocationServiceModel.findAll({
             raw: true,
             where: { locationId: location.id },
-            attributes: ['id', 'service_id']
+            attributes: ['service_id']
           })
         ).map((serviceId: any) => serviceId.service_id);
 
@@ -1401,7 +1435,7 @@ export class LocationController {
               where: { id: serviceIds }
             }
           ],
-          group: ['CateServiceModel.id', 'services.id', 'services.duration', 'services.name', 'services.sale_price']
+          group: ['CateServiceModel.id', 'services.id']
         });
       } else {
         location = {};

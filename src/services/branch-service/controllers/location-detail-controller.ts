@@ -8,7 +8,6 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { sequelize, LocationDetailModel } from '../../../repositories/postgres/models';
 
 import { createLocationDetailSchema } from '../configs/validate-schemas';
-import _ from 'lodash';
 
 export class LocationDetailController {
   /**
