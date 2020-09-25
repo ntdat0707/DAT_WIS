@@ -165,7 +165,8 @@ const updateServiceSchema = Joi.object({
     Joi.string().guid({
       version: ['uuidv4']
     })
-  )
+  ),
+  allowGender: Joi.number().integer().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('allowGender')
 });
 export {
   createCateServiceSchema,
