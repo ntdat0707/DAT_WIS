@@ -1,1 +1,1 @@
-export { nomalizeRemoveAccent } from './nomarlize-remove-accent';
+export { normalizeRemoveAccent } from './normalize-remove-accent';

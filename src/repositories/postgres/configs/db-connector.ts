@@ -17,12 +17,12 @@ const sequelize = new Sequelize(
       idle: 10000
     },
     logging: false,
-    // dialectOptions: {
-    //   ssl: {
-    //     require: process.env.POSTGRESQL_TLS === 'true',
-    //     rejectUnauthorized: false
-    //   }
-    // }
+    dialectOptions: {
+      ssl: {
+        require: process.env.POSTGRESQL_TLS === 'true',
+        rejectUnauthorized: false
+      }
+    }
   }
 );
 

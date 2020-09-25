@@ -50,6 +50,10 @@ const locationIdSchema = Joi.string()
   .required()
   .label('locationId');
 
+const pathNameSchema = Joi.string()
+  .required()
+  .label('pathName');
+
 const companyIdSchema = Joi.string()
   .guid({
     version: ['uuidv4']
@@ -207,5 +211,6 @@ export {
   updateLocationSchema,
   searchSchema,
   companyIdSchema,
+  pathNameSchema,
   createLocationDetailSchema
 };

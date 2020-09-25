@@ -36,7 +36,7 @@ import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
-import { nomalizeRemoveAccent } from '../../../utils/text';
+import { normalizeRemoveAccent } from '../../../utils/text';
 
 export class LocationController {
   /**
@@ -190,7 +190,7 @@ export class LocationController {
         await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
 
-      const pathName = nomalizeRemoveAccent(company.businessName) + '-' + nomalizeRemoveAccent(data.address);
+      const pathName = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
 
       let dataLocationDetail = [];
       dataLocationDetail.push({
@@ -742,6 +742,7 @@ export class LocationController {
         }
       });
 
+
       if (!location)
         return next(
           new CustomError(
@@ -816,7 +817,9 @@ export class LocationController {
         longitude: body.longitude
       };
 
-      const dataDetails: any = {
+      const company = await CompanyModel.findOne({ where: { id: companyId } });
+
+      let dataDetails: any = {
         title: body.title,
         payment: body.payment,
         parking: body.parking,
@@ -825,6 +828,13 @@ export class LocationController {
         gender: body.gender,
         openedAt: body.openedAt
       };
+
+      if (data.address) {
+        dataDetails = {
+          ...dataDetails,
+          pathName : normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
+        };
+      }
       // if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
@@ -1232,15 +1242,41 @@ export class LocationController {
     }
   };
 
+  // tslint:disable-next-line:no-shadowed-variable
+  private updatePathName= async (_: Request, __: Response, next: NextFunction)  => {
+    try {
+      const companies: any = await CompanyModel.findAll({
+        include: [{
+          model: LocationModel,
+          as: 'locations',
+          required: true,
+          include: [{
+            model: LocationDetailModel,
+            as: 'locationDetail',
+            required: true
+          }]
+        }]
+      });
+      for (const company of companies) {
+        for (const location of company.locations) {
+          const pathName = normalizeRemoveAccent(company.businessName) + '-' +  normalizeRemoveAccent(location.address);
+          await LocationDetailModel.update({pathName}, { where: { locationId: location.id }});
+        }
+      }
+    } catch(error) {
+      return next(error);
+    }
+  }
+
   /**
    * @swagger
-   * /branch/location/market-place/get-location/{locationId}:
+   * /branch/location/market-place/get-location/{pathName}:
    *   get:
    *     tags:
    *       - Branch
    *     parameters:
    *     - in: path
-   *       name: locationId
+   *       name: pathName
    *       schema:
    *          type: string
    *       required: true
@@ -1251,13 +1287,12 @@ export class LocationController {
    *       500:
    *         description: Server internal errors
    */
-
   public getLocationMarketPlace = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const data = {
-        locationId: _req.params.locationId
+        pathName: _req.params.pathName
       };
-      const validateErrors = validate(data.locationId, locationIdSchema);
+      const validateErrors = validate(data.pathName, locationIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       let staffs: any = [];
       let locations: any = [];
@@ -1265,7 +1300,7 @@ export class LocationController {
       let cateServices: any = [];
       let location: any = await LocationModel.findOne({
         // raw: true,
-        where: { id: data.locationId },
+        where: { pathName: data.pathName },
         include: [
           {
             model: CompanyModel,
@@ -1339,7 +1374,7 @@ export class LocationController {
         //  console.log('Location working time::', locationWorkingTimes);
         staffs = await StaffModel.findAll({
           raw: true,
-          where: { mainLocationId: data.locationId },
+          where: { mainLocationId: location.id },
           attributes: ['id', 'firstName', 'avatarPath'],
           order: Sequelize.literal(
             'case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"'
@@ -1349,7 +1384,7 @@ export class LocationController {
         const serviceIds: any = (
           await LocationServiceModel.findAll({
             raw: true,
-            where: { locationId: data.locationId },
+            where: { locationId: location.id },
             attributes: ['id', 'service_id']
           })
         ).map((serviceId: any) => serviceId.service_id);
