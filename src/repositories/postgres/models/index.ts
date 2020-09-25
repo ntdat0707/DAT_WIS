@@ -18,6 +18,7 @@ import { AppointmentGroupModel } from './appointment-group-model';
 import { LocationWorkingHourModel } from './location-working-hour-model';
 import { CompanyDetailModel } from './company-detail-model';
 import { LocationDetailModel } from './location-detail-model';
+import { CustomerWisereModel } from './customer-wisere-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
