@@ -23,8 +23,7 @@ import {
   AppointmentModel,
   AppointmentDetailModel,
   CompanyModel,
-  LocationWorkingHourModel,
-  AppointmentDetailStaffModel
+  LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -978,7 +977,7 @@ export class StaffController {
         },
         raw: false,
         nest: true
-      })
+      });
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingLocations['0'].workingTimes;
@@ -1034,13 +1033,13 @@ export class StaffController {
         where: {
           id: dataInput.staffId,
         },
-      })
+      });
       const preDataFirst = JSON.stringify(doctorSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
       //console.log(preDataSecond);
       console.log(preDataSecond.count);
       if (preDataSecond.count > 0) {
-        preDataSecond.rows[0].appointmentDetails.forEach((obj: any, i: any) => {
+        preDataSecond.rows[0].appointmentDetails.forEach((obj: any) => {
           obj.start_time = moment(obj.start_time).format('HH:mm').toString();
           let firstTimeSlot = parseInt(obj.start_time.split(':').join(''));
           let finalTimeSlot;
@@ -1068,21 +1067,21 @@ export class StaffController {
             }
             let finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
             finalTimeSlot = parseInt(finalTimeSlotString);
-          }
-          let finTimeSlot = moment(finalTimeSlot, "hmm").format('HH:mm');
-          let firstTime = moment(firstTimeSlot, "hmm").format('HH:mm');
+          };
+          let finTimeSlot = moment(finalTimeSlot, 'hmm').format('HH:mm');
+          let firstTime = moment(firstTimeSlot, 'hmm').format('HH:mm');
           if (timeSlot.hasOwnProperty(obj.start_time)) {
             timeSlot[firstTime] = false;
             timeSlot[finTimeSlot] = false;
-          }
+          };
           console.log(finTimeSlot);
           rangelist.push(finalTimeSlot);
           Object.keys(timeSlot).forEach((key: any, index: any) => {
             let indexStart = Object.keys(timeSlot).indexOf(firstTime);
-            let indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot)
+            let indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot);
             if (index < indexEndTime && index > indexStart) {
               timeSlot[key] = false;
-            }
+            };
           });
         });
       }
@@ -1120,7 +1119,7 @@ export class StaffController {
           }
         };
       }
-      Object.keys(timeSlot).forEach((key:any,index:any)=>{
+      Object.keys(timeSlot).forEach((key:any)=>{
         let temp;
         if(timeSlot[key] == true){
           let stringEndtime=moment(workTime.endTime.split(':').join(''),'hmm').format('HH:mm');
@@ -1130,13 +1129,13 @@ export class StaffController {
             timeSlot[key] = false;
           }
         }
-      })
+      });
       //console.log(rangelist);
 
       if (!workingTime) {
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
-      res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot))
+      res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot));
     } catch (error) {
       return error;
     }
