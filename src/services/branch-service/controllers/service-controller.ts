@@ -99,6 +99,9 @@ export class ServiceController {
    *       type: array
    *       items:
    *          type: string
+   *     - in: "formData"
+   *       name: allowGender
+   *       type: integer
    *     responses:
    *       200:
    *         description:
@@ -148,7 +151,8 @@ export class ServiceController {
         cateServiceId: body.cateServiceId,
         name: body.name,
         serviceCode: serviceCode,
-        isAllowedMarketplace: body.isAllowedMarketplace
+        isAllowedMarketplace: body.isAllowedMarketplace,
+        allowGender: body.allowGender
       };
 
       transaction = await sequelize.transaction();
@@ -320,6 +324,11 @@ export class ServiceController {
             model: ResourceModel,
             as: 'resources',
             required: false
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
           }
         ]
       });
@@ -406,6 +415,11 @@ export class ServiceController {
             as: 'cateService',
             required: true,
             attributes: []
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
           }
         ]
       };

@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EServiceStatus } from '../../../../utils/consts';
+import { EServiceStatus, EGender } from '../../../../utils/consts';
 
 const createServiceSchema = Joi.object({
   cateServiceId: Joi.string()
@@ -32,7 +32,12 @@ const createServiceSchema = Joi.object({
     Joi.string().guid({
       version: ['uuidv4']
     })
-  )
+  ),
+  allowGender: Joi.number()
+    .integer()
+    .required()
+    .valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX)
+    .label('allowGender')
 });
 
 const createCateServiceSchema = Joi.object({

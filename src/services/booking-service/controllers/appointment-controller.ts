@@ -13,7 +13,7 @@ import {
   bookingErrorDetails
 } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { EAppointmentStatus, AppointmentStatusRules } from '../../../utils/consts';
+import { EAppointmentStatus, AppointmentStatusRules, AppointmentBookingSource } from '../../../utils/consts';
 import {
   sequelize,
   StaffModel,
@@ -24,7 +24,8 @@ import {
   AppointmentModel,
   LocationModel,
   AppointmentDetailStaffModel,
-  AppointmentGroupModel
+  AppointmentGroupModel,
+  CustomerWisereModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -33,9 +34,11 @@ import {
   updateAppointmentStatusSchema,
   appointmentCancelReasonSchema,
   updateAppointmentSchema,
-  appointmentIdSchema
+  appointmentIdSchema,
+  customerCreateAppointmentSchema
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
+import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 export class AppointmentController extends BaseController {
   /**
    * @swagger
@@ -70,19 +73,15 @@ export class AppointmentController extends BaseController {
    *           - locationId
    *           - date
    *           - appointmentDetails
-   *           - bookingSource
    *       properties:
    *           locationId:
    *               type: string
-   *           customerId:
+   *           customerWisereId:
    *               type: string
    *           appointmentGroupId:
    *               type: string
    *           relatedAppointmentId:
    *               type: string
-   *           bookingSource:
-   *               type: string
-   *               enum: [MARKETPLACE, STAFF]
    *           date:
    *               type: string
    *               format: date-time
@@ -131,10 +130,10 @@ export class AppointmentController extends BaseController {
     try {
       const dataInput = {
         locationId: req.body.locationId,
-        customerId: req.body.customerId,
+        customerWisereId: req.body.customerWisereId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
-        bookingSource: req.body.bookingSource,
+        bookingSource: AppointmentBookingSource.STAFF,
         appointmentGroupId: req.body.appointmentGroupId,
         relatedAppointmentId: req.body.relatedAppointmentId
       };
@@ -154,13 +153,15 @@ export class AppointmentController extends BaseController {
         );
       }
 
-      if (dataInput.customerId) {
-        const customer = await CustomerModel.findOne({ where: { id: dataInput.customerId, companyId } });
-        if (!customer) {
+      if (dataInput.customerWisereId) {
+        const customerWisere = await CustomerWisereModel.findOne({
+          where: { id: dataInput.customerWisereId, companyId }
+        });
+        if (!customerWisere) {
           return next(
             new CustomError(
               customerErrorDetails.E_3001(
-                `Can not find customer ${dataInput.customerId} in location ${dataInput.locationId}`
+                `Can not find customerWisere ${dataInput.customerWisereId} in location ${dataInput.locationId}`
               ),
               HttpStatus.BAD_REQUEST
             )
@@ -178,7 +179,7 @@ export class AppointmentController extends BaseController {
         id: appointmentId,
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
-        customerId: dataInput.customerId ? dataInput.customerId : null,
+        customerWisereId: dataInput.customerWisereId ? dataInput.customerWisereId : null,
         bookingSource: dataInput.bookingSource
       };
 
@@ -321,6 +322,11 @@ export class AppointmentController extends BaseController {
                 model: CustomerModel,
                 as: 'customer',
                 required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
+                required: false
               }
             ]
           },
@@ -436,6 +442,11 @@ export class AppointmentController extends BaseController {
               {
                 model: CustomerModel,
                 as: 'customer',
+                required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
                 required: false
               }
             ]
@@ -625,6 +636,11 @@ export class AppointmentController extends BaseController {
                 model: CustomerModel,
                 as: 'customer',
                 required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
+                required: false
               }
             ]
           },
@@ -661,27 +677,75 @@ export class AppointmentController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   UpdateAppointment:
+   *   CreateNewAppointmentDetail:
    *       required:
-   *           - appointmentId
-   *           - locationId
-   *           - date
+   *           - serviceId
+   *           - staffIds
+   *           - startTime
    *       properties:
-   *           appointmentId:
+   *           resourceId:
    *               type: string
-   *           locationId:
-   *               type: string
-   *           customerId:
-   *               type: string
-   *           date:
+   *           startTime:
    *               type: string
    *               format: date-time
    *               description: YYYY-MM-DD HH:mm:ss
+   *           serviceId:
+   *               type: string
+   *           staffIds:
+   *               type: array
+   *               items:
+   *                   type: string
    *
    */
   /**
    * @swagger
-   * /booking/appointment/update-appointment:
+   * definitions:
+   *   UpdateAppointmentDetail:
+   *       required:
+   *           - appointmentDetailId
+   *       properties:
+   *           appointmentDetailId:
+   *               type: string
+   *           resourceId:
+   *               type: string
+   *           serviceId:
+   *               type: string
+   *           startTime:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
+   *           staffIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   UpdateAppointment:
+   *       properties:
+   *           customerWisereId:
+   *               type: string
+   *           locationId:
+   *               type: string
+   *           createNewAppointments:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CreateNewAppointmentDetail'
+   *           updateAppointments:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/UpdateAppointmentDetail'
+   *           deleteAppointments:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   */
+  /**
+   * @swagger
+   * /booking/appointment/update-appointment/{appointmentId}:
    *   put:
    *     tags:
    *       - Booking
@@ -690,6 +754,9 @@ export class AppointmentController extends BaseController {
    *     name: updateAppointment
    *     description: Nếu thay đổi location các appointmentDetail sẽ bị xóa
    *     parameters:
+   *     - in: path
+   *       name: appointmentId
+   *       required: true
    *     - in: "body"
    *       name: "body"
    *       required: true
@@ -712,24 +779,19 @@ export class AppointmentController extends BaseController {
     try {
       const data = {
         locationId: req.body.locationId,
-        date: req.body.date,
-        customerId: req.body.customerId,
-        appointmentId: req.body.appointmentId
+        appointmentId: req.params.appointmentId,
+        createNewAppointments: req.body.createNewAppointments,
+        updateAppointments: req.body.updateAppointments,
+        deleteAppointments: req.body.deleteAppointments,
+        customerWisereId: req.body.customerWisereId
       };
 
       const validateErrors = validate(data, updateAppointmentSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const { workingLocationIds, companyId } = res.locals.staffPayload;
-      if (!workingLocationIds.includes(data.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${data.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
+      const { companyId } = res.locals.staffPayload;
+
       const appointment = await AppointmentModel.findOne({ where: { id: data.appointmentId } });
       if (!appointment) {
         return next(
@@ -739,13 +801,34 @@ export class AppointmentController extends BaseController {
           )
         );
       }
-      // Check customer exist
-      if (data.customerId) {
-        const customer = await CustomerModel.findOne({ where: { id: data.customerId, companyId } });
-        if (!customer) {
+
+      if (data.locationId !== appointment.locationId) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2008(`Location ${data.locationId} incorrect in appointment ${data.appointmentId}`),
+            HttpStatus.BAD_REQUEST
+          )
+        );
+      }
+      // Check customer wisere exist
+      if (data.customerWisereId) {
+        if (appointment.bookingSource === AppointmentBookingSource.MARKETPLACE) {
           return next(
             new CustomError(
-              customerErrorDetails.E_3001(`Can not find customer ${data.customerId} in location ${data.locationId}`),
+              bookingErrorDetails.E_2009(
+                `Customer wisere ${data.customerWisereId} disallow update in appointment ${data.appointmentId}`
+              ),
+              HttpStatus.BAD_REQUEST
+            )
+          );
+        }
+        const customerWisere = await CustomerWisereModel.findOne({ where: { id: data.customerWisereId, companyId } });
+        if (!customerWisere) {
+          return next(
+            new CustomError(
+              customerErrorDetails.E_3001(
+                `Can not find customerWisere ${data.customerWisereId} in location ${data.locationId}`
+              ),
               HttpStatus.BAD_REQUEST
             )
           );
@@ -753,44 +836,171 @@ export class AppointmentController extends BaseController {
       }
       // start transaction
       transaction = await sequelize.transaction();
-      if (data.locationId !== appointment.locationId) {
-        // If change location, appointment details would be delete
-        await AppointmentDetailModel.destroy({ where: { appointmentId: data.appointmentId } });
+
+      //update appointment here
+      const appointmentData: any = {
+        id: data.appointmentId,
+        locationId: data.locationId,
+        customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId
+      };
+      await AppointmentModel.update(appointmentData, { where: { id: data.appointmentId }, transaction });
+
+      if (data.createNewAppointments && data.createNewAppointments.length > 0) {
+        const appointmentDetails = await this.verifyAppointmentDetails(data.createNewAppointments, data.locationId);
+        const appointmentDetailData: any[] = [];
+        const appointmentDetailStaffData = [];
+        for (let i = 0; i < appointmentDetails.length; i++) {
+          const appointmentDetailId = uuidv4();
+          appointmentDetailData.push({
+            id: appointmentDetailId,
+            appointmentId: data.appointmentId,
+            serviceId: appointmentDetails[i].serviceId,
+            resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
+            startTime: appointmentDetails[i].startTime,
+            duration: appointmentDetails[i].duration
+          });
+          for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
+            appointmentDetailStaffData.push({
+              appointmentDetailId,
+              staffId: appointmentDetails[i].staffIds[j]
+            });
+          }
+        }
+
+        await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
+          transaction
+        });
+        await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       }
-      await AppointmentModel.update(data, { where: { id: data.appointmentId } });
-      const findQuery: FindOptions = {
-        where: { id: data.appointmentId },
+      if (data.updateAppointments && data.updateAppointments.length > 0) {
+        for (let i = 0; i < data.updateAppointments.length; i++) {
+          const appointmentDetail = await AppointmentDetailModel.findOne({
+            where: {
+              id: data.updateAppointments[i].appointmentDetailId,
+              appointmentId: data.appointmentId
+            }
+          });
+
+          if (!appointmentDetail) {
+            return next(
+              new CustomError(
+                bookingErrorDetails.E_2004(
+                  `Appointment detail ${data.updateAppointments[i].appointmentDetailId} not exist`
+                ),
+                HttpStatus.NOT_FOUND
+              )
+            );
+          }
+          await AppointmentDetailModel.destroy({
+            where: { id: data.updateAppointments[i].appointmentDetailId },
+            transaction
+          });
+          await AppointmentDetailStaffModel.destroy({
+            where: { appointmentDetailId: data.updateAppointments[i].appointmentDetailId },
+            transaction
+          });
+        }
+        const appointmentDetailData: any[] = [];
+        const appointmentDetailStaffData = [];
+        const appointmentDetails = await this.verifyAppointmentDetails(data.updateAppointments, data.locationId);
+        for (let i = 0; i < appointmentDetails.length; i++) {
+          const appointmentDetailId = uuidv4();
+          appointmentDetailData.push({
+            id: appointmentDetailId,
+            appointmentId: data.appointmentId,
+            serviceId: appointmentDetails[i].serviceId,
+            resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
+            startTime: appointmentDetails[i].startTime,
+            duration: appointmentDetails[i].duration
+          });
+          for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
+            appointmentDetailStaffData.push({
+              appointmentDetailId,
+              staffId: appointmentDetails[i].staffIds[j]
+            });
+          }
+        }
+        await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
+          transaction
+        });
+        await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      }
+      if (data.deleteAppointments && data.deleteAppointments.length > 0) {
+        for (let i = 0; i < data.deleteAppointments.length; i++) {
+          const appointmentDetail = await AppointmentDetailModel.findOne({
+            where: {
+              id: data.deleteAppointments[i],
+              appointmentId: data.appointmentId
+            }
+          });
+
+          if (!appointmentDetail) {
+            return next(
+              new CustomError(
+                bookingErrorDetails.E_2004(`Appointment detail ${data.deleteAppointments[i]} not exist`),
+                HttpStatus.NOT_FOUND
+              )
+            );
+          }
+          await AppointmentDetailStaffModel.destroy({
+            where: { appointmentDetailId: data.deleteAppointments[i] },
+            transaction
+          });
+          await AppointmentDetailModel.destroy({
+            where: { id: data.deleteAppointments[i] },
+            transaction
+          });
+        }
+      }
+      const query: FindOptions = {
         include: [
           {
-            model: AppointmentDetailModel,
-            as: 'appointmentDetails',
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            where: { id: data.appointmentId },
             include: [
               {
-                model: ServiceModel,
-                as: 'service'
+                model: LocationModel,
+                as: 'location',
+                required: true
               },
               {
-                model: ResourceModel,
-                as: 'resource'
+                model: CustomerModel,
+                as: 'customer',
+                required: false
               },
               {
-                model: StaffModel.scope('safe'),
-                as: 'staffs',
-                through: { attributes: [] }
+                model: CustomerWisereModel,
+                as: 'customerWisere',
+                required: false
               }
             ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
           }
         ],
         transaction
       };
-      if (data.customerId)
-        findQuery.include.push({
-          model: CustomerModel,
-          as: 'customer'
-        });
-      const appointmentStoraged = await AppointmentModel.findOne(findQuery);
+      const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
+      await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      //commit transaction
       await transaction.commit();
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentStoraged));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();
       return next(error);
@@ -895,7 +1105,13 @@ export class AppointmentController extends BaseController {
           },
           {
             model: CustomerModel,
-            as: 'customer'
+            as: 'customer',
+            required: false
+          },
+          {
+            model: CustomerWisereModel,
+            as: 'customerWisere',
+            required: false
           },
           {
             model: AppointmentDetailModel,

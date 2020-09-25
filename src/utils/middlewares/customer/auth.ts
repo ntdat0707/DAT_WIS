@@ -7,14 +7,13 @@ import { verifyAccessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
 import { generalErrorDetails } from '../../response-messages/error-details';
 import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
-import { CompanyModel, CustomerModel } from '../../../repositories/postgres/models';
+import { CustomerModel } from '../../../repositories/postgres/models';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 interface ICustomerAuthenicationPayload {
   id: string;
   firstName: string;
   lastName: string;
-  companyId: string;
 }
 /**
  * Middleware check customer login
@@ -66,8 +65,7 @@ const authenticate = async (accessTokenBearer: string): Promise<ICustomerAutheni
       return new CustomError(generalErrorDetails.E_0003());
     }
     const customer = await CustomerModel.findOne({
-      where: { id: accessTokenData.userId },
-      include: [{ model: CompanyModel, as: 'company', required: true }]
+      where: { id: accessTokenData.userId }
     });
     if (!customer) {
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
@@ -76,8 +74,7 @@ const authenticate = async (accessTokenBearer: string): Promise<ICustomerAutheni
     const customerAuthenicationPayload: ICustomerAuthenicationPayload = {
       id: customer.id,
       firstName: customer.firstName,
-      lastName: customer.lastName,
-      companyId: customer.companyId
+      lastName: customer.lastName
     };
     return customerAuthenicationPayload;
   } catch (error) {
