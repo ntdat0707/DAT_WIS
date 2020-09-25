@@ -16,7 +16,8 @@ import {
   ServiceModel,
   LocationWorkingHourModel,
   CompanyDetailModel,
-  CustomerSearchModel
+  CustomerSearchModel,
+  AppointmentDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -275,6 +276,7 @@ export class LocationController {
    *       500:
    *         description: Server internal errors
    */
+  // tslint:disable-next-line:variable-name
   public getAllLocations = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
@@ -947,7 +949,7 @@ export class LocationController {
    *   get:
    *     tags:
    *       - Branch
-   *     name: search
+   *     name: marketPlaceSearch
    *     parameters:
    *     - in: query
    *       name: keyword
@@ -993,7 +995,7 @@ export class LocationController {
    *         description: Internal server errors
    */
 
-  public search = async (req: Request, res: Response, next: NextFunction) => {
+  public marketPlaceSearch = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // let locations: any[] = [];
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
@@ -1012,7 +1014,7 @@ export class LocationController {
           .filter((x: string) => x)
           .join(' ');
       const search = {
-        keywords: trimSpace(req.query.keyword ? req.query.keywor.toString() : ''),
+        keywords: trimSpace(req.query.keyword ? req.query.keyword.toString() : ''),
         customerId: req.query.customerId,
         latitude: req.query.latitude,
         longitude: req.query.longitude,
@@ -1300,12 +1302,108 @@ export class LocationController {
 
   public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      return await this.search(req, res, next);
+      return await this.marketPlaceSearch(req, res, next);
     } catch (error) {
       return next(error);
     }
   }
 
+  /**
+   * @swagger
+   * /branch/location/market-place/suggested:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: marketPlaceSuggested
+   *     parameters:
+   *     - in: query
+   *       name: keyword
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: cityName
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: customerId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public marketPlaceSuggested = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const trimSpace = (text: string) =>
+        text
+          .split(' ')
+          .filter((x: string) => x)
+          .join(' ');
+      const search = {
+        keywords: trimSpace(req.query.keyword ? req.query.keyword.toString() : ''),
+        customerId: req.query.customerId,
+        cityName: req.query.cityName
+      };
+
+      const validateErrorsSearch = validate(search, searchSchema);
+      if (validateErrorsSearch) {
+        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
+      }
+
+
+      const keywords: string = (search.keywords || '') as string;
+      let keywordsQuery: string = '';
+      if (!keywords) {
+        keywordsQuery = '\'%%\'';
+      } else {
+        keywordsQuery = `unaccent('%${keywords}%')`;
+      }
+
+      const cateServices = await CateServiceModel.findAll({
+        include: [{
+          model: CompanyModel,
+          as: 'company',
+          required: true,
+          attributes: [],
+          include: [{
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            attributes: []
+          }]
+        }],
+        where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywordsQuery}])`)
+      });
+
+
+      const popularServices = await ServiceModel.findAll({
+        include: [{
+          model: AppointmentDetailModel,
+          as: 'appointmentDetails',
+          required: false,
+          attributes: []
+        }],
+        group: ['ServiceModel.id'],
+        where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywordsQuery}])`),
+      });
+
+      const results = {
+        cateServices,
+        popularServices
+
+      };
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
+    } catch (error) {
+      console.log(error);
+      return next(error);
+    }
+  }
   /**
    * @swagger
    * /branch/location/market-place/get-location/{pathName}:

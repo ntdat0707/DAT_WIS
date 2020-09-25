@@ -203,7 +203,18 @@ const searchSchema = Joi.object({
     .allow(null)
     .label('order')
 });
-
+const suggestedSchema = Joi.object({
+  keywords: Joi.string()
+    .allow(null, '')
+    .label('keywords'),
+  customerId: Joi.string()
+    .uuid()
+    .allow(null, '')
+    .label('customerId'),
+  cityName: Joi.string()
+    .allow(null, '')
+    .label('cityName'),
+});
 export {
   createLocationSchema,
   locationIdSchema,
@@ -212,5 +223,6 @@ export {
   searchSchema,
   companyIdSchema,
   pathNameSchema,
+  suggestedSchema,
   createLocationDetailSchema
 };

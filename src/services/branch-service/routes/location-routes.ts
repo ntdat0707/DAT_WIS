@@ -40,6 +40,7 @@ export class LocationRoutes {
       this.locationController.getLocationByServiceProvider
     );
 
-    this.router.get('/market-place/search', this.locationController.search);
+    this.router.get('/market-place/search', this.locationController.marketPlaceSearch);
+    this.router.get('/market-place/suggested', this.locationController.marketPlaceSuggested);
   }
 }
