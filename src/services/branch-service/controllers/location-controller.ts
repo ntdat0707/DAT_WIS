@@ -1588,89 +1588,54 @@ export class LocationController {
    */
 
   public TestRecentBooking = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const dataInput = req.params.customerId;
-      const validateErrors = await validate(dataInput, checkCustomerIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      let recentBookingStaffs: any = 
-        await StaffModel.findAll({
-          include: [
-            {
-              model: AppointmentDetailModel,
-              as: 'appointmentDetails',
-              through: { attributes: [] },
-              attributes: { exclude: ['appointmentId', 'createdAt', 'updatedAt', 'deletedAt'] },
-              required: true,
-             // group:['']
-              include: [
-                {
-                  model: AppointmentModel,
-                  as: 'appointment',
-                  where: {
-                    customerId: dataInput
-                  },
-                  required: true,
-                  attributes: ['customerId'],
-                  include: [
-                    {
-                      model: LocationModel,
-                      as: 'location',
-                      required: true,
-                      attributes: ['name']
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          attributes: ['id', 'firstName'],
-          order: [['createdAt', 'DESC']],
-          //group:['id']
-        })
-      // ).map((staff: any) => ({
-      //   id: staff.id,
-      //   name: staff.firstName,
-      //   locations: staff.appointmentDetails.map((location: any) => ({
-      //     locationName: location.appointment.location.name
-      //   }))
-      // }));
-
-      // let StaffJSON_stringify = JSON.stringify(recentBookingStaffs[0].toJSON());
-      // let StaffJSON = JSON.parse(StaffJSON_stringify);
-
-      // console.log('RecentBooking::', StaffJSON_stringify);
-      // console.log('RecentBooking_JSON::', StaffJSON);
-
-      // recentBookingStaffs = recentBookingStaffs.map((staff: any) => {
-      //   staff = staff.dataValues;
-      //   if (staff.appointmentDetails && Array.isArray(staff.appointmentDetails)) {
-      //     staff.appointmentDetails.map((appointmentDetail: any) => {
-      //       appointmentDetail = appointmentDetail.dataValues;
-      //       // appointmentDetail.appointment = appointmentDetail.appointment.dataValues;
-      //       // appointmentDetail.appointment = undefined;
-      //       return appointmentDetail;
-      //     });
-      //   }
-      // console.log('RecentBooking_map::', recentBookingStaffs);
-      // if (staff.appointmentDetails.appointment) {
-      //   staff.appointmentDetails.appointment.dataValues;
-      // }
-      //});
-
-      //  StaffJSON = {
-      //   ...StaffJSON,
-      //    ...StaffJSON.appointmentDetails,
-      //     ...StaffJSON.appointmentDetails.appointment,
-      //     ...StaffJSON.appointmentDetails.appointment.location.name
-      //...StaffJSON['appointmentDetails']['appointment'].dataValues,
-      // ['appointment']: undefined,
-      // ['location']: undefined
-      // };
-
-      if (!recentBookingStaffs) recentBookingStaffs = [];
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(recentBookingStaffs));
-    } catch (error) {
-      return next(error);
-    }
+    //   try {
+    //     const dataInput = req.params.customerId;
+    //     const validateErrors = await validate(dataInput, checkCustomerIdSchema);
+    //     if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+    //     let recentBookingStaffs: any =
+    //       (await StaffModel.findAll({
+    //         include: [
+    //           {
+    //             model: AppointmentDetailModel,
+    //             as: 'appointmentDetails',
+    //             through: { attributes: [] },
+    //             attributes: { exclude: ['appointmentId', 'createdAt', 'updatedAt', 'deletedAt'] },
+    //             required: true,
+    //             include: [
+    //               {
+    //                 model: AppointmentModel,
+    //                 as: 'appointment',
+    //                 where: {
+    //                   customerId: dataInput
+    //                 },
+    //                 required: true,
+    //                 attributes: ['customerId'],
+    //                 include: [
+    //                   {
+    //                     model: LocationModel,
+    //                     as: 'location',
+    //                     required: true,
+    //                     attributes: ['name']
+    //                   }
+    //                 ]
+    //               }
+    //             ]
+    //           }
+    //         ],
+    //         attributes: ['id', 'firstName'],
+    //         order: [['createdAt', 'DESC']],
+    //       })
+    //     ).map((staff: any) => ({
+    //       id: staff.id,
+    //       name: staff.firstName,
+    //       locations: staff.appointmentDetails.map((location: any) => ({
+    //         locationName: location.appointment.location.name
+    //       }))
+    //     }));
+    //     if (!recentBookingStaffs) recentBookingStaffs = [];
+    //     return res.status(HttpStatus.OK).send(buildSuccessMessage(recentBookingStaffs));
+    //   } catch (error) {
+    //     return next(error);
+    //   }
   };
 }
