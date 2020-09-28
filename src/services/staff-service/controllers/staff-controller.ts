@@ -1146,7 +1146,6 @@ export class StaffController {
         }
       });
       //console.log(rangelist);
-
       if (!workingTime) {
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
@@ -1184,7 +1183,7 @@ export class StaffController {
       return next(error);
     }
   };
-}
+
     /**
    * @swagger
    * definitions:

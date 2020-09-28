@@ -130,6 +130,18 @@ CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
 CustomerModel.hasMany(CustomerSearchModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
 
+ServiceModel.hasMany(CustomerSearchModel, {foreignKey: 'serviceId', sourceKey: 'id', as: 'customerSearches'});
+CustomerSearchModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
+
+CateServiceModel.hasMany(CustomerSearchModel, {foreignKey: 'cateServiceId', sourceKey: 'id', as: 'customerSearches'});
+CustomerSearchModel.belongsTo(CateServiceModel, { foreignKey: 'cateServiceId', as: 'cateService' });
+
+CompanyModel.hasMany(CustomerSearchModel, {foreignKey: 'companyId', sourceKey: 'id', as: 'customerSearches'});
+CustomerSearchModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+LocationModel.hasMany(CustomerSearchModel, {foreignKey: 'locationId', sourceKey: 'id', as: 'customerSearches'});
+CustomerSearchModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
 export {
   sequelize,
   StaffModel,
