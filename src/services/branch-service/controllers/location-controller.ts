@@ -9,7 +9,6 @@ import {
   sequelize,
   LocationModel,
   LocationStaffModel,
-  StaffModel,
   CompanyModel,
   LocationDetailModel,
   CateServiceModel,
@@ -17,7 +16,9 @@ import {
   LocationWorkingHourModel,
   CompanyDetailModel,
   CustomerSearchModel,
-  AppointmentDetailModel
+  AppointmentDetailModel,
+  StaffModel,
+  AppointmentModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -26,7 +27,8 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema,
   searchSchema,
-  pathNameSchema
+  pathNameSchema,
+  checkCustomerIdSchema
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -333,7 +335,9 @@ export class LocationController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const query: FindOptions = {
         where: {
           companyId: companyId
@@ -385,7 +389,9 @@ export class LocationController {
       const companyId = res.locals.staffPayload.companyId;
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const location: any = await LocationModel.findOne({
         where: {
           id: locationId,
@@ -448,7 +454,9 @@ export class LocationController {
       const { workingLocationIds } = res.locals.staffPayload;
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       if (!(workingLocationIds as string[]).includes(locationId)) {
         return next(
           new CustomError(locationErrorDetails.E_1001(`Can not access to this ${locationId}`), HttpStatus.NOT_FOUND)
@@ -539,7 +547,9 @@ export class LocationController {
         workingTimes: req.body.workingTimes
       };
       const validateErrors = validate(body, createLocationWorkingTimeSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
 
       if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
         return next(
@@ -747,7 +757,6 @@ export class LocationController {
         }
       });
 
-
       if (!location) {
         return next(
           new CustomError(
@@ -838,7 +847,7 @@ export class LocationController {
       if (data.address) {
         dataDetails = {
           ...dataDetails,
-          pathName : normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
+          pathName: normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
         };
       }
       // if (file) data.photo = (file as any).location;
@@ -936,8 +945,7 @@ export class LocationController {
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) *
-      Math.cos(lat1) * Math.cos(lat2);
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c;
     return d;
@@ -1038,7 +1046,7 @@ export class LocationController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -1306,7 +1314,7 @@ export class LocationController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 
   /**
    * @swagger
@@ -1344,6 +1352,7 @@ export class LocationController {
           .split(' ')
           .filter((x: string) => x)
           .join(' ');
+
       const search = {
         keywords: trimSpace(req.query.keyword ? req.query.keyword.toString() : ''),
         customerId: req.query.customerId,
@@ -1355,47 +1364,50 @@ export class LocationController {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
 
-
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
 
       const cateServices = await CateServiceModel.findAll({
-        include: [{
-          model: CompanyModel,
-          as: 'company',
-          required: true,
-          attributes: [],
-          include: [{
-            model: LocationModel,
-            as: 'locations',
+        include: [
+          {
+            model: CompanyModel,
+            as: 'company',
             required: true,
-            attributes: []
-          }]
-        }],
+            attributes: [],
+            include: [
+              {
+                model: LocationModel,
+                as: 'locations',
+                required: true,
+                attributes: []
+              }
+            ]
+          }
+        ],
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywordsQuery}])`)
       });
 
-
       const popularServices = await ServiceModel.findAll({
-        include: [{
-          model: AppointmentDetailModel,
-          as: 'appointmentDetails',
-          required: false,
-          attributes: []
-        }],
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            required: false,
+            attributes: []
+          }
+        ],
         group: ['ServiceModel.id'],
-        where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywordsQuery}])`),
+        where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywordsQuery}])`)
       });
 
       const results = {
         cateServices,
         popularServices
-
       };
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
@@ -1403,7 +1415,8 @@ export class LocationController {
       console.log(error);
       return next(error);
     }
-  }
+  };
+
   /**
    * @swagger
    * /branch/location/market-place/get-location/{pathName}:
@@ -1429,7 +1442,9 @@ export class LocationController {
         pathName: req.params.pathName
       };
       const validateErrors = validate(data.pathName, pathNameSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       let staffs: any = [];
       let locations: any = [];
       // let locationWorkingTimes: any = [];
@@ -1456,13 +1471,13 @@ export class LocationController {
             as: 'locationDetail',
             required: true,
             attributes: ['title', 'description'],
-            where: { pathName: data.pathName },
+            where: { pathName: data.pathName }
           },
           {
             model: LocationImageModel,
             as: 'locationImages',
             required: false,
-            attributes: ['path', 'is_avatar'],
+            attributes: ['path', 'is_avatar']
           }
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
@@ -1500,7 +1515,7 @@ export class LocationController {
           ...location.company?.companyDetail?.dataValues,
           ['company']: undefined,
           ['companyDetail']: undefined,
-          ['locationDetail']: undefined,
+          ['locationDetail']: undefined
         };
 
         //  console.log('Location working time::', locationWorkingTimes);
@@ -1548,6 +1563,113 @@ export class LocationController {
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
       // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/Test-recent-booking/{customerId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     parameters:
+   *     - in: path
+   *       name: customerId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: TestRecentBooking
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public TestRecentBooking = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = req.params.customerId;
+      const validateErrors = await validate(dataInput, checkCustomerIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      let recentBookingStaffs: any = 
+        await StaffModel.findAll({
+          include: [
+            {
+              model: AppointmentDetailModel,
+              as: 'appointmentDetails',
+              through: { attributes: [] },
+              attributes: { exclude: ['appointmentId', 'createdAt', 'updatedAt', 'deletedAt'] },
+              required: true,
+             // group:['']
+              include: [
+                {
+                  model: AppointmentModel,
+                  as: 'appointment',
+                  where: {
+                    customerId: dataInput
+                  },
+                  required: true,
+                  attributes: ['customerId'],
+                  include: [
+                    {
+                      model: LocationModel,
+                      as: 'location',
+                      required: true,
+                      attributes: ['name']
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          attributes: ['id', 'firstName'],
+          order: [['createdAt', 'DESC']],
+          //group:['id']
+        })
+      // ).map((staff: any) => ({
+      //   id: staff.id,
+      //   name: staff.firstName,
+      //   locations: staff.appointmentDetails.map((location: any) => ({
+      //     locationName: location.appointment.location.name
+      //   }))
+      // }));
+
+      // let StaffJSON_stringify = JSON.stringify(recentBookingStaffs[0].toJSON());
+      // let StaffJSON = JSON.parse(StaffJSON_stringify);
+
+      // console.log('RecentBooking::', StaffJSON_stringify);
+      // console.log('RecentBooking_JSON::', StaffJSON);
+
+      // recentBookingStaffs = recentBookingStaffs.map((staff: any) => {
+      //   staff = staff.dataValues;
+      //   if (staff.appointmentDetails && Array.isArray(staff.appointmentDetails)) {
+      //     staff.appointmentDetails.map((appointmentDetail: any) => {
+      //       appointmentDetail = appointmentDetail.dataValues;
+      //       // appointmentDetail.appointment = appointmentDetail.appointment.dataValues;
+      //       // appointmentDetail.appointment = undefined;
+      //       return appointmentDetail;
+      //     });
+      //   }
+      // console.log('RecentBooking_map::', recentBookingStaffs);
+      // if (staff.appointmentDetails.appointment) {
+      //   staff.appointmentDetails.appointment.dataValues;
+      // }
+      //});
+
+      //  StaffJSON = {
+      //   ...StaffJSON,
+      //    ...StaffJSON.appointmentDetails,
+      //     ...StaffJSON.appointmentDetails.appointment,
+      //     ...StaffJSON.appointmentDetails.appointment.location.name
+      //...StaffJSON['appointmentDetails']['appointment'].dataValues,
+      // ['appointment']: undefined,
+      // ['location']: undefined
+      // };
+
+      if (!recentBookingStaffs) recentBookingStaffs = [];
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(recentBookingStaffs));
+    } catch (error) {
       return next(error);
     }
   };

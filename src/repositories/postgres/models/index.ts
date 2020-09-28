@@ -88,6 +88,7 @@ StaffModel.belongsToMany(AppointmentDetailModel, {
   as: 'appointmentDetails',
   foreignKey: 'staffId'
 });
+
 AppointmentDetailModel.belongsToMany(StaffModel, {
   through: AppointmentDetailStaffModel,
   as: 'staffs',
