@@ -6,7 +6,7 @@ import {
   loginSocialSchema,
   registerCustomerSchema
 } from './customer';
-
+import { createPipelineSchema } from './deal';
 import { updateShippingAddressSchema } from './shipping-address';
 export {
   createCustomerWisereSchema,
@@ -15,5 +15,6 @@ export {
   updateCustomerWisereSchema,
   loginSchema,
   loginSocialSchema,
-  registerCustomerSchema
+  registerCustomerSchema,
+  createPipelineSchema
 };

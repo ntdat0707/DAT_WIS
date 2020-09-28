@@ -17,5 +17,10 @@ export class AppointmentGroupRoutes {
       isAuthenticated,
       this.appointmentGroupController.getAppointmentGroup
     );
+    this.router.put(
+      '/update/:appointmentGroupId?',
+      isAuthenticated,
+      this.appointmentGroupController.updateAppointmentGroup
+    );
   }
 }

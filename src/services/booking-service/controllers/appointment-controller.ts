@@ -729,6 +729,10 @@ export class AppointmentController extends BaseController {
    *               type: string
    *           locationId:
    *               type: string
+   *           date:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD HH:mm:ss
    *           createNewAppointments:
    *               type: array
    *               items:
@@ -783,7 +787,8 @@ export class AppointmentController extends BaseController {
         createNewAppointments: req.body.createNewAppointments,
         updateAppointments: req.body.updateAppointments,
         deleteAppointments: req.body.deleteAppointments,
-        customerWisereId: req.body.customerWisereId
+        customerWisereId: req.body.customerWisereId,
+        date: req.body.date
       };
 
       const validateErrors = validate(data, updateAppointmentSchema);
@@ -839,8 +844,7 @@ export class AppointmentController extends BaseController {
 
       //update appointment here
       const appointmentData: any = {
-        id: data.appointmentId,
-        locationId: data.locationId,
+        date: data.date,
         customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId
       };
       await AppointmentModel.update(appointmentData, { where: { id: data.appointmentId }, transaction });

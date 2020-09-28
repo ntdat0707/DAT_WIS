@@ -13,6 +13,7 @@ class ServiceModel extends Model {
   public serviceCode: string;
   public name: string;
   public isAllowedMarketplace!: boolean;
+  public allowGender: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
