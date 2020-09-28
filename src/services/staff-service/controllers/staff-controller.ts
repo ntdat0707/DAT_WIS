@@ -14,6 +14,8 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
 import { iterator } from '../../../utils/iterator';
 import { timeSlots } from '../../../utils/time-slots';
+import {minutesToNum} from '../../../utils/minutes-to-number';
+import {dayOfWeek} from '../../../utils/day-of-week';
 import {
   sequelize,
   StaffModel,
@@ -23,8 +25,7 @@ import {
   AppointmentModel,
   AppointmentDetailModel,
   CompanyModel,
-  LocationWorkingHourModel,
-  AppointmentDetailStaffModel
+  LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -981,7 +982,7 @@ export class StaffController {
         },
         raw: false,
         nest: true
-      })
+      });
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingLocations['0'].workingTimes;
@@ -1037,13 +1038,13 @@ export class StaffController {
         where: {
           id: dataInput.staffId,
         },
-      })
+      });
       const preDataFirst = JSON.stringify(doctorSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
       //console.log(preDataSecond);
       console.log(preDataSecond.count);
       if (preDataSecond.count > 0) {
-        preDataSecond.rows[0].appointmentDetails.forEach((obj: any, i: any) => {
+        preDataSecond.rows[0].appointmentDetails.forEach((obj: any) => {
           obj.start_time = moment(obj.start_time).format('HH:mm').toString();
           let firstTimeSlot = parseInt(obj.start_time.split(':').join(''));
           let finalTimeSlot;
@@ -1071,21 +1072,21 @@ export class StaffController {
             }
             let finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
             finalTimeSlot = parseInt(finalTimeSlotString);
-          }
-          let finTimeSlot = moment(finalTimeSlot, "hmm").format('HH:mm');
-          let firstTime = moment(firstTimeSlot, "hmm").format('HH:mm');
+          };
+          let finTimeSlot = moment(finalTimeSlot, 'hmm').format('HH:mm');
+          let firstTime = moment(firstTimeSlot, 'hmm').format('HH:mm');
           if (timeSlot.hasOwnProperty(obj.start_time)) {
             timeSlot[firstTime] = false;
             timeSlot[finTimeSlot] = false;
-          }
+          };
           console.log(finTimeSlot);
           rangelist.push(finalTimeSlot);
           Object.keys(timeSlot).forEach((key: any, index: any) => {
             let indexStart = Object.keys(timeSlot).indexOf(firstTime);
-            let indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot)
+            let indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot);
             if (index < indexEndTime && index > indexStart) {
               timeSlot[key] = false;
-            }
+            };
           });
         });
       }
@@ -1105,7 +1106,7 @@ export class StaffController {
               }
             }
             //console.log(moment(workTime.endTime.split(':').join(''),'hmm').format('HH:mm'));
-            let stringEndtime=moment(workTime.endTime.split(':').join(''),'hmm').format('HH:mm');
+            let stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').format('HH:mm');
             //let semiEndtime = moment();
             let endTime = parseInt(stringEndtime.split(':').join(''));
             timeSlot[stringEndtime] = false;
@@ -1123,23 +1124,33 @@ export class StaffController {
           }
         };
       }
-      Object.keys(timeSlot).forEach((key:any,index:any)=>{
+      Object.keys(timeSlot).forEach((key: any) => {
         let temp;
-        if(timeSlot[key] == true){
-          let stringEndtime=moment(workTime.endTime.split(':').join(''),'hmm').format('HH:mm');
+        if (timeSlot[key] == true) {
+          let stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').format('HH:mm');
           let endTime = parseInt(stringEndtime.split(':').join(''));
           temp = parseInt(key.split(':').join(''));
-          if(temp + duration > endTime ){
+          if (temp + duration > endTime) {
             timeSlot[key] = false;
           }
         }
-      })
+      });
+      let currentTime = parseInt(moment().utc().add(7,'h').format('HH:mm').split(':').join(''));
+      let currentDay =  moment().utc().format('MMMM DD YYYY');
+      console.log(currentDay);
+      Object.keys(timeSlot).forEach((key:any) => {
+        let temp = key.split(':').join('');
+        if (temp < currentTime && currentDay == workDay){
+          let stringTemp = moment(temp,'hmm').format('HH:mm');
+          timeSlot[stringTemp] = false;
+        }
+      });
       //console.log(rangelist);
 
       if (!workingTime) {
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
       }
-      res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot))
+      res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot));
     } catch (error) {
       return next(error);
     };
@@ -1174,3 +1185,116 @@ export class StaffController {
     }
   };
 }
+    /**
+   * @swagger
+   * definitions:
+   *   RandomAvailableTimeSlots:
+   *       required:
+   *           - locationId
+   *           - workDay
+   *           - serviceDuration
+   *       properties:
+   *           locationId:
+   *               type: string
+   *           workDay:
+   *               type: string
+   *           serviceDuration: 
+   *               type: integer
+   */
+
+  /**
+   * @swagger
+   * /staff/get-random-available-time:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: getRandomAvailableTimeSlots
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/RandomAvailableTimeSlots'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getRandomAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = {...req.body};
+      const serviceDuration = dataInput.serviceDuration;
+      const locationId = dataInput.locationId;
+      const workDay = dataInput.workDay;
+      let duration = minutesToNum(serviceDuration);
+      console.log(duration);
+      const workingTime = await LocationModel.findOne({
+        attributes: [],
+        include: [
+          {
+            model: LocationWorkingHourModel,
+            as: 'workingTimes',
+            attributes: ['weekday', 'startTime', 'endTime', 'isEnabled']
+          }
+        ],
+        where: {
+          id: locationId
+        },
+        raw: false,
+        nest: true
+      });
+      const preData = JSON.stringify(workingTime.toJSON());
+      const simplyData = JSON.parse(preData);
+      const data = simplyData.workingTimes;
+      let day = dayOfWeek(workDay);
+      const workTime = iterator(data,day);
+      const timeSlot = timeSlots(workTime.startTime,workTime.endTime,5);
+      const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
+      const doctorsSchedule = await StaffModel.findAndCountAll({
+        attributes: ['staff_id'],
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            through: { attributes: [] },
+            attributes: ['duration', 'start_time', 'status'],
+            where: {
+              [Op.and]: [
+                sequelize.Sequelize.where(sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')), appointmentDay),
+                {
+                  [Op.not]: [
+                    { status: { [Op.like]: 'cancel' } }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        where: {
+          main_location_id: locationId,
+        },
+      });
+      const preDataFirst = JSON.stringify(doctorsSchedule);
+      const preDataSecond = JSON.parse(preDataFirst);
+      console.log(preDataSecond);
+      let len = preDataSecond.rows.length;
+      for (let i = 0; i< len; i++){
+        preDataSecond.rows[i].appointmentDetails.forEach((e:any) => {
+          e.start_time = moment(e.start_time).format('HH:mm');
+          console.log(e.start_time);
+        });
+      }
+
+      res.status(HttpStatus.OK).send(buildSuccessMessage(preDataSecond));
+
+    } catch (error) {
+      return error;
+    }
+  }
+
+};
+
+
