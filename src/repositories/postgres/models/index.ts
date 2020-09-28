@@ -146,6 +146,8 @@ export {
   StaffModel,
   CompanyModel,
   CompanyDetailModel,
+  CountryModel,
+  CityModel,
   CustomerModel,
   LocationModel,
   ServiceModel,
@@ -157,10 +159,8 @@ export {
   AppointmentDetailModel,
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
-  LocationWorkingHourModel,
   LocationImageModel,
-  CountryModel,
-  CityModel,
   CustomerSearchModel,
-  CustomerWisereModel
+  CustomerWisereModel,
+  LocationWorkingHourModel
 };
