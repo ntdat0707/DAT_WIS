@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-class CustomerModel extends Model {
+class CustomerWisereModel extends Model {
   public id: string;
   public firstName!: string;
   public lastName!: string;
@@ -11,18 +11,14 @@ class CustomerModel extends Model {
   public passportNumber: string;
   public address: string;
   public companyId!: string;
-  public password!: string;
   public otpCode: string;
-  public facebookId: string;
-  public googleId: string;
-  public appleId: string;
   public avatarPath: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-CustomerModel.init(
+CustomerWisereModel.init(
   {
     id: {
       field: 'id',
@@ -43,7 +39,7 @@ CustomerModel.init(
     gender: {
       type: DataTypes.TINYINT,
       field: 'gender',
-      allowNull: false
+      allowNull: true
     },
     phone: {
       type: DataTypes.STRING,
@@ -69,30 +65,15 @@ CustomerModel.init(
       allowNull: true,
       field: 'address'
     },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'password'
+    companyId: {
+      field: 'company_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     otpCode: {
       type: DataTypes.STRING,
       allowNull: true,
       field: 'otp_code'
-    },
-    facebookId: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'facebook_id'
-    },
-    appleId: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'apple_id'
-    },
-    googleId: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'google_id'
     },
     avatarPath: {
       type: DataTypes.STRING,
@@ -118,17 +99,11 @@ CustomerModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'customer',
-    scopes: {
-      safe: {
-        attributes: {
-          exclude: ['password']
-        }
-      }
-    },
+    tableName: 'customer_wisere',
+    scopes: {},
     timestamps: true,
     paranoid: true
   }
 );
 
-export { CustomerModel };
+export { CustomerWisereModel };
