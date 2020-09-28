@@ -10,11 +10,11 @@ const timeSlots = function (start: any, end: any, step: any) {
         if (twoLastDigits == 60) {
             i = Math.floor(i/100 + 1) * 100;
         }
-        let momentStart = moment(i.toString(), "hmm").format('HH:mm');
+        let momentStart = moment(i.toString(), 'hmm').format('HH:mm');
         slots[momentStart] = bool;
     }
-    let momentEnd = moment(newEnd.toString(), "hmm").format('HH:mm');
+    let momentEnd = moment(newEnd.toString(), 'hmm').format('HH:mm');
     slots[momentEnd] = bool;
     return slots;
-}
+};
 export { timeSlots };

@@ -16,6 +16,7 @@ import { iterator } from '../../../utils/iterator';
 import { timeSlots } from '../../../utils/time-slots';
 import {minutesToNum} from '../../../utils/minutes-to-number';
 import {dayOfWeek} from '../../../utils/day-of-week';
+import {getStaffUnavailTime} from '../../../utils/unavail-time-array';
 import {
   sequelize,
   StaffModel,
@@ -943,19 +944,11 @@ export class StaffController {
   public getStaffAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
     try {
       let rangelist: Array<number> = [];
-      let duration: number;
       const dataInput = { ...req.body };
-      //console.log('staffid:::', req.body.staffId);
       const validateErrors = validate(dataInput.staffId, staffIdSchema);
       const workDay = dataInput.workDay;
       const serviceDuration = dataInput.serviceDuration;
-      if (serviceDuration == 60) {
-        duration = 100;
-      } else if (serviceDuration < 60) {
-        duration = serviceDuration;
-      } else {
-        duration = (serviceDuration / 60) * 100;
-      }
+      let duration = minutesToNum(serviceDuration);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const workingTime = await StaffModel.findOne({
         attributes: [],
@@ -983,31 +976,8 @@ export class StaffController {
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingLocations['0'].workingTimes;
-      const dayOfWeek = moment(workDay).day();
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
-      let day;
-      switch (dayOfWeek) {
-        case 0:
-          day = 'sunday';
-          break;
-        case 1:
-          day = 'monday';
-          break;
-        case 2:
-          day = 'tuesday';
-          break;
-        case 3:
-          day = 'wednesday';
-          break;
-        case 4:
-          day = 'thursday';
-          break;
-        case 5:
-          day = 'friday';
-          break;
-        case 6:
-          day = 'saturday';
-      }
+      let day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
       //console.log(workTime);
       const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
@@ -1190,14 +1160,15 @@ export class StaffController {
    *       500:
    *         description: Internal server errors
    */
-  public getRandomAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
+  public getRandomAvailableTimeSlots = async (req: Request, res: Response) => {
     try {
       const dataInput = {...req.body};
       const serviceDuration = dataInput.serviceDuration;
       const locationId = dataInput.locationId;
       const workDay = dataInput.workDay;
+      const staffIds: Array<String> = [];
       let duration = minutesToNum(serviceDuration);
-      console.log(duration);
+      //console.log(duration);
       const workingTime = await LocationModel.findOne({
         attributes: [],
         include: [
@@ -1219,9 +1190,11 @@ export class StaffController {
       let day = dayOfWeek(workDay);
       const workTime = iterator(data,day);
       const timeSlot = timeSlots(workTime.startTime,workTime.endTime,5);
+      //console.log(workDay);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
+      console.log(appointmentDay);
       const doctorsSchedule = await StaffModel.findAndCountAll({
-        attributes: ['staff_id'],
+        attributes: ['id'],
         include: [
           {
             model: AppointmentDetailModel,
@@ -1246,16 +1219,26 @@ export class StaffController {
       });
       const preDataFirst = JSON.stringify(doctorsSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
-      console.log(preDataSecond);
+      //console.log(preDataSecond);
       let len = preDataSecond.rows.length;
       for (let i = 0; i< len; i++){
         preDataSecond.rows[i].appointmentDetails.forEach((e:any) => {
           e.start_time = moment(e.start_time).format('HH:mm');
-          console.log(e.start_time);
         });
       }
-
-      res.status(HttpStatus.OK).send(buildSuccessMessage(preDataSecond));
+      let staffUnavailTime = getStaffUnavailTime(preDataSecond);
+      console.log(staffUnavailTime);
+      const doctors = await StaffModel.findAndCountAll({
+        attributes: ['id'],
+        where: {
+          main_location_id: locationId,
+        }
+      });
+      for (let i = 0; i < doctors.count; i++){
+        staffIds.push(doctors.rows[i].id);
+      }
+      //console.log(staffIds);
+      res.status(HttpStatus.OK).send(buildSuccessMessage(doctorsSchedule));
 
     } catch (error) {
       return error;
