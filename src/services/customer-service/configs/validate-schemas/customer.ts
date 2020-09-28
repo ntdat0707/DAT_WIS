@@ -1,7 +1,7 @@
 import Joi from 'joi';
 import { EGender, ESocialType } from '../../../../utils/consts';
 
-const createCustomerSchema = Joi.object({
+const createCustomerWisereSchema = Joi.object({
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
   gender: Joi.number().integer().allow(null).valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
@@ -12,7 +12,7 @@ const createCustomerSchema = Joi.object({
   address: Joi.string().label('address')
 });
 
-const updateCustomerSchema = Joi.object({
+const updateCustomerWisereSchema = Joi.object({
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
@@ -21,7 +21,7 @@ const updateCustomerSchema = Joi.object({
   address: Joi.string().label('address')
 });
 
-const customerIdSchema = Joi.string()
+const customerWireseIdSchema = Joi.string()
   .guid({
     version: ['uuidv4']
   })
@@ -42,4 +42,23 @@ const loginSocialSchema = Joi.object({
   avatarPath: Joi.string().allow('', null).label('avatarPath')
 });
 
-export { createCustomerSchema, customerIdSchema, loginSchema, loginSocialSchema, updateCustomerSchema };
+const registerCustomerSchema = Joi.object({
+  firstName: Joi.string().required().label('firstName'),
+  lastName: Joi.string().required().label('lastName'),
+  gender: Joi.number().integer().allow(null).valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
+  phone: Joi.string().regex(/^\d+$/).required().label('phone'),
+  email: Joi.string().allow(null).email().label('email'),
+  birthDate: Joi.string().isoDate().label('birthDate'),
+  passportNumber: Joi.string().label('passportNumber'),
+  address: Joi.string().label('address'),
+  password: Joi.string().required().min(8).label('password')
+});
+
+export {
+  createCustomerWisereSchema,
+  customerWireseIdSchema,
+  loginSchema,
+  loginSocialSchema,
+  updateCustomerWisereSchema,
+  registerCustomerSchema
+};
