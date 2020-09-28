@@ -1586,7 +1586,7 @@ export class LocationController {
             model: LocationDetailModel,
             as: 'locationDetail',
             required: true,
-            attributes: ['title', 'description'],
+            attributes: ['title', 'description', 'pathName'],
             where: { pathName: data.pathName }
           },
           {
@@ -1600,27 +1600,43 @@ export class LocationController {
       });
 
       if (location) {
-        locations = await LocationModel.findAll({
-          where: { companyId: location.companyId },
-          include: [
-            {
-              model: LocationWorkingHourModel,
-              as: 'workingTimes',
-              required: true,
-              where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
-              order: [['weekday', 'DESC']],
-              attributes: ['weekday', 'startTime', 'endTime']
-            }
-          ],
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-          group: [
-            'LocationModel.id',
-            'workingTimes.id',
-            'workingTimes.start_time',
-            'workingTimes.end_time',
-            'workingTimes.weekday'
-          ]
-        });
+        locations = (
+          await LocationModel.findAll({
+            where: { companyId: location.companyId },
+            include: [
+              {
+                model: LocationWorkingHourModel,
+                as: 'workingTimes',
+                required: true,
+                where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
+                order: [['weekday', 'DESC']],
+                attributes: ['weekday', 'startTime', 'endTime']
+              },
+              {
+                model: LocationDetailModel,
+                as: 'locationDetail',
+                required: true,
+                attributes: ['title', 'description', 'pathName']
+              }
+            ],
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            group: [
+              'LocationModel.id',
+              'workingTimes.id',
+              'workingTimes.start_time',
+              'workingTimes.end_time',
+              'workingTimes.weekday',
+              'locationDetail.id',
+              'locationDetail.title',
+              'locationDetail.description',
+              'locationDetail.path_name'
+            ]
+          })
+        ).map((locate: any) => ({
+          ...locate.dataValues,
+          ...locate.locationDetail.dataValues,
+          ['locationDetail']: undefined
+        }));
 
         location = location.dataValues;
         location = {
