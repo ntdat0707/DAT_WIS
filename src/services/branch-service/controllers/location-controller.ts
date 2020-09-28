@@ -26,7 +26,8 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema,
   searchSchema,
-  pathNameSchema
+  pathNameSchema,
+  suggestedSchema
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -38,7 +39,7 @@ import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
-import { normalizeRemoveAccent } from '../../../utils/text';
+import { normalizeRemoveAccent, removeAccents } from '../../../utils/text';
 
 export class LocationController {
   /**
@@ -1027,14 +1028,6 @@ export class LocationController {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
 
-      if (search.customerId && search.keywords) {
-        req.query = {
-          ...req.query,
-          ...search
-        };
-        await this.createCustomerSearch(req, res, next);
-      }
-
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
@@ -1061,13 +1054,13 @@ export class LocationController {
             model: CompanyModel,
             as: 'company',
             required: false,
-            attributes: ['businessName'],
+            attributes: ['id', 'businessName'],
             include: [
               {
                 model: CateServiceModel,
                 as: 'cateServices',
                 required: false,
-                attributes: ['name']
+                attributes: ['id','name']
               }
             ]
           },
@@ -1121,14 +1114,52 @@ export class LocationController {
       }
 
       let locationResults: any = await LocationModel.findAll(queryLocations);
+      const keywordUnaccents = removeAccents(keywords).toLowerCase();
+      let searchCateServiceItem: any = {};
+      let searchCompanyItem: any = {};
+      let searchServiceItem: any = {};
+      let searchLocationItem: any = {};
 
       locationResults = locationResults.map((location: any) => {
         location = location.dataValues;
+        if ( location.name &&
+          removeAccents(location.name)
+            .toLowerCase()
+            .search(keywordUnaccents)
+        ) {
+          searchLocationItem = location;
+        }
+
         if (location.company) {
           location.company = location.company.dataValues;
+          if ( location.company.businessName &&
+            removeAccents(location.company.businessName)
+              .toLowerCase()
+              .search(keywordUnaccents)
+          ) {
+            searchCompanyItem = location.company;
+          }
+
+          if ( location.services
+            && !_.isEmpty(location.services)
+            && location.services[0].name
+            && removeAccents(location.services[0].name)
+              .toLowerCase()
+              .search(keywordUnaccents)
+          ) {
+            searchServiceItem = location.services[0];
+          }
+
           if (location.company.cateServices && Array.isArray(location.company.cateServices)) {
             location.company.cateServices.map((cateService: any) => {
               cateService = cateService.dataValues;
+              if (
+                removeAccents(cateService.name)
+                  .toLowerCase()
+                  .search(keywordUnaccents)
+              ) {
+                searchCateServiceItem = cateService;
+              }
               return cateService;
             });
             location.company.cateServices = undefined;
@@ -1201,6 +1232,41 @@ export class LocationController {
       //   }) DESC`);
       // }
 
+      if (search.customerId && search.keywords) {
+        req.query = {
+          ...req.query,
+          ...search
+        };
+        let typeResult = null;
+        let cateServiceId = null;
+        let companyId = null;
+        let serviceId = null;
+        let locationId = null;
+        if (!_.isEmpty(searchCateServiceItem)) {
+          cateServiceId = searchCateServiceItem.id;
+          typeResult = 'cateService';
+        } else if (!_.isEmpty(searchCompanyItem)) {
+          companyId = searchCompanyItem.id;
+          typeResult = 'company';
+        } else if (!_.isEmpty(searchServiceItem)) {
+          serviceId = searchServiceItem.id;
+          typeResult = 'service';
+        } else if (!_.isEmpty(searchLocationItem)) {
+          locationId = searchLocationItem.id;
+          typeResult = 'location';
+        }
+        await this.createCustomerSearch(
+          req, next,
+          {
+            cateServiceId,
+            companyId,
+            serviceId,
+            locationId
+          },
+          typeResult
+        );
+      }
+
       const locations = await paginate(
         LocationModel,
         query,
@@ -1224,7 +1290,17 @@ export class LocationController {
     return array.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
   };
 
-  private createCustomerSearch = async (req: Request, _res: Response, next: NextFunction) => {
+  private createCustomerSearch = async (
+    req: Request,
+    next: NextFunction,
+    searchItem: {
+      serviceId?: string,
+      companyId?: string,
+      locationId?: string,
+      cateServiceId?: string
+    },
+    typeResult: string
+  ) => {
     let transaction = null;
     try {
       transaction = await sequelize.transaction();
@@ -1234,6 +1310,11 @@ export class LocationController {
           id: uuidv4(),
           customerId: req.query.customerId,
           keywords: req.query.keywords,
+          serviceId: searchItem.serviceId,
+          cateServiceId: searchItem.cateServiceId,
+          locationId: searchItem.locationId,
+          companyId: searchItem.companyId,
+          type: typeResult,
           latitude: req.query.latitude,
           longitude: req.query.longitude
         }
@@ -1244,6 +1325,7 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
+      console.log(error);
       return next(error);
     }
   };
@@ -1344,13 +1426,14 @@ export class LocationController {
           .split(' ')
           .filter((x: string) => x)
           .join(' ');
+
       const search = {
         keywords: trimSpace(req.query.keyword ? req.query.keyword.toString() : ''),
         customerId: req.query.customerId,
         cityName: req.query.cityName
       };
 
-      const validateErrorsSearch = validate(search, searchSchema);
+      const validateErrorsSearch = validate(search, suggestedSchema);
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
@@ -1390,12 +1473,45 @@ export class LocationController {
         }],
         group: ['ServiceModel.id'],
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywordsQuery}])`),
+        limit: 10
+      });
+
+      const recentSearch = await CustomerSearchModel.findAll({
+        where: {
+          customerId: search.customerId
+        },
+        include: [
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+          },
+          {
+            model: CompanyModel,
+            as: 'company',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+          },
+          {
+            model: LocationModel,
+            as: 'location',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+          }
+        ]
       });
 
       const results = {
         cateServices,
-        popularServices
-
+        popularServices,
+        recentSearch
       };
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));

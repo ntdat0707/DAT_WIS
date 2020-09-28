@@ -12,6 +12,7 @@ class LocationDetailModel extends Model {
   public recoveryRooms?: number;
   public totalBookings?: number;
   public gender?: number;
+  public description?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -33,6 +34,11 @@ LocationDetailModel.init(
     },
     title:{
       field: 'title',
+      type:DataTypes.STRING,
+      allowNull: false
+    },
+    description:{
+      field: 'description',
       type:DataTypes.STRING,
       allowNull: false
     },

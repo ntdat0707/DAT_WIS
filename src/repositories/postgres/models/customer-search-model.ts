@@ -5,6 +5,11 @@ class CustomerSearchModel extends Model {
   public id!: string;
   public customerId!: string;
   public keywords!: string;
+  public cateServiceId: string;
+  public serviceId: string;
+  public companyId: string;
+  public locationId: string;
+  public type: string;
   public latitude: number;
   public longittude: number;
   public readonly createdAt!: Date;
@@ -29,6 +34,31 @@ CustomerSearchModel.init(
       type: DataTypes.STRING,
       allowNull: false,
       field: 'keywords'
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'type'
+    },
+    serviceId: {
+      field: 'service_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    cateServiceId: {
+      field: 'cate_service_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    companyId: {
+      field: 'company_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true,
+    },
+    locationId: {
+      field: 'location_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
     },
     latitude: {
       field: 'latitude',
