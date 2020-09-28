@@ -65,7 +65,7 @@ RecentBookingModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'service_image',
+    tableName: 'recent_booking',
     timestamps: true,
     paranoid: true
   }

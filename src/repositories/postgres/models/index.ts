@@ -23,6 +23,7 @@ import { CountryModel } from './country-model';
 import { CityModel } from './city-model';
 import { CustomerSearchModel } from './customer-search-model';
 import { CustomerWisereModel } from './customer-wisere-model';
+import { RecentBookingModel } from './recent-booking-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -130,17 +131,20 @@ CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
 CustomerModel.hasMany(CustomerSearchModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
 
-ServiceModel.hasMany(CustomerSearchModel, {foreignKey: 'serviceId', sourceKey: 'id', as: 'customerSearches'});
+ServiceModel.hasMany(CustomerSearchModel, { foreignKey: 'serviceId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
 
-CateServiceModel.hasMany(CustomerSearchModel, {foreignKey: 'cateServiceId', sourceKey: 'id', as: 'customerSearches'});
+CateServiceModel.hasMany(CustomerSearchModel, { foreignKey: 'cateServiceId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CateServiceModel, { foreignKey: 'cateServiceId', as: 'cateService' });
 
-CompanyModel.hasMany(CustomerSearchModel, {foreignKey: 'companyId', sourceKey: 'id', as: 'customerSearches'});
+CompanyModel.hasMany(CustomerSearchModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
-LocationModel.hasMany(CustomerSearchModel, {foreignKey: 'locationId', sourceKey: 'id', as: 'customerSearches'});
+LocationModel.hasMany(CustomerSearchModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+AppointmentModel.hasOne(RecentBookingModel, { foreignKey: 'appointmentId', sourceKey: 'id', as: 'appointment' });
+RecentBookingModel.belongsTo(AppointmentModel, { foreignKey: 'appointmentId', as: 'recentBooking' });
 
 export {
   sequelize,
@@ -161,7 +165,8 @@ export {
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
   LocationWorkingHourModel,
-  LocationImageModel, 
+  LocationImageModel,
   CustomerSearchModel,
   CustomerWisereModel,
+  RecentBookingModel
 };
