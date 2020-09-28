@@ -22,6 +22,7 @@ import { LocationImageModel } from './location-image';
 import { CountryModel } from './country-model';
 import { CityModel } from './city-model';
 import { CustomerSearchModel } from './customer-search-model';
+import { CustomerWisereModel } from './customer-wisere-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -113,8 +114,11 @@ AppointmentGroupModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: '
 LocationModel.hasMany(LocationWorkingHourModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'workingTimes' });
 LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
-CompanyModel.hasMany(CustomerModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customers' });
-CustomerModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+CompanyModel.hasMany(CustomerWisereModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customerWiseres' });
+CustomerWisereModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+CustomerWisereModel.hasMany(AppointmentModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'appointments' });
+AppointmentModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
 LocationModel.hasMany(LocationImageModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'locationImages' });
 LocationImageModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
@@ -145,5 +149,6 @@ export {
   LocationImageModel,
   CountryModel,
   CityModel,
-  CustomerSearchModel
+  CustomerSearchModel,
+  CustomerWisereModel
 };
