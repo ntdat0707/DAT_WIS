@@ -145,5 +145,5 @@ export {
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
   LocationWorkingHourModel,
-  CustomerWisereModel
+  CustomerWisereModel,
 };
