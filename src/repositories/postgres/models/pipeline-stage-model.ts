@@ -7,6 +7,7 @@ class PipelineStageModel extends Model {
   public name!: string;
   public rottingIn: number;
   public order: number;
+  public probability: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -32,11 +33,17 @@ PipelineStageModel.init(
     },
     rottingIn: {
       type: DataTypes.TINYINT,
-      field: 'rotting_in'
+      field: 'rotting_in',
+      defaultValue: 0
     },
     order: {
       type: DataTypes.TINYINT,
       field: 'order'
+    },
+    probability: {
+      field: 'probability',
+      type: DataTypes.TINYINT,
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',

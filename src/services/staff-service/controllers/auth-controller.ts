@@ -17,7 +17,14 @@ import {
   verifyAccessToken,
   verifyRefreshToken
 } from '../../../utils/jwt';
-import { sequelize, StaffModel, CompanyModel, LocationModel, PipelineModel, PipelineStageModel } from '../../../repositories/postgres/models';
+import {
+  sequelize,
+  StaffModel,
+  CompanyModel,
+  LocationModel,
+  PipelineModel,
+  PipelineStageModel
+} from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import {
@@ -116,146 +123,142 @@ export class AuthController {
       const dataPipeline = [
         {
           id: pipelineId1,
-          name: "Tradition",
-          rottingIn: 0,
-          staffId: staffId
+          name: 'Tradition',
+          companyId: companyId
         },
         {
           id: pipelineId2,
-          name: "Basic",
-          rottingIn: 0,
-          staffId: staffId
+          name: 'Basic',
+          companyId: companyId
         },
         {
           id: pipelineId3,
-          name: "SMS branding name",
-          rottingIn: 0,
-          staffId: staffId
+          name: 'SMS branding name',
+          companyId: companyId
         },
         {
           id: pipelineId4,
-          name: "Appointment",
-          rottingIn: 0,
-          staffId: staffId
+          name: 'Appointment',
+          companyId: companyId
         }
-      ]
+      ];
       await PipelineModel.bulkCreate(dataPipeline, { transaction });
       const dataStage = [
         {
           pipelineId: pipelineId1,
-          name: "Onsite",
-          rottingIn: 0,
+          name: 'Onsite',
+          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId1,
-          name: "Interactive",
-          rottingIn: 0,
+          name: 'Interactive',
+          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId1,
-          name: "Proposal made",
-          rottingIn: 0,
+          name: 'Proposal made',
+          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId1,
-          name: "Demo Scheduled",
-          rottingIn: 0,
+          name: 'Demo Scheduled',
+          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId2,
-          name: "Lead-in",
-          rottingIn: 0,
+          name: 'Lead-in',
+          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId2,
-          name: "Contact made",
-          rottingIn: 0,
+          name: 'Contact made',
+          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId2,
-          name: "Demo Scheduled",
-          rottingIn: 0,
+          name: 'Demo Scheduled',
+          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId2,
-          name: "Proposal made",
-          rottingIn: 0,
+          name: 'Proposal made',
+          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId2,
-          name: "Negotiation Started",
-          rottingIn: 0,
+          name: 'Negotiation Started',
+          probability: 100,
           order: 5
         },
         {
           pipelineId: pipelineId3,
-          name: "Contact made",
-          rottingIn: 0,
+          name: 'Contact made',
+          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId3,
-          name: "SMS sent",
-          rottingIn: 0,
+          name: 'SMS sent',
+          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId3,
-          name: "Filter",
-          rottingIn: 0,
+          name: 'Filter',
+          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId3,
-          name: "Interactive",
-          rottingIn: 0,
+          name: 'Interactive',
+          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId3,
-          name: "Proposal made",
-          rottingIn: 0,
+          name: 'Proposal made',
+          probability: 100,
           order: 5
         },
         {
           pipelineId: pipelineId3,
-          name: "Negotiation Started",
-          rottingIn: 0,
+          name: 'Negotiation Started',
+          probability: 100,
           order: 6
         },
         {
           pipelineId: pipelineId4,
-          name: "New",
-          rottingIn: 0,
+          name: 'New',
+          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId4,
-          name: "Confirmed",
-          rottingIn: 0,
+          name: 'Confirmed',
+          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId4,
-          name: "Purchased",
-          rottingIn: 0,
+          name: 'Purchased',
+          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId4,
-          name: "Treatment Planning",
-          rottingIn: 0,
+          name: 'Treatment Planning',
+          probability: 100,
           order: 4
         }
-      ]
+      ];
       await PipelineStageModel.bulkCreate(dataStage, { transaction });
       //commit transaction
       await transaction.commit();

@@ -3,9 +3,9 @@ import sequelize from '../configs/db-connector';
 
 class PipelineModel extends Model {
   public id: string;
-  public staffId!: string;
+  public companyId!: string;
   public name!: string;
-  public rottingIn: number;
+  public isActiveProbability: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -19,8 +19,8 @@ PipelineModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    staffId: {
-      field: 'staff_id',
+    companyId: {
+      field: 'company_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
@@ -29,9 +29,11 @@ PipelineModel.init(
       type: DataTypes.STRING,
       allowNull: false
     },
-    rottingIn: {
-      type: DataTypes.TINYINT,
-      field: 'rotting_in'
+    isActiveProbability: {
+      field: 'is_active_probability',
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     },
     createdAt: {
       field: 'created_at',

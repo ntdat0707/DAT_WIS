@@ -1,20 +1,20 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class DealModel extends Model{
+class DealModel extends Model {
   public id: string;
   public dealTitle!: string;
-  public customerId: string;
+  public customerWisereId: string;
   public source: string;
   public amount: number;
-  public exceptedRevenue: number;
   public currency: string;
   public note: string;
-  public owner: string;
+  public ownerId: string;
   public pipelineStageId: string;
   public status: string;
   public expectedCloseDate: Date;
   public closingDate: Date;
+  public probability: number;
   public createdBy: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
@@ -34,10 +34,10 @@ DealModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
-    customerId: {
-      field: 'customer_id',
+    customerWisereId: {
+      field: 'customer_wisere_id',
       type: DataTypes.UUIDV4,
-      allowNull: false
+      allowNull: true
     },
     source: {
       field: 'source',
@@ -46,10 +46,6 @@ DealModel.init(
     },
     amount: {
       field: 'amount',
-      type: DataTypes.TINYINT
-    },
-    exceptedRevenue: {
-      field: 'excepted_revenue',
       type: DataTypes.TINYINT
     },
     currency: {
@@ -62,9 +58,9 @@ DealModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
-    owner: {
-      field: 'owner',
-      type: DataTypes.STRING,
+    ownerId: {
+      field: 'owner_id',
+      type: DataTypes.UUIDV4,
       allowNull: true
     },
     pipelineStageId: {
@@ -85,6 +81,11 @@ DealModel.init(
     closingDate: {
       field: 'closing_date',
       type: DataTypes.DATE,
+      allowNull: true
+    },
+    probability: {
+      field: 'probability',
+      type: DataTypes.TINYINT,
       allowNull: true
     },
     createdBy: {
@@ -117,4 +118,4 @@ DealModel.init(
   }
 );
 
-export{ DealModel };
+export { DealModel };

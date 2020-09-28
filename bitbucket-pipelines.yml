@@ -4,6 +4,7 @@ options:
 definitions:
   caches:
     package-node: ./node_modules
+    doctl-cached: ~/doctl
 lint: &lint
   - step:
       caches:
@@ -39,6 +40,8 @@ build-image: &build-image
   - step:
       caches:
         - package-node
+        - docker
+        - doctl-cached
       # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
       size: 2x
       name: Install doctl Digital Ocean
@@ -48,12 +51,17 @@ build-image: &build-image
         - ip addr show
         - apt update && apt install -y netcat
         - |
-          pwd
-          cd ~
-          wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
-          tar xf ~/doctl-1.45.1-linux-amd64.tar.gz
-          ls -a ~
-          ln -s ~/doctl /usr/local/bin/doctl
+          ls -a ~/doctl
+        - |
+          if [ -f ~/doctl/doctl-1.45.1-linux-amd64.tar.gz ]; then
+            echo "doctl exists."
+          else
+            rm -rf ~/doctl
+            mkdir -p ~/doctl && cd ~/doctl
+            wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
+            tar xf ~/doctl/doctl-1.45.1-linux-amd64.tar.gz
+          fi
+        - ln -s ~/doctl/doctl /usr/local/bin/doctl
 
         - |
           cd $BITBUCKET_CLONE_DIR
@@ -63,10 +71,13 @@ build-image: &build-image
         - |
           doctl auth init -t 034fc3138ce0f18eb53248127c08c3fe481d1aeaec7f5323d4e64431171135ed
           doctl registry login
+          docker push registry.digitalocean.com/wisere/wisere
       services:
         - docker
 deploy: &deploy
   - step:
+      caches:
+        - docker
       name: deploy to server via ssh
       script:
         - pipe: atlassian/ssh-run:0.1.1

@@ -4,7 +4,7 @@ import { customerErrorDetails } from './customer';
 import { staffErrorDetails } from './staff';
 import { branchErrorDetails } from './branch';
 import { bookingErrorDetails } from './booking';
-import { pipelineErrorDetails } from './pipeline';
+import { pipelineErrorDetails } from './deal';
 
 const buildErrorDetail = (
   code: string,

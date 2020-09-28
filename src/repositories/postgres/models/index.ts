@@ -19,6 +19,7 @@ import { LocationWorkingHourModel } from './location-working-hour-model';
 import { PipelineModel } from './pipeline-model';
 import { PipelineStageModel } from './pipeline-stage-model';
 import { DealModel } from './deal-model';
+import { CustomerWisereModel } from './customer-wisere-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -97,20 +98,23 @@ AppointmentGroupModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: '
 LocationModel.hasMany(LocationWorkingHourModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'workingTimes' });
 LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
-CompanyModel.hasMany(CustomerModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customers' });
-CustomerModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+CompanyModel.hasMany(CustomerWisereModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customerWiseres' });
+CustomerWisereModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+CustomerWisereModel.hasMany(AppointmentModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'appointments' });
+AppointmentModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
 PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStage' });
 PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipelineId', as: 'pipeline' });
 
-StaffModel.hasMany(PipelineModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'pipeline' });
-PipelineModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
+CompanyModel.hasMany(PipelineModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'pipeline' });
+PipelineModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
 StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deal' });
 DealModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
 
-CustomerModel.hasMany(DealModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'deal' });
-DealModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
+CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
@@ -131,5 +135,6 @@ export {
   LocationWorkingHourModel,
   PipelineModel,
   PipelineStageModel,
-  DealModel
+  DealModel,
+  CustomerWisereModel
 };

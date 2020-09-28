@@ -16,11 +16,14 @@ export class DealRoutes {
     this.router.post('/create-pipeline', isAuthenticated, this.dealController.createPipeline);
     this.router.put('/update-pipeline/:pipelineId?', isAuthenticated, this.dealController.updatePipeline);
     this.router.delete('/delete-pipeline/:pipelineId?', isAuthenticated, this.dealController.deletePipeline);
-    this.router.get('/get-pipelineStage/:pipelineId?', isAuthenticated, this.dealController.getPipelineStageByPipelineId);
-    this.router.post('/create-pipelineStage', isAuthenticated, this.dealController.createPipelineStage);
-    this.router.put('/update-pipelineStage/:pipelineStageId?', isAuthenticated, this.dealController.updatePipelineStage);
-    this.router.delete('/delete-pipelineStage/:pipelineStageId?', isAuthenticated, this.dealController.deletePipelineStage);
+    this.router.get(
+      '/get-pipelineStage/:pipelineId?',
+      isAuthenticated,
+      this.dealController.getPipelineStageByPipelineId
+    );
     this.router.post('/setting-pipelineStage/:pipelineId?', isAuthenticated, this.dealController.settingPipelineStage);
     this.router.get('/get-all-deal', isAuthenticated, this.dealController.getAllDeal);
+    this.router.post('/create-deal', isAuthenticated, this.dealController.createDeal);
+    this.router.get('/get-deal/:dealId?', isAuthenticated, this.dealController.getDealById);
   }
 }

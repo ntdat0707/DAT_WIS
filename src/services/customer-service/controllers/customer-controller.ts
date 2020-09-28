@@ -5,16 +5,17 @@ require('dotenv').config();
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { customerErrorDetails, generalErrorDetails } from '../../../utils/response-messages/error-details';
-import { CustomerModel } from '../../../repositories/postgres/models';
-
-import { createCustomerSchema } from '../configs/validate-schemas';
-import { buildSuccessMessage } from '../../../utils/response-messages';
+import { CustomerModel, CustomerWisereModel } from '../../../repositories/postgres/models';
 import {
-  customerIdSchema,
-  updateCustomerSchema,
+  createCustomerWisereSchema,
+  customerWireseIdSchema,
+  updateCustomerWisereSchema,
   loginSchema,
-  loginSocialSchema
-} from '../configs/validate-schemas/customer';
+  loginSocialSchema,
+  registerCustomerSchema
+} from '../configs/validate-schemas';
+import { buildSuccessMessage } from '../../../utils/response-messages';
+
 import { paginate } from '../../../utils/paginator';
 import { FindOptions } from 'sequelize/types';
 import { hash, compare } from 'bcryptjs';
@@ -26,10 +27,6 @@ import {
   createRefreshToken,
   verifyAccessToken
 } from '../../../utils/jwt';
-import * as ejs from 'ejs';
-import * as path from 'path';
-import { ICustomerRegisterAccountTemplate } from '../../../utils/emailer/templates/customer-register-account';
-import { sendEmail } from '../../../utils/emailer';
 import { generatePWD } from '../../../utils/lib/generatePassword';
 import { ESocialType } from '../../../utils/consts';
 import {
@@ -44,7 +41,7 @@ export class CustomerController {
   /**
    * @swagger
    * definitions:
-   *   customerCreate:
+   *   customerWisereCreate:
    *       properties:
    *           firstName:
    *               type: string
@@ -52,6 +49,7 @@ export class CustomerController {
    *               type: string
    *           gender:
    *               type: integer
+   *               required: true
    *               enum: [0, 1, 2]
    *           phone:
    *               required: true
@@ -67,7 +65,6 @@ export class CustomerController {
    *
    *
    */
-
   /**
    * @swagger
    * /customer/create:
@@ -76,13 +73,13 @@ export class CustomerController {
    *       - Customer
    *     security:
    *       - Bearer: []
-   *     name: createCustomer
+   *     name: createCustomerWisere
    *     parameters:
    *     - in: "body"
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/customerCreate'
+   *         $ref: '#/definitions/customerWisereCreate'
    *     responses:
    *       200:
    *         description: success
@@ -91,7 +88,7 @@ export class CustomerController {
    *       500:
    *         description:
    */
-  public createCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  public createCustomerWisere = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data: any = {
         firstName: req.body.firstName,
@@ -103,37 +100,21 @@ export class CustomerController {
         passportNumber: req.body.passportNumber,
         address: req.body.address
       };
-      const validateErrors = validate(data, createCustomerSchema);
+      const validateErrors = validate(data, createCustomerWisereSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      const existPhone = await CustomerModel.findOne({ where: { phone: data.phone } });
+      const existPhone = await CustomerWisereModel.findOne({ where: { phone: data.phone, companyId: data.companyId } });
       if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
       if (req.body.email) {
-        const existEmail = await CustomerModel.findOne({ where: { email: data.email, companyId: data.companyId } });
+        const existEmail = await CustomerWisereModel.findOne({
+          where: { email: data.email, companyId: data.companyId }
+        });
         if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
-      const password = await generatePWD(8);
-      data.password = await hash(password, PASSWORD_SALT_ROUNDS);
-      const customer = await CustomerModel.create(data);
-      const dataSendMail: ICustomerRegisterAccountTemplate = {
-        customerEmail: data.email,
-        customerName: `${data.firstName} ${data.lastName}`,
-        password: password
-      };
-      const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/customer-register-account.ejs');
-      ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
-        if (!err) {
-          await sendEmail({
-            receivers: data.email,
-            subject: 'Your Login information for Wisere',
-            type: 'html',
-            message: dataEjs
-          });
-        }
-      });
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
+      const customerWisere = await CustomerWisereModel.create(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customerWisere));
     } catch (error) {
       return next(error);
     }
@@ -141,7 +122,7 @@ export class CustomerController {
   /**
    * @swagger
    * definitions:
-   *   customerUpdate:
+   *   customerWisereUpdate:
    *       properties:
    *           lastName:
    *               type: string
@@ -163,22 +144,22 @@ export class CustomerController {
 
   /**
    * @swagger
-   * /customer/update/{customerId}:
+   * /customer/update-customer-wisere/{customerWisereId}:
    *   put:
    *     tags:
    *       - Customer
    *     security:
    *       - Bearer: []
-   *     name: updateCustomer
+   *     name: updateCustomerWisere
    *     parameters:
    *     - in: "path"
-   *       name: "customerId"
+   *       name: "customerWisereId"
    *       required: true
    *     - in: "body"
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/customerUpdate'
+   *         $ref: '#/definitions/customerWisereUpdate'
    *     responses:
    *       200:
    *         description: success
@@ -187,7 +168,7 @@ export class CustomerController {
    *       500:
    *         description:
    */
-  public updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  public updateCustomerWisere = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { companyId } = res.locals.staffPayload;
       const data: any = {
@@ -198,16 +179,21 @@ export class CustomerController {
         passportNumber: req.body.passportNumber,
         address: req.body.address
       };
-      const customerId = req.params.customerId;
-      const validateErrors = validate(data, updateCustomerSchema);
+      const customerWisereId = req.params.customerWisereId;
+      const validateErrors = validate(data, updateCustomerWisereSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      let customer = await CustomerModel.findOne({ where: { id: req.params.customerId, companyId: companyId } });
-      if (!customer)
-        throw new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND);
-      customer = await customer.update(data);
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
+      let customerWisere = await CustomerWisereModel.findOne({
+        where: { id: req.params.customerWisereId, companyId: companyId }
+      });
+      if (!customerWisere)
+        throw new CustomError(
+          customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
+          HttpStatus.NOT_FOUND
+        );
+      customerWisere = await customerWisere.update(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customerWisere));
     } catch (error) {
       return next(error);
     }
@@ -215,7 +201,7 @@ export class CustomerController {
 
   /**
    * @swagger
-   * /customer/all:
+   * /customer/get-all-customer-wisere:
    *   get:
    *     summary: Get all customer in a company
    *     description: Get all customer in a company
@@ -232,10 +218,10 @@ export class CustomerController {
    *       500:
    *         description: Internal server errors
    */
-  public getAllCustomerInCompany = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllCustomerWisereInCompany = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { companyId } = res.locals.staffPayload;
-      const customers = await CustomerModel.findAll({
+      const customers = await CustomerWisereModel.findAll({
         where: {
           companyId
         }
@@ -249,7 +235,7 @@ export class CustomerController {
 
   /**
    * @swagger
-   * /customer/delete/{customerId}:
+   * /customer/delete-customer-wisere/{customerWisereId}:
    *   delete:
    *     tags:
    *       - Customer
@@ -258,7 +244,7 @@ export class CustomerController {
    *     name: delete-customer
    *     parameters:
    *     - in: path
-   *       name: customerId
+   *       name: customerWisereId
    *       schema:
    *          type: string
    *     responses:
@@ -269,26 +255,29 @@ export class CustomerController {
    *       500:
    *         description: Internal server errors
    */
-  public deleteCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  public deleteCustomerWisere = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { companyId } = res.locals.staffPayload;
-      const customerId = req.params.customerId;
-      const validateErrors = validate(customerId, customerIdSchema);
+      const customerWisereId = req.params.customerWisereId;
+      const validateErrors = validate(customerWisereId, customerWireseIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const customer = await CustomerModel.findOne({ where: { id: customerId } });
-      if (!customer)
-        return next(
-          new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND)
-        );
-      if (companyId !== customer.companyId) {
+      const customerWisere = await CustomerWisereModel.findOne({ where: { id: customerWisereId } });
+      if (!customerWisere)
         return next(
           new CustomError(
-            customerErrorDetails.E_3002(`You can not access to company ${customer.companyId}`),
+            customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      if (companyId !== customerWisere.companyId) {
+        return next(
+          new CustomError(
+            customerErrorDetails.E_3002(`You can not access to company ${customerWisere.companyId}`),
             HttpStatus.FORBIDDEN
           )
         );
       }
-      await CustomerModel.destroy({ where: { id: customerId } });
+      await CustomerWisereModel.destroy({ where: { id: customerWisereId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
@@ -297,7 +286,7 @@ export class CustomerController {
 
   /**
    * @swagger
-   * /customer/get-customers:
+   * /customer/get-customers-wisere:
    *   get:
    *     tags:
    *       - Customer
@@ -323,7 +312,7 @@ export class CustomerController {
    *       500:
    *         description: Internal server errors
    */
-  public getCustomers = async (req: Request, res: Response, next: NextFunction) => {
+  public getCustomerWiseres = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const { companyId } = res.locals.staffPayload;
@@ -339,7 +328,7 @@ export class CustomerController {
         }
       };
       const customer = await paginate(
-        CustomerModel,
+        CustomerWisereModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
@@ -349,18 +338,19 @@ export class CustomerController {
       return next(error);
     }
   };
+
   /**
    * @swagger
-   * /customer/get/{customerId}:
+   * /customer/get-customer-wisere/{customerWisereId}:
    *   get:
    *     tags:
    *       - Customer
    *     security:
    *       - Bearer: []
-   *     name: getCustomers
+   *     name: getCustomer
    *     parameters:
    *     - in: path
-   *       name: customerId
+   *       name: customerWisereId
    *       required: true
    *     responses:
    *       200:
@@ -370,18 +360,23 @@ export class CustomerController {
    *       500:
    *         description: Internal server errors
    */
-  public getCustomerById = async (req: Request, res: Response, next: NextFunction) => {
+  public getCustomerWisereById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { companyId } = res.locals.staffPayload;
-      const customerId = req.params.customerId;
-      const validateErrors = validate(customerId, customerIdSchema);
+      const customerWisereId = req.params.customerWisereId;
+      const validateErrors = validate(customerWisereId, customerWireseIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const customer = await CustomerModel.findOne({ where: { id: customerId, companyId: companyId } });
-      if (!customer)
+      const customerWisere = await CustomerWisereModel.findOne({
+        where: { id: customerWisereId, companyId: companyId }
+      });
+      if (!customerWisere)
         return next(
-          new CustomError(customerErrorDetails.E_3001(`customerId ${customerId} not found`), HttpStatus.NOT_FOUND)
+          new CustomError(
+            customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
+            HttpStatus.NOT_FOUND
+          )
         );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customerWisere));
     } catch (error) {
       return next(error);
     }
@@ -873,6 +868,91 @@ export class CustomerController {
         where: { appleId: customer.appleId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   registerCustomer:
+   *       properties:
+   *           firstName:
+   *               required: true
+   *               type: string
+   *           lastName:
+   *               required: true
+   *               type: string
+   *           gender:
+   *               type: integer
+   *               enum: [0, 1, 2]
+   *           phone:
+   *               required: true
+   *               type: string
+   *           email:
+   *               required: true
+   *               type: string
+   *           birthDate:
+   *               type: string
+   *           passportNumber:
+   *               type: string
+   *           address:
+   *               type: string
+   *           password:
+   *               required: true
+   *               type: string
+   *
+   *
+   */
+
+  /**
+   * @swagger
+   * /customer/register:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     name: registerCustomer
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/registerCustomer'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public registerCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data: any = {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        gender: req.body.gender,
+        phone: req.body.phone,
+        email: req.body.email ? req.body.email : null,
+        birthDate: req.body.birthDate,
+        passportNumber: req.body.passportNumber,
+        address: req.body.address,
+        password: req.body.password
+      };
+      const validateErrors = validate(data, registerCustomerSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const existPhone = await CustomerModel.findOne({ where: { phone: data.phone } });
+      if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+      if (req.body.email) {
+        const existEmail = await CustomerModel.findOne({ where: { email: data.email } });
+        if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+      }
+      data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
+      const customer = await CustomerModel.create(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
       return next(error);
     }
