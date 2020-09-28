@@ -16,6 +16,9 @@ import { ServiceImageModel } from './service-image';
 import { LocationServiceModel } from './location-service';
 import { AppointmentGroupModel } from './appointment-group-model';
 import { LocationWorkingHourModel } from './location-working-hour-model';
+import { PipelineModel } from './pipeline-model';
+import { PipelineStageModel } from './pipeline-stage-model';
+import { DealModel } from './deal-model';
 import { CustomerWisereModel } from './customer-wisere-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
@@ -101,6 +104,21 @@ CustomerWisereModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'comp
 CustomerWisereModel.hasMany(AppointmentModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'appointments' });
 AppointmentModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
+PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStage' });
+PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipelineId', as: 'pipeline' });
+
+CompanyModel.hasMany(PipelineModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'pipeline' });
+PipelineModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
+
+CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
+
+PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
+
 export {
   sequelize,
   StaffModel,
@@ -115,5 +133,8 @@ export {
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
   LocationWorkingHourModel,
+  PipelineModel,
+  PipelineStageModel,
+  DealModel,
   CustomerWisereModel
 };
