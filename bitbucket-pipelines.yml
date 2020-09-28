@@ -1,15 +1,110 @@
-# This is a sample build configuration for JavaScript.
-# Check our guides at https://confluence.atlassian.com/x/14UWN for more examples.
-# Only use spaces to indent your .yml configuration.
-# -----
-# You can specify a custom docker image from Docker Hub as your build environment.
-image: node:10.15.3
+image: atlassian/default-image:2
+options:
+  size: 2x
+definitions:
+  caches:
+    package-node: ./node_modules
+    doctl-cached: ~/doctl
+lint: &lint
+  - step:
+      caches:
+        - package-node
+      # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
+      size: 2x
+      name: install nodejs and yarn
+      script:
+        # Get ip address
+        # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
+        - ip addr show
+        - apt update && apt install -y netcat
+        - |
+          # Install Nodejs
+          nvm install $(cat .nvmrc)
+          nvm alias default $(cat .nvmrc)
+          npm install -g yarn
+        - |
+          echo 'setup environment'
+          export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
+
+        - |
+          yarn
+          echo "lint"
+        - yarn run typecheck && yarn run lint
+      services:
+        - docker
+  - step:
+      name: test
+      script: 
+        - echo 'hello'
+build-image: &build-image
+  - step:
+      caches:
+        - package-node
+        - docker
+        - doctl-cached
+      # read more https://confluence.atlassian.com/bitbucket/configure-bitbucket-pipelines-yml-792298910.html#Configurebitbucket-pipelines.yml-ci_size
+      size: 2x
+      name: Install doctl Digital Ocean
+      script:
+        # Get ip address
+        # https://askubuntu.com/questions/560412/displaying-ip-address-on-eth0-interface/560415
+        - ip addr show
+        - apt update && apt install -y netcat
+        - |
+          ls -a ~/doctl
+        - |
+          if [ -f ~/doctl/doctl-1.45.1-linux-amd64.tar.gz ]; then
+            echo "doctl exists."
+          else
+            rm -rf ~/doctl
+            mkdir -p ~/doctl && cd ~/doctl
+            wget https://github.com/digitalocean/doctl/releases/download/v1.45.1/doctl-1.45.1-linux-amd64.tar.gz 
+            tar xf ~/doctl/doctl-1.45.1-linux-amd64.tar.gz
+          fi
+        - ln -s ~/doctl/doctl /usr/local/bin/doctl
+
+        - |
+          cd $BITBUCKET_CLONE_DIR
+          cp ./env/staging.env ./.env
+          docker-compose up -d --build wisere
+          docker tag wisere registry.digitalocean.com/wisere/wisere
+        - |
+          doctl auth init -t 034fc3138ce0f18eb53248127c08c3fe481d1aeaec7f5323d4e64431171135ed
+          doctl registry login
+          docker push registry.digitalocean.com/wisere/wisere
+      services:
+        - docker
+deploy: &deploy
+  - step:
+      caches:
+        - docker
+      name: deploy to server via ssh
+      script:
+        - pipe: atlassian/ssh-run:0.1.1
+          variables:
+            SSH_USER: 'root'
+            SERVER: '128.199.111.189'
+            MODE: 'script'
+            SSH_KEY: $SSH_KEY
+            EXTRA_ARGS: '-t'
+            COMMAND: './.bitbucket-pipeline/deploy.sh'
+            DEBUG: 'v'
+        # - mkdir -p ~/.ssh
+        # - cp ./.bitbucket-pipeline/known_hosts  ~/.ssh/known_hosts
+        # - (umask  077 ; echo $SSH_KEY | base64 --decode > ~/.ssh/id_rsa)
+        # - echo $SSH_KEY
+        # - cat ~/.ssh/id_rsa
+        # - ssh root@128.199.111.189  -T 'bash -s' < ./.bitbucket-pipeline/deploy.sh 'echo "connected to `host` as user"'
 
 pipelines:
   default:
-    - step:
-        caches:
-          - node
-        script: # Modify the commands below to build your repository.
-          - npm install
-          - npm test
+    - <<: *lint
+  branches:
+    develop:
+      - <<: *lint
+      - <<: *build-image
+      - <<: *deploy
+    master:
+      - <<: *lint
+      - <<: *build-image
+      - <<: *deploy

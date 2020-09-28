@@ -21,6 +21,7 @@ import { LocationDetailModel } from './location-detail-model';
 import { LocationImageModel } from './location-image';
 import { CountryModel } from './country-model';
 import { CityModel } from './city-model';
+import { CustomerWisereModel } from './customer-wisere-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -112,8 +113,11 @@ AppointmentGroupModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: '
 LocationModel.hasMany(LocationWorkingHourModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'workingTimes' });
 LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
-CompanyModel.hasMany(CustomerModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customers' });
-CustomerModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+CompanyModel.hasMany(CustomerWisereModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customerWiseres' });
+CustomerWisereModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+CustomerWisereModel.hasMany(AppointmentModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'appointments' });
+AppointmentModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
 LocationModel.hasMany(LocationImageModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'locationImages' });
 LocationImageModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
@@ -121,11 +125,14 @@ LocationImageModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'loc
 CountryModel.hasMany(CityModel, { foreignKey: 'countryId', sourceKey: 'id', as: 'cities' });
 CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
 
+
 export {
   sequelize,
   StaffModel,
   CompanyModel,
   CompanyDetailModel,
+  CountryModel,
+  CityModel,
   CustomerModel,
   LocationModel,
   ServiceModel,
@@ -138,7 +145,5 @@ export {
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
   LocationWorkingHourModel,
-  LocationImageModel,
-  CountryModel,
-  CityModel
+  CustomerWisereModel
 };

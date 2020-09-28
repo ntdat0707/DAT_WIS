@@ -15,7 +15,13 @@ import {
   updateServiceSchema
 } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
-import { StaffModel, LocationModel, sequelize, ResourceModel } from '../../../repositories/postgres/models';
+import {
+  StaffModel,
+  LocationModel,
+  sequelize,
+  ResourceModel,
+  CompanyModel
+} from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
@@ -93,6 +99,9 @@ export class ServiceController {
    *       type: array
    *       items:
    *          type: string
+   *     - in: "formData"
+   *       name: allowGender
+   *       type: integer
    *     responses:
    *       200:
    *         description:
@@ -142,7 +151,8 @@ export class ServiceController {
         cateServiceId: body.cateServiceId,
         name: body.name,
         serviceCode: serviceCode,
-        isAllowedMarketplace: body.isAllowedMarketplace
+        isAllowedMarketplace: body.isAllowedMarketplace,
+        allowGender: body.allowGender
       };
 
       transaction = await sequelize.transaction();
@@ -314,6 +324,11 @@ export class ServiceController {
             model: ResourceModel,
             as: 'resources',
             required: false
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
           }
         ]
       });
@@ -400,6 +415,11 @@ export class ServiceController {
             as: 'cateService',
             required: true,
             attributes: []
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
           }
         ]
       };
@@ -634,7 +654,8 @@ export class ServiceController {
         await LocationServiceModel.create(locationService, { transaction: transaction });
         await ServiceStaffModel.bulkCreate(serviceStaff, { transaction });
       }
-
+      const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
+      await StaffModel.update({ onboardStep: 4 }, { where: { id: company.ownerId }, transaction });
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
@@ -719,6 +740,9 @@ export class ServiceController {
    *       type: array
    *       items:
    *          type: string
+   *     - in: "formData"
+   *       name: allowGender
+   *       type: integer
    *     responses:
    *       200:
    *         description:
@@ -851,7 +875,8 @@ export class ServiceController {
         name: body.name ? body.name : service.name,
         serviceCode: body.serviceCode ? body.serviceCode : service.serviceCode,
         isAllowedMarketplace: body.isAllowedMarketplace,
-        status: body.status
+        status: body.status,
+        allowGender: body.allowGender ? body.allowGender : service.allowGender
       };
 
       if (body.deleteImages && body.deleteImages.length > 0) {

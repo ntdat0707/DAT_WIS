@@ -13,6 +13,7 @@ class ServiceModel extends Model {
   public serviceCode: string;
   public name: string;
   public isAllowedMarketplace!: boolean;
+  public allowGender: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -72,6 +73,11 @@ ServiceModel.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false
+    },
+    allowGender: {
+      type: DataTypes.TINYINT,
+      field: 'allow_gender',
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',
