@@ -46,15 +46,11 @@ const getStaffUnavailTime = (item: any) => {
     }
     for (let i = 0; i < tempIds.length; i++){
         console.log(i);
-        staffUnavailTimeArray.push(staffUnavailTime);
-    }
-    for (let i = 0; i < tempIds.length; i++){
         let temp = tempIds[i];
-        console.log(temp);
-        staffUnavailTimeArray.forEach((a:any)=>{
-            a.staffId = temp;
-        });
+        staffUnavailTimeArray.push(staffUnavailTime);
+        staffUnavailTimeArray.map((a:any) => a.staffId = temp);
     }
+
     return staffUnavailTimeArray;  
 };
 
