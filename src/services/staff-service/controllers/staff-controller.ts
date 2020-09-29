@@ -1237,7 +1237,6 @@ export class StaffController {
       for (let i = 0; i < doctors.count; i++){
         staffIds.push(doctors.rows[i].id);
       }
-      //console.log(staffIds);
       res.status(HttpStatus.OK).send(buildSuccessMessage(doctorsSchedule));
 
     } catch (error) {
