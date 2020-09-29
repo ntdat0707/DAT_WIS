@@ -8,7 +8,6 @@ export class CompanyRoutes {
   constructor() {
     this.config();
   }
-
   private config(): void {
     this.router.post('/init', isAuthenticated, this.companyController.initCompany);
   }

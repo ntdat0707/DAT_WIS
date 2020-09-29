@@ -25,7 +25,8 @@ import {
   LocationModel,
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
-  CustomerWisereModel, RecentBookingModel
+  CustomerWisereModel,
+  RecentBookingModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -1272,8 +1273,6 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
-
-
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
@@ -1282,7 +1281,6 @@ export class AppointmentController extends BaseController {
         customerId: id,
         bookingSource: dataInput.bookingSource
       };
-
 
       if (dataInput.appointmentGroupId) {
         const appointmentGroup = await AppointmentGroupModel.findOne({
@@ -1334,7 +1332,6 @@ export class AppointmentController extends BaseController {
       const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
       const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
       const recentBookingData: any = [];
-
       for (let i = 0; i < appointmentDetails.length; i++) {
         serviceDataNotify.push({
           id: appointmentDetails[i].serviceId,
@@ -1388,8 +1385,6 @@ export class AppointmentController extends BaseController {
       });
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       await RecentBookingModel.bulkCreate(recentBookingData, { transaction });
-
-
 
       // const findQuery: FindOptions = {
       //   where: { id: appointmentId },

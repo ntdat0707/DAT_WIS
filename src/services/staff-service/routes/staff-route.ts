@@ -25,9 +25,6 @@ export class StaffRoutes {
       uploadAsMiddleware('avatar'),
       this.staffController.updateStaff
     );
-    this.router.post('/get-staffs-multiple-service',this.staffController.getStaffsServices);
     this.router.post('/complete-onboard', isAuthenticated, this.staffController.completeOnboard);
-    this.router.post('/get-staff-available-time',this.staffController.getStaffAvailableTimeSlots);
-    this.router.post('/get-random-available-time',this.staffController.getRandomAvailableTimeSlots);
   }
 }

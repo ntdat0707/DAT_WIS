@@ -107,12 +107,10 @@ const uploadAsMiddleware = (
       storage: makeStorage(permission),
       //tslint:disable-next-line
       fileFilter(_req, file: Express.Multer.File, cb) {
-        console.log(file);
         checkFile(file, fileType, cb as any);
       },
       limits: { fileSize }
     });
-    console.log(file);
 
     let upload;
     if (isUploadFields(file)) {
