@@ -22,6 +22,9 @@ import { LocationImageModel } from './location-image';
 import { CountryModel } from './country-model';
 import { CityModel } from './city-model';
 import { CustomerSearchModel } from './customer-search-model';
+import { PipelineModel } from './pipeline-model';
+import { PipelineStageModel } from './pipeline-stage-model';
+import { DealModel } from './deal-model';
 import { CustomerWisereModel } from './customer-wisere-model';
 import { RecentBookingModel } from './recent-booking-model';
 
@@ -145,6 +148,20 @@ CustomerSearchModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'lo
 
 AppointmentModel.hasOne(RecentBookingModel, { foreignKey: 'appointmentId', sourceKey: 'id', as: 'appointment' });
 RecentBookingModel.belongsTo(AppointmentModel, { foreignKey: 'appointmentId', as: 'recentBooking' });
+PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStage' });
+PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipelineId', as: 'pipeline' });
+
+CompanyModel.hasMany(PipelineModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'pipeline' });
+PipelineModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
+
+CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
+
+PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
 export {
   sequelize,
@@ -168,5 +185,8 @@ export {
   LocationImageModel,
   CustomerSearchModel,
   CustomerWisereModel,
-  RecentBookingModel
+  RecentBookingModel,
+  PipelineModel,
+  PipelineStageModel,
+  DealModel,
 };
