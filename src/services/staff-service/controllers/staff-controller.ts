@@ -17,6 +17,7 @@ import { timeSlots } from '../../../utils/time-slots';
 import {minutesToNum} from '../../../utils/minutes-to-number';
 import {dayOfWeek} from '../../../utils/day-of-week';
 import {getStaffUnavailTime} from '../../../utils/unavail-time-array';
+import {staffWithTime} from '../../../utils/staff-with-time';
 import {
   sequelize,
   StaffModel,
@@ -40,6 +41,7 @@ import {
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { func, object } from 'joi';
 import { time } from 'cron';
+
 
 export class StaffController {
   /**
@@ -1008,8 +1010,6 @@ export class StaffController {
       });
       const preDataFirst = JSON.stringify(doctorSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
-      //console.log(preDataSecond);
-      console.log(preDataSecond.count);
       if (preDataSecond.count > 0) {
         preDataSecond.rows[0].appointmentDetails.forEach((obj: any) => {
           obj.start_time = moment(obj.start_time).format('HH:mm').toString();
@@ -1104,7 +1104,6 @@ export class StaffController {
       });
       let currentTime = parseInt(moment().utc().add(7,'h').format('HH:mm').split(':').join(''));
       let currentDay =  moment().utc().format('MMMM DD YYYY');
-      console.log(currentDay);
       Object.keys(timeSlot).forEach((key:any) => {
         let temp = key.split(':').join('');
         if (temp < currentTime && currentDay == workDay){
@@ -1112,6 +1111,12 @@ export class StaffController {
           timeSlot[stringTemp] = false;
         }
       });
+      let isBefore = moment(appointmentDay).isBefore(currentDay);
+      if (isBefore == true){
+        Object.keys(timeSlot).forEach((key:any) => {
+          timeSlot[key] = false;
+        });
+      }
       //console.log(rangelist);
 
       if (!workingTime) {
@@ -1192,7 +1197,7 @@ export class StaffController {
       const timeSlot = timeSlots(workTime.startTime,workTime.endTime,5);
       //console.log(workDay);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
-      console.log(appointmentDay);
+      //console.log(appointmentDay);
       const doctorsSchedule = await StaffModel.findAndCountAll({
         attributes: ['id'],
         include: [
@@ -1227,7 +1232,7 @@ export class StaffController {
         });
       }
       let staffUnavailTime = getStaffUnavailTime(preDataSecond);
-      console.log(staffUnavailTime);
+      //console.log(staffUnavailTime);
       const doctors = await StaffModel.findAndCountAll({
         attributes: ['id'],
         where: {
@@ -1237,7 +1242,8 @@ export class StaffController {
       for (let i = 0; i < doctors.count; i++){
         staffIds.push(doctors.rows[i].id);
       }
-      res.status(HttpStatus.OK).send(buildSuccessMessage(doctorsSchedule));
+      let noReferencesTimeSlots = staffWithTime(staffIds,staffUnavailTime,timeSlot,duration,appointmentDay, workDay);
+      res.status(HttpStatus.OK).send(buildSuccessMessage(noReferencesTimeSlots));
 
     } catch (error) {
       return error;
