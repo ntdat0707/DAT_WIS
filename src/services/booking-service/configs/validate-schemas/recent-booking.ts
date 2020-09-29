@@ -1,5 +1,4 @@
 import Joi from 'joi';
-import { EAppointmentStatus, AppointmentBookingSource } from '../../../../utils/consts';
 
 const createRecentBookingSchema = Joi.object({
   serviceId: Joi.string()
@@ -26,10 +25,18 @@ const createRecentBookingSchema = Joi.object({
     })
     .required()
     .label('appointmentId'),
-  locationId: Joi.string().guid({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId')
+});
+
+const checkCustomerIdSchema = Joi.string()
+  .guid({
     version: ['uuidv4']
   })
-    .required()
-    .label('locationId'),
-});
-export { createRecentBookingSchema };
+  .required()
+  .label('customerId');
+export { createRecentBookingSchema, checkCustomerIdSchema };

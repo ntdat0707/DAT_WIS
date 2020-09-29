@@ -52,6 +52,15 @@ const locationIdSchema = Joi.string()
 
 const pathNameSchema = Joi.string().required().label('pathName');
 
+const getLocationMarketPlace = Joi.object({
+  pathName: Joi.string().required().label('pathName'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('customerId')
+});
+
 const companyIdSchema = Joi.string()
   .guid({
     version: ['uuidv4']
@@ -194,13 +203,6 @@ const suggestedSchema = Joi.object({
   cityName: Joi.string().allow(null, '').label('cityName')
 });
 
-const checkCustomerIdSchema = Joi.string()
-  .guid({
-    version: ['uuidv4']
-  })
-  .required()
-  .label('customerId');
-
 export {
   createLocationSchema,
   locationIdSchema,
@@ -211,5 +213,5 @@ export {
   pathNameSchema,
   suggestedSchema,
   createLocationDetailSchema,
-  checkCustomerIdSchema
+  getLocationMarketPlace
 };

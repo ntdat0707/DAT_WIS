@@ -10,6 +10,10 @@ export class RecentBookingRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post('/market-place/create-recent-booking',this.recentBookingController.createRecentBooking);
+    this.router.post('/market-place/create-recent-booking', this.recentBookingController.createRecentBooking);
+    this.router.get(
+      '/market-place/get-recent-booking/:customerId',
+      this.recentBookingController.getRecentBooking
+    );
   }
 }

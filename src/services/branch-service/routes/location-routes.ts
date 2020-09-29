@@ -39,6 +39,5 @@ export class LocationRoutes {
 
     this.router.get('/market-place/search', this.locationController.marketPlaceSearch);
     this.router.get('/market-place/suggested', this.locationController.marketPlaceSuggested);
-    this.router.get('/market-place/Test-recent-booking/:customerId', this.locationController.TestRecentBooking);
   }
 }

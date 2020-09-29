@@ -28,8 +28,8 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema,
   searchSchema,
-  pathNameSchema,
-  suggestedSchema
+  suggestedSchema,
+  getLocationMarketPlace
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -42,6 +42,7 @@ import { LocationImageModel } from '../../../repositories/postgres/models/locati
 
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { normalizeRemoveAccent, removeAccents } from '../../../utils/text';
+import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
 
 export class LocationController {
   /**
@@ -1545,6 +1546,10 @@ export class LocationController {
    *       schema:
    *          type: string
    *       required: true
+   *     - in: query
+   *       name: customerId
+   *       schema:
+   *          type: string
    *     name: getLocationMarketPlace
    *     responses:
    *       200:
@@ -1553,20 +1558,22 @@ export class LocationController {
    *         description: Server internal errors
    */
   public getLocationMarketPlace = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
+      console.log('QUery customerId::', req.query.customerId);
       const data = {
-        pathName: req.params.pathName
+        pathName: req.params.pathName,
+        customerId: req.query.customerId
       };
-      const validateErrors = validate(data.pathName, pathNameSchema);
+      const validateErrors = validate(data, getLocationMarketPlace);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
+
       let staffs: any = [];
       let locations: any = [];
-      // let locationWorkingTimes: any = [];
       let cateServices: any = [];
       let location: any = await LocationModel.findOne({
-        // raw: true,
         include: [
           {
             model: CompanyModel,
@@ -1626,10 +1633,7 @@ export class LocationController {
               'workingTimes.start_time',
               'workingTimes.end_time',
               'workingTimes.weekday',
-              'locationDetail.id',
-              'locationDetail.title',
-              'locationDetail.description',
-              'locationDetail.path_name'
+              'locationDetail.id'
             ]
           })
         ).map((locate: any) => ({
@@ -1692,82 +1696,44 @@ export class LocationController {
         cateServices: cateServices,
         staffs: staffs
       };
+
+      if (data.customerId != undefined) {
+        let recentViews: any = await RecentViewModel.findOne({
+          where: { customerId: data.customerId, locationId: location.id }
+        });
+        if (!recentViews) {
+          const recentViewData: any = [];
+          recentViewData.push({
+            id: uuidv4(),
+            customerId: data.customerId,
+            locationId: location.id
+          });
+          transaction = await sequelize.transaction();
+          await RecentViewModel.bulkCreate(recentViewData, { transaction });
+          await transaction.commit();
+        } else {
+          transaction = await sequelize.transaction();
+          recentViews = recentViews.dataValues;
+          recentViews.view += 1;
+          await RecentViewModel.update(
+            { view: recentViews.view },
+            {
+              where: {
+                id: recentViews.id
+              },
+              transaction
+            }
+          );
+          await transaction.commit();
+        }
+      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
       // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
-  };
-
-  /**
-   * @swagger
-   * /branch/location/market-place/Test-recent-booking/{customerId}:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     parameters:
-   *     - in: path
-   *       name: customerId
-   *       schema:
-   *          type: string
-   *       required: true
-   *     name: TestRecentBooking
-   *     responses:
-   *       200:
-   *         description: success
-   *       500:
-   *         description: Server internal errors
-   */
-
-  public TestRecentBooking = async (req: Request, res: Response, next: NextFunction) => {
-    //   try {
-    //     const dataInput = req.params.customerId;
-    //     const validateErrors = await validate(dataInput, checkCustomerIdSchema);
-    //     if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-    //     let recentBookingStaffs: any =
-    //       (await StaffModel.findAll({
-    //         include: [
-    //           {
-    //             model: AppointmentDetailModel,
-    //             as: 'appointmentDetails',
-    //             through: { attributes: [] },
-    //             attributes: { exclude: ['appointmentId', 'createdAt', 'updatedAt', 'deletedAt'] },
-    //             required: true,
-    //             include: [
-    //               {
-    //                 model: AppointmentModel,
-    //                 as: 'appointment',
-    //                 where: {
-    //                   customerId: dataInput
-    //                 },
-    //                 required: true,
-    //                 attributes: ['customerId'],
-    //                 include: [
-    //                   {
-    //                     model: LocationModel,
-    //                     as: 'location',
-    //                     required: true,
-    //                     attributes: ['name']
-    //                   }
-    //                 ]
-    //               }
-    //             ]
-    //           }
-    //         ],
-    //         attributes: ['id', 'firstName'],
-    //         order: [['createdAt', 'DESC']],
-    //       })
-    //     ).map((staff: any) => ({
-    //       id: staff.id,
-    //       name: staff.firstName,
-    //       locations: staff.appointmentDetails.map((location: any) => ({
-    //         locationName: location.appointment.location.name
-    //       }))
-    //     }));
-    //     if (!recentBookingStaffs) recentBookingStaffs = [];
-    //     return res.status(HttpStatus.OK).send(buildSuccessMessage(recentBookingStaffs));
-    //   } catch (error) {
-    //     return next(error);
-    //   }
   };
 }
