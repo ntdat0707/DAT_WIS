@@ -17,7 +17,7 @@ import {
   LocationWorkingHourModel,
   CompanyDetailModel,
   CustomerSearchModel,
-  AppointmentDetailModel
+  CustomerModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -29,7 +29,7 @@ import {
   pathNameSchema,
   suggestedSchema
 } from '../configs/validate-schemas';
-import { FindOptions, Op, Sequelize } from 'sequelize';
+import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -40,6 +40,7 @@ import { LocationImageModel } from '../../../repositories/postgres/models/locati
 
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { normalizeRemoveAccent, removeAccents } from '../../../utils/text';
+import {query} from 'winston';
 
 export class LocationController {
   /**
@@ -1256,7 +1257,7 @@ export class LocationController {
           typeResult = 'location';
         }
         await this.createCustomerSearch(
-          req, next,
+          req,
           {
             cateServiceId,
             companyId,
@@ -1292,7 +1293,6 @@ export class LocationController {
 
   private createCustomerSearch = async (
     req: Request,
-    next: NextFunction,
     searchItem: {
       serviceId?: string,
       companyId?: string,
@@ -1301,10 +1301,7 @@ export class LocationController {
     },
     typeResult: string
   ) => {
-    let transaction = null;
     try {
-      transaction = await sequelize.transaction();
-
       const customerSearch: any = [
         {
           id: uuidv4(),
@@ -1319,14 +1316,9 @@ export class LocationController {
           longitude: req.query.longitude
         }
       ];
-      await CustomerSearchModel.bulkCreate(customerSearch, { transaction });
-      await transaction.commit();
+      await CustomerSearchModel.create(customerSearch);
     } catch (error) {
-      if (transaction) {
-        await transaction.rollback();
-      }
-      console.log(error);
-      return next(error);
+      throw error;
     }
   };
 
@@ -1438,7 +1430,6 @@ export class LocationController {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
 
-
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
@@ -1447,6 +1438,33 @@ export class LocationController {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
 
+      const cateServices = await this.cateServiceSuggested(keywords);
+      const popularServices = await this.popularServicesSuggested(keywordsQuery);
+
+      let customer = null;
+      if (search.customerId) {
+        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
+      }
+      let recentSearch = null;
+      if (customer) {
+        recentSearch = await this.searchRecentSuggested(search);
+      }
+
+      const results = {
+        cateServices,
+        popularServices,
+        recentSearch
+      };
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
+    } catch (error) {
+      console.log(error);
+      return next(error);
+    }
+  }
+
+  private cateServiceSuggested = async (keywords: string) => {
+    try {
       const cateServices = await CateServiceModel.findAll({
         include: [{
           model: CompanyModel,
@@ -1460,25 +1478,42 @@ export class LocationController {
             attributes: []
           }]
         }],
-        where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywordsQuery}])`)
+        where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`)
       });
 
+      return cateServices;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-      const popularServices = await ServiceModel.findAll({
-        include: [{
-          model: AppointmentDetailModel,
-          as: 'appointmentDetails',
-          required: false,
-          attributes: []
-        }],
-        group: ['ServiceModel.id'],
-        where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywordsQuery}])`),
-        limit: 10
+  private popularServicesSuggested = async (keywords: string) => {
+    try {
+      const popularServices = await sequelize.query([
+        'SELECT service.*',
+        'FROM service',
+        'LEFT JOIN appointment_detail ON appointment_detail.service_id = service.id',
+        `WHERE service.status LIKE 'active' and unaccent(service.name) ilike ${keywords}`,
+        'GROUP BY service.id, appointment_detail.id',
+        'ORDER BY count(appointment_detail.id) desc',
+        'LIMIT 10'
+      ].join(' '), {
+        mapToModel: true,
+        model: ServiceModel,
+        type: QueryTypes.SELECT
       });
 
+      return popularServices;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  private searchRecentSuggested = async (searchOption: any) => {
+    try {
       const recentSearch = await CustomerSearchModel.findAll({
         where: {
-          customerId: search.customerId
+          customerId: searchOption.customerId
         },
         include: [
           {
@@ -1505,19 +1540,18 @@ export class LocationController {
             required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
           }
+        ],
+        group: [
+          'CustomerSearchModel.id',
+          'cateService.id',
+          'company.id',
+          'service.id',
+          'location.id'
         ]
       });
-
-      const results = {
-        cateServices,
-        popularServices,
-        recentSearch
-      };
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
+      return recentSearch;
     } catch (error) {
-      console.log(error);
-      return next(error);
+      throw error;
     }
   }
   /**
@@ -1571,7 +1605,7 @@ export class LocationController {
             model: LocationDetailModel,
             as: 'locationDetail',
             required: true,
-            attributes: ['title', 'description'],
+            attributes: ['pathName', 'title', 'description'],
             where: { pathName: data.pathName },
           },
           {
@@ -1585,7 +1619,7 @@ export class LocationController {
       });
 
       if (location) {
-        locations = await LocationModel.findAll({
+        locations = (await LocationModel.findAll({
           where: { companyId: location.companyId },
           include: [
             {
@@ -1595,17 +1629,29 @@ export class LocationController {
               where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
               order: [['weekday', 'DESC']],
               attributes: ['weekday', 'startTime', 'endTime']
+            },
+            {
+              model: LocationDetailModel,
+              as: 'locationDetail',
+              required: true,
+              attributes: ['pathName', 'title', 'description'],
             }
           ],
           attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
           group: [
             'LocationModel.id',
+            'locationDetail.id',
             'workingTimes.id',
             'workingTimes.start_time',
             'workingTimes.end_time',
             'workingTimes.weekday'
           ]
-        });
+        })).map((locate: any) => ({
+          ...locate.dataValues,
+          ...locate.locationDetail.dataValues,
+          ['locationDetail']: undefined,
+        }));
+
 
         location = location.dataValues;
         location = {
