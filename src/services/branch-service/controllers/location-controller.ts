@@ -9,7 +9,6 @@ import {
   sequelize,
   LocationModel,
   LocationStaffModel,
-  StaffModel,
   CompanyModel,
   LocationDetailModel,
   CateServiceModel,
@@ -17,6 +16,7 @@ import {
   LocationWorkingHourModel,
   CompanyDetailModel,
   CustomerSearchModel,
+  StaffModel,
   CustomerModel
 } from '../../../repositories/postgres/models';
 
@@ -26,8 +26,8 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema,
   searchSchema,
-  pathNameSchema,
-  suggestedSchema
+  suggestedSchema,
+  getLocationMarketPlace
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -40,7 +40,7 @@ import { LocationImageModel } from '../../../repositories/postgres/models/locati
 
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { normalizeRemoveAccent, removeAccents } from '../../../utils/text';
-import {query} from 'winston';
+import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
 
 export class LocationController {
   /**
@@ -335,7 +335,9 @@ export class LocationController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const query: FindOptions = {
         where: {
           companyId: companyId
@@ -387,7 +389,9 @@ export class LocationController {
       const companyId = res.locals.staffPayload.companyId;
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const location: any = await LocationModel.findOne({
         where: {
           id: locationId,
@@ -450,7 +454,9 @@ export class LocationController {
       const { workingLocationIds } = res.locals.staffPayload;
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       if (!(workingLocationIds as string[]).includes(locationId)) {
         return next(
           new CustomError(locationErrorDetails.E_1001(`Can not access to this ${locationId}`), HttpStatus.NOT_FOUND)
@@ -541,7 +547,9 @@ export class LocationController {
         workingTimes: req.body.workingTimes
       };
       const validateErrors = validate(body, createLocationWorkingTimeSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
 
       if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
         return next(
@@ -749,7 +757,6 @@ export class LocationController {
         }
       });
 
-
       if (!location) {
         return next(
           new CustomError(
@@ -840,7 +847,7 @@ export class LocationController {
       if (data.address) {
         dataDetails = {
           ...dataDetails,
-          pathName : normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
+          pathName: normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
         };
       }
       // if (file) data.photo = (file as any).location;
@@ -938,8 +945,7 @@ export class LocationController {
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) *
-      Math.cos(lat1) * Math.cos(lat2);
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c;
     return d;
@@ -1061,7 +1067,7 @@ export class LocationController {
                 model: CateServiceModel,
                 as: 'cateServices',
                 required: false,
-                attributes: ['id','name']
+                attributes: ['id', 'name']
               }
             ]
           },
@@ -1123,30 +1129,24 @@ export class LocationController {
 
       locationResults = locationResults.map((location: any) => {
         location = location.dataValues;
-        if ( location.name &&
-          removeAccents(location.name)
-            .toLowerCase()
-            .search(keywordUnaccents)
-        ) {
+        if (location.name && removeAccents(location.name).toLowerCase().search(keywordUnaccents)) {
           searchLocationItem = location;
         }
 
         if (location.company) {
           location.company = location.company.dataValues;
-          if ( location.company.businessName &&
-            removeAccents(location.company.businessName)
-              .toLowerCase()
-              .search(keywordUnaccents)
+          if (
+            location.company.businessName &&
+            removeAccents(location.company.businessName).toLowerCase().search(keywordUnaccents)
           ) {
             searchCompanyItem = location.company;
           }
 
-          if ( location.services
-            && !_.isEmpty(location.services)
-            && location.services[0].name
-            && removeAccents(location.services[0].name)
-              .toLowerCase()
-              .search(keywordUnaccents)
+          if (
+            location.services &&
+            !_.isEmpty(location.services) &&
+            location.services[0].name &&
+            removeAccents(location.services[0].name).toLowerCase().search(keywordUnaccents)
           ) {
             searchServiceItem = location.services[0];
           }
@@ -1154,11 +1154,7 @@ export class LocationController {
           if (location.company.cateServices && Array.isArray(location.company.cateServices)) {
             location.company.cateServices.map((cateService: any) => {
               cateService = cateService.dataValues;
-              if (
-                removeAccents(cateService.name)
-                  .toLowerCase()
-                  .search(keywordUnaccents)
-              ) {
+              if (removeAccents(cateService.name).toLowerCase().search(keywordUnaccents)) {
                 searchCateServiceItem = cateService;
               }
               return cateService;
@@ -1294,10 +1290,10 @@ export class LocationController {
   private createCustomerSearch = async (
     req: Request,
     searchItem: {
-      serviceId?: string,
-      companyId?: string,
-      locationId?: string,
-      cateServiceId?: string
+      serviceId?: string;
+      companyId?: string;
+      locationId?: string;
+      cateServiceId?: string;
     },
     typeResult: string
   ) => {
@@ -1380,7 +1376,7 @@ export class LocationController {
     } catch (error) {
       return next(error);
     }
-  }
+  };
 
   /**
    * @swagger
@@ -1468,18 +1464,15 @@ export class LocationController {
   private cateServiceSuggested = async (keywords: string) => {
     try {
       const cateServices = await CateServiceModel.findAll({
-        include: [{
-          model: CompanyModel,
-          as: 'company',
-          required: true,
-          attributes: [],
-          include: [{
-            model: LocationModel,
-            as: 'locations',
+        attributes: { exclude: ['createdAt', 'deletedAt', 'updatedAt'] },
+        include: [
+          {
+            model: CompanyModel,
+            as: 'company',
             required: true,
             attributes: []
-          }]
-        }],
+          }
+        ],
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`)
       });
 
@@ -1563,7 +1556,7 @@ export class LocationController {
       const cateServices =  await CateServiceModel.findAll({
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [["cateService", "type"]],
+          include: [['cateService', 'type']],
           exclude: ['createdAt', 'updatedAt', 'deleteAt']
         },
         limit: 3
@@ -1571,7 +1564,7 @@ export class LocationController {
       const companies =  await CompanyModel.findAll({
         where: Sequelize.literal(`unaccent("CompanyModel"."business_name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [["cateService", "type"]],
+          include: [['company', 'type']],
           exclude: ['createdAt', 'updatedAt', 'deleteAt']
         },
         limit: 3
@@ -1580,7 +1573,7 @@ export class LocationController {
       const services =  await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [["cateService", "type"]],
+          include: [['service', 'type']],
           exclude: ['createdAt', 'updatedAt', 'deleteAt']
         },
         limit: 3
@@ -1594,7 +1587,7 @@ export class LocationController {
           ]
         },
         attributes: {
-          include: [["cateService", "type"]],
+          include: [['location', 'type']],
           exclude: ['createdAt', 'updatedAt', 'deleteAt']
         },
         limit: 3
@@ -1605,11 +1598,11 @@ export class LocationController {
         ...companies,
         ...services,
         ...locations
-      ]
+      ];
     } catch (error) {
       throw error;
     }
-  }
+  };
 
   /**
    * @swagger
@@ -1623,6 +1616,10 @@ export class LocationController {
    *       schema:
    *          type: string
    *       required: true
+   *     - in: query
+   *       name: customerId
+   *       schema:
+   *          type: string
    *     name: getLocationMarketPlace
    *     responses:
    *       200:
@@ -1631,18 +1628,22 @@ export class LocationController {
    *         description: Server internal errors
    */
   public getLocationMarketPlace = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
+      console.log('QUery customerId::', req.query.customerId);
       const data = {
-        pathName: req.params.pathName
+        pathName: req.params.pathName,
+        customerId: req.query.customerId
       };
-      const validateErrors = validate(data.pathName, pathNameSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      const validateErrors = validate(data, getLocationMarketPlace);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+
       let staffs: any = [];
       let locations: any = [];
-      // let locationWorkingTimes: any = [];
       let cateServices: any = [];
       let location: any = await LocationModel.findOne({
-        // raw: true,
         include: [
           {
             model: CompanyModel,
@@ -1669,7 +1670,7 @@ export class LocationController {
             model: LocationImageModel,
             as: 'locationImages',
             required: false,
-            attributes: ['path', 'is_avatar'],
+            attributes: ['path', 'is_avatar']
           }
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
@@ -1719,7 +1720,7 @@ export class LocationController {
           ...location.company?.companyDetail?.dataValues,
           ['company']: undefined,
           ['companyDetail']: undefined,
-          ['locationDetail']: undefined,
+          ['locationDetail']: undefined
         };
 
         //  console.log('Location working time::', locationWorkingTimes);
@@ -1764,9 +1765,43 @@ export class LocationController {
         cateServices: cateServices,
         staffs: staffs
       };
+
+      if (data.customerId != undefined) {
+        let recentViews: any = await RecentViewModel.findOne({
+          where: { customerId: data.customerId, locationId: location.id }
+        });
+        if (!recentViews) {
+          const recentViewData: any = [];
+          recentViewData.push({
+            id: uuidv4(),
+            customerId: data.customerId,
+            locationId: location.id
+          });
+          transaction = await sequelize.transaction();
+          await RecentViewModel.bulkCreate(recentViewData, { transaction });
+          await transaction.commit();
+        } else {
+          transaction = await sequelize.transaction();
+          recentViews = recentViews.dataValues;
+          recentViews.view += 1;
+          await RecentViewModel.update(
+            { view: recentViews.view },
+            {
+              where: {
+                id: recentViews.id
+              },
+              transaction
+            }
+          );
+          await transaction.commit();
+        }
+      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
       // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

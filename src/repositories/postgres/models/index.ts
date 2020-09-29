@@ -22,7 +22,11 @@ import { LocationImageModel } from './location-image';
 import { CountryModel } from './country-model';
 import { CityModel } from './city-model';
 import { CustomerSearchModel } from './customer-search-model';
+import { PipelineModel } from './pipeline-model';
+import { PipelineStageModel } from './pipeline-stage-model';
+import { DealModel } from './deal-model';
 import { CustomerWisereModel } from './customer-wisere-model';
+import { RecentBookingModel } from './recent-booking-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -89,6 +93,7 @@ StaffModel.belongsToMany(AppointmentDetailModel, {
   as: 'appointmentDetails',
   foreignKey: 'staffId'
 });
+
 AppointmentDetailModel.belongsToMany(StaffModel, {
   through: AppointmentDetailStaffModel,
   as: 'staffs',
@@ -129,17 +134,34 @@ CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
 CustomerModel.hasMany(CustomerSearchModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
 
-ServiceModel.hasMany(CustomerSearchModel, {foreignKey: 'serviceId', sourceKey: 'id', as: 'customerSearches'});
+ServiceModel.hasMany(CustomerSearchModel, { foreignKey: 'serviceId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
 
-CateServiceModel.hasMany(CustomerSearchModel, {foreignKey: 'cateServiceId', sourceKey: 'id', as: 'customerSearches'});
+CateServiceModel.hasMany(CustomerSearchModel, { foreignKey: 'cateServiceId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CateServiceModel, { foreignKey: 'cateServiceId', as: 'cateService' });
 
-CompanyModel.hasMany(CustomerSearchModel, {foreignKey: 'companyId', sourceKey: 'id', as: 'customerSearches'});
+CompanyModel.hasMany(CustomerSearchModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
-LocationModel.hasMany(CustomerSearchModel, {foreignKey: 'locationId', sourceKey: 'id', as: 'customerSearches'});
+LocationModel.hasMany(CustomerSearchModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+AppointmentModel.hasOne(RecentBookingModel, { foreignKey: 'appointmentId', sourceKey: 'id', as: 'appointment' });
+RecentBookingModel.belongsTo(AppointmentModel, { foreignKey: 'appointmentId', as: 'recentBooking' });
+PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStage' });
+PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipelineId', as: 'pipeline' });
+
+CompanyModel.hasMany(PipelineModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'pipeline' });
+PipelineModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
+
+CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
+
+PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
+DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
 export {
   sequelize,
@@ -159,8 +181,12 @@ export {
   AppointmentDetailModel,
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
+  LocationWorkingHourModel,
   LocationImageModel,
   CustomerSearchModel,
   CustomerWisereModel,
-  LocationWorkingHourModel
+  RecentBookingModel,
+  PipelineModel,
+  PipelineStageModel,
+  DealModel,
 };

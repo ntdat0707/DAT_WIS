@@ -25,7 +25,7 @@ import {
   LocationModel,
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
-  CustomerWisereModel
+  CustomerWisereModel, RecentBookingModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -479,18 +479,18 @@ export class AppointmentController extends BaseController {
       }
       const conditionsStaffs: any = conditions.staffIds
         ? {
-            model: StaffModel,
-            as: 'staffs',
-            required: true,
-            through: { attributes: [] },
-            where: { id: conditions.staffIds }
-          }
+          model: StaffModel,
+          as: 'staffs',
+          required: true,
+          through: { attributes: [] },
+          where: { id: conditions.staffIds }
+        }
         : {
-            model: StaffModel,
-            as: 'staffs',
-            required: true,
-            through: { attributes: [] }
-          };
+          model: StaffModel,
+          as: 'staffs',
+          required: true,
+          through: { attributes: [] }
+        };
       query.include.push(conditionsStaffs);
       const appointmentDetails = await AppointmentDetailModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetails));
@@ -1272,6 +1272,8 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+
+
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
@@ -1280,6 +1282,7 @@ export class AppointmentController extends BaseController {
         customerId: id,
         bookingSource: dataInput.bookingSource
       };
+
 
       if (dataInput.appointmentGroupId) {
         const appointmentGroup = await AppointmentGroupModel.findOne({
@@ -1330,6 +1333,8 @@ export class AppointmentController extends BaseController {
       const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
       const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
       const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      const recentBookingData: any = [];
+
       for (let i = 0; i < appointmentDetails.length; i++) {
         serviceDataNotify.push({
           id: appointmentDetails[i].serviceId,
@@ -1368,11 +1373,24 @@ export class AppointmentController extends BaseController {
             staffId: appointmentDetails[i].staffIds[j]
           });
         }
+        recentBookingData.push({
+          id: uuidv4(),
+          customerId: id,
+          appointmentId,
+          locationId: dataInput.locationId,
+          serviceId: appointmentDetails[i].serviceId,
+          staffId: appointmentDetails[i].staffIds[0]
+        });
+
       }
       await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
         transaction
       });
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      await RecentBookingModel.bulkCreate(recentBookingData, { transaction });
+
+
+
       // const findQuery: FindOptions = {
       //   where: { id: appointmentId },
       //   include: [

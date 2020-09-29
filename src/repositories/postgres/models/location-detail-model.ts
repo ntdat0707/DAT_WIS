@@ -13,6 +13,7 @@ class LocationDetailModel extends Model {
   public totalBookings?: number;
   public gender?: number;
   public description?: string;
+  public pathName?:string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;

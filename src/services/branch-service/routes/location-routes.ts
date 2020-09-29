@@ -35,10 +35,7 @@ export class LocationRoutes {
     );
     this.router.get('/market-place/get-location/:pathName', this.locationController.getLocationMarketPlace);
     this.router.get('/get-location-detail', this.locationController.getLocationDetail);
-    this.router.get(
-      '/get-location-by-service-provider',
-      this.locationController.getLocationByServiceProvider
-    );
+    this.router.get('/get-location-by-service-provider', this.locationController.getLocationByServiceProvider);
 
     this.router.get('/market-place/search', this.locationController.marketPlaceSearch);
     this.router.get('/market-place/suggested', this.locationController.marketPlaceSuggested);
