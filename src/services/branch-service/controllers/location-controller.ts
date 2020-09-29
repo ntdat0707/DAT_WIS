@@ -14,10 +14,11 @@ import {
   CateServiceModel,
   ServiceModel,
   LocationWorkingHourModel,
-  CompanyDetailModel,
   CustomerSearchModel,
   StaffModel,
-  CustomerModel
+  CustomerModel,
+  CityModel,
+  CompanyDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -161,11 +162,10 @@ export class LocationController {
     try {
       // console.log('ReqBody::', req.body);
       // console.log('Check list images::', req.files.length);
-      const data: any = {
+      let data: any = {
         name: req.body.name,
         phone: req.body.phone,
         email: req.body.email,
-        city: req.body.city,
         district: req.body.district,
         ward: req.body.ward,
         address: req.body.address,
@@ -179,7 +179,32 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      const company = await CompanyModel.findOne({ where: { id: data.companyId } });
+      let company: any = await CompanyModel.findOne({
+        where: { id: data.companyId },
+        include: [
+          {
+            model: CompanyDetailModel,
+            as: 'companyDetail',
+            required: true,
+            attributes: ['businessType', 'businessName']
+          }
+        ]
+      });
+      company = company.dataValues;
+      company = {
+        ...company,
+        ...company.companyDetail.dataValues,
+        ['companyDetail']: undefined
+      };
+      let city: any = await CityModel.findOne({
+        where: {
+          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${req.body.city}%')`)
+        },
+        attributes: ['id', 'name']
+      });
+      city = city.dataValues;
+      let cityDetail: any = { cityId: city.id, city: city.name };
+      data = Object.assign(data, cityDetail);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
@@ -195,6 +220,8 @@ export class LocationController {
       }
 
       const pathName = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
+
+      console.log('Path Name::', pathName);
 
       const dataLocationDetail = [];
       dataLocationDetail.push({
@@ -1038,7 +1065,7 @@ export class LocationController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -1429,7 +1456,7 @@ export class LocationController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -1459,7 +1486,7 @@ export class LocationController {
       console.log(error);
       return next(error);
     }
-  }
+  };
 
   private cateServiceSuggested = async (keywords: string) => {
     try {
@@ -1480,29 +1507,32 @@ export class LocationController {
     } catch (error) {
       throw error;
     }
-  }
+  };
 
   private popularServicesSuggested = async (keywords: string) => {
     try {
-      const popularServices = await sequelize.query([
-        'SELECT service.*',
-        'FROM service',
-        'LEFT JOIN appointment_detail ON appointment_detail.service_id = service.id',
-        `WHERE service.status LIKE 'active' and unaccent(service.name) ilike ${keywords}`,
-        'GROUP BY service.id, appointment_detail.id',
-        'ORDER BY count(appointment_detail.id) desc',
-        'LIMIT 10'
-      ].join(' '), {
-        mapToModel: true,
-        model: ServiceModel,
-        type: QueryTypes.SELECT
-      });
+      const popularServices = await sequelize.query(
+        [
+          'SELECT service.*',
+          'FROM service',
+          'LEFT JOIN appointment_detail ON appointment_detail.service_id = service.id',
+          `WHERE service.status LIKE 'active' and unaccent(service.name) ilike ${keywords}`,
+          'GROUP BY service.id, appointment_detail.id',
+          'ORDER BY count(appointment_detail.id) desc',
+          'LIMIT 10'
+        ].join(' '),
+        {
+          mapToModel: true,
+          model: ServiceModel,
+          type: QueryTypes.SELECT
+        }
+      );
 
       return popularServices;
     } catch (error) {
       throw error;
     }
-  }
+  };
 
   private searchRecentSuggested = async (searchOption: any) => {
     try {
@@ -1536,24 +1566,17 @@ export class LocationController {
             attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
           }
         ],
-        group: [
-          'CustomerSearchModel.id',
-          'cateService.id',
-          'company.id',
-          'service.id',
-          'location.id'
-        ]
+        group: ['CustomerSearchModel.id', 'cateService.id', 'company.id', 'service.id', 'location.id']
       });
       return recentSearch;
     } catch (error) {
       throw error;
     }
-  }
-
+  };
 
   private keywordsSuggested = async (keywords: string) => {
     try {
-      const cateServices =  await CateServiceModel.findAll({
+      const cateServices = await CateServiceModel.findAll({
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
           include: [['cateService', 'type']],
@@ -1561,7 +1584,7 @@ export class LocationController {
         },
         limit: 3
       });
-      const companies =  await CompanyModel.findAll({
+      const companies = await CompanyModel.findAll({
         where: Sequelize.literal(`unaccent("CompanyModel"."business_name") ilike any(array[${keywords}])`),
         attributes: {
           include: [['company', 'type']],
@@ -1570,7 +1593,7 @@ export class LocationController {
         limit: 3
       });
 
-      const services =  await ServiceModel.findAll({
+      const services = await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
           include: [['service', 'type']],
@@ -1579,11 +1602,11 @@ export class LocationController {
         limit: 3
       });
 
-      const locations =  await LocationModel.findAll({
+      const locations = await LocationModel.findAll({
         where: {
           [Op.or]: [
             Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywords}])`),
-            Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywords}])`),
+            Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywords}])`)
           ]
         },
         attributes: {
@@ -1593,12 +1616,7 @@ export class LocationController {
         limit: 3
       });
 
-      return [
-        ...cateServices,
-        ...companies,
-        ...services,
-        ...locations
-      ];
+      return [...cateServices, ...companies, ...services, ...locations];
     } catch (error) {
       throw error;
     }
@@ -1664,7 +1682,7 @@ export class LocationController {
             as: 'locationDetail',
             required: true,
             attributes: ['pathName', 'title', 'description'],
-            where: { pathName: data.pathName },
+            where: { pathName: data.pathName }
           },
           {
             model: LocationImageModel,
@@ -1677,39 +1695,40 @@ export class LocationController {
       });
 
       if (location) {
-        locations = (await LocationModel.findAll({
-          where: { companyId: location.companyId },
-          include: [
-            {
-              model: LocationWorkingHourModel,
-              as: 'workingTimes',
-              required: true,
-              where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
-              order: [['weekday', 'DESC']],
-              attributes: ['weekday', 'startTime', 'endTime']
-            },
-            {
-              model: LocationDetailModel,
-              as: 'locationDetail',
-              required: true,
-              attributes: ['pathName', 'title', 'description'],
-            }
-          ],
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-          group: [
-            'LocationModel.id',
-            'locationDetail.id',
-            'workingTimes.id',
-            'workingTimes.start_time',
-            'workingTimes.end_time',
-            'workingTimes.weekday'
-          ]
-        })).map((locate: any) => ({
+        locations = (
+          await LocationModel.findAll({
+            where: { companyId: location.companyId },
+            include: [
+              {
+                model: LocationWorkingHourModel,
+                as: 'workingTimes',
+                required: true,
+                where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
+                order: [['weekday', 'DESC']],
+                attributes: ['weekday', 'startTime', 'endTime']
+              },
+              {
+                model: LocationDetailModel,
+                as: 'locationDetail',
+                required: true,
+                attributes: ['pathName', 'title', 'description']
+              }
+            ],
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            group: [
+              'LocationModel.id',
+              'locationDetail.id',
+              'workingTimes.id',
+              'workingTimes.start_time',
+              'workingTimes.end_time',
+              'workingTimes.weekday'
+            ]
+          })
+        ).map((locate: any) => ({
           ...locate.dataValues,
           ...locate.locationDetail.dataValues,
-          ['locationDetail']: undefined,
+          ['locationDetail']: undefined
         }));
-
 
         location = location.dataValues;
         location = {

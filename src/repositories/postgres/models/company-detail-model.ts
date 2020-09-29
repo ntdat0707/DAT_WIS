@@ -7,6 +7,7 @@ class CompanyDetailModel extends Model {
   public companyId: string;
   public businessType?: string;
   public businessName: string;
+  public phone: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -32,6 +33,11 @@ CompanyDetailModel.init(
     },
     businessName: {
       field: 'business_name',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    phone: {
+      field: 'phone',
       type: DataTypes.STRING,
       allowNull: true
     },
