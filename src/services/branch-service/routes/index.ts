@@ -7,7 +7,6 @@ import { CompanyRoutes } from './company';
 import { CompanyDetailRoutes } from './company-detail-routes';
 import { CountryRoutes } from './country-routes';
 import { CityRoutes } from './city-routes';
-import { RecentViewRoutes } from './recent-view-routes';
 
 class MainRoutes {
   public router: express.Router = express.Router();
@@ -19,7 +18,6 @@ class MainRoutes {
   private companyDetailRoutes = new CompanyDetailRoutes().router;
   private countryRoutes = new CountryRoutes().router;
   private cityRoutes = new CityRoutes().router;
-  private recentViewRoutes = new RecentViewRoutes().router;
   constructor() {
     this.config();
   }
@@ -32,7 +30,6 @@ class MainRoutes {
     this.router.use('/company-detail', this.companyDetailRoutes);
     this.router.use('/country', this.countryRoutes);
     this.router.use('/city', this.cityRoutes);
-    this.router.use('/recent-view', this.recentViewRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;
