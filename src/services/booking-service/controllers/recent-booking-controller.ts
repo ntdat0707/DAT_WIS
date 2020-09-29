@@ -107,9 +107,10 @@ export class RecentBookingController extends BaseController {
   public getRecentBooking = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput = req.params.customerId;
+
       const validateErrors = validate(dataInput, checkCustomerIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const recentBookings = (
+      let recentBookings: any = (
         await RecentBookingModel.findAll({
           where: { customerId: dataInput },
           order: [['createdAt', 'DESC']],
@@ -120,6 +121,10 @@ export class RecentBookingController extends BaseController {
         staffId: recentBooking.staffId
       }));
 
+      if (!recentBookings) {
+        recentBookings = [];
+        return res.status(HttpStatus.OK).send(buildSuccessMessage(recentBookings));
+      }
       let recentBookingHistory: any = [];
       for (let i = 0; i < recentBookings.length; i++) {
         let staff: any = await StaffModel.findOne({
@@ -149,7 +154,7 @@ export class RecentBookingController extends BaseController {
       // recentBookingHistory.filter((item: any, index: any) => {
       //   return recentBookingHistory.indexOf(item === index);
       // });
-      
+
       return res.status(HttpStatus.OK).send(buildSuccessMessage(recentBookingHistory));
     } catch (err) {}
   };

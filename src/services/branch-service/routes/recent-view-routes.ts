@@ -10,6 +10,7 @@ export class RecentViewRoutes {
 
   private config(): void {
     this.router.post('/market-place/create-recent-view', this.recentViewController.createRecentView);
-    this.router.put('/market-place/update-recent-view?customerId=:customerId?locationId=:locationId');
+    this.router.put('/market-place/update-recent-view?', this.recentViewController.updateRecentView);
+    this.router.get('/market-place/get-recent-view/:customerId', this.recentViewController.getRecentView);
   }
 }
