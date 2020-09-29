@@ -1345,7 +1345,7 @@ export class LocationController {
    *       schema:
    *          type: integer
    *     - in: query
-   *       name: latitude
+   *       name: la titude
    *       schema:
    *          type: number
    *     - in: query
@@ -1438,8 +1438,9 @@ export class LocationController {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
 
-      const cateServices = await this.cateServiceSuggested(keywords);
+      const cateServices = await this.cateServiceSuggested(keywordsQuery);
       const popularServices = await this.popularServicesSuggested(keywordsQuery);
+      const suggestionByKeywords = await this.keywordsSuggested(keywordsQuery);
 
       let customer = null;
       if (search.customerId) {
@@ -1451,6 +1452,7 @@ export class LocationController {
       }
 
       const results = {
+        suggestionByKeywords,
         cateServices,
         popularServices,
         recentSearch
@@ -1554,6 +1556,61 @@ export class LocationController {
       throw error;
     }
   }
+
+
+  private keywordsSuggested = async (keywords: string) => {
+    try {
+      const cateServices =  await CateServiceModel.findAll({
+        where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
+        attributes: {
+          include: [["cateService", "type"]],
+          exclude: ['createdAt', 'updatedAt', 'deleteAt']
+        },
+        limit: 3
+      });
+      const companies =  await CompanyModel.findAll({
+        where: Sequelize.literal(`unaccent("CompanyModel"."business_name") ilike any(array[${keywords}])`),
+        attributes: {
+          include: [["cateService", "type"]],
+          exclude: ['createdAt', 'updatedAt', 'deleteAt']
+        },
+        limit: 3
+      });
+
+      const services =  await ServiceModel.findAll({
+        where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
+        attributes: {
+          include: [["cateService", "type"]],
+          exclude: ['createdAt', 'updatedAt', 'deleteAt']
+        },
+        limit: 3
+      });
+
+      const locations =  await LocationModel.findAll({
+        where: {
+          [Op.or]: [
+            Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywords}])`),
+            Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywords}])`),
+          ]
+        },
+        attributes: {
+          include: [["cateService", "type"]],
+          exclude: ['createdAt', 'updatedAt', 'deleteAt']
+        },
+        limit: 3
+      });
+
+      return [
+        ...cateServices,
+        ...companies,
+        ...services,
+        ...locations
+      ]
+    } catch (error) {
+      throw error;
+    }
+  }
+
   /**
    * @swagger
    * /branch/location/market-place/get-location/{pathName}:
