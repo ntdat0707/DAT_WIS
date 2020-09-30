@@ -970,7 +970,11 @@ export class SearchController {
       }
 
 
-	    const customer = await CustomerModel.findOne({where: {id: data.customerId}});
+	    let customer = null;
+      if (data.customerId) {
+        customer = await CustomerModel.findOne({where: {id: data.customerId}});
+      }
+
       if (customer && location) {
         let recentViews: any = await RecentViewModel.findOne({
           where: { customerId: data.customerId, locationId: location.id }
