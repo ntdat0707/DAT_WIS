@@ -5,8 +5,6 @@ import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createCompanyDetailSchema } from '../configs/validate-schemas/company';
-import { CompanyModel } from '../../../repositories/postgres/models';
-import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
 import { CompanyDetailModel } from '../../../repositories/postgres/models/company-detail-model';
 import { sequelize } from '../../../repositories/postgres/models';
 export class CompanyDetailController {
@@ -76,7 +74,7 @@ export class CompanyDetailController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       transaction = await sequelize.transaction();
-      let companyDetail = await CompanyDetailModel.create(
+      const companyDetail = await CompanyDetailModel.create(
         {
           companyId: data.companyId,
           businessType: data.businessType,

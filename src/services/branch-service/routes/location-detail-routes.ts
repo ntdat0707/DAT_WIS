@@ -1,9 +1,6 @@
 import * as express from 'express';
 require('dotenv').config();
 
-import { LocationController } from '../controllers/location-controller';
-import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
-import { uploadAsMiddleware } from '../../../utils/file-manager';
 import { LocationDetailController } from '../controllers/location-detail-controller';
 export class LocationDetailRoutes {
   public router: express.Router = express.Router();

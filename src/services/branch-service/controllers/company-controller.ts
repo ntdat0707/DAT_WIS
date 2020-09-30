@@ -6,7 +6,6 @@ import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { initCompanySchema } from '../configs/validate-schemas/company';
 import { CompanyModel } from '../../../repositories/postgres/models';
-import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
 import { v4 as uuidv4 } from 'uuid';
 import { CompanyDetailModel } from '../../../repositories/postgres/models/company-detail-model';
 export class CompanyController {
@@ -63,8 +62,6 @@ export class CompanyController {
     let transaction = null;
     try {
       const { companyId, id } = res.locals.staffPayload;
-
-      console.log('Staff payload:::', res.locals.staffPayload);
       const data: any = {
         ...body
       };
@@ -72,7 +69,6 @@ export class CompanyController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      console.log('Pass check customer');
       let company = await CompanyModel.findOne({
         where: {
           id: companyId,

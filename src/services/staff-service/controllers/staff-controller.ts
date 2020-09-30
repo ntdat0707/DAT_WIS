@@ -4,6 +4,7 @@ import HttpStatus from 'http-status-codes';
 import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
+import _ from 'lodash';
 require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
