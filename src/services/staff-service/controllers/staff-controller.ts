@@ -1199,7 +1199,7 @@ export class StaffController {
       const timeSlot = timeSlots(workTime.startTime,workTime.endTime,5);
       //console.log(workDay);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
-      console.log(appointmentDay);
+      //console.log(appointmentDay);
       const doctorsSchedule = await StaffModel.findAndCountAll({
         attributes: ['id'],
         include: [
