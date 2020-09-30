@@ -67,7 +67,7 @@ export class CustomerController {
    */
   /**
    * @swagger
-   * /customer/create:
+   * /customer/create-customer-wisere:
    *   post:
    *     tags:
    *       - Customer
@@ -119,6 +119,7 @@ export class CustomerController {
       return next(error);
     }
   };
+  
   /**
    * @swagger
    * definitions:
@@ -908,7 +909,7 @@ export class CustomerController {
 
   /**
    * @swagger
-   * /customer/register:
+   * /customer/register-customer-marketplace:
    *   post:
    *     tags:
    *       - Customer

@@ -21,7 +21,7 @@ import {
   createLocationSchema,
   locationIdSchema,
   createLocationWorkingTimeSchema,
-  updateLocationSchema,
+  updateLocationSchema
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
@@ -66,9 +66,7 @@ export class LocationController {
    *     parameters:
    *     - in: "formData"
    *       name: "photo"
-   *       type: array
-   *       items:
-   *          type: file
+   *       type: file
    *       description: The file to upload.
    *     - in: "formData"
    *       name: "name"
@@ -156,6 +154,7 @@ export class LocationController {
         phone: req.body.phone,
         email: req.body.email,
         district: req.body.district,
+        city: req.body.city,
         ward: req.body.ward,
         address: req.body.address,
         latitude: req.body.latitude,
@@ -196,17 +195,9 @@ export class LocationController {
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
+      if (req.file) data.photo = (req.file as any).location;
 
-      if (req.files.length) {
-        const images = (req.files as Express.Multer.File[]).map((x: any, index: number) => ({
-          locationId: location.id,
-          path: x.location,
-          isAvatar: index === 0 ? true : false
-        }));
-
-        await LocationImageModel.bulkCreate(images, { transaction: transaction });
-      }
-
+      await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
       const pathName = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
 
       console.log('Path Name::', pathName);
@@ -664,15 +655,8 @@ export class LocationController {
    *       required: true
    *     - in: "formData"
    *       name: "photo"
-   *       type: array
-   *       items:
-   *           type: file
+   *       type: file
    *       description: The file to upload.
-   *     - in: "formData"
-   *       name: "deleteImages"
-   *       type: array
-   *       items:
-   *           type: string
    *     - in: "formData"
    *       name: "name"
    *       type: string
@@ -747,7 +731,7 @@ export class LocationController {
    *       500:
    *         description:
    */
-  public updateLocation = async ({ params, body, files }: Request, res: Response, next: NextFunction) => {
+  public updateLocation = async ({ params, body, file }: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
       const { workingLocationIds, companyId } = res.locals.staffPayload;
@@ -756,10 +740,6 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-
-      const deleteImagesArray = (body.deleteImages || '').toString().split(',');
-      body.deleteImages = deleteImagesArray[0] === '' ? [] : deleteImagesArray;
-
       validateErrors = validate(body, updateLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -815,9 +795,6 @@ export class LocationController {
             locationId: params.locationId
           }
         });
-
-        // console.log('Pass exist Location::');
-
         const workingsTimes = (body.workingTimes as []).map((value: any) => ({
           locationId: params.locationId,
           weekday: value.day,
@@ -832,9 +809,6 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
-
-      // console.log('Pass workingTImes::');
-
       const data: any = {
         name: body.name ? body.name : location.name,
         phone: body.phone ? body.phone : location.phone,
@@ -879,34 +853,10 @@ export class LocationController {
           pathName: normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
         };
       }
-      // if (file) data.photo = (file as any).location;
+      if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
-
-      //delete Images
-      if (body.deleteImages && body.deleteImages.length > 0) {
-        const locationImages = await LocationImageModel.findAll({
-          where: {
-            id: { [Op.in]: body.deleteImages }
-          }
-        });
-
-        if (body.deleteImages.length !== locationImages.length) {
-          return next(new CustomError(locationErrorDetails.E_1006(), HttpStatus.NOT_FOUND));
-        }
-
-        await LocationImageModel.destroy({ where: { id: { [Op.in]: body.deleteImages } }, transaction });
-      }
-
-      if (files) {
-        const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
-          locationId: location.id,
-          path: x.location,
-          isAvatar: index === 0 ? true : false
-        }));
-
-        await LocationImageModel.bulkCreate(images, { transaction: transaction });
-      }
+      await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
 
       //commit transaction
       await transaction.commit();
@@ -921,46 +871,4 @@ export class LocationController {
     }
   };
 
-  /**
-   * @swagger
-   * /branch/location/get-location-detail/{locationId}:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: getLocationDetail
-   *     parameters:
-   *     - in: path
-   *       name: locationId
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public getLocationDetail = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const locationId = req.params.locationId;
-      const validateErrors = validate(locationId, locationIdSchema);
-      if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      }
-      const location: any = await LocationModel.findOne({
-        where: {
-          id: locationId
-        }
-      });
-      if (!location) {
-        return next(
-          new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
-        );
-      }
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
-    } catch (error) {
-      return next(error);
-    }
-  };
 }

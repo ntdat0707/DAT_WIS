@@ -250,7 +250,15 @@ export class StaffController {
     let transaction = null;
     try {
       transaction = await sequelize.transaction();
-      const validateErrors = validate(req.body, createStaffSchema);
+      let dataInput: any = { ...req.body };
+
+      let workingIdsArray: any[] = dataInput.workingLocationIds.split(',');
+      let workingIds: any = [];
+      for (let i = 0; i < workingIdsArray.length; i++) {
+        workingIds.push(workingIdsArray[i]);
+      }
+      dataInput.workingLocationIds = workingIds;
+      const validateErrors = validate(dataInput, createStaffSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
@@ -284,14 +292,17 @@ export class StaffController {
           );
         }
       }
+      console.log('diff OK:::');
       if (req.file) profile.avatarPath = (req.file as any).location;
       const staff = await StaffModel.create(profile, { transaction });
+      console.log('Created Staff::', staff);
       if (req.body.workingLocationIds) {
         const workingLocationData = (req.body.workingLocationIds as []).map((x) => ({
           locationId: x,
           staffId: profile.id
         }));
         await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
+        console.log('created working locationData:::', workingLocationData);
       }
       if (req.body.serviceIds) {
         const serviceStaffData = (req.body.serviceIds as []).map((x) => ({
@@ -376,7 +387,14 @@ export class StaffController {
     let transaction = null;
     try {
       transaction = await sequelize.transaction();
-      const validateErrors = validate(req.body, updateStaffSchema);
+      let dataInput: any = { ...req.body };
+      let workingIdsArray: any[] = dataInput.workingLocationIds.split(',');
+      let workingIds: any = [];
+      for (let i = 0; i < workingIdsArray.length; i++) {
+        workingIds.push(workingIdsArray[i]);
+      }
+      dataInput.workingLocationIds = workingIds;
+      const validateErrors = validate(dataInput, updateStaffSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }

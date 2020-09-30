@@ -94,6 +94,7 @@ export class CateServiceController {
   public getAllCateServices = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
+      console.log('CompanyId::',companyId);
       const cateService = await CateServiceModel.findAll({ where: { companyId } });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(cateService));
     } catch (error) {
@@ -236,39 +237,6 @@ export class CateServiceController {
 
   /**
    * @swagger
-   * /branch/cate-service/get-all:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     security:
-   *       - Bearer: []
-   *     name: getAllCateService
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       404:
-   *         description: service cate gory not found
-   *       500:
-   *         description: internal error
-   */
-  public getAllCateService = async (_req: Request, res: Response, next: NextFunction) => {
-    try {
-      const companyId = res.locals.staffPayload.companyId;
-      const cateServices = await CateServiceModel.findAll({
-        where: {
-          companyId: companyId
-        }
-      });
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
    * /branch/cate-service/get-cate-services:
    *   get:
    *     tags:
@@ -375,29 +343,4 @@ export class CateServiceController {
     }
   };
 
-  /**
-   * @swagger
-   * /branch/cate-service/search-all-cate-service:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: searchCateService
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       404:
-   *         description: service cate gory not found
-   *       500:
-   *         description: internal error
-   */
-  public searchCateService = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const cateServices = await CateServiceModel.findAll({order:[['name','ASC']]});
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
-    } catch (error) {
-      return next(error);
-    }
-  };
 }

@@ -37,7 +37,10 @@ export class CityController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const cities = await CityModel.findAll({ where: { countryCode: dataInput } });
+      const cities = await CityModel.findAll({
+        where: { countryCode: dataInput },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
       if (!cities) {
         return next(new CustomError(cityErrorDetails.E_1000('Cities not exists'), HttpStatus.NOT_FOUND));
       }

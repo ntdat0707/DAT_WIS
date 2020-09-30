@@ -10,6 +10,6 @@ export class LocationDetailRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post('/create-location-detail', this.locationDetailController.createLocationDetail);
+    this.router.post('/create-location-detail-marketplace', this.locationDetailController.createLocationDetail);
   }
 }

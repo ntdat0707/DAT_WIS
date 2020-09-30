@@ -10,5 +10,6 @@ export class CompanyRoutes {
   }
   private config(): void {
     this.router.post('/init', isAuthenticated, this.companyController.initCompany);
+    this.router.put('/update-company', isAuthenticated, this.companyController.updateCompany);
   }
 }
