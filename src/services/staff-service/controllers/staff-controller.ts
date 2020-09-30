@@ -3,8 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
-import moment, { duration } from 'moment';
-import _, { find } from 'lodash';
+import moment from 'moment';
 require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
@@ -14,10 +13,10 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
 import { iterator } from '../../../utils/iterator';
 import { timeSlots } from '../../../utils/time-slots';
-import {minutesToNum} from '../../../utils/minutes-to-number';
-import {dayOfWeek} from '../../../utils/day-of-week';
-import {getStaffUnavailTime} from '../../../utils/unavail-time-array';
-import {staffWithTime} from '../../../utils/staff-with-time';
+import { minutesToNum } from '../../../utils/minutes-to-number';
+import { dayOfWeek } from '../../../utils/day-of-week';
+import { getStaffUnavailTime } from '../../../utils/unavail-time-array';
+import { staffWithTime } from '../../../utils/staff-with-time';
 import {
   sequelize,
   StaffModel,
@@ -36,12 +35,9 @@ import {
   filterStaffSchema,
   createStaffsSchema,
   updateStaffSchema,
-  getStaffMultipleService,
+  getStaffMultipleService
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
-import { func, object } from 'joi';
-import { time } from 'cron';
-
 
 export class StaffController {
   /**
@@ -870,12 +866,8 @@ export class StaffController {
   public getStaffsServices = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput = { ...req.body };
-      console.log('ServiceIDs:::', req.body);
       const validateErrors = validate(dataInput, getStaffMultipleService);
       // const serviceIds = req.query.serviceIds;
-
-      const listService = dataInput.serviceIds.toString().split(',').join();
-      console.log('listService::', listService);
 
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
@@ -906,22 +898,22 @@ export class StaffController {
   };
 
   /**
-     * @swagger
-     * definitions:
-     *   StaffAvailableTimeSlots:
-     *       required:
-     *           - staffId
-     *           - workDay
-     *           - serviceDuration
-     *       properties:
-     *           staffId:
-     *               type: string
-     *           workDay:
-     *               type: string
-     *               description: MMMM DD YYYY
-     *           serviceDuration: 
-     *               type: integer
-     */
+   * @swagger
+   * definitions:
+   *   StaffAvailableTimeSlots:
+   *       required:
+   *           - staffId
+   *           - workDay
+   *           - serviceDuration
+   *       properties:
+   *           staffId:
+   *               type: string
+   *           workDay:
+   *               type: string
+   *               description: MMMM DD YYYY
+   *           serviceDuration:
+   *               type: integer
+   */
 
   /**
    * @swagger
@@ -946,12 +938,12 @@ export class StaffController {
    */
   public getStaffAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      let rangelist: Array<number> = [];
+      const rangelist: number[] = [];
       const dataInput = { ...req.body };
       const validateErrors = validate(dataInput.staffId, staffIdSchema);
       const workDay = dataInput.workDay;
       const serviceDuration = dataInput.serviceDuration;
-      let duration = minutesToNum(serviceDuration);
+      const durationTime = minutesToNum(serviceDuration);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const workingTime = await StaffModel.findOne({
         attributes: [],
@@ -968,7 +960,7 @@ export class StaffController {
                 attributes: ['weekday', 'startTime', 'endTime', 'isEnabled']
               }
             ]
-          },
+          }
         ],
         where: {
           id: dataInput.staffId
@@ -980,7 +972,7 @@ export class StaffController {
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingLocations['0'].workingTimes;
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
-      let day = dayOfWeek(workDay);
+      const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
       //console.log(workTime);
       const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
@@ -995,94 +987,91 @@ export class StaffController {
             attributes: ['duration', 'start_time', 'status'],
             where: {
               [Op.and]: [
-                sequelize.Sequelize.where(sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')), appointmentDay),
+                sequelize.Sequelize.where(
+                  sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')),
+                  appointmentDay
+                ),
                 {
-                  [Op.not]: [
-                    { status: { [Op.like]: 'cancel' } }
-                  ]
+                  [Op.not]: [{ status: { [Op.like]: 'cancel' } }]
                 }
               ]
             }
           }
         ],
         where: {
-          id: dataInput.staffId,
-        },
+          id: dataInput.staffId
+        }
       });
       const preDataFirst = JSON.stringify(doctorSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
       if (preDataSecond.count > 0) {
         preDataSecond.rows[0].appointmentDetails.forEach((obj: any) => {
           obj.start_time = moment(obj.start_time).format('HH:mm').toString();
-          let firstTimeSlot = parseInt(obj.start_time.split(':').join(''));
+          const firstTimeSlot = parseInt(obj.start_time.split(':').join(''), 10);
           let finalTimeSlot;
           if (obj.duration >= 60) {
-            let hour = Math.floor(obj.duration / 60);
-            let minute = Math.round(((obj.duration / 60) - hour) * 60);
-            let finalTimeSlotM = (firstTimeSlot % 100) + minute;
-            let finalTimeSlotH = Math.floor(firstTimeSlot / 100) + hour;
-            let finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
-            finalTimeSlot = parseInt(finalTimeSlotString);
-
+            const hour = Math.floor(obj.duration / 60);
+            const minute = Math.round((obj.duration / 60 - hour) * 60);
+            const finalTimeSlotM = (firstTimeSlot % 100) + minute;
+            const finalTimeSlotH = Math.floor(firstTimeSlot / 100) + hour;
+            const finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
+            finalTimeSlot = parseInt(finalTimeSlotString, 10);
           } else {
             //console.log(firstTimeSlot);
-            let hour = Math.floor(obj.duration / 60);
-            let minute = Math.round(((obj.duration / 60) - hour) * 60);
+            const hour = Math.floor(obj.duration / 60);
+            const minute = Math.round((obj.duration / 60 - hour) * 60);
             let finalTimeSlotM = (firstTimeSlot % 100) + minute;
             let finalTimeSlotH = Math.round(firstTimeSlot / 100) + hour;
-            if (finalTimeSlotM == 60) {
+            if (finalTimeSlotM === 60) {
               finalTimeSlotH = Math.floor(firstTimeSlot / 100) + 1;
               finalTimeSlotM = 0;
-            }
-            else if (finalTimeSlotM > 60) {
+            } else if (finalTimeSlotM > 60) {
               finalTimeSlotH = Math.floor(firstTimeSlot / 100) + 1;
               finalTimeSlotM = finalTimeSlotM - 60;
             }
-            let finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
-            finalTimeSlot = parseInt(finalTimeSlotString);
-          };
-          let finTimeSlot = moment(finalTimeSlot, 'hmm').format('HH:mm');
-          let firstTime = moment(firstTimeSlot, 'hmm').format('HH:mm');
+            const finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
+            finalTimeSlot = parseInt(finalTimeSlotString, 10);
+          }
+          const finTimeSlot = moment(finalTimeSlot, 'hmm').format('HH:mm');
+          const firstTime = moment(firstTimeSlot, 'hmm').format('HH:mm');
           if (timeSlot.hasOwnProperty(obj.start_time)) {
             timeSlot[firstTime] = false;
             timeSlot[finTimeSlot] = false;
-          };
-          console.log(finTimeSlot);
+          }
           rangelist.push(finalTimeSlot);
           Object.keys(timeSlot).forEach((key: any, index: any) => {
-            let indexStart = Object.keys(timeSlot).indexOf(firstTime);
-            let indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot);
+            const indexStart = Object.keys(timeSlot).indexOf(firstTime);
+            const indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot);
             if (index < indexEndTime && index > indexStart) {
               timeSlot[key] = false;
-            };
+            }
           });
         });
       }
 
       for (let i = 0; i < rangelist.length - 1; i++) {
         for (let k = 1; k < rangelist.length; k++) {
-          if (i + 1 == k) {
-            if ((rangelist[k] - rangelist[i]) <= duration) {
+          if (i + 1 === k) {
+            if (rangelist[k] - rangelist[i] <= durationTime) {
               let temp;
               while (rangelist[i] < rangelist[k]) {
                 rangelist[i] = rangelist[i] + 5;
-                if ((rangelist[i] % 100) == 60) {
+                if (rangelist[i] % 100 === 60) {
                   rangelist[i] = (Math.floor(rangelist[i] / 100) + 1) * 100;
                 }
                 temp = moment(rangelist[i], 'hmm').format('HH:mm');
                 timeSlot[temp] = false;
               }
             }
-            //console.log(moment(workTime.endTime.split(':').join(''),'hmm').format('HH:mm'));
-            let stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').format('HH:mm');
+            const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').format('HH:mm');
             //let semiEndtime = moment();
-            let endTime = parseInt(stringEndtime.split(':').join(''));
+            const endTime = parseInt(stringEndtime.split(':').join(''), 10);
             timeSlot[stringEndtime] = false;
-            if (endTime - rangelist[k] < duration) {
+            if (endTime - rangelist[k] < durationTime) {
               let temp;
               while (rangelist[k] < endTime) {
                 rangelist[k] = rangelist[k] + 5;
-                if ((rangelist[k] % 100) == 60) {
+                if (rangelist[k] % 100 === 60) {
                   rangelist[k] = (Math.floor(rangelist[k] / 100) + 1) * 100;
                 }
                 temp = moment(rangelist[k], 'hmm').format('HH:mm');
@@ -1090,45 +1079,48 @@ export class StaffController {
               }
             }
           }
-        };
+        }
       }
       Object.keys(timeSlot).forEach((key: any) => {
         let temp;
-        if (timeSlot[key] == true) {
-          let stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').format('HH:mm');
-          let endTime = parseInt(stringEndtime.split(':').join(''));
-          temp = parseInt(key.split(':').join(''));
-          if (temp + duration > endTime) {
+        if (timeSlot[key] === true) {
+          const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').format('HH:mm');
+          const endTime = parseInt(stringEndtime.split(':').join(''), 10);
+          temp = parseInt(key.split(':').join(''), 10);
+          if (temp + durationTime > endTime) {
             timeSlot[key] = false;
           }
         }
       });
-      let currentTime = parseInt(moment().utc().add(7,'h').format('HH:mm').split(':').join(''));
-      let currentDay =  moment().utc().format('MMMM DD YYYY');
-      Object.keys(timeSlot).forEach((key:any) => {
-        let temp = key.split(':').join('');
-        if (temp < currentTime && currentDay == workDay){
-          let stringTemp = moment(temp,'hmm').format('HH:mm');
+      const currentTime = parseInt(moment().utc().add(7, 'h').format('HH:mm').split(':').join(''), 10);
+      const currentDay = moment().utc().format('MMMM DD YYYY');
+      Object.keys(timeSlot).forEach((key: any) => {
+        const temp = key.split(':').join('');
+        if (temp < currentTime && currentDay === workDay) {
+          const stringTemp = moment(temp, 'hmm').format('HH:mm');
           timeSlot[stringTemp] = false;
         }
       });
-      let isBefore = moment(appointmentDay).isBefore(currentDay);
-      if (isBefore == true){
-        Object.keys(timeSlot).forEach((key:any) => {
+      const isBefore = moment(appointmentDay).isBefore(currentDay);
+      if (isBefore === true) {
+        Object.keys(timeSlot).forEach((key: any) => {
           timeSlot[key] = false;
         });
       }
       //console.log(rangelist);
 
       if (!workingTime) {
-        return next(new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND));
+        return next(
+          new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND)
+        );
       }
       res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot));
     } catch (error) {
       return error;
     }
-  }
-    /**
+  };
+
+  /**
    * @swagger
    * definitions:
    *   RandomAvailableTimeSlots:
@@ -1142,7 +1134,7 @@ export class StaffController {
    *           workDay:
    *               type: string
    *               description: MMMM DD YYYY
-   *           serviceDuration: 
+   *           serviceDuration:
    *               type: integer
    */
 
@@ -1169,12 +1161,12 @@ export class StaffController {
    */
   public getRandomAvailableTimeSlots = async (req: Request, res: Response) => {
     try {
-      const dataInput = {...req.body};
+      const dataInput = { ...req.body };
       const serviceDuration = dataInput.serviceDuration;
       const locationId = dataInput.locationId;
       const workDay = dataInput.workDay;
-      const staffIds: Array<String> = [];
-      let duration = minutesToNum(serviceDuration);
+      const staffIds: string[] = [];
+      const durationTime = minutesToNum(serviceDuration);
       //console.log(duration);
       const workingTime = await LocationModel.findOne({
         attributes: [],
@@ -1194,9 +1186,9 @@ export class StaffController {
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingTimes;
-      let day = dayOfWeek(workDay);
-      const workTime = iterator(data,day);
-      const timeSlot = timeSlots(workTime.startTime,workTime.endTime,5);
+      const day = dayOfWeek(workDay);
+      const workTime = iterator(data, day);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       //console.log(workDay);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
       //console.log(appointmentDay);
@@ -1210,53 +1202,57 @@ export class StaffController {
             attributes: ['duration', 'start_time', 'status'],
             where: {
               [Op.and]: [
-                sequelize.Sequelize.where(sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')), appointmentDay),
+                sequelize.Sequelize.where(
+                  sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')),
+                  appointmentDay
+                ),
                 {
-                  [Op.not]: [
-                    { status: { [Op.like]: 'cancel' } }
-                  ]
+                  [Op.not]: [{ status: { [Op.like]: 'cancel' } }]
                 }
               ]
             }
           }
         ],
         where: {
-          main_location_id: locationId,
-        },
+          main_location_id: locationId
+        }
       });
       const preDataFirst = JSON.stringify(doctorsSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
       //console.log(preDataSecond);
-      let len = preDataSecond.rows.length;
-      for (let i = 0; i< len; i++){
-        preDataSecond.rows[i].appointmentDetails.forEach((e:any) => {
+      const len = preDataSecond.rows.length;
+      for (let i = 0; i < len; i++) {
+        preDataSecond.rows[i].appointmentDetails.forEach((e: any) => {
           e.start_time = moment(e.start_time).format('HH:mm');
         });
       }
-      let staffUnavailTime = getStaffUnavailTime(preDataSecond);
+      const staffUnavailTime = getStaffUnavailTime(preDataSecond);
       //console.log(staffUnavailTime);
       const doctors = await StaffModel.findAndCountAll({
         attributes: ['id'],
         where: {
-          main_location_id: locationId,
+          main_location_id: locationId
         }
       });
-      for (let i = 0; i < doctors.count; i++){
+      for (let i = 0; i < doctors.count; i++) {
         staffIds.push(doctors.rows[i].id);
       }
-      let noReferencesTimeSlots = staffWithTime(staffIds,staffUnavailTime,timeSlot,duration,appointmentDay, workDay);
-      if (doctorsSchedule.count == 0){
-       for(let i = 0; i < noReferencesTimeSlots.length; i++){
-         noReferencesTimeSlots[i].staffId = staffIds[Math.floor(Math.random() * staffIds.length)];
-       } 
+      const noReferencesTimeSlots = staffWithTime(
+        staffIds,
+        staffUnavailTime,
+        timeSlot,
+        durationTime,
+        appointmentDay,
+        workDay
+      );
+      if (doctorsSchedule.count === 0) {
+        for (let i = 0; i < noReferencesTimeSlots.length; i++) {
+          noReferencesTimeSlots[i].staffId = staffIds[Math.floor(Math.random() * staffIds.length)];
+        }
       }
       res.status(HttpStatus.OK).send(buildSuccessMessage(noReferencesTimeSlots));
-
     } catch (error) {
       return error;
     }
-  }
-
-};
-
-
+  };
+}
