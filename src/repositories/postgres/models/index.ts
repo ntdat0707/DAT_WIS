@@ -27,6 +27,8 @@ import { PipelineStageModel } from './pipeline-stage-model';
 import { DealModel } from './deal-model';
 import { CustomerWisereModel } from './customer-wisere-model';
 import { RecentBookingModel } from './recent-booking-model';
+import { MarketPlaceFieldsModel } from './marketplace-fields-model';
+import { MarketPlaceValueModel } from './marketplace-value-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -164,6 +166,12 @@ DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: '
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
+MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, { foreignKey: 'fieldId', sourceKey: 'id', as: 'marketplaceValues' });
+MarketPlaceValueModel.belongsTo(MarketPlaceFieldsModel, { foreignKey: 'fieldId', as: 'marketplaceField' });
+
+LocationModel.hasMany(MarketPlaceValueModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'marketplaceValues' });
+MarketPlaceValueModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
 export {
   sequelize,
   StaffModel,
@@ -190,4 +198,6 @@ export {
   PipelineModel,
   PipelineStageModel,
   DealModel,
+  MarketPlaceFieldsModel,
+  MarketPlaceValueModel
 };
