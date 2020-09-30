@@ -918,6 +918,7 @@ export class StaffController {
      *               type: string
      *           workDay:
      *               type: string
+     *               description: MMMM DD YYYY
      *           serviceDuration: 
      *               type: integer
      */
@@ -1140,6 +1141,7 @@ export class StaffController {
    *               type: string
    *           workDay:
    *               type: string
+   *               description: MMMM DD YYYY
    *           serviceDuration: 
    *               type: integer
    */
@@ -1197,7 +1199,7 @@ export class StaffController {
       const timeSlot = timeSlots(workTime.startTime,workTime.endTime,5);
       //console.log(workDay);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
-      //console.log(appointmentDay);
+      console.log(appointmentDay);
       const doctorsSchedule = await StaffModel.findAndCountAll({
         attributes: ['id'],
         include: [
@@ -1243,6 +1245,11 @@ export class StaffController {
         staffIds.push(doctors.rows[i].id);
       }
       let noReferencesTimeSlots = staffWithTime(staffIds,staffUnavailTime,timeSlot,duration,appointmentDay, workDay);
+      if (doctorsSchedule.count == 0){
+       for(let i = 0; i < noReferencesTimeSlots.length; i++){
+         noReferencesTimeSlots[i].staffId = staffIds[Math.floor(Math.random() * staffIds.length)];
+       } 
+      }
       res.status(HttpStatus.OK).send(buildSuccessMessage(noReferencesTimeSlots));
 
     } catch (error) {

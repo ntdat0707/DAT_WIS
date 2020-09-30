@@ -22,9 +22,11 @@ const staffWithTime = (staffIds: any, staffsUnavailTimesArray: any, timeSlots: a
         for(let i = 0; i < staffsUnavailTimesArray.length; i ++){
             for (let j = 0; j < staffsUnavailTimesArray[i].unavailTimes.length; j++){
                 if (item.time == staffsUnavailTimesArray[i].unavailTimes[j]){
+                    console.log('here');
                     let filteredStaffs = staffIds.filter((staff:any) => staff != staffsUnavailTimesArray[i].staffId);
                     item.staffId = filteredStaffs[Math.floor(Math.random() * filteredStaffs.length)];
                 }else {
+                    //console.log(staffIds[Math.floor(Math.random() * staffIds.length)]);
                     item.staffId = staffIds[Math.floor(Math.random() * staffIds.length)];
                 }
             }
