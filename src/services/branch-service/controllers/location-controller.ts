@@ -12,9 +12,7 @@ import {
   CompanyModel,
   LocationDetailModel,
   LocationWorkingHourModel,
-  CustomerSearchModel,
   StaffModel,
-  CustomerModel,
   CityModel,
   CompanyDetailModel
 } from '../../../repositories/postgres/models';
@@ -25,7 +23,7 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema,
 } from '../configs/validate-schemas';
-import { FindOptions, Op } from 'sequelize';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -170,7 +168,7 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      let company: any = await CompanyModel.findOne({
+      const company: any = await CompanyModel.findOne({
         where: { id: data.companyId },
         include: [
           {
@@ -180,13 +178,11 @@ export class LocationController {
             attributes: ['businessType', 'businessName']
           }
         ]
-      });
-      company = company.dataValues;
-      company = {
-        ...company,
-        ...company.companyDetail.dataValues,
+      }).then((cpn: any) => ({
+        ...cpn.dataValues,
+        ...cpn.companyDetail.dataValues,
         ['companyDetail']: undefined
-      };
+      }));
       let city: any = await CityModel.findOne({
         where: {
           name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${req.body.city}%')`)
@@ -194,7 +190,8 @@ export class LocationController {
         attributes: ['id', 'name']
       });
       city = city.dataValues;
-      let cityDetail: any = { cityId: city.id, city: city.name };
+
+      const cityDetail: any = { cityId: city.id, city: city.name };
       data = Object.assign(data, cityDetail);
       // start transaction
       transaction = await sequelize.transaction();
@@ -850,7 +847,21 @@ export class LocationController {
         longitude: body.longitude
       };
 
-      const company = await CompanyModel.findOne({ where: { id: companyId } });
+      const company: any = await CompanyModel.findOne({
+        where: { id: companyId },
+        include: [
+          {
+            model: CompanyDetailModel,
+            as: 'companyDetail',
+            required: true,
+            attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
+          }
+        ]
+      }).then((cpn: any) => ({
+        ...cpn.dataValues,
+        ...cpn.companyDetail?.dataValues,
+        companyDetail: undefined
+      }));
 
       let dataDetails: any = {
         title: body.title,
