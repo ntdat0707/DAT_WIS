@@ -12,7 +12,11 @@ import {
   CompanyModel,
   LocationDetailModel,
   LocationWorkingHourModel,
+  CustomerSearchModel,
   StaffModel,
+  CustomerModel,
+  CityModel,
+  CompanyDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -149,11 +153,10 @@ export class LocationController {
     try {
       // console.log('ReqBody::', req.body);
       // console.log('Check list images::', req.files.length);
-      const data: any = {
+      let data: any = {
         name: req.body.name,
         phone: req.body.phone,
         email: req.body.email,
-        city: req.body.city,
         district: req.body.district,
         ward: req.body.ward,
         address: req.body.address,
@@ -167,7 +170,32 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      const company = await CompanyModel.findOne({ where: { id: data.companyId } });
+      let company: any = await CompanyModel.findOne({
+        where: { id: data.companyId },
+        include: [
+          {
+            model: CompanyDetailModel,
+            as: 'companyDetail',
+            required: true,
+            attributes: ['businessType', 'businessName']
+          }
+        ]
+      });
+      company = company.dataValues;
+      company = {
+        ...company,
+        ...company.companyDetail.dataValues,
+        ['companyDetail']: undefined
+      };
+      let city: any = await CityModel.findOne({
+        where: {
+          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${req.body.city}%')`)
+        },
+        attributes: ['id', 'name']
+      });
+      city = city.dataValues;
+      let cityDetail: any = { cityId: city.id, city: city.name };
+      data = Object.assign(data, cityDetail);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
@@ -183,6 +211,8 @@ export class LocationController {
       }
 
       const pathName = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
+
+      console.log('Path Name::', pathName);
 
       const dataLocationDetail = [];
       dataLocationDetail.push({
