@@ -500,6 +500,14 @@ export class AppointmentGroupController extends BaseController {
           if (data.updateAppointments[i].isPrimary === true) {
             updateAppointmentId.push(data.updateAppointments[i].appointmentId);
           }
+          if (data.deleteAppointments.includes(data.updateAppointments[i].appointmentId)) {
+            return next(
+              new CustomError(
+                bookingErrorDetails.E_2010(`Duplicate appointment id ${data.updateAppointments[i].appointmentId}`),
+                HttpStatus.NOT_FOUND
+              )
+            );
+          }
         }
         const countPrimaryInAppointment = await AppointmentModel.count({
           where: {
@@ -534,6 +542,7 @@ export class AppointmentGroupController extends BaseController {
           if (apt.isPrimary === true) countPrimary++;
         }
       }
+
       if (countPrimary !== 1) {
         return next(new CustomError(bookingErrorDetails.E_2006(), HttpStatus.BAD_REQUEST));
       }
@@ -545,7 +554,7 @@ export class AppointmentGroupController extends BaseController {
       if (!appointmentGroup) {
         return next(
           new CustomError(
-            bookingErrorDetails.E_2002(`Not found appointment-group ${req.params.appointmentGroupId}`),
+            bookingErrorDetails.E_2007(`Not found appointment-group ${req.params.appointmentGroupId}`),
             HttpStatus.NOT_FOUND
           )
         );
@@ -565,7 +574,9 @@ export class AppointmentGroupController extends BaseController {
       const appointmentGroupData: any = {
         date: req.body.date
       };
-      await AppointmentModel.update(appointmentGroupData, {
+      // start transaction
+      transaction = await sequelize.transaction();
+      await AppointmentGroupModel.update(appointmentGroupData, {
         where: { id: data.appointmentGroupId },
         transaction
       });
@@ -617,8 +628,7 @@ export class AppointmentGroupController extends BaseController {
             }
           }
         }
-        // start transaction
-        transaction = await sequelize.transaction();
+
         await AppointmentModel.bulkCreate(createAppointmentTasks, { transaction });
         await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
         await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
@@ -662,7 +672,6 @@ export class AppointmentGroupController extends BaseController {
         }
         const verifyAppointmentDetailTask = [];
         for (const apt of data.updateAppointments) {
-          // if (apt.isPrimary === true) countPrimary++;
           verifyAppointmentDetailTask.push(this.verifyAppointmentDetails(apt.appointmentDetails, data.locationId));
         }
         // veriry appointment details
@@ -711,6 +720,7 @@ export class AppointmentGroupController extends BaseController {
         await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
         await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
       }
+
       if (data.deleteAppointments && data.deleteAppointments.length > 0) {
         for (let i = 0; i < data.deleteAppointments.length; i++) {
           const appointment = await AppointmentModel.findOne({
