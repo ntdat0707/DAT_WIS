@@ -5,7 +5,7 @@ const createLocationSchema = Joi.object({
   name: Joi.string().required().label('name'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   email: Joi.string().email().label('email'),
-  //city: Joi.string().label('city'),
+  city: Joi.string().label('city'),
   district: Joi.string().label('district'),
   ward: Joi.string().label('ward'),
   address: Joi.string().required().label('address'),

@@ -31,7 +31,7 @@ export class LocationDetailController {
    */
   /**
    * @swagger
-   * /branch/location-detail/create-location-detail:
+   * /branch/location-detail/create-location-detail-marketplace:
    *   post:
    *     tags:
    *       - Branch

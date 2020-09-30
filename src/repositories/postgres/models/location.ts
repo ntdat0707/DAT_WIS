@@ -17,6 +17,9 @@ class LocationModel extends Model {
   public address: string;
   public latitude: number;
   public longitude: number;
+  public gender?: number;
+  public description?: string;
+  public pathName?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -92,6 +95,21 @@ LocationModel.init(
       field: 'longitude',
       type: DataTypes.STRING,
       defaultValue: 0
+    },
+    description: {
+      field: 'description',
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    gender: {
+      type: DataTypes.TINYINT,
+      field: 'gender',
+      defaultValue: 0
+    },
+    pathName: {
+      field: 'path_name',
+      type: DataTypes.STRING,
+      defaultValue: ''
     },
     createdAt: {
       field: 'created_at',

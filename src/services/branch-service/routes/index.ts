@@ -4,7 +4,6 @@ import { ServiceRoutes } from './service-routes';
 import { ResourceRoutes } from './resource-routes';
 import { CateServiceRoutes } from './cateService-routes';
 import { CompanyRoutes } from './company';
-import { CompanyDetailRoutes } from './company-detail-routes';
 import { CountryRoutes } from './country-routes';
 import { CityRoutes } from './city-routes';
 
@@ -15,7 +14,6 @@ class MainRoutes {
   private resourceRoutes = new ResourceRoutes().router;
   private cateServiceRoutes = new CateServiceRoutes().router;
   private companyRoutes = new CompanyRoutes().router;
-  private companyDetailRoutes = new CompanyDetailRoutes().router;
   private countryRoutes = new CountryRoutes().router;
   private cityRoutes = new CityRoutes().router;
   constructor() {
@@ -27,7 +25,6 @@ class MainRoutes {
     this.router.use('/resource', this.resourceRoutes);
     this.router.use('/cate-service', this.cateServiceRoutes);
     this.router.use('/company', this.companyRoutes);
-    this.router.use('/company-detail', this.companyDetailRoutes);
     this.router.use('/country', this.countryRoutes);
     this.router.use('/city', this.cityRoutes);
   }

@@ -621,25 +621,25 @@ export class SearchController {
             model: CateServiceModel,
             as: 'cateService',
             required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
             model: CompanyModel,
             as: 'company',
             required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
             model: ServiceModel,
             as: 'service',
             required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
             model: LocationModel,
             as: 'location',
             required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
         ],
         group: [
@@ -884,7 +884,7 @@ export class SearchController {
             attributes: ['path', 'is_avatar']
           }
         ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
 
       if (location) {

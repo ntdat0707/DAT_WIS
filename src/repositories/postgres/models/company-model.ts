@@ -25,21 +25,21 @@ CompanyModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    businessType: {
-      field: 'business_type',
-      type: DataTypes.ENUM(...Object.keys(BusinessType)),
-      allowNull: true
-    },
-    businessName: {
-      field: 'business_name',
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    phone: {
-      field: 'phone',
-      type: DataTypes.STRING,
-      allowNull: true
-    },
+    // businessType: {
+    //   field: 'business_type',
+    //   type: DataTypes.ENUM(...Object.keys(BusinessType)),
+    //   allowNull: true
+    // },
+    // businessName: {
+    //   field: 'business_name',
+    //   type: DataTypes.STRING,
+    //   allowNull: true
+    // },
+    // phone: {
+    //   field: 'phone',
+    //   type: DataTypes.STRING,
+    //   allowNull: true
+    // },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',

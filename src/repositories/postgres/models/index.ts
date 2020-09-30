@@ -148,6 +148,7 @@ CustomerSearchModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'lo
 
 AppointmentModel.hasOne(RecentBookingModel, { foreignKey: 'appointmentId', sourceKey: 'id', as: 'appointment' });
 RecentBookingModel.belongsTo(AppointmentModel, { foreignKey: 'appointmentId', as: 'recentBooking' });
+
 PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStage' });
 PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipelineId', as: 'pipeline' });
 
