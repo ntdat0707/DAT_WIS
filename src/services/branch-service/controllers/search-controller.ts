@@ -660,14 +660,22 @@ export class SearchController {
             attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] }
           }
         ],
-        group: ['CustomerSearchModel.id', 'cateService.id', 'company.id', 'service.id', 'location.id']
+        group: [
+          'CustomerSearchModel.id',
+          'cateService.id',
+          'company.id',
+          'company->companyDetail.id',
+          'service.id',
+          'location.id'
+        ]
       });
       recentSearch = {
         ...recentSearch.dataValues,
         cateService: recentSearch.cataService?.dataValues,
         company: {
           ...recentSearch.company?.dataValues,
-          ...recentSearch.company?.companyDetail?.dataValues
+          ...recentSearch.company?.companyDetail?.dataValues,
+          companyDetails: undefined
         },
         service: recentSearch.service?.datavalues,
         location: recentSearch.location?.dataValues
@@ -833,7 +841,7 @@ export class SearchController {
       ).map((locationView: any) => ({
         ...locationView.dataValues,
         ...locationView.locationDetail.dataValues,
-        ...locationView.locationImages[0].dataValues,
+        ...locationView.locationImages[0]?.dataValues,
         ['locationDetail']: undefined,
         ['locationImages']: undefined
       }));
