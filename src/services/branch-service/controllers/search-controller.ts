@@ -17,7 +17,9 @@ import {
   CustomerSearchModel,
   StaffModel,
   CustomerModel,
-  RecentBookingModel
+  RecentBookingModel,
+  MarketPlaceFieldsModel,
+  MarketPlaceValueModel
 } from '../../../repositories/postgres/models';
 
 import { searchSchema, suggestedSchema, getLocationMarketPlace } from '../configs/validate-schemas';
@@ -30,6 +32,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
+import {parseDatabyField} from '../utils';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -143,10 +146,18 @@ export class SearchController {
       const queryLocations: FindOptions = {
         include: [
           {
-            model: LocationDetailModel,
-            as: 'locationDetail',
+            model: MarketPlaceValueModel,
+            as: 'marketplaceValues',
             required: false,
-            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
+            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
+            include: [
+              {
+                model: MarketPlaceFieldsModel,
+                as: 'marketplaceField',
+                required: false,
+                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
+              }
+            ]
           },
           {
             model: LocationImageModel,
@@ -199,7 +210,8 @@ export class SearchController {
         attributes: { exclude: ['CreatedAt', 'updatedAt', 'deletedAt'] },
         group: [
           'LocationModel.id',
-          'locationDetail.id',
+          'marketPlaceValues.id',
+          'marketPlaceValues->marketPlaceField.id',
           'locationImages.id',
           'services.id',
           'services->LocationServiceModel.id',
@@ -226,6 +238,7 @@ export class SearchController {
 
       let locationResults: any = await LocationModel.findAll(queryLocations);
       const keywordUnaccents = removeAccents(keywords).toLowerCase();
+
       let searchCateServiceItem: any = {};
       let searchCompanyItem: any = {};
       let searchServiceItem: any = {};
@@ -245,6 +258,7 @@ export class SearchController {
           ) {
             searchCompanyItem = location.company;
           }
+
 
           if (
             location.services &&
@@ -266,16 +280,25 @@ export class SearchController {
             location.company.cateServices = undefined;
           }
         }
+        const locationDetail = location.marketPlaceValues.reduce((
+          acc: any,
+          {value, marketPlaceField: {name, type} }: any
+        ) => ({
+          ...acc,
+          [name]: parseDatabyField[type](value)
+        }), {});
+
         location = {
           ...location,
           ...location.locationImages?.dataValues,
-          ...location.locationDetail?.dataValues,
+          ...locationDetail,
           company: {
             ...location.company?.dataValues,
             ...location.company?.companyDetail.dataValues,
             companyDetail: undefined
           },
           service: (location.services || [])[0],
+          marketPlaceValues: undefined,
           services: undefined,
           locationDetail: undefined
         };
@@ -823,12 +846,6 @@ export class SearchController {
           where: { id: { [Op.in]: locationIds } },
           include: [
             {
-              model: LocationDetailModel,
-              as: 'locationDetail',
-              required: true,
-              attributes: ['pathName']
-            },
-            {
               model: LocationImageModel,
               as: 'locationImages',
               required: true,
@@ -906,19 +923,13 @@ export class SearchController {
             ]
           },
           {
-            model: LocationDetailModel,
-            as: 'locationDetail',
-            required: true,
-            attributes: ['pathName', 'title', 'description'],
-            where: { pathName: data.pathName }
-          },
-          {
             model: LocationImageModel,
             as: 'locationImages',
             required: false,
             attributes: ['path', 'is_avatar']
           }
         ],
+        where: { pathName: data.pathName },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
 
@@ -934,18 +945,11 @@ export class SearchController {
                 where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
                 order: [['weekday', 'DESC']],
                 attributes: ['weekday', 'startTime', 'endTime']
-              },
-              {
-                model: LocationDetailModel,
-                as: 'locationDetail',
-                required: true,
-                attributes: ['pathName', 'title', 'description']
               }
             ],
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
             group: [
               'LocationModel.id',
-              'locationDetail.id',
               'workingTimes.id',
               'workingTimes.start_time',
               'workingTimes.end_time',
@@ -964,9 +968,7 @@ export class SearchController {
           ...location.locationDetail?.dataValues,
           ...location.locationImages?.dataValues,
           ...location.company?.dataValues,
-          ...location.company?.companyDetail?.dataValues,
           ['company']: undefined,
-          ['companyDetail']: undefined,
           ['locationDetail']: undefined
         };
 

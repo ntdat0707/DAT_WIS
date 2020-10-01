@@ -166,7 +166,7 @@ DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: '
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
-MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, { foreignKey: 'fieldId', sourceKey: 'id', as: 'marketplaceValues' });
+MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, { foreignKey: 'fieldId', sourceKey: 'id', as: 'markePlaceValues' });
 MarketPlaceValueModel.belongsTo(MarketPlaceFieldsModel, { foreignKey: 'fieldId', as: 'marketplaceField' });
 
 LocationModel.hasMany(MarketPlaceValueModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'marketplaceValues' });

@@ -1,9 +1,9 @@
 import * as express from 'express';
-import { MarketPlaceFieldsController } from '../controllers/marketplace-fields-controller';
+import { MarketPlaceFieldController } from '../controllers/marketplace-field-controller';
+
 export class MarketPlaceRoutes {
   public router: express.Router = express.Router();
-  private marketplaceFieldController = new MarketPlaceFieldsController();
-
+  private marketplaceFieldController = new MarketPlaceFieldController();
   constructor() {
     this.config();
   }
