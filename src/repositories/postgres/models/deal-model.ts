@@ -71,7 +71,7 @@ DealModel.init(
     status: {
       field: 'status',
       type: DataTypes.STRING,
-      allowNull: true
+      defaultValue: 'Open'
     },
     expectedCloseDate: {
       field: 'expected_close_date',

@@ -25,5 +25,12 @@ export class DealRoutes {
     this.router.get('/get-all-deal', isAuthenticated, this.dealController.getAllDeal);
     this.router.post('/create-deal', isAuthenticated, this.dealController.createDeal);
     this.router.get('/get-deal/:dealId?', isAuthenticated, this.dealController.getDealById);
+    this.router.put('/update-deal/:dealId?', isAuthenticated, this.dealController.updateDeal);
+    this.router.delete('/delete-deal/:dealId?', isAuthenticated, this.dealController.deleteDeal);
+    this.router.put(
+      '/update-pipelineStageOfDeal/:dealId?',
+      isAuthenticated,
+      this.dealController.updatePipelineStageOfDeal
+    );
   }
 }
