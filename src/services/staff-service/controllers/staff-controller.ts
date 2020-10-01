@@ -39,6 +39,8 @@ export class StaffController {
    *   get:
    *     tags:
    *       - Staff
+   *     security:
+   *       - Bearer: []
    *     name: get-staff
    *     parameters:
    *     - in: path
@@ -83,6 +85,8 @@ export class StaffController {
    *   get:
    *     tags:
    *       - Staff
+   *     security:
+   *       - Bearer: []
    *     name: get-staffs
    *     parameters:
    *     - in: query
