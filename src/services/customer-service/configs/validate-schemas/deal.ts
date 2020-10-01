@@ -113,7 +113,7 @@ const createDealSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .allow(null, '')
+    .required()
     .label('customerWisereId')
 });
 
