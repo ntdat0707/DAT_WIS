@@ -10,11 +10,12 @@ import {
   LocationModel,
   LocationStaffModel,
   CompanyModel,
-  LocationDetailModel,
   LocationWorkingHourModel,
   StaffModel,
   CityModel,
-  CompanyDetailModel
+  CompanyDetailModel,
+  MarketPlaceFieldsModel,
+  MarketPlaceValueModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -31,6 +32,7 @@ import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { normalizeRemoveAccent } from '../../../utils/text';
+import { parseDatabyField } from '../utils/marketplace-field';
 
 export class LocationController {
   /**
@@ -52,6 +54,7 @@ export class LocationController {
    *                   type: string
    *
    */
+
   /**
    * @swagger
    * /branch/location/create-location:
@@ -98,21 +101,24 @@ export class LocationController {
    *       name: "longitude"
    *       type: number
    *     - in: "formData"
+   *       name: "description"
+   *       type: string
+   *     - in: "formData"
    *       name: "title"
    *       type: string
    *     - in: "formData"
    *       name: "payment"
    *       type: string
    *       enum:
-   *          - Cash
-   *          - Card
-   *          - All
+   *          - cash
+   *          - card
+   *          - all
    *     - in: "formData"
    *       name: "parking"
    *       type: string
    *       enum:
-   *          - Active
-   *          - Inactive
+   *          - active
+   *          - inactive
    *     - in: "formData"
    *       name: "rating"
    *       type: number
@@ -147,25 +153,35 @@ export class LocationController {
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      // console.log('ReqBody::', req.body);
-      // console.log('Check list images::', req.files.length);
+      console.log('ReqBody::', req.body);
       let data: any = {
         name: req.body.name,
         phone: req.body.phone,
         email: req.body.email,
         district: req.body.district,
+        title: req.body.title,
+        description: req.body.description,
         city: req.body.city,
         ward: req.body.ward,
         address: req.body.address,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
-        workingTimes: req.body.workingTimes
+        workingTimes: req.body.workingTimes,
+        payment: req.body.payment,
+        parking: req.body.parking,
+        rating: req.body.rating,
+        recoveryRooms: req.body.recoveryRooms,
+        totalBookings: req.body.totalBookings,
+        gender: req.body.gender,
+        openedAt: req.body.openedAt
       };
 
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
+
+      console.log('Checked Validate');
       data.companyId = res.locals.staffPayload.companyId;
       const company: any = await CompanyModel.findOne({
         where: { id: data.companyId },
@@ -197,27 +213,38 @@ export class LocationController {
       const location = await LocationModel.create(data, { transaction });
       if (req.file) data.photo = (req.file as any).location;
 
-      await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
-      const pathName = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
+      const pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
+      const pathNameObject: any = { pathName: pathNameAssign };
+      data = Object.assign(data, pathNameObject);
+      console.log('Path Name::', pathNameAssign);
+      if (data.photo) {
+        await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
+      }
+      //const marketplaceValueData: any = [];
 
-      console.log('Path Name::', pathName);
-
-      const dataLocationDetail = [];
-      dataLocationDetail.push({
-        id: uuidv4(),
-        locationId: location.id,
-        title: req.body.title,
-        payment: req.body.payment,
-        parking: req.body.parking,
-        rating: req.body.rating,
-        recoveryRooms: req.body.recoveryRooms,
-        totalBookings: req.body.totalBookings,
-        gender: req.body.gender,
-        openedAt: req.body.openedAt,
-        pathName: pathName
-      });
-      await LocationDetailModel.bulkCreate(dataLocationDetail, { transaction });
-
+      let marketplaceFields: any = (
+        await MarketPlaceFieldsModel.findAll({
+          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+        })
+      ).map((marketplaceField: any) => ({
+        ...marketplaceField.dataValues
+      }));
+      // marketplaceField = marketplaceField.dataValues;
+      console.log('marketplaceField::', marketplaceFields);
+      for (let i = 0; i < marketplaceFields.length; i++) {
+        if (data.hasOwnProperty(marketplaceFields[i].name)) {
+          let datavalue = data[marketplaceFields[i].name];
+          console.log('Datavalue::', datavalue);
+          let marketplaceValueData: any = [];
+          marketplaceValueData.push({
+            id: uuidv4(),
+            locationId: location.id,
+            fieldId: marketplaceFields[i].id,
+            value: data[marketplaceFields[i].name]
+          });
+          await MarketPlaceValueModel.bulkCreate(marketplaceValueData, { transaction });
+        }
+      }
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -245,22 +272,50 @@ export class LocationController {
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
       await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
-
-      //commit transaction
       await transaction.commit();
-      const newLocation = await LocationModel.findOne({
+      //commit transaction
+      let newLocation: any = await LocationModel.findOne({
         where: { id: location.id },
         include: [
           {
-            model: LocationDetailModel,
-            as: 'locationDetail',
-            required: true
+            model: MarketPlaceValueModel,
+            as: 'marketplaceValues',
+            required: true,
+            attributes: ['value'],
+            include: [
+              {
+                model: MarketPlaceFieldsModel,
+                as: 'marketplaceField',
+                required: true,
+                attributes: ['name']
+              }
+            ]
           }
-        ]
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
+      // console.log('New Location::', newLocation);
+      // console.log('marketplaceValues::', newLocation.marketplaceValues);
+      // const locationDetail = newLocation.marketplaceValues?.reduce(
+      //   (acc: any, { value, marketplaceField: { name, type } }: any) => {
+      //     console.log('type', type);
+      //     return  {
+      //     ...acc,
+      //     [name]: parseDatabyField[type](value)
+      //     };
+      // },
+      //   {}
+      // );
 
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
+      // newLocation = {
+      //   ...newLocation.dataValues,
+      //   ...locationDetail,
+      //   marketplaceValues: undefined
+      // };
+
+      return await res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
     } catch (error) {
+      console.log(error);
       //rollback transaction
       if (transaction) {
         await transaction.rollback();
@@ -268,7 +323,6 @@ export class LocationController {
       return next(error);
     }
   };
-
   /**
    * @swagger
    * /branch/location/get-all-locations:
@@ -855,7 +909,7 @@ export class LocationController {
       }
       if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
-      await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
+      // await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
       await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
 
       //commit transaction
@@ -870,5 +924,4 @@ export class LocationController {
       return next(error);
     }
   };
-
 }

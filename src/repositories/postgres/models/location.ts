@@ -19,10 +19,12 @@ class LocationModel extends Model {
   public longitude: number;
   public gender?: number;
   public description?: string;
+  public title?: string;
   public pathName?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
+  public readonly openedAt!: Date;
 }
 
 LocationModel.init(
@@ -111,6 +113,17 @@ LocationModel.init(
       type: DataTypes.STRING,
       defaultValue: ''
     },
+    title: {
+      field: 'title',
+      type: DataTypes.STRING,
+      defaultValue: ''
+    },
+    openedAt: {
+      field: 'opened_at',
+      type: 'TIMESTAMP',
+      defaultValue: null
+    },
+
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',

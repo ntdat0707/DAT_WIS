@@ -9,7 +9,6 @@ import {
   sequelize,
   LocationModel,
   CompanyModel,
-  LocationDetailModel,
   CateServiceModel,
   ServiceModel,
   LocationWorkingHourModel,
@@ -134,7 +133,7 @@ export class SearchController {
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
-
+      console.log('CheckedValidate:::');
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
@@ -207,11 +206,11 @@ export class SearchController {
             Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`)
           ]
         },
-        attributes: { exclude: ['CreatedAt', 'updatedAt', 'deletedAt'] },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
         group: [
           'LocationModel.id',
-          'marketPlaceValues.id',
-          'marketPlaceValues->marketPlaceField.id',
+          'marketplaceValues.id',
+          'marketplaceValues->marketplaceField.id',
           'locationImages.id',
           'services.id',
           'services->LocationServiceModel.id',
@@ -223,7 +222,7 @@ export class SearchController {
         ]
       };
 
-      if (!!req.query.cityName) {
+      if (req.query.cityName) {
         queryLocations.where = {
           ...queryLocations.where,
           city: {
@@ -232,6 +231,7 @@ export class SearchController {
         };
       }
 
+      console.log('BEFOREDIEE');
       if (req.query.order === EOrder.NEWEST) {
         queryLocations.order = [['"LocationModel"."openedAt"', 'DESC']];
       }
@@ -280,9 +280,9 @@ export class SearchController {
             location.company.cateServices = undefined;
           }
         }
-        const locationDetail = location.marketPlaceValues.reduce((
+        const locationDetail = location.marketplaceValues.reduce((
           acc: any,
-          {value, marketPlaceField: {name, type} }: any
+          {value, marketplaceField: {name, type} }: any
         ) => ({
           ...acc,
           [name]: parseDatabyField[type](value)
@@ -298,7 +298,7 @@ export class SearchController {
             companyDetail: undefined
           },
           service: (location.services || [])[0],
-          marketPlaceValues: undefined,
+          marketplaceValues: undefined,
           services: undefined,
           locationDetail: undefined
         };
@@ -957,15 +957,12 @@ export class SearchController {
             ]
           })
         ).map((locate: any) => ({
-          ...locate.dataValues,
-          ...locate.locationDetail.dataValues,
-          ['locationDetail']: undefined
+          ...locate.dataValues
         }));
 
         location = location.dataValues;
         location = {
           ...location,
-          ...location.locationDetail?.dataValues,
           ...location.locationImages?.dataValues,
           ...location.company?.dataValues,
           ['company']: undefined,

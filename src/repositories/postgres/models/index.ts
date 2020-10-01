@@ -17,7 +17,6 @@ import { LocationServiceModel } from './location-service';
 import { AppointmentGroupModel } from './appointment-group-model';
 import { LocationWorkingHourModel } from './location-working-hour-model';
 import { CompanyDetailModel } from './company-detail-model';
-import { LocationDetailModel } from './location-detail-model';
 import { LocationImageModel } from './location-image';
 import { CountryModel } from './country-model';
 import { CityModel } from './city-model';
@@ -65,9 +64,6 @@ ServiceModel.belongsTo(CateServiceModel, { foreignKey: 'cateServiceId', as: 'cat
 
 ServiceModel.hasMany(ServiceImageModel, { foreignKey: 'serviceId', sourceKey: 'id', as: 'images' });
 ServiceResourceModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
-
-LocationModel.hasOne(LocationDetailModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'locationDetail' });
-LocationDetailModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
 // Appointment
 AppointmentModel.hasMany(AppointmentDetailModel, {
@@ -166,7 +162,7 @@ DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: '
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
-MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, { foreignKey: 'fieldId', sourceKey: 'id', as: 'markePlaceValues' });
+MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, { foreignKey: 'fieldId', sourceKey: 'id', as: 'marketplaceValues' });
 MarketPlaceValueModel.belongsTo(MarketPlaceFieldsModel, { foreignKey: 'fieldId', as: 'marketplaceField' });
 
 LocationModel.hasMany(MarketPlaceValueModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'marketplaceValues' });
@@ -185,7 +181,6 @@ export {
   ResourceModel,
   CateServiceModel,
   LocationStaffModel,
-  LocationDetailModel,
   AppointmentModel,
   AppointmentDetailModel,
   AppointmentDetailStaffModel,

@@ -40,7 +40,16 @@ const createLocationSchema = Joi.object({
           .label('range')
       })
     )
-    .label('workingTimes')
+    .label('workingTimes'),
+  description: Joi.string().required().label('description'),
+  title: Joi.string().label('title'),
+  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
+  parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
+  gender: Joi.number().label('gender'),
+  rating: Joi.number().label('rating'),
+  recoveryRooms: Joi.number().label('recoveryRooms'),
+  totalBookings: Joi.number().label('totalBookings'),
+  openedAt: Joi.string().isoDate()
 });
 
 const locationIdSchema = Joi.string()
@@ -68,22 +77,6 @@ const companyIdSchema = Joi.string()
   .required()
   .label('companyId');
 
-const createLocationDetailSchema = Joi.object({
-  locationId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .required()
-    .label('locationId'),
-  title: Joi.string().label('title'),
-  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
-  parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
-  gender: Joi.number().label('gender'),
-  rating: Joi.number().label('rating'),
-  recoveryRooms: Joi.number().label('recoveryRooms'),
-  totalBookings: Joi.number().label('totalBookings'),
-  openedAt: Joi.string().isoDate()
-});
 
 const createLocationWorkingTimeSchema = Joi.object({
   locationId: Joi.string()
@@ -212,6 +205,5 @@ export {
   companyIdSchema,
   pathNameSchema,
   suggestedSchema,
-  createLocationDetailSchema,
   getLocationMarketPlace
 };
