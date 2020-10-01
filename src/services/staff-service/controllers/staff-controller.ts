@@ -904,14 +904,18 @@ export class StaffController {
    *   StaffAvailableTimeSlots:
    *       required:
    *           - staffId
+   *           - currentTime
    *           - workDay
    *           - serviceDuration
    *       properties:
    *           staffId:
    *               type: string
+   *           currentTime:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD
    *           workDay:
    *               type: string
-   *               description: MMMM DD YYYY
    *           serviceDuration:
    *               type: integer
    */
@@ -1064,7 +1068,7 @@ export class StaffController {
                 timeSlot[temp] = false;
               }
             }
-            const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').format('HH:mm');
+            const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').utc().format('HH:mm');
             //let semiEndtime = moment();
             const endTime = parseInt(stringEndtime.split(':').join(''), 10);
             timeSlot[stringEndtime] = false;
@@ -1085,7 +1089,7 @@ export class StaffController {
       Object.keys(timeSlot).forEach((key: any) => {
         let temp;
         if (timeSlot[key] === true) {
-          const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').format('HH:mm');
+          const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').utc().format('HH:mm');
           const endTime = parseInt(stringEndtime.split(':').join(''), 10);
           temp = parseInt(key.split(':').join(''), 10);
           if (temp + durationTime > endTime) {
@@ -1093,15 +1097,16 @@ export class StaffController {
           }
         }
       });
-      const currentTime = parseInt(moment().utc().add(7, 'h').format('HH:mm').split(':').join(''), 10);
+      const currentTime = parseInt(moment().utc().format('HH:mm').split(':').join(''), 10);
       const currentDay = moment().utc().format('MMMM DD YYYY');
       Object.keys(timeSlot).forEach((key: any) => {
-        const temp = key.split(':').join('');
-        if (temp < currentTime && currentDay === workDay) {
+        const temp = parseInt(key.split(':').join(''), 10);
+        if (temp <= currentTime && currentDay === workDay) {
           const stringTemp = moment(temp, 'hmm').format('HH:mm');
           timeSlot[stringTemp] = false;
         }
       });
+
       const isBefore = moment(appointmentDay).isBefore(currentDay);
       if (isBefore === true) {
         Object.keys(timeSlot).forEach((key: any) => {
@@ -1109,13 +1114,30 @@ export class StaffController {
         });
       }
       //console.log(rangelist);
-
+      const timeZone = moment(dataInput.currentTime).format('Z');
+      const zoneInt = parseInt(timeZone.split(':').join(''), 10) / 100;
+      let newTimeSlot: any;
+      const tempIsAvail: any[] = [];
+      Object.keys(timeSlot).forEach((key: any) => {
+        let tempTime = key.split(':').join('');
+        const tempBool = timeSlot[key];
+        tempIsAvail.push(tempBool);
+        tempTime = moment(tempTime, 'hmm').add(zoneInt, 'h').format('HH:mm');
+        newTimeSlot = { ...newTimeSlot, [tempTime]: true };
+      });
+      for (let i = 0; i < tempIsAvail.length; i++) {
+        Object.keys(newTimeSlot).forEach((key: any) => {
+          if (Object.keys(newTimeSlot).indexOf(key) === i) {
+            newTimeSlot[key] = tempIsAvail[i];
+          }
+        });
+      }
       if (!workingTime) {
         return next(
           new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND)
         );
       }
-      res.status(HttpStatus.OK).send(buildSuccessMessage(timeSlot));
+      res.status(HttpStatus.OK).send(buildSuccessMessage(newTimeSlot));
     } catch (error) {
       return error;
     }
@@ -1127,14 +1149,18 @@ export class StaffController {
    *   RandomAvailableTimeSlots:
    *       required:
    *           - locationId
+   *           - currentTime
    *           - workDay
    *           - serviceDuration
    *       properties:
    *           locationId:
    *               type: string
+   *           currentTime:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD
    *           workDay:
    *               type: string
-   *               description: MMMM DD YYYY
    *           serviceDuration:
    *               type: integer
    */
@@ -1250,6 +1276,17 @@ export class StaffController {
         for (let i = 0; i < noReferencesTimeSlots.length; i++) {
           noReferencesTimeSlots[i].staffId = staffIds[Math.floor(Math.random() * staffIds.length)];
         }
+      }
+      const timeZone = moment(dataInput.currentTime).format('Z');
+      const zoneInt = parseInt(timeZone.split(':').join(''), 10) / 100;
+      const newTimeSlot: any[] = [];
+      Object.keys(timeSlot).forEach((key: any) => {
+        let tempTime = key.split(':').join('');
+        tempTime = moment(tempTime, 'hmm').add(zoneInt, 'h').format('HH:mm');
+        newTimeSlot.push(tempTime);
+      });
+      for (let i = 0; i < noReferencesTimeSlots.length; i++) {
+        noReferencesTimeSlots[i].time = newTimeSlot[i];
       }
       res.status(HttpStatus.OK).send(buildSuccessMessage(noReferencesTimeSlots));
     } catch (error) {
