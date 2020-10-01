@@ -32,6 +32,7 @@ import {
 } from '../../../utils/response-messages/error-details';
 import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
+import { StatusPipelineStage } from '../../../utils/consts';
 export class DealController {
   /**
    * @swagger
@@ -289,20 +290,20 @@ export class DealController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const lstPipelineStage: any = await PipelineStageModel.findAll({
+      const listPipelineStage: any = await PipelineStageModel.findAll({
         where: { pipelineId: pipelineId },
         order: ['order']
       });
-      if (!lstPipelineStage) {
+      if (!listPipelineStage) {
         return next(
           new CustomError(pipelineStageErrorDetails.E_3201(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
         );
       }
-      for (let i = 0; i < lstPipelineStage.length; i++) {
+      for (let i = 0; i < listPipelineStage.length; i++) {
         let totalValueDeal = 0;
         let totalValueStage = 0;
         let probationReality = 0;
-        const deal = await DealModel.findAll({ where: { pipelineStageId: lstPipelineStage[i].id } });
+        const deal = await DealModel.findAll({ where: { pipelineStageId: listPipelineStage[i].id } });
         if (deal.length > 0) {
           let valueStage: number;
           for (let j = 0; j < deal.length; j++) {
@@ -313,7 +314,7 @@ export class DealController {
                   model: PipelineStageModel,
                   as: 'pipelineStages',
                   required: true,
-                  where: { id: lstPipelineStage[i].id }
+                  where: { id: listPipelineStage[i].id }
                 }
               ]
             });
@@ -330,15 +331,15 @@ export class DealController {
           }
           probationReality = Math.round((totalValueStage / totalValueDeal) * 100);
         }
-        lstPipelineStage[i] = {
-          ...lstPipelineStage[i].dataValues,
+        listPipelineStage[i] = {
+          ...listPipelineStage[i].dataValues,
           totalDeal: deal.length,
           totalValueDeal: totalValueDeal,
           totalValueStage: totalValueStage,
           probationReality: probationReality
         };
       }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(lstPipelineStage));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(listPipelineStage));
     } catch (error) {
       return next(error);
     }
@@ -717,7 +718,6 @@ export class DealController {
         note: req.body.note,
         pipelineStageId: req.body.pipelineStageId,
         customerWisereId: req.body.customerWisereId,
-        status: 'Open',
         createdBy: res.locals.staffPayload.id
       };
       const checkOwnerId = await StaffModel.findOne({ where: { id: data.ownerId } });
@@ -886,7 +886,7 @@ export class DealController {
       if (!deal) {
         throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
       }
-      if (data.status === 'Won' || data.status === 'Lost') {
+      if (data.status === StatusPipelineStage.WON || data.status === StatusPipelineStage.LOST) {
         data.closingDate = Date.now();
       }
       deal = await deal.update(data);
@@ -938,7 +938,7 @@ export class DealController {
 
   /**
    * @swagger
-   * /customer/deal/update-pipelineStageOfDeal/{dealId}:
+   * /customer/deal/update-pipelineStage-Of-Deal/{dealId}:
    *   put:
    *     tags:
    *       - Customer

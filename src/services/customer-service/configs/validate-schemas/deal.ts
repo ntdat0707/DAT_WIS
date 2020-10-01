@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { StatusPipelineStage } from '../../../../utils/consts';
 const createPipelineSchema = Joi.object({
   name: Joi.string().required().label('name'),
   isActiveProbability: Joi.boolean().allow(null, '').label('isActiveProbability')
@@ -21,7 +22,7 @@ const pipelineStageIdSchema = Joi.string()
     version: ['uuidv4']
   })
   .required()
-  .label('newPipelineStage');
+  .label('newPipelineStageId');
 
 const settingPipelineStageSchema = Joi.object({
   name: Joi.string().required().label('name'),
@@ -149,7 +150,10 @@ const updateDealSchema = Joi.object({
     })
     .allow(null, '')
     .label('customerWisereId'),
-  status: Joi.string().allow(null, '').label('status')
+  status: Joi.string()
+    .allow(null, '')
+    .valid(StatusPipelineStage.OPEN, StatusPipelineStage.WON, StatusPipelineStage.LOST)
+    .label('status')
 });
 
 export {
