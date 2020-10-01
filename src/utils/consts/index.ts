@@ -72,6 +72,12 @@ enum EOrder {
   PRICE_HIGHEST = 'price_highest'
 }
 
+enum ETypeMarketPlaceField {
+  NUMBER =  'NUMBER',
+  STRING = 'STRING',
+  BOOLEAN = 'BOOLEAN'
+}
+
 export {
   buildingEnvs,
   EServiceStatus,
@@ -87,6 +93,7 @@ export {
   EParkingStatus,
   EFavorite,
   EOrder,
+  ETypeMarketPlaceField,
   IManagementLockAppointmentData,
   IManagementEditAppointmentDetailData
 };

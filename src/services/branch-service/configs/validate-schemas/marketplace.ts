@@ -1,9 +1,19 @@
 import Joi from 'joi';
+import {ETypeMarketPlaceField} from '../../../../utils/consts';
 
 const createMarketplaceField = Joi.object({
-	type: Joi.string().required().label('type'),
-	name: Joi.string().required().label('name'),
-	options: Joi.array().items(Joi.string()).min(1).required().label('options'),
+	type: Joi.string()
+		.valid(...Object.keys(ETypeMarketPlaceField))
+		.required()
+		.label('type'),
+	name: Joi.string()
+		.required()
+		.label('name'),
+	options: Joi.array()
+		.items(Joi.string())
+		.allow(null)
+		.allow('')
+		.label('options'),
 });
 
 const createMarketplaceValue = Joi.object({

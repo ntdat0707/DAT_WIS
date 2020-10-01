@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
+import { ETypeMarketPlaceField  } from '../../../utils/consts';
 
 class MarketPlaceFieldsModel extends Model {
   public id: string;
@@ -21,13 +22,14 @@ MarketPlaceFieldsModel.init(
     },
     type: {
       field: 'type',
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM(...Object.keys(ETypeMarketPlaceField)),
       allowNull: false
     },
     name: {
       field: 'name',
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      unique: true
     },
     options: {
       field: 'options',
