@@ -720,9 +720,11 @@ export class DealController {
         customerWisereId: req.body.customerWisereId,
         createdBy: res.locals.staffPayload.id
       };
-      const checkOwnerId = await StaffModel.findOne({ where: { id: data.ownerId } });
-      if (!checkOwnerId) {
-        throw new CustomError(staffErrorDetails.E_4000(`ownerId ${data.ownerId} not found`), httpStatus.NOT_FOUND);
+      if (data.ownerId) {
+        const checkOwnerId = await StaffModel.findOne({ where: { id: data.ownerId } });
+        if (!checkOwnerId) {
+          throw new CustomError(staffErrorDetails.E_4000(`ownerId ${data.ownerId} not found`), httpStatus.NOT_FOUND);
+        }
       }
       const checkPipelineStageId = await PipelineStageModel.findOne({ where: { id: data.pipelineStageId } });
       if (!checkPipelineStageId) {
@@ -731,12 +733,14 @@ export class DealController {
           httpStatus.NOT_FOUND
         );
       }
-      const checkCustomerWisereId = await CustomerWisereModel.findOne({ where: { id: data.customerWisereId } });
-      if (!checkCustomerWisereId) {
-        throw new CustomError(
-          customerErrorDetails.E_3001(`customerWisereId ${data.customerWisereId} not found`),
-          httpStatus.NOT_FOUND
-        );
+      if (data.customerWisereId) {
+        const checkCustomerWisereId = await CustomerWisereModel.findOne({ where: { id: data.customerWisereId } });
+        if (!checkCustomerWisereId) {
+          throw new CustomError(
+            customerErrorDetails.E_3001(`customerWisereId ${data.customerWisereId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
       }
       const deal = await DealModel.create(data);
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
