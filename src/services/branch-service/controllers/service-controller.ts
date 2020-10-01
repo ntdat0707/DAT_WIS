@@ -364,6 +364,11 @@ export class ServiceController {
    *       schema:
    *          type: string
    *     - in: query
+   *       name: staffId
+   *       required: false
+   *       schema:
+   *          type: string
+   *     - in: query
    *       name: locationIds
    *       type: array
    *       items:
@@ -433,6 +438,17 @@ export class ServiceController {
         };
       }
 
+      if (req.query.staffId) {
+        query.include.push({
+          model: StaffModel,
+          as: 'staffs',
+          required: true,
+          where: {
+            id: req.query.staffId
+          },
+          attributes: []
+        });
+      }
       const services = await paginate(
         ServiceModel,
         query,

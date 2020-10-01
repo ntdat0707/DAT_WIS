@@ -207,7 +207,7 @@ export class ResourceController {
   };
   /**
    * @swagger
-   * /branch/resource/{serviceId}/all:
+   * /branch/resource/all:
    *   get:
    *     summary: Get all resource of one service.
    *     description: Get all resource of one service.
@@ -217,11 +217,15 @@ export class ResourceController {
    *       - Bearer: []
    *     name: getResourcesInService
    *     parameters:
-   *     - in: path
+   *     - in: query
    *       name: serviceId
    *       schema:
    *          type: string
    *       required: true
+   *     - in: query
+   *       name: locationId
+   *       schema:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -233,20 +237,37 @@ export class ResourceController {
   public getResourcesInService = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validateErrors = validate(
-        req.params,
+        req.query,
         joi.object({
-          serviceId: joi.string().required()
+          serviceId: joi
+            .string()
+            .guid({
+              version: ['uuidv4']
+            })
+            .required()
+            .label('serviceId'),
+          locationId: joi
+            .string()
+            .guid({
+              version: ['uuidv4']
+            })
+            .allow(null, '')
+            .label('locationId')
         })
       );
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const { workingLocationIds } = res.locals.staffPayload;
       const resourcesInService = await ResourceModel.findAll({
+        where: {
+          locationId: req.query.locationId ? req.query.locationId : workingLocationIds
+        },
         include: [
           {
             model: ServiceModel,
             as: 'services',
             attributes: [],
             where: {
-              id: req.params.serviceId
+              id: req.query.serviceId
             },
             through: {
               attributes: []

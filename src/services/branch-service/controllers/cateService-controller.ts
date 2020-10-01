@@ -91,7 +91,7 @@ export class CateServiceController {
    *       500:
    *         description: Internal server errors
    */
-  public getAllCateServices = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllCateService = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
       console.log('CompanyId::',companyId);
