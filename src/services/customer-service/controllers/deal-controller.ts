@@ -938,7 +938,7 @@ export class DealController {
 
   /**
    * @swagger
-   * /customer/deal/update-pipelineStage-Of-Deal/{dealId}:
+   * /customer/deal/update-pipeline-stage-of-deal/{dealId}:
    *   put:
    *     tags:
    *       - Customer

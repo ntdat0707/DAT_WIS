@@ -28,7 +28,7 @@ export class DealRoutes {
     this.router.put('/update-deal/:dealId?', isAuthenticated, this.dealController.updateDeal);
     this.router.delete('/delete-deal/:dealId?', isAuthenticated, this.dealController.deleteDeal);
     this.router.put(
-      '/update-pipelineStageOfDeal/:dealId?',
+      '/update-pipeline-stage-of-deal/:dealId?',
       isAuthenticated,
       this.dealController.updatePipelineStageOfDeal
     );
