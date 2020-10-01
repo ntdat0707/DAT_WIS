@@ -39,7 +39,6 @@ const staffWithTime = (
           const filteredStaffs = staffIds.filter((staff: any) => staff !== staffsUnavailTimesArray[i].staffId);
           item.staffId = filteredStaffs[Math.floor(Math.random() * filteredStaffs.length)];
         } else {
-          //console.log(staffIds[Math.floor(Math.random() * staffIds.length)]);
           item.staffId = staffIds[Math.floor(Math.random() * staffIds.length)];
         }
       }
