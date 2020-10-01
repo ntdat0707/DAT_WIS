@@ -27,6 +27,14 @@ const staffWithTime = (
   staffTimeSlotsArray.forEach((item: any) => {
     for (let i = 0; i < staffsUnavailTimesArray.length; i++) {
       for (let j = 0; j < staffsUnavailTimesArray[i].unavailTimes.length; j++) {
+        // let tempTime = parseInt(item.time.split(':').join(''),10);
+        // let endTempTime = tempTime + duration;
+        // for (let k = tempTime; k <= endTempTime; k+=5){
+        //   if (k === staffsUnavailTimesArray[i].unavailTimes[j]){
+        //     let filteredStaffs = staffIds.filter((staff: any) => staff !== staffsUnavailTimesArray[i].staffId);
+        //     item.staffId = filteredStaffs[Math.floor(Math.random() * filteredStaffs.length)];
+        //   }
+        // }
         if (item.time === staffsUnavailTimesArray[i].unavailTimes[j]) {
           const filteredStaffs = staffIds.filter((staff: any) => staff !== staffsUnavailTimesArray[i].staffId);
           item.staffId = filteredStaffs[Math.floor(Math.random() * filteredStaffs.length)];
