@@ -931,7 +931,14 @@ export class AuthController {
         return next(new CustomError(generalErrorDetails.E_0003()));
       } else {
         const staff = await StaffModel.scope('safe').findOne({
-          where: { id: accessTokenData.userId }
+          where: { id: accessTokenData.userId },
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              through: { attributes: [] }
+            }
+          ]
         });
         if (!staff) {
           return next(new CustomError(generalErrorDetails.E_0003()));

@@ -329,6 +329,11 @@ export class ServiceController {
             model: ServiceImageModel,
             as: 'images',
             required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: false
           }
         ]
       });
