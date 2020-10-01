@@ -91,7 +91,7 @@ export class CateServiceController {
    *       500:
    *         description: Internal server errors
    */
-  public getAllCateServices = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllCateService = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
       const cateService = await CateServiceModel.findAll({ where: { companyId } });
@@ -229,39 +229,6 @@ export class CateServiceController {
           )
         );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(cateService));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * /branch/cate-service/get-all:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     security:
-   *       - Bearer: []
-   *     name: getAllCateService
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       404:
-   *         description: service cate gory not found
-   *       500:
-   *         description: internal error
-   */
-  public getAllCateService = async (_req: Request, res: Response, next: NextFunction) => {
-    try {
-      const companyId = res.locals.staffPayload.companyId;
-      const cateServices = await CateServiceModel.findAll({
-        where: {
-          companyId: companyId
-        }
-      });
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
     } catch (error) {
       return next(error);
     }

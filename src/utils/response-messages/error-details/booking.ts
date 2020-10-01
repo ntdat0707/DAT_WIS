@@ -102,6 +102,16 @@ const bookingErrorDetails = {
   E_2009(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('2009', 'Disallow update customer in appointment', detail);
     return e;
+  },
+  /**
+   * Duplicate appointment in delete and update
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2010(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2010', 'Duplicate appointment in delete and update', detail);
+    return e;
   }
 };
 

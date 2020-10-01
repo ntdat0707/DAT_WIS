@@ -596,13 +596,25 @@ export class AppointmentController extends BaseController {
           return next(new CustomError(validateReasonErrors, HttpStatus.BAD_REQUEST));
         }
         await AppointmentModel.update(
-          { status: data.status, cancelReason: req.body.cancelReason },
+          { status: data.status, cancelReason: req.body.cancelReason, isPrimary: false },
           { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
         );
         await AppointmentDetailModel.update(
           { status: data.status },
           { where: { appointmentId: data.appointmentId }, transaction }
         );
+
+        if (appointment.appointmentGroupId && appointment.isPrimary) {
+          const appointmentInGroup = await AppointmentModel.findOne({
+            where: {
+              appointmentGroupId: appointment.appointmentGroupId,
+              id: { [Op.not]: data.appointmentId }
+            }
+          });
+          if (appointmentInGroup) {
+            await AppointmentModel.update({ isPrimary: true }, { where: { id: appointmentInGroup.id }, transaction });
+          }
+        }
       } else {
         await AppointmentModel.update(
           { status: data.status },
@@ -723,6 +735,21 @@ export class AppointmentController extends BaseController {
   /**
    * @swagger
    * definitions:
+   *   CreateNewAppointment:
+   *       required:
+   *           - appointmentDetails
+   *       properties:
+   *           customerWisereId:
+   *               type: string
+   *           appointmentDetails:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CreateAppointmentDetail'
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
    *   UpdateAppointment:
    *       properties:
    *           customerWisereId:
@@ -733,18 +760,22 @@ export class AppointmentController extends BaseController {
    *               type: string
    *               format: date-time
    *               description: YYYY-MM-DD HH:mm:ss
-   *           createNewAppointments:
+   *           createNewAppointmentDetails:
    *               type: array
    *               items:
    *                   $ref: '#/definitions/CreateNewAppointmentDetail'
-   *           updateAppointments:
+   *           updateAppointmentDetails:
    *               type: array
    *               items:
    *                   $ref: '#/definitions/UpdateAppointmentDetail'
-   *           deleteAppointments:
+   *           deleteAppointmentDetails:
    *               type: array
    *               items:
    *                   type: string
+   *           createNewAppointments:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CreateNewAppointment'
    *
    */
   /**
@@ -784,9 +815,10 @@ export class AppointmentController extends BaseController {
       const data = {
         locationId: req.body.locationId,
         appointmentId: req.params.appointmentId,
+        createNewAppointmentDetails: req.body.createNewAppointmentDetails,
+        updateAppointmentDetails: req.body.updateAppointmentDetails,
+        deleteAppointmentDetails: req.body.deleteAppointmentDetails,
         createNewAppointments: req.body.createNewAppointments,
-        updateAppointments: req.body.updateAppointments,
-        deleteAppointments: req.body.deleteAppointments,
         customerWisereId: req.body.customerWisereId,
         date: req.body.date
       };
@@ -842,15 +874,86 @@ export class AppointmentController extends BaseController {
       // start transaction
       transaction = await sequelize.transaction();
 
+      let appointmentGroupId = null;
+      if (data.createNewAppointments && data.createNewAppointments.length > 0) {
+        appointmentGroupId = uuidv4();
+        await AppointmentGroupModel.create(
+          { id: appointmentGroupId, locationId: data.locationId, date: data.date },
+          { transaction }
+        );
+        for (let i = 0; i < data.createNewAppointments.length; i++) {
+          if (data.createNewAppointments[i].customerWisereId) {
+            const customerWisere = await CustomerWisereModel.findOne({
+              where: { id: data.createNewAppointments[i].customerWisereId, companyId }
+            });
+            if (!customerWisere) {
+              return next(
+                new CustomError(
+                  customerErrorDetails.E_3001(
+                    `Can not find customerWisere ${data.createNewAppointments[i].customerWisereId} in location ${data.locationId}`
+                  ),
+                  HttpStatus.BAD_REQUEST
+                )
+              );
+            }
+            const appointmentId = uuidv4();
+            const appointmentDetails = await this.verifyAppointmentDetails(
+              data.createNewAppointments[i].appointmentDetails,
+              data.locationId
+            );
+            //insert appointment here
+            const newAppointmentData: any = {
+              id: appointmentId,
+              locationId: data.locationId,
+              status: EAppointmentStatus.NEW,
+              customerWisereId: data.createNewAppointments[i].customerWisereId
+                ? data.createNewAppointments[i].customerWisereId
+                : null,
+              bookingSource: AppointmentBookingSource.STAFF,
+              appointmentGroupId: appointmentGroupId,
+              isPrimary: false
+            };
+            await AppointmentModel.create(newAppointmentData, { transaction });
+            const appointmentDetailData: any[] = [];
+            const appointmentDetailStaffData = [];
+            for (let index = 0; index < appointmentDetails.length; index++) {
+              const appointmentDetailId = uuidv4();
+              appointmentDetailData.push({
+                id: appointmentDetailId,
+                appointmentId,
+                serviceId: appointmentDetails[index].serviceId,
+                resourceId: appointmentDetails[index].resourceId ? appointmentDetails[index].resourceId : null,
+                startTime: appointmentDetails[index].startTime,
+                duration: appointmentDetails[index].duration
+              });
+              for (let j = 0; j < appointmentDetails[index].staffIds.length; j++) {
+                appointmentDetailStaffData.push({
+                  appointmentDetailId,
+                  staffId: appointmentDetails[index].staffIds[j]
+                });
+              }
+            }
+            await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
+              transaction
+            });
+            await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+          }
+        }
+      }
+
       //update appointment here
       const appointmentData: any = {
         date: data.date,
-        customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId
+        customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId,
+        appointmentGroupId: appointmentGroupId
       };
       await AppointmentModel.update(appointmentData, { where: { id: data.appointmentId }, transaction });
 
-      if (data.createNewAppointments && data.createNewAppointments.length > 0) {
-        const appointmentDetails = await this.verifyAppointmentDetails(data.createNewAppointments, data.locationId);
+      if (data.createNewAppointmentDetails && data.createNewAppointmentDetails.length > 0) {
+        const appointmentDetails = await this.verifyAppointmentDetails(
+          data.createNewAppointmentDetails,
+          data.locationId
+        );
         const appointmentDetailData: any[] = [];
         const appointmentDetailStaffData = [];
         for (let i = 0; i < appointmentDetails.length; i++) {
@@ -876,11 +979,11 @@ export class AppointmentController extends BaseController {
         });
         await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       }
-      if (data.updateAppointments && data.updateAppointments.length > 0) {
-        for (let i = 0; i < data.updateAppointments.length; i++) {
+      if (data.updateAppointmentDetails && data.updateAppointmentDetails.length > 0) {
+        for (let i = 0; i < data.updateAppointmentDetails.length; i++) {
           const appointmentDetail = await AppointmentDetailModel.findOne({
             where: {
-              id: data.updateAppointments[i].appointmentDetailId,
+              id: data.updateAppointmentDetails[i].appointmentDetailId,
               appointmentId: data.appointmentId
             }
           });
@@ -889,24 +992,24 @@ export class AppointmentController extends BaseController {
             return next(
               new CustomError(
                 bookingErrorDetails.E_2004(
-                  `Appointment detail ${data.updateAppointments[i].appointmentDetailId} not exist`
+                  `Appointment detail ${data.updateAppointmentDetails[i].appointmentDetailId} not exist`
                 ),
                 HttpStatus.NOT_FOUND
               )
             );
           }
           await AppointmentDetailModel.destroy({
-            where: { id: data.updateAppointments[i].appointmentDetailId },
+            where: { id: data.updateAppointmentDetails[i].appointmentDetailId },
             transaction
           });
           await AppointmentDetailStaffModel.destroy({
-            where: { appointmentDetailId: data.updateAppointments[i].appointmentDetailId },
+            where: { appointmentDetailId: data.updateAppointmentDetails[i].appointmentDetailId },
             transaction
           });
         }
         const appointmentDetailData: any[] = [];
         const appointmentDetailStaffData = [];
-        const appointmentDetails = await this.verifyAppointmentDetails(data.updateAppointments, data.locationId);
+        const appointmentDetails = await this.verifyAppointmentDetails(data.updateAppointmentDetails, data.locationId);
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
           appointmentDetailData.push({
@@ -929,11 +1032,11 @@ export class AppointmentController extends BaseController {
         });
         await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       }
-      if (data.deleteAppointments && data.deleteAppointments.length > 0) {
-        for (let i = 0; i < data.deleteAppointments.length; i++) {
+      if (data.deleteAppointmentDetails && data.deleteAppointmentDetails.length > 0) {
+        for (let i = 0; i < data.deleteAppointmentDetails.length; i++) {
           const appointmentDetail = await AppointmentDetailModel.findOne({
             where: {
-              id: data.deleteAppointments[i],
+              id: data.deleteAppointmentDetails[i],
               appointmentId: data.appointmentId
             }
           });
@@ -941,17 +1044,17 @@ export class AppointmentController extends BaseController {
           if (!appointmentDetail) {
             return next(
               new CustomError(
-                bookingErrorDetails.E_2004(`Appointment detail ${data.deleteAppointments[i]} not exist`),
+                bookingErrorDetails.E_2004(`Appointment detail ${data.deleteAppointmentDetails[i]} not exist`),
                 HttpStatus.NOT_FOUND
               )
             );
           }
           await AppointmentDetailStaffModel.destroy({
-            where: { appointmentDetailId: data.deleteAppointments[i] },
+            where: { appointmentDetailId: data.deleteAppointmentDetails[i] },
             transaction
           });
           await AppointmentDetailModel.destroy({
-            where: { id: data.deleteAppointments[i] },
+            where: { id: data.deleteAppointmentDetails[i] },
             transaction
           });
         }
@@ -1328,32 +1431,7 @@ export class AppointmentController extends BaseController {
 
       const appointmentDetailData: any[] = [];
       const appointmentDetailStaffData = [];
-      const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
-      const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
-      const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
       for (let i = 0; i < appointmentDetails.length; i++) {
-        serviceDataNotify.push({
-          id: appointmentDetails[i].serviceId,
-          time: {
-            start: appointmentDetails[i].startTime,
-            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
-          }
-        });
-        if (appointmentDetails[i].resourceId)
-          resourceDataNotify.push({
-            id: appointmentDetails[i].resourceId,
-            time: {
-              start: appointmentDetails[i].startTime,
-              end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
-            }
-          });
-        staffDataNotify.push({
-          ids: appointmentDetails[i].staffIds,
-          time: {
-            start: appointmentDetails[i].startTime,
-            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
-          }
-        });
         const appointmentDetailId = uuidv4();
         appointmentDetailData.push({
           id: appointmentDetailId,
