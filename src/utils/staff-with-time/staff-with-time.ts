@@ -40,7 +40,15 @@ const staffWithTime = (
   const endTime = parseInt(staffTimeSlotsArray[staffTimeSlotsArray.length - 1].time.split(':').join(''), 10);
   staffTimeSlotsArray.forEach((item: any) => {
     const temp = parseInt(item.time.split(':').join(''), 10);
-    if (temp + duration > endTime) {
+    let tempTime = temp + duration;
+    let firstTwoDigits = Math.floor(tempTime / 100);
+    let lastTwoDigits = tempTime % 100;
+    if (lastTwoDigits >= 60) {
+      firstTwoDigits = Math.floor(tempTime / 100) + 1;
+      lastTwoDigits = (tempTime % 100) - 60;
+      tempTime = firstTwoDigits * 100 + lastTwoDigits;
+    }
+    if (tempTime > endTime) {
       for (let i = 0; i < staffTimeSlotsArray.length; i++) {
         const tempString = moment(temp, 'hmm').format('HH:mm');
         if (staffTimeSlotsArray[i].time === tempString) {

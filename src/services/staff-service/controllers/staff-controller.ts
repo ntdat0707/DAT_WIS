@@ -1073,7 +1073,9 @@ export class StaffController {
                 timeSlot[temp] = false;
               }
             }
-            const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').utc().format('HH:mm');
+            const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm')
+              .add(-timeZone, 'm')
+              .format('HH:mm');
             //let semiEndtime = moment();
             const endTime = parseInt(stringEndtime.split(':').join(''), 10);
             timeSlot[stringEndtime] = false;
@@ -1094,10 +1096,18 @@ export class StaffController {
       Object.keys(timeSlot).forEach((key: any) => {
         let temp;
         if (timeSlot[key] === true) {
-          const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').utc().format('HH:mm');
+          const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').add(-timeZone, 'm').format('HH:mm');
           const endTime = parseInt(stringEndtime.split(':').join(''), 10);
           temp = parseInt(key.split(':').join(''), 10);
-          if (temp + durationTime > endTime) {
+          let tempTime = temp + durationTime;
+          let firstTwoDigits = Math.floor(tempTime / 100);
+          let lastTwoDigits = tempTime % 100;
+          if (lastTwoDigits >= 60) {
+            firstTwoDigits = Math.floor(tempTime / 100) + 1;
+            lastTwoDigits = (tempTime % 100) - 60;
+            tempTime = firstTwoDigits * 100 + lastTwoDigits;
+          }
+          if (tempTime > endTime) {
             timeSlot[key] = false;
           }
         }
