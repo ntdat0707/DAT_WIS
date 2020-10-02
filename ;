@@ -5,7 +5,7 @@ import { LocationController } from '../controllers/location-controller';
 import * as Staff from '../../../utils/middlewares/staff/auth';
 import { uploadAsMiddleware } from '../../../utils/file-manager';
 import { SearchController } from '../controllers/search-controller';
-import * as Customer from '../../../utils/middlewares/customer/auth';
+import * as Customer from '../../utis/middlewares/customer/auth';
 
 export class LocationRoutes {
   public router: express.Router = express.Router();

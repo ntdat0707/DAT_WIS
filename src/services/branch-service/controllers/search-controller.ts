@@ -83,7 +83,11 @@ export class SearchController {
    *       schema:
    *          type: number
    *     - in: query
-   *       name: cityName
+   *       name: cityCode
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: countryCode
    *       schema:
    *          type: string
    *     - in: query
@@ -372,12 +376,6 @@ export class SearchController {
         }
       };
 
-      // if (!!locationIds.length) {
-      //   query.order = Sequelize.literal(`(${
-      //     locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')
-      //   }) DESC`);
-      // }
-
       if (search.customerId && search.keywords) {
         req.query = {
           ...req.query,
@@ -541,10 +539,6 @@ export class SearchController {
    *       name: cityName
    *       schema:
    *          type: string
-   *     - in: query
-   *       name: customerId
-   *       schema:
-   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -585,26 +579,10 @@ export class SearchController {
       const popularServices = await this.popularServicesSuggested(keywordsQuery);
       const suggestionByKeywords = await this.keywordsSuggested(keywordsQuery);
 
-      let customer = null;
-      if (search.customerId) {
-        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
-      }
-      let recentSearch = null;
-      let recentBooking = null;
-      let recentView = null;
-      if (customer) {
-        recentSearch = await this.searchRecentSuggested(search);
-        recentBooking = await this.recentBookingSuggested(search);
-        recentView = await this.recentViewSuggested(search);
-      }
-
       const results = {
         suggestionByKeywords,
         cateServices,
-        popularServices,
-        recentSearch,
-        recentView,
-        recentBooking
+        popularServices
       };
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
@@ -778,11 +756,70 @@ export class SearchController {
         },
         limit: 3
       });
-      return [...cateServices, ...companies, ...services, ...locations];
+      return {
+        cateServices,
+        companies,
+        services,
+        locations
+      };
     } catch (error) {
       throw error;
     }
   };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/suggested-recent:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: marketPlaceSuggestedRecent
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public marketPlaceSuggestedRecent = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const search = {
+        customerId: req.query.customerId
+      };
+
+      const validateErrorsSearch = validate(search, suggestedSchema);
+      if (validateErrorsSearch) {
+        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
+      }
+
+      let customer = null;
+      if (search.customerId) {
+        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
+      }
+      let recentSearch = null;
+      let recentBooking = null;
+      let recentView = null;
+      if (customer) {
+        recentSearch = await this.searchRecentSuggested(search);
+        recentBooking = await this.recentBookingSuggested(search);
+        recentView = await this.recentViewSuggested(search);
+      }
+
+      const results = {
+        recentSearch,
+        recentView,
+        recentBooking
+      };
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
+    } catch (error) {
+      console.log(error);
+      return next(error);
+    }
+  };
+
 
   private recentBookingSuggested = async (searchOption: any) => {
     try {
