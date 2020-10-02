@@ -19,7 +19,8 @@ import {
   RecentBookingModel,
   MarketPlaceFieldsModel,
   MarketPlaceValueModel,
-  CityModel
+  CityModel,
+  CountryModel
 } from '../../../repositories/postgres/models';
 
 import { searchSchema, suggestedSchema, getLocationMarketPlace } from '../configs/validate-schemas';
@@ -33,7 +34,12 @@ import { LocationServiceModel } from '../../../repositories/postgres/models/loca
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
 import { parseDatabyField } from '../utils';
-import { deleteRecentBookingSchema, deleteRecentViewSchema } from '../configs/validate-schemas/recent-view';
+import {
+  deleteRecentBookingSchema,
+  deleteRecentViewSchema,
+  suggestCountryAndCity
+} from '../configs/validate-schemas/recent-view';
+import { cityErrorDetails } from '../../../utils/response-messages/error-details/branch/city';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -1148,6 +1154,44 @@ export class SearchController {
         where: { id: dataInput.recentBookingId }
       });
       return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/suggest-city-country/{countryCode}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     parameters:
+   *     - in: path
+   *       name: countryCode
+   *       schema:
+   *          type: string
+   *     name: suggestCountryAndCity
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public suggestCountryAndCity = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const countries = await CountryModel.findAll({
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+        include: [
+          {
+            model: CityModel,
+            as: 'cities',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          }
+        ]
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
     } catch (error) {
       return next(error);
     }
