@@ -89,11 +89,7 @@ export class SearchController {
    *       schema:
    *          type: number
    *     - in: query
-   *       name: cityCode
-   *       schema:
-   *          type: string
-   *     - in: query
-   *       name: countryCode
+   *       name: cityName
    *       schema:
    *          type: string
    *     - in: query
@@ -171,20 +167,6 @@ export class SearchController {
             ]
           },
           {
-            model: CityModel,
-            as: 'cityy',
-            required: true,
-            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
-            include: [
-              {
-                model: CountryModel,
-                as: 'country',
-                required: true,
-                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
-              }
-            ]
-          },
-          {
             model: LocationImageModel,
             as: 'locationImages',
             required: false,
@@ -236,8 +218,6 @@ export class SearchController {
         group: [
           'LocationModel.id',
           'marketplaceValues.id',
-          'cityy.id',
-          'cityy->country.id',
           'marketplaceValues->marketplaceField.id',
           'locationImages.id',
           'services.id',
@@ -381,6 +361,12 @@ export class SearchController {
           }
         }
       };
+
+      // if (!!locationIds.length) {
+      //   query.order = Sequelize.literal(`(${
+      //     locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')
+      //   }) DESC`);
+      // }
 
       if (search.customerId && search.keywords) {
         req.query = {
@@ -545,6 +531,10 @@ export class SearchController {
    *       name: cityName
    *       schema:
    *          type: string
+   *     - in: query
+   *       name: customerId
+   *       schema:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -585,10 +575,26 @@ export class SearchController {
       const popularServices = await this.popularServicesSuggested(keywordsQuery);
       const suggestionByKeywords = await this.keywordsSuggested(keywordsQuery);
 
+      let customer = null;
+      if (search.customerId) {
+        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
+      }
+      let recentSearch = null;
+      let recentBooking = null;
+      let recentView = null;
+      if (customer) {
+        recentSearch = await this.searchRecentSuggested(search);
+        recentBooking = await this.recentBookingSuggested(search);
+        recentView = await this.recentViewSuggested(search);
+      }
+
       const results = {
         suggestionByKeywords,
         cateServices,
-        popularServices
+        popularServices,
+        recentSearch,
+        recentView,
+        recentBooking
       };
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
@@ -764,70 +770,11 @@ export class SearchController {
         },
         limit: 3
       });
-      return {
-        cateServices,
-        companies,
-        services,
-        locations
-      };
+      return [...cateServices, ...companies, ...services, ...locations];
     } catch (error) {
       throw error;
     }
   };
-
-  /**
-   * @swagger
-   * /branch/location/market-place/suggested-recent:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: marketPlaceSuggestedRecent
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-
-  public marketPlaceSuggestedRecent = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const search = {
-        customerId: req.query.customerId
-      };
-
-      const validateErrorsSearch = validate(search, suggestedSchema);
-      if (validateErrorsSearch) {
-        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
-      }
-
-      let customer = null;
-      if (search.customerId) {
-        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
-      }
-      let recentSearch = null;
-      let recentBooking = null;
-      let recentView = null;
-      if (customer) {
-        recentSearch = await this.searchRecentSuggested(search);
-        recentBooking = await this.recentBookingSuggested(search);
-        recentView = await this.recentViewSuggested(search);
-      }
-
-      const results = {
-        recentSearch,
-        recentView,
-        recentBooking
-      };
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
-    } catch (error) {
-      console.log(error);
-      return next(error);
-    }
-  };
-
 
   private recentBookingSuggested = async (searchOption: any) => {
     try {
@@ -1233,18 +1180,18 @@ export class SearchController {
 
   public suggestCountryAndCity = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const countries = await CountryModel.findAll({
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-        include: [
-          {
-            model: CityModel,
-            as: 'cities',
-            required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-          }
-        ]
-      });
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
+        const countries = await CountryModel.findAll({
+          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+          include: [
+            {
+              model: CityModel,
+              as: 'cities',
+              required: false,
+              attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+            }
+          ]
+        });
+        return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
     } catch (error) {
       return next(error);
     }
