@@ -985,7 +985,7 @@ export class StaffController {
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
       //console.log(workTime);
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5, timeZone);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       //console.log(timeSlot);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
@@ -1113,7 +1113,7 @@ export class StaffController {
         }
       });
       const currentTime = parseInt(moment().utc().format('HH:mm').split(':').join(''), 10);
-      const currentDay = moment().utc().format('MMMM DD YYYY');
+      const currentDay = moment().utc().format('YYYY-MM-DD');
       Object.keys(timeSlot).forEach((key: any) => {
         const temp = parseInt(key.split(':').join(''), 10);
         if (temp <= currentTime && currentDay === workDay) {
@@ -1209,6 +1209,7 @@ export class StaffController {
       const durationTime = minutesToNum(serviceDuration);
       //console.log(duration);
       const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
+
       const workingTime = await LocationModel.findOne({
         attributes: [],
         include: [
@@ -1227,12 +1228,15 @@ export class StaffController {
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingTimes;
+
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5, timeZone);
+
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       //console.log(workDay);
+      //console.log(timeSlot);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
-      //console.log(appointmentDay);
+
       const doctorsSchedule = await StaffModel.findAndCountAll({
         attributes: ['id'],
         include: [
@@ -1295,6 +1299,7 @@ export class StaffController {
       Object.keys(timeSlot).forEach((key: any) => {
         let tempTime = key.split(':').join('');
         tempTime = moment(tempTime, 'hmm').add(timeZone, 'm').format('HH:mm');
+        // console.log(tempTime);
         newTimeSlot.push(tempTime);
       });
       for (let i = 0; i < noReferencesTimeSlots.length; i++) {

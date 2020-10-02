@@ -58,7 +58,7 @@ const staffWithTime = (
     }
   });
   const currentTime = parseInt(moment().utc().format('HH:mm').split(':').join(''), 10);
-  const currentDay = moment().utc().format('MMMM DD YYYY');
+  const currentDay = moment().utc().format('YYYY-MM-DD');
   staffTimeSlotsArray.forEach((item: any) => {
     const temp = parseInt(item.time.split(':').join(''), 10);
     if (temp < currentTime && currentDay === workDay) {
