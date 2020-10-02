@@ -129,6 +129,9 @@ LocationImageModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'loc
 CountryModel.hasMany(CityModel, { foreignKey: 'countryId', sourceKey: 'id', as: 'cities' });
 CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
 
+CityModel.hasMany(LocationModel, { foreignKey: 'cityId', sourceKey: 'id', as: 'location' });
+LocationModel.belongsTo(CityModel, { foreignKey: 'cityId', as: 'cityy' });
+
 CustomerModel.hasMany(CustomerSearchModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
 

@@ -18,7 +18,9 @@ import {
   CustomerModel,
   RecentBookingModel,
   MarketPlaceFieldsModel,
-  MarketPlaceValueModel
+  MarketPlaceValueModel,
+  CityModel,
+  CountryModel
 } from '../../../repositories/postgres/models';
 
 import { searchSchema, suggestedSchema, getLocationMarketPlace } from '../configs/validate-schemas';
@@ -159,6 +161,20 @@ export class SearchController {
             ]
           },
           {
+            model: CityModel,
+            as: 'cityy',
+            required: true,
+            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
+            include: [
+              {
+                model: CountryModel,
+                as: 'country',
+                required: true,
+                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
+              }
+            ]
+          },
+          {
             model: LocationImageModel,
             as: 'locationImages',
             required: false,
@@ -210,6 +226,8 @@ export class SearchController {
         group: [
           'LocationModel.id',
           'marketplaceValues.id',
+          'cityy.id',
+          'cityy->country.id',
           'marketplaceValues->marketplaceField.id',
           'locationImages.id',
           'services.id',
@@ -258,7 +276,6 @@ export class SearchController {
           ) {
             searchCompanyItem = location.company;
           }
-
 
           if (
             location.services &&
