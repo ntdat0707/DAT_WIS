@@ -953,6 +953,7 @@ export class StaffController {
       const workDay = dataInput.workDay;
       const serviceDuration = dataInput.serviceDuration;
       const durationTime = minutesToNum(serviceDuration);
+      const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const workingTime = await StaffModel.findOne({
         attributes: [],
@@ -984,7 +985,7 @@ export class StaffController {
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
       //console.log(workTime);
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5, timeZone);
       //console.log(timeSlot);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
@@ -1118,15 +1119,13 @@ export class StaffController {
         });
       }
       //console.log(rangelist);
-      const timeZone = moment(dataInput.currentTime).format('Z');
-      const zoneInt = parseInt(timeZone.split(':').join(''), 10) / 100;
       let newTimeSlot: any;
       const tempIsAvail: any[] = [];
       Object.keys(timeSlot).forEach((key: any) => {
         let tempTime = key.split(':').join('');
         const tempBool = timeSlot[key];
         tempIsAvail.push(tempBool);
-        tempTime = moment(tempTime, 'hmm').add(zoneInt, 'h').format('HH:mm');
+        tempTime = moment(tempTime, 'hmm').add(timeZone, 'm').format('HH:mm');
         newTimeSlot = { ...newTimeSlot, [tempTime]: true };
       });
       for (let i = 0; i < tempIsAvail.length; i++) {
@@ -1199,6 +1198,7 @@ export class StaffController {
       const staffIds: string[] = [];
       const durationTime = minutesToNum(serviceDuration);
       //console.log(duration);
+      const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
       const workingTime = await LocationModel.findOne({
         attributes: [],
         include: [
@@ -1219,7 +1219,7 @@ export class StaffController {
       const data = simplyData.workingTimes;
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5, timeZone);
       //console.log(workDay);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
       //console.log(appointmentDay);
@@ -1281,12 +1281,10 @@ export class StaffController {
           noReferencesTimeSlots[i].staffId = staffIds[Math.floor(Math.random() * staffIds.length)];
         }
       }
-      const timeZone = moment(dataInput.currentTime).format('Z');
-      const zoneInt = parseInt(timeZone.split(':').join(''), 10) / 100;
       const newTimeSlot: any[] = [];
       Object.keys(timeSlot).forEach((key: any) => {
         let tempTime = key.split(':').join('');
-        tempTime = moment(tempTime, 'hmm').add(zoneInt, 'h').format('HH:mm');
+        tempTime = moment(tempTime, 'hmm').add(timeZone, 'm').format('HH:mm');
         newTimeSlot.push(tempTime);
       });
       for (let i = 0; i < noReferencesTimeSlots.length; i++) {
