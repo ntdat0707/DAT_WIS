@@ -780,7 +780,7 @@ export class DealController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const deal: any = await DealModel.findOne({
+      const deal = await DealModel.findOne({
         where: { id: dealId },
         include: [
           {
