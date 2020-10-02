@@ -4,7 +4,7 @@ import { customerErrorDetails } from './customer';
 import { staffErrorDetails } from './staff';
 import { branchErrorDetails } from './branch';
 import { bookingErrorDetails } from './booking';
-import { pipelineErrorDetails } from './deal';
+import { pipelineErrorDetails, pipelineStageErrorDetails, dealErrorDetails } from './deal';
 
 const buildErrorDetail = (
   code: string,
@@ -28,5 +28,7 @@ export {
   staffErrorDetails,
   branchErrorDetails,
   bookingErrorDetails,
-  pipelineErrorDetails
+  pipelineErrorDetails,
+  pipelineStageErrorDetails,
+  dealErrorDetails
 };

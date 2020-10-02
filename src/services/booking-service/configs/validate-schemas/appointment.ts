@@ -97,7 +97,16 @@ const filterAppointmentDetailChema = Joi.object({
         })
         .required()
     )
-    .label('staffIds')
+    .label('staffIds'),
+  resourceIds: Joi.array()
+    .items(
+      Joi.string()
+        .guid({
+          version: ['uuidv4']
+        })
+        .required()
+    )
+    .label('resourceIds')
 });
 
 const appointmentIdSchema = Joi.string()

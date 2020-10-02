@@ -14,6 +14,7 @@ class AppointmentModel extends Model {
   public isPrimary!: boolean;
   public cancelReason: string;
   public bookingSource: string;
+  public appointmentCode!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -77,6 +78,11 @@ AppointmentModel.init(
       field: 'cancel_reason',
       type: DataTypes.STRING,
       allowNull: true
+    },
+    appointmentCode: {
+      field: 'appointment_code',
+      type: DataTypes.STRING,
+      allowNull: false
     },
     bookingSource: {
       field: 'booking_source',

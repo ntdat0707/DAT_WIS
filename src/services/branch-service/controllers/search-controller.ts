@@ -33,7 +33,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
-import {parseDatabyField} from '../utils';
+import { parseDatabyField } from '../utils';
+import {
+  deleteRecentBookingSchema,
+  deleteRecentViewSchema,
+  suggestCountryAndCity
+} from '../configs/validate-schemas/recent-view';
+import { cityErrorDetails } from '../../../utils/response-messages/error-details/branch/city';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -143,7 +149,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -301,13 +307,13 @@ export class SearchController {
             location.company.cateServices = undefined;
           }
         }
-        const locationDetail = location.marketplaceValues.reduce((
-          acc: any,
-          {value, marketplaceField: {name, type} }: any
-        ) => ({
-          ...acc,
-          [name]: parseDatabyField[type](value)
-        }), {});
+        const locationDetail = location.marketplaceValues.reduce(
+          (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            ...acc,
+            [name]: parseDatabyField[type](value)
+          }),
+          {}
+        );
 
         location = {
           ...location,
@@ -570,7 +576,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -709,26 +715,28 @@ export class SearchController {
       const cateServices = await CateServiceModel.findAll({
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal('\'cateService\''), 'type']],
+          include: [[Sequelize.literal("'cateService'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
       });
-      const companies = (await CompanyModel.findAll({
-        attributes: {
-          include: [[Sequelize.literal('\'company\''), 'type']],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        include: [
-          {
-            model: CompanyDetailModel,
-            as: 'companyDetail',
-            required: true,
-            attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
-          }
-        ],
-        where: Sequelize.literal(`unaccent("companyDetail"."business_name") ilike any(array[${keywords}])`),
-      })).map((company: any) => ({
+      const companies = (
+        await CompanyModel.findAll({
+          attributes: {
+            include: [[Sequelize.literal("'company'"), 'type']],
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          include: [
+            {
+              model: CompanyDetailModel,
+              as: 'companyDetail',
+              required: true,
+              attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
+            }
+          ],
+          where: Sequelize.literal(`unaccent("companyDetail"."business_name") ilike any(array[${keywords}])`)
+        })
+      ).map((company: any) => ({
         ...company.dataValues,
         ...company.companyDetail?.dataValues,
         companyDetail: undefined
@@ -737,7 +745,7 @@ export class SearchController {
       const services = await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal('\'service\''), 'type']],
+          include: [[Sequelize.literal("'service'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -751,7 +759,7 @@ export class SearchController {
           ]
         },
         attributes: {
-          include: [[Sequelize.literal('\'location\''), 'type']],
+          include: [[Sequelize.literal("'location'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -963,6 +971,20 @@ export class SearchController {
       let location: any = await LocationModel.findOne({
         include: [
           {
+            model: MarketPlaceValueModel,
+            as: 'marketplaceValues',
+            required: false,
+            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
+            include: [
+              {
+                model: MarketPlaceFieldsModel,
+                as: 'marketplaceField',
+                required: false,
+                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
+              }
+            ]
+          },
+          {
             model: CompanyModel,
             as: 'company',
             required: true,
@@ -1014,13 +1036,22 @@ export class SearchController {
           ...locate.dataValues
         }));
 
+        const locationDetail = location.marketplaceValues.reduce(
+          (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            ...acc,
+            [name]: parseDatabyField[type](value)
+          }),
+          {}
+        );
+
         location = location.dataValues;
         location = {
           ...location,
+          ...locationDetail,
           ...location.locationImages?.dataValues,
           ...location.company?.dataValues,
-          ['company']: undefined,
-          ['locationDetail']: undefined
+          ['marketplaceValues']: undefined,
+          ['company']: undefined
         };
 
         staffs = await StaffModel.findAll({
@@ -1098,6 +1129,123 @@ export class SearchController {
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
       // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/delete-recent-view/{recentViewId}:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     parameters:
+   *     - in: path
+   *       name: recentViewId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: deleteRecentView
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public deleteRecentView = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      console.log('CustomerId::', res.locals.customerPayload);
+      const dataInput = {
+        customerId: res.locals.customerPayload.id,
+        recentViewId: req.params.recentViewId
+      };
+      const validateErrors = validate(dataInput, deleteRecentViewSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      await RecentViewModel.destroy({
+        where: { id: dataInput.recentViewId }
+      });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/delete-recent-booking/{recentBookingId}:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     parameters:
+   *     - in: path
+   *       name: recentBookingId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: deleteRecentBooking
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public deleteRecentBooking = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = {
+        customerId: res.locals.customerPayload.id,
+        recentBookingId: req.params.recentBookingId
+      };
+      const validateErrors = validate(dataInput, deleteRecentBookingSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      await RecentBookingModel.destroy({
+        where: { id: dataInput.recentBookingId }
+      });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/suggest-city-country/{countryCode}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     parameters:
+   *     - in: path
+   *       name: countryCode
+   *       schema:
+   *          type: string
+   *     name: suggestCountryAndCity
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public suggestCountryAndCity = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const countries = await CountryModel.findAll({
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+        include: [
+          {
+            model: CityModel,
+            as: 'cities',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          }
+        ]
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
+    } catch (error) {
       return next(error);
     }
   };

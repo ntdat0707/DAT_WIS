@@ -43,7 +43,7 @@ PipelineStageModel.init(
     probability: {
       field: 'probability',
       type: DataTypes.TINYINT,
-      allowNull: true
+      defaultValue: 100
     },
     createdAt: {
       field: 'created_at',

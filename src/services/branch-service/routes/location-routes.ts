@@ -6,6 +6,7 @@ import * as Staff from '../../../utils/middlewares/staff/auth';
 import { uploadAsMiddleware } from '../../../utils/file-manager';
 import { SearchController } from '../controllers/search-controller';
 import * as Customer from '../../../utils/middlewares/customer/auth';
+import { isAuthenticated as isAuthenticatedCustomer } from '../../../utils/middlewares/customer/auth';
 
 export class LocationRoutes {
   public router: express.Router = express.Router();
@@ -42,5 +43,16 @@ export class LocationRoutes {
     this.router.get('/market-place/search', this.searchController.marketPlaceSearch);
     this.router.get('/market-place/suggested', this.searchController.marketPlaceSuggested);
     this.router.get('/market-place/suggested-recent', Customer.isAuthenticated, this.searchController.marketPlaceSuggestedRecent);
+    this.router.delete(
+      '/market-place/delete-recent-view/:recentViewId',
+      isAuthenticatedCustomer,
+      this.searchController.deleteRecentView
+    );
+    this.router.delete(
+      '/market-place/delete-recent-booking/:recentBookingId',
+      isAuthenticatedCustomer,
+      this.searchController.deleteRecentBooking
+    );
+    this.router.get('/market-place/suggest-city-country/:countryCode', this.searchController.suggestCountryAndCity);
   }
 }

@@ -16,19 +16,23 @@ import {
   createPipelineSchema,
   updatePipelineSchema,
   pipelineIdSchema,
+  pipelineStageIdSchema,
   settingPipelineStageSchema,
   filterDeal,
   createDealSchema,
-  dealIdSchema
+  dealIdSchema,
+  updateDealSchema
 } from '../configs/validate-schemas/deal';
 import {
   dealErrorDetails,
   pipelineErrorDetails,
-  pipelineStageErrorDetails
-} from '../../../utils/response-messages/error-details/deal';
+  pipelineStageErrorDetails,
+  staffErrorDetails,
+  customerErrorDetails
+} from '../../../utils/response-messages/error-details';
 import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
-
+import { StatusPipelineStage } from '../../../utils/consts';
 export class DealController {
   /**
    * @swagger
@@ -52,7 +56,7 @@ export class DealController {
   public getAllPipeline = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const staffId = res.locals.staffPayload.id;
-      const pipeline = await PipelineModel.findAll({
+      const pipelines = await PipelineModel.findAll({
         include: [
           {
             model: CompanyModel,
@@ -62,7 +66,7 @@ export class DealController {
           }
         ]
       });
-      return res.status(httpStatus.OK).send(buildSuccessMessage(pipeline));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(pipelines));
     } catch (error) {
       return next(error);
     }
@@ -286,20 +290,20 @@ export class DealController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const pipelineStage: any = await PipelineStageModel.findAll({
+      const listPipelineStage: any = await PipelineStageModel.findAll({
         where: { pipelineId: pipelineId },
         order: ['order']
       });
-      if (!pipelineStage) {
+      if (!listPipelineStage) {
         return next(
           new CustomError(pipelineStageErrorDetails.E_3201(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
         );
       }
-      for (let i = 0; i < pipelineStage.length; i++) {
+      for (let i = 0; i < listPipelineStage.length; i++) {
         let totalValueDeal = 0;
         let totalValueStage = 0;
         let probationReality = 0;
-        const deal = await DealModel.findAll({ where: { pipelineStageId: pipelineStage[i].id } });
+        const deal = await DealModel.findAll({ where: { pipelineStageId: listPipelineStage[i].id } });
         if (deal.length > 0) {
           let valueStage: number;
           for (let j = 0; j < deal.length; j++) {
@@ -308,9 +312,9 @@ export class DealController {
               include: [
                 {
                   model: PipelineStageModel,
-                  as: 'pipelineStage',
+                  as: 'pipelineStages',
                   required: true,
-                  where: { id: pipelineStage[i].id }
+                  where: { id: listPipelineStage[i].id }
                 }
               ]
             });
@@ -318,24 +322,24 @@ export class DealController {
               if (deal[j].probability) {
                 valueStage = (deal[j].amount * deal[j].probability) / 100;
               } else {
-                valueStage = (deal[j].amount * pipeline.pipelineStage[0].probability) / 100;
+                valueStage = (deal[j].amount * pipeline.pipelineStages[0].probability) / 100;
               }
             } else {
-              valueStage = (deal[j].amount * pipeline.pipelineStage[0].probability) / 100;
+              valueStage = (deal[j].amount * pipeline.pipelineStages[0].probability) / 100;
             }
             totalValueStage += valueStage;
           }
           probationReality = Math.round((totalValueStage / totalValueDeal) * 100);
         }
-        pipelineStage[i] = {
-          ...pipelineStage[i].dataValues,
+        listPipelineStage[i] = {
+          ...listPipelineStage[i].dataValues,
           totalDeal: deal.length,
           totalValueDeal: totalValueDeal,
           totalValueStage: totalValueStage,
           probationReality: probationReality
         };
       }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(pipelineStage));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(listPipelineStage));
     } catch (error) {
       return next(error);
     }
@@ -634,13 +638,13 @@ export class DealController {
             as: 'pipelineStage'
           };
       query.include.push(conditionPipelineId);
-      const deal = await paginate(
+      const deals = await paginate(
         DealModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
-      return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deals));
     } catch (error) {
       return next(error);
     }
@@ -660,7 +664,8 @@ export class DealController {
    *           currency:
    *               type: string
    *           probability:
-   *               type: integer
+   *               type: number
+   *               format: float
    *           source:
    *               type: string
    *           expectedCloseDate:
@@ -713,9 +718,28 @@ export class DealController {
         note: req.body.note,
         pipelineStageId: req.body.pipelineStageId,
         customerWisereId: req.body.customerWisereId,
-        status: 'Open',
         createdBy: res.locals.staffPayload.id
       };
+      if (data.ownerId) {
+        const checkOwnerId = await StaffModel.findOne({ where: { id: data.ownerId } });
+        if (!checkOwnerId) {
+          throw new CustomError(staffErrorDetails.E_4000(`ownerId ${data.ownerId} not found`), httpStatus.NOT_FOUND);
+        }
+      }
+      const checkPipelineStageId = await PipelineStageModel.findOne({ where: { id: data.pipelineStageId } });
+      if (!checkPipelineStageId) {
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3201(`pipelineStageId ${data.pipelineStageId} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
+      const checkCustomerWisereId = await CustomerWisereModel.findOne({ where: { id: data.customerWisereId } });
+      if (!checkCustomerWisereId) {
+        throw new CustomError(
+          customerErrorDetails.E_3001(`customerWisereId ${data.customerWisereId} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
       const deal = await DealModel.create(data);
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
     } catch (error) {
@@ -777,6 +801,211 @@ export class DealController {
       if (!deal) {
         throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
       }
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   dealUpdate:
+   *       properties:
+   *           dealTitle:
+   *               type: string
+   *           ownerId:
+   *               type: string
+   *           amount:
+   *               type: integer
+   *           currency:
+   *               type: string
+   *           probability:
+   *               type: number
+   *               format: float
+   *           source:
+   *               type: string
+   *           expectedCloseDate:
+   *               type: string
+   *           note:
+   *               type: string
+   *           pipelineStageId:
+   *               type: string
+   *           customerWisereId:
+   *               type: string
+   *           status:
+   *               type: string
+   *
+   */
+
+  /**
+   * @swagger
+   * /customer/deal/update-deal/{dealId}:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: updateDeal
+   *     parameters:
+   *     - in: "path"
+   *       name: "dealId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/dealUpdate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updateDeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dealId = req.params.dealId;
+      const data: any = {
+        dealTitle: req.body.dealTitle,
+        ownerId: req.body.ownerId,
+        amount: req.body.amount,
+        currency: req.body.currency,
+        probability: req.body.probability,
+        source: req.body.source,
+        expectedCloseDate: req.body.expectedCloseDate,
+        note: req.body.note,
+        pipelineStageId: req.body.pipelineStageId,
+        customerWisereId: req.body.customerWisereId,
+        status: req.body.status
+      };
+      const validateErrors = validate(data, updateDealSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      let deal = await DealModel.findOne({ where: { id: dealId } });
+      if (!deal) {
+        throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
+      }
+      if (data.status === StatusPipelineStage.WON || data.status === StatusPipelineStage.LOST) {
+        data.closingDate = Date.now();
+      }
+      deal = await deal.update(data);
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/deal/delete-deal/{dealId}:
+   *   delete:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: deleteDeal
+   *     parameters:
+   *     - in: path
+   *       name: dealId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public deleteDeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dealId = req.params.dealId;
+      const validateErrors = validate(dealId, dealIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const deal = await DealModel.findOne({ where: { id: dealId } });
+      if (!deal) {
+        return next(new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND));
+      }
+      await DealModel.destroy({ where: { id: dealId } });
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/deal/update-pipeline-stage-of-deal/{dealId}:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: updatePipelineStageOfDeal
+   *     parameters:
+   *     - in: "path"
+   *       name: "dealId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         properties:
+   *           newPipelineStageId:
+   *               type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updatePipelineStageOfDeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dealId = req.params.dealId;
+      const newPipelineStageId = req.body.newPipelineStageId;
+      const validateErrors = validate(newPipelineStageId, pipelineStageIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      let deal: any = await DealModel.findOne({
+        where: { id: dealId },
+        include: [
+          {
+            model: PipelineStageModel,
+            as: 'pipelineStage'
+          }
+        ]
+      });
+      if (!deal) {
+        return next(new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND));
+      }
+      const checkNewPipelineStage = await PipelineStageModel.findOne({ where: { id: newPipelineStageId } });
+      if (!checkNewPipelineStage) {
+        return next(
+          new CustomError(
+            pipelineStageErrorDetails.E_3201(`newPipelineStageId ${newPipelineStageId} not found`),
+            httpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (deal.pipelineStage.pipelineId !== checkNewPipelineStage.pipelineId) {
+        return next(
+          new CustomError(
+            dealErrorDetails.E_3302(
+              `newPipelineStageId ${newPipelineStageId} and oldPipelineStageId ${deal.pipelineStage.pipelineId} not same pipeline`
+            ),
+            httpStatus.BAD_REQUEST
+          )
+        );
+      }
+      deal = await deal.update({ pipelineStageId: newPipelineStageId });
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
     } catch (error) {
       return next(error);
