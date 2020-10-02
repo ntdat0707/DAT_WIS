@@ -612,6 +612,11 @@ export class DealController {
           {
             model: CustomerWisereModel,
             as: 'customerWisere'
+          },
+          {
+            model: StaffModel,
+            as: 'owner',
+            required: false
           }
         ]
       };
@@ -775,7 +780,7 @@ export class DealController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const deal = await DealModel.findOne({
+      const deal: any = await DealModel.findOne({
         where: { id: dealId },
         include: [
           {
@@ -794,7 +799,8 @@ export class DealController {
           },
           {
             model: StaffModel,
-            as: 'staff'
+            as: 'owner',
+            required: false
           }
         ]
       });
