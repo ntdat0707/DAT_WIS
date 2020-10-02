@@ -31,7 +31,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
-import {parseDatabyField} from '../utils';
+import { parseDatabyField } from '../utils';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -137,7 +137,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -259,7 +259,6 @@ export class SearchController {
             searchCompanyItem = location.company;
           }
 
-
           if (
             location.services &&
             !_.isEmpty(location.services) &&
@@ -280,13 +279,13 @@ export class SearchController {
             location.company.cateServices = undefined;
           }
         }
-        const locationDetail = location.marketplaceValues.reduce((
-          acc: any,
-          {value, marketplaceField: {name, type} }: any
-        ) => ({
-          ...acc,
-          [name]: parseDatabyField[type](value)
-        }), {});
+        const locationDetail = location.marketplaceValues.reduce(
+          (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            ...acc,
+            [name]: parseDatabyField[type](value)
+          }),
+          {}
+        );
 
         location = {
           ...location,
@@ -559,7 +558,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -714,26 +713,28 @@ export class SearchController {
       const cateServices = await CateServiceModel.findAll({
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal('\'cateService\''), 'type']],
+          include: [[Sequelize.literal("'cateService'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
       });
-      const companies = (await CompanyModel.findAll({
-        attributes: {
-          include: [[Sequelize.literal('\'company\''), 'type']],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        include: [
-          {
-            model: CompanyDetailModel,
-            as: 'companyDetail',
-            required: true,
-            attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
-          }
-        ],
-        where: Sequelize.literal(`unaccent("companyDetail"."business_name") ilike any(array[${keywords}])`),
-      })).map((company: any) => ({
+      const companies = (
+        await CompanyModel.findAll({
+          attributes: {
+            include: [[Sequelize.literal("'company'"), 'type']],
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          include: [
+            {
+              model: CompanyDetailModel,
+              as: 'companyDetail',
+              required: true,
+              attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
+            }
+          ],
+          where: Sequelize.literal(`unaccent("companyDetail"."business_name") ilike any(array[${keywords}])`)
+        })
+      ).map((company: any) => ({
         ...company.dataValues,
         ...company.companyDetail?.dataValues,
         companyDetail: undefined
@@ -742,7 +743,7 @@ export class SearchController {
       const services = await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal('\'service\''), 'type']],
+          include: [[Sequelize.literal("'service'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -756,7 +757,7 @@ export class SearchController {
           ]
         },
         attributes: {
-          include: [[Sequelize.literal('\'location\''), 'type']],
+          include: [[Sequelize.literal("'location'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -909,6 +910,20 @@ export class SearchController {
       let location: any = await LocationModel.findOne({
         include: [
           {
+            model: MarketPlaceValueModel,
+            as: 'marketplaceValues',
+            required: false,
+            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
+            include: [
+              {
+                model: MarketPlaceFieldsModel,
+                as: 'marketplaceField',
+                required: false,
+                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
+              }
+            ]
+          },
+          {
             model: CompanyModel,
             as: 'company',
             required: true,
@@ -960,13 +975,22 @@ export class SearchController {
           ...locate.dataValues
         }));
 
+        const locationDetail = location.marketplaceValues.reduce(
+          (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            ...acc,
+            [name]: parseDatabyField[type](value)
+          }),
+          {}
+        );
+
         location = location.dataValues;
         location = {
           ...location,
+          ...locationDetail,
           ...location.locationImages?.dataValues,
           ...location.company?.dataValues,
-          ['company']: undefined,
-          ['locationDetail']: undefined
+          ['marketplaceValues']: undefined,
+          ['company']: undefined
         };
 
         staffs = await StaffModel.findAll({
@@ -1047,4 +1071,7 @@ export class SearchController {
       return next(error);
     }
   };
+
+
+  
 }

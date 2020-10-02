@@ -111,3 +111,9 @@ export enum AppointmentBookingSource {
   STAFF = 'STAFF',
   MARKETPLACE = 'MARKETPLACE'
 }
+
+export enum StatusPipelineStage {
+  OPEN = 'Open',
+  WON = 'Won',
+  LOST = 'Lost'
+}

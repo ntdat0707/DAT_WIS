@@ -3,6 +3,7 @@ import HttpStatus from 'http-status-codes';
 import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
+import shortid from 'shortid';
 require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
@@ -26,7 +27,10 @@ import {
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
   CustomerWisereModel,
-  RecentBookingModel
+  RecentBookingModel,
+  DealModel,
+  PipelineModel,
+  PipelineStageModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -180,7 +184,8 @@ export class AppointmentController extends BaseController {
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
         customerWisereId: dataInput.customerWisereId ? dataInput.customerWisereId : null,
-        bookingSource: dataInput.bookingSource
+        bookingSource: dataInput.bookingSource,
+        appointmentCode: shortid.generate()
       };
 
       if (dataInput.appointmentGroupId) {
@@ -327,6 +332,11 @@ export class AppointmentController extends BaseController {
                 model: CustomerWisereModel,
                 as: 'customerWisere',
                 required: false
+              },
+              {
+                model: AppointmentGroupModel,
+                as: 'appointmentGroup',
+                required: false
               }
             ]
           },
@@ -351,6 +361,9 @@ export class AppointmentController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      if (listAppointmentDetail[0].appointment.customerWisere) {
+        await this.convertApptToDeal(listAppointmentDetail, companyId, res.locals.staffPayload.id, transaction);
+      }
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
@@ -395,6 +408,12 @@ export class AppointmentController extends BaseController {
    *           type: array
    *           items:
    *               type: string
+   *     - in: query
+   *       name: resourceIds
+   *       schema:
+   *           type: array
+   *           items:
+   *               type: string
    *     responses:
    *       200:
    *         description: success
@@ -410,7 +429,8 @@ export class AppointmentController extends BaseController {
         locationId: req.query.locationId,
         startTime: req.query.startTime,
         endTime: req.query.endTime,
-        staffIds: req.query.staffIds
+        staffIds: req.query.staffIds,
+        resourceIds: req.query.resourceIds
       };
       const validateErrors = validate(conditions, filterAppointmentDetailChema);
       if (validateErrors) {
@@ -457,10 +477,6 @@ export class AppointmentController extends BaseController {
             required: true
           },
           {
-            model: ResourceModel,
-            as: 'resource'
-          },
-          {
             model: StaffModel,
             as: 'staffs',
             required: true,
@@ -487,12 +503,25 @@ export class AppointmentController extends BaseController {
           where: { id: conditions.staffIds }
         }
         : {
-          model: StaffModel,
-          as: 'staffs',
-          required: true,
-          through: { attributes: [] }
-        };
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          };
+      const conditionResources: any = conditions.resourceIds
+        ? {
+            model: ResourceModel,
+            as: 'resource',
+            required: false,
+            where: { id: conditions.resourceIds }
+          }
+        : {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          };
       query.include.push(conditionsStaffs);
+      query.include.push(conditionResources);
       const appointmentDetails = await AppointmentDetailModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetails));
     } catch (error) {
@@ -911,7 +940,8 @@ export class AppointmentController extends BaseController {
                 : null,
               bookingSource: AppointmentBookingSource.STAFF,
               appointmentGroupId: appointmentGroupId,
-              isPrimary: false
+              isPrimary: false,
+              appointmentCode: shortid.generate()
             };
             await AppointmentModel.create(newAppointmentData, { transaction });
             const appointmentDetailData: any[] = [];
@@ -1382,7 +1412,8 @@ export class AppointmentController extends BaseController {
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
         customerId: id,
-        bookingSource: dataInput.bookingSource
+        bookingSource: dataInput.bookingSource,
+        appointmentCode: shortid.generate()
       };
 
       if (dataInput.appointmentGroupId) {
@@ -1549,4 +1580,46 @@ export class AppointmentController extends BaseController {
       return next(error);
     }
   };
+
+  public async convertApptToDeal(listAppointmentDetail: any, companyId: any, staffId: any, transaction: any) {
+    const dataDeal: any = new DealModel();
+    const appointment = listAppointmentDetail[0].appointment;
+    const title =
+      appointment.date.getDate() +
+      '/' +
+      (appointment.date.getMonth() + 1) +
+      '_' +
+      appointment.customerWisere.lastName +
+      '_' +
+      appointment.customerWisere.phone;
+    dataDeal.setDataValue('dealTitle', title);
+    dataDeal.setDataValue('source', appointment.bookingSource);
+    dataDeal.setDataValue('customerWisereId', appointment.customerWisere.id);
+    let note;
+    if (appointment.appointmentGroup) {
+      note = appointment.id + '/' + appointment.appointmentGroup.id;
+    } else {
+      note = appointment.id;
+    }
+    dataDeal.setDataValue('note', note);
+    dataDeal.setDataValue('expectedCloseDate', appointment.date);
+    let amount = 0;
+    listAppointmentDetail.forEach((appointmentDetail: any) => {
+      amount += appointmentDetail.service.salePrice;
+    });
+    dataDeal.setDataValue('amount', amount);
+    const pipeline: any = await PipelineModel.findOne({
+      where: { companyId: companyId, name: 'Appointment' },
+      include: [
+        {
+          model: PipelineStageModel,
+          as: 'pipelineStages',
+          where: { name: 'New' }
+        }
+      ]
+    });
+    dataDeal.setDataValue('pipelineStageId', pipeline.pipelineStages[0].id);
+    dataDeal.setDataValue('createdBy', staffId);
+    await DealModel.create(dataDeal.dataValues, transaction);
+  }
 }
