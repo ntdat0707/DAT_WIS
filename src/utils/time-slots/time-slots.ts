@@ -13,8 +13,8 @@ const timeSlots = (start: any, end: any, step: any) => {
     const momentStart = moment(i.toString(), 'hmm').add(-7, 'h').format('HH:mm');
     slots[momentStart] = bool;
   }
-  const momentEnd = moment(newEnd.toString(), 'hmm').add(-7, 'm').format('HH:mm');
-  //console.log(momentEnd);
+  const momentEnd = moment(newEnd.toString(), 'hmm').add(-7, 'h').format('HH:mm');
+  console.log(momentEnd);
   slots[momentEnd] = bool;
   return slots;
 };

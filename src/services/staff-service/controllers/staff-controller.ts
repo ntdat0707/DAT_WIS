@@ -981,11 +981,12 @@ export class StaffController {
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingLocations['0'].workingTimes;
+      console.log(data);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
       //console.log(workTime);
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       //console.log(timeSlot);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
@@ -1232,7 +1233,7 @@ export class StaffController {
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
 
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       //console.log(workDay);
       //console.log(timeSlot);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
