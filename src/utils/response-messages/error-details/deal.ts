@@ -31,6 +31,10 @@ const dealErrorDetails = {
   E_3301(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3301', 'Deal not found', detail);
     return e;
+  },
+  E_3302(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3302', 'Pipeline is different', detail);
+    return e;
   }
 };
 

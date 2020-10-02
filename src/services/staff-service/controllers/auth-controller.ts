@@ -147,115 +147,96 @@ export class AuthController {
         {
           pipelineId: pipelineId1,
           name: 'Onsite',
-          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId1,
           name: 'Interactive',
-          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId1,
           name: 'Proposal made',
-          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId1,
           name: 'Demo Scheduled',
-          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId2,
           name: 'Lead-in',
-          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId2,
           name: 'Contact made',
-          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId2,
           name: 'Demo Scheduled',
-          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId2,
           name: 'Proposal made',
-          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId2,
           name: 'Negotiation Started',
-          probability: 100,
           order: 5
         },
         {
           pipelineId: pipelineId3,
           name: 'Contact made',
-          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId3,
           name: 'SMS sent',
-          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId3,
           name: 'Filter',
-          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId3,
           name: 'Interactive',
-          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId3,
           name: 'Proposal made',
-          probability: 100,
           order: 5
         },
         {
           pipelineId: pipelineId3,
           name: 'Negotiation Started',
-          probability: 100,
           order: 6
         },
         {
           pipelineId: pipelineId4,
           name: 'New',
-          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId4,
           name: 'Confirmed',
-          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId4,
           name: 'Purchased',
-          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId4,
           name: 'Treatment Planning',
-          probability: 100,
           order: 4
         }
       ];

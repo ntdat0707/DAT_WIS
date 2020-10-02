@@ -25,7 +25,10 @@ import {
   LocationModel,
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
-  CustomerWisereModel
+  CustomerWisereModel,
+  DealModel,
+  PipelineModel,
+  PipelineStageModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -326,6 +329,11 @@ export class AppointmentController extends BaseController {
                 model: CustomerWisereModel,
                 as: 'customerWisere',
                 required: false
+              },
+              {
+                model: AppointmentGroupModel,
+                as: 'appointmentGroup',
+                required: false
               }
             ]
           },
@@ -350,6 +358,9 @@ export class AppointmentController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      if (listAppointmentDetail[0].appointment.customerWisere) {
+        await this.convertApptToDeal(listAppointmentDetail, companyId, res.locals.staffPayload.id, transaction);
+      }
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
@@ -1533,4 +1544,46 @@ export class AppointmentController extends BaseController {
       return next(error);
     }
   };
+
+  public async convertApptToDeal(listAppointmentDetail: any, companyId: any, staffId: any, transaction: any) {
+    const dataDeal: any = new DealModel();
+    const appointment = listAppointmentDetail[0].appointment;
+    const title =
+      appointment.date.getDate() +
+      '/' +
+      (appointment.date.getMonth() + 1) +
+      '_' +
+      appointment.customerWisere.lastName +
+      '_' +
+      appointment.customerWisere.phone;
+    dataDeal.setDataValue('dealTitle', title);
+    dataDeal.setDataValue('source', appointment.bookingSource);
+    dataDeal.setDataValue('customerWisereId', appointment.customerWisere.id);
+    let note;
+    if (appointment.appointmentGroup) {
+      note = appointment.id + '/' + appointment.appointmentGroup.id;
+    } else {
+      note = appointment.id;
+    }
+    dataDeal.setDataValue('note', note);
+    dataDeal.setDataValue('expectedCloseDate', appointment.date);
+    let amount = 0;
+    listAppointmentDetail.forEach((appointmentDetail: any) => {
+      amount += appointmentDetail.service.salePrice;
+    });
+    dataDeal.setDataValue('amount', amount);
+    const pipeline: any = await PipelineModel.findOne({
+      where: { companyId: companyId, name: 'Appointment' },
+      include: [
+        {
+          model: PipelineStageModel,
+          as: 'pipelineStages',
+          where: { name: 'New' }
+        }
+      ]
+    });
+    dataDeal.setDataValue('pipelineStageId', pipeline.pipelineStages[0].id);
+    dataDeal.setDataValue('createdBy', staffId);
+    await DealModel.create(dataDeal.dataValues, transaction);
+  }
 }
