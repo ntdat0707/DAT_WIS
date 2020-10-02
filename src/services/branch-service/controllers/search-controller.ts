@@ -18,7 +18,8 @@ import {
   CustomerModel,
   RecentBookingModel,
   MarketPlaceFieldsModel,
-  MarketPlaceValueModel
+  MarketPlaceValueModel,
+  CityModel
 } from '../../../repositories/postgres/models';
 
 import { searchSchema, suggestedSchema, getLocationMarketPlace } from '../configs/validate-schemas';
@@ -32,6 +33,7 @@ import { LocationServiceModel } from '../../../repositories/postgres/models/loca
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
 import { parseDatabyField } from '../utils';
+import { deleteRecentBookingSchema, deleteRecentViewSchema } from '../configs/validate-schemas/recent-view';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -1072,6 +1074,82 @@ export class SearchController {
     }
   };
 
+  /**
+   * @swagger
+   * /branch/location/market-place/delete-recent-view/{recentViewId}:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     parameters:
+   *     - in: path
+   *       name: recentViewId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: deleteRecentView
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
 
-  
+  public deleteRecentView = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      console.log('CustomerId::', res.locals.customerPayload);
+      const dataInput = {
+        customerId: res.locals.customerPayload.id,
+        recentViewId: req.params.recentViewId
+      };
+      const validateErrors = validate(dataInput, deleteRecentViewSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      await RecentViewModel.destroy({
+        where: { id: dataInput.recentViewId }
+      });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/delete-recent-booking/{recentBookingId}:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     parameters:
+   *     - in: path
+   *       name: recentBookingId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: deleteRecentBooking
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public deleteRecentBooking = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = {
+        customerId: res.locals.customerPayload.id,
+        recentBookingId: req.params.recentBookingId
+      };
+      const validateErrors = validate(dataInput, deleteRecentBookingSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      await RecentBookingModel.destroy({
+        where: { id: dataInput.recentBookingId }
+      });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
 }

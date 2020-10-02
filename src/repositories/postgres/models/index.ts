@@ -129,6 +129,9 @@ LocationImageModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'loc
 CountryModel.hasMany(CityModel, { foreignKey: 'countryId', sourceKey: 'id', as: 'cities' });
 CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
 
+CityModel.hasMany(LocationModel, { foreignKey: 'cityId', sourceKey: 'id', as: 'locations' });
+LocationModel.belongsTo(CityModel, { foreignKey: 'cityId', as: 'cityy' });
+
 CustomerModel.hasMany(CustomerSearchModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
 
@@ -162,7 +165,11 @@ DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: '
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
-MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, { foreignKey: 'fieldId', sourceKey: 'id', as: 'marketplaceValues' });
+MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, {
+  foreignKey: 'fieldId',
+  sourceKey: 'id',
+  as: 'marketplaceValues'
+});
 MarketPlaceValueModel.belongsTo(MarketPlaceFieldsModel, { foreignKey: 'fieldId', as: 'marketplaceField' });
 
 LocationModel.hasMany(MarketPlaceValueModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'marketplaceValues' });

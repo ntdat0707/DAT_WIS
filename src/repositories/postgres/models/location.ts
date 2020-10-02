@@ -70,8 +70,8 @@ LocationModel.init(
     },
     cityId: {
       field: 'city_id',
-      type: DataTypes.STRING,
-      allowNull: true
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     district: {
       field: 'district',

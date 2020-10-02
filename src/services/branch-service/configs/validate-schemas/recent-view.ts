@@ -15,4 +15,33 @@ const createRecentViewSchema = Joi.object({
     .label('locationId')
 });
 
-export { createRecentViewSchema };
+const deleteRecentViewSchema = Joi.object({
+  recentViewId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('recentViewId'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('customerId')
+});
+
+const deleteRecentBookingSchema = Joi.object({
+  recentBookingId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('recentBookingId'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('customerId')
+});
+export { createRecentViewSchema, deleteRecentViewSchema, deleteRecentBookingSchema };
