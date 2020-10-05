@@ -3,6 +3,7 @@ import { CustomerController } from '../controllers/customer-controller';
 require('dotenv').config();
 
 import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
+import { uploadAsMiddleware } from '../../../utils/file-manager';
 export class CustomerRoutes {
   public router: express.Router = express.Router();
   private customerController = new CustomerController();
@@ -11,7 +12,12 @@ export class CustomerRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post('/create', isAuthenticated, this.customerController.createCustomerWisere);
+    this.router.post(
+      '/create',
+      isAuthenticated,
+      uploadAsMiddleware('photo'),
+      this.customerController.createCustomerWisere
+    );
     this.router.put(
       '/update-customer-wisere/:customerWisereId',
       isAuthenticated,
