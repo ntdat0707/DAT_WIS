@@ -36,10 +36,10 @@ import { RecentViewModel } from '../../../repositories/postgres/models/recent-vi
 import { parseDatabyField } from '../utils';
 import {
   deleteRecentBookingSchema,
-  deleteRecentViewSchema,
-  suggestCountryAndCity
+  deleteRecentViewSchema
+  // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
-import { cityErrorDetails } from '../../../utils/response-messages/error-details/branch/city';
+// import { cityErrorDetails } from '../../../utils/response-messages/error-details/branch/city';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -145,7 +145,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -566,7 +566,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -721,7 +721,7 @@ export class SearchController {
       const cateServices = await CateServiceModel.findAll({
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal("'cateService'"), 'type']],
+          include: [[Sequelize.literal('\'cateService\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -729,7 +729,7 @@ export class SearchController {
       const companies = (
         await CompanyModel.findAll({
           attributes: {
-            include: [[Sequelize.literal("'company'"), 'type']],
+            include: [[Sequelize.literal('\'company\''), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
@@ -751,7 +751,7 @@ export class SearchController {
       const services = await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal("'service'"), 'type']],
+          include: [[Sequelize.literal('\'service\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -765,7 +765,7 @@ export class SearchController {
           ]
         },
         attributes: {
-          include: [[Sequelize.literal("'location'"), 'type']],
+          include: [[Sequelize.literal('\'location\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -775,6 +775,59 @@ export class SearchController {
       throw error;
     }
   };
+  /**
+   * @swagger
+   * /branch/location/market-place/suggested-recent:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: marketPlaceSuggestedRecent
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public marketPlaceSuggestedRecent = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const search = {
+        customerId: req.query.customerId
+      };
+
+      const validateErrorsSearch = validate(search, suggestedSchema);
+      if (validateErrorsSearch) {
+        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
+      }
+
+      let customer = null;
+      if (search.customerId) {
+        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
+      }
+      let recentSearch = null;
+      let recentBooking = null;
+      let recentView = null;
+      if (customer) {
+        recentSearch = await this.searchRecentSuggested(search);
+        recentBooking = await this.recentBookingSuggested(search);
+        recentView = await this.recentViewSuggested(search);
+      }
+
+      const results = {
+        recentSearch,
+        recentView,
+        recentBooking
+      };
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
+    } catch (error) {
+      console.log(error);
+      return next(error);
+    }
+  };
+
 
   private recentBookingSuggested = async (searchOption: any) => {
     try {

@@ -203,5 +203,7 @@ export {
   PipelineStageModel,
   DealModel,
   CustomerWisereModel,
-  ContactModel
+  ContactModel,
+  MarketPlaceValueModel,
+  MarketPlaceFieldsModel
 };
