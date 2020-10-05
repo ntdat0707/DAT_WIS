@@ -86,7 +86,8 @@ LocationModel.init(
     address: {
       field: 'address',
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     latitude: {
       field: 'latitude',
@@ -101,7 +102,8 @@ LocationModel.init(
     description: {
       field: 'description',
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     gender: {
       type: DataTypes.TINYINT,

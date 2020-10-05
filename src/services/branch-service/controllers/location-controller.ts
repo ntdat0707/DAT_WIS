@@ -29,7 +29,7 @@ import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
 import moment from 'moment';
-import { v4 as uuidv4 } from 'uuid';
+import uuid, { v4 as uuidv4 } from 'uuid';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { normalizeRemoveAccent } from '../../../utils/text';
 import { parseDatabyField } from '../utils/marketplace-field';
@@ -153,29 +153,29 @@ export class LocationController {
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      console.log('ReqBody::', req.body);
+      console.log('ReqBody:::', req.body);
       let data: any = {
         name: req.body.name,
         phone: req.body.phone,
         email: req.body.email,
         district: req.body.district,
         title: req.body.title,
-        //  description: req.body.description || '',
-        city: req.body.city,
+        description: !req.body.description ? 'Need add description' : req.body.description,
+        city: !req.body.city ? 'Ho Chi Minh' : req.body.city,
         ward: req.body.ward,
-        //  address: req.body.address || '',
+        address: !req.body.address ? uuidv4() : req.body.address,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
         workingTimes: req.body.workingTimes,
-        payment: req.body.payment || 'all',
-        parking: req.body.parking || 'active',
-        rating: req.body.rating || '4',
-        recoveryRooms: req.body.recoveryRooms || '10',
-        totalBookings: req.body.totalBookings || '10',
-        gender: req.body.gender || '2',
+        payment: !req.body.payment ? 'all' : req.body.payment,
+        parking: !req.body.parking ? 'active' : req.body.parking,
+        rating: !req.body.rating ? 0 : req.body.rating,
+        recoveryRooms: !req.body.recoveryRooms ? 0 : req.body.recoveryRooms,
+        totalBookings: !req.body.totalBookings ? 0 : req.body.totalBookings,
+        gender: !req.body.gender ? 2 : req.body.gender,
         openedAt: req.body.openedAt
       };
-
+      console.log('ReqBody222::', data);
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -199,9 +199,10 @@ export class LocationController {
         ...cpn.companyDetail.dataValues,
         ['companyDetail']: undefined
       }));
+
       let city: any = await CityModel.findOne({
         where: {
-          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${req.body.city}%')`)
+          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
         },
         attributes: ['id', 'name']
       });
@@ -213,13 +214,7 @@ export class LocationController {
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
       if (req.file) data.photo = (req.file as any).location;
-      let pathNameAssign = '';
-      if (!data.address) {
-        pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + uuidv4();
-      } else {
-        pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
-      }
-
+      let pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
       const pathNameObject: any = { pathName: pathNameAssign };
       data = Object.assign(data, pathNameObject);
       console.log('Path Name::', pathNameAssign);
