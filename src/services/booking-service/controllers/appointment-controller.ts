@@ -42,6 +42,7 @@ import {
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
+import httpStatus from 'http-status';
 export class AppointmentController extends BaseController {
   /**
    * @swagger
@@ -1586,4 +1587,99 @@ export class AppointmentController extends BaseController {
     dataDeal.setDataValue('createdBy', staffId);
     await DealModel.create(dataDeal.dataValues, transaction);
   }
+
+  /**
+   * @swagger
+   * /booking/appointment/get-all-my-appointment:
+   *   get:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAllMyAppointment
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAllMyAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const queryUpcomingAppt: FindOptions = {
+        // attributes: [[fn('sum', col('service.salePrice')), 'subtotal']],
+        where: {
+          bookingSource: AppointmentBookingSource.MARKETPLACE,
+          status: {
+            [Op.and]: [
+              { [Op.ne]: EAppointmentStatus.CANCEL },
+              { [Op.ne]: EAppointmentStatus.COMPLETED },
+              { [Op.ne]: EAppointmentStatus.NO_SHOW }
+            ]
+          }
+        },
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service',
+                required: false
+              },
+              {
+                model: StaffModel,
+                as: 'staffs',
+                required: false
+              }
+            ]
+          }
+        ]
+      };
+      const queryPastAppt: FindOptions = {
+        // attributes: [[fn('sum', col('appointmentDetails.service.sale_price')), 'subtotal']],
+        where: {
+          bookingSource: AppointmentBookingSource.MARKETPLACE,
+          status: {
+            [Op.or]: [
+              { [Op.eq]: EAppointmentStatus.CANCEL },
+              { [Op.eq]: EAppointmentStatus.COMPLETED },
+              { [Op.eq]: EAppointmentStatus.NO_SHOW }
+            ]
+          }
+        },
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service',
+                required: false
+              },
+              {
+                model: StaffModel,
+                as: 'staffs',
+                required: false
+              }
+            ]
+          }
+        ],
+        group: ['id', 'appointmentDetails.id', 'appointmentDetails.service.id']
+      };
+      let myAppointments: any = {};
+      const upcomingApointments = await AppointmentModel.findAll(queryUpcomingAppt);
+      const pastApointments = await AppointmentModel.findAll(queryPastAppt);
+      myAppointments = {
+        upcomingApointments,
+        pastApointments
+      };
+      return res.status(httpStatus.OK).send(buildSuccessMessage(myAppointments));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }

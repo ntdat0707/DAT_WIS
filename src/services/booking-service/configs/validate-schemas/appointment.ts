@@ -119,7 +119,6 @@ const updateAppointmentStatusSchema = Joi.object({
     .valid(
       EAppointmentStatus.NEW,
       EAppointmentStatus.CONFIRMED,
-      EAppointmentStatus.CONFIRMED,
       EAppointmentStatus.IN_SERVICE,
       EAppointmentStatus.ARRIVED,
       EAppointmentStatus.COMPLETED,
