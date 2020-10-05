@@ -54,7 +54,6 @@ export class LocationController {
    *                   type: string
    *
    */
-
   /**
    * @swagger
    * /branch/location/create-location:
@@ -101,41 +100,6 @@ export class LocationController {
    *       name: "longitude"
    *       type: number
    *     - in: "formData"
-   *       name: "description"
-   *       type: string
-   *     - in: "formData"
-   *       name: "title"
-   *       type: string
-   *     - in: "formData"
-   *       name: "payment"
-   *       type: string
-   *       enum:
-   *          - cash
-   *          - card
-   *          - all
-   *     - in: "formData"
-   *       name: "parking"
-   *       type: string
-   *       enum:
-   *          - active
-   *          - inactive
-   *     - in: "formData"
-   *       name: "rating"
-   *       type: number
-   *     - in: "formData"
-   *       name: "recoveryRooms"
-   *       type: number
-   *     - in: "formData"
-   *       name: "totalBookings"
-   *       type: number
-   *     - in: "formData"
-   *       name: "gender"
-   *       type: number
-   *     - in: "formData"
-   *       name: "openedAt"
-   *       type: string
-   *       format: date-time
-   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -153,104 +117,38 @@ export class LocationController {
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      console.log('ReqBody:::', req.body);
       let data: any = {
         name: req.body.name,
         phone: req.body.phone,
         email: req.body.email,
-        district: req.body.district,
-        title: req.body.title,
-        description: !req.body.description ? 'Need add description' : req.body.description,
         city: !req.body.city ? 'Ho Chi Minh' : req.body.city,
+        district: req.body.district,
         ward: req.body.ward,
-        address: !req.body.address ? uuidv4() : req.body.address,
+        address: req.body.address,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
-        workingTimes: req.body.workingTimes,
-        payment: !req.body.payment ? 'all' : req.body.payment,
-        parking: !req.body.parking ? 'active' : req.body.parking,
-        rating: !req.body.rating ? 0 : req.body.rating,
-        recoveryRooms: !req.body.recoveryRooms ? 0 : req.body.recoveryRooms,
-        totalBookings: !req.body.totalBookings ? 0 : req.body.totalBookings,
-        gender: !req.body.gender ? 2 : req.body.gender,
-        openedAt: req.body.openedAt
+        workingTimes: req.body.workingTimes
       };
-      console.log('ReqBody222::', data);
+
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-
-      console.log('Checked Validate');
-
       data.companyId = res.locals.staffPayload.companyId;
-      const company: any = await CompanyModel.findOne({
-        where: { id: data.companyId },
-        include: [
-          {
-            model: CompanyDetailModel,
-            as: 'companyDetail',
-            required: true,
-            attributes: ['businessType', 'businessName']
-          }
-        ]
-      }).then((cpn: any) => ({
-        ...cpn.dataValues,
-        ...cpn.companyDetail.dataValues,
-        ['companyDetail']: undefined
-      }));
+      if (req.file) data.photo = (req.file as any).location;
+      const company = await CompanyModel.findOne({ where: { id: data.companyId } });
 
-      let city: any = await CityModel.findOne({
+      const city = await CityModel.findOne({
         where: {
           name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
-        },
-        attributes: ['id', 'name']
+        }
       });
-      city = city.dataValues;
-
       const cityDetail: any = { cityId: city.id, city: city.name };
       data = Object.assign(data, cityDetail);
+      console.log('Data', data);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
-      if (req.file) data.photo = (req.file as any).location;
-      let pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
-      const pathNameObject: any = { pathName: pathNameAssign };
-      data = Object.assign(data, pathNameObject);
-      console.log('Path Name::', pathNameAssign);
-
-      if (data.photo) {
-        await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
-      }
-      //const marketplaceValueData: any = [];
-
-      let marketplaceFields: any = (
-        await MarketPlaceFieldsModel.findAll({
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-        })
-      ).map((marketplaceField: any) => ({
-        ...marketplaceField.dataValues
-      }));
-
-      console.log('marketplaceField::', marketplaceFields);
-
-      for (let i = 0; i < marketplaceFields.length; i++) {
-        if (data.hasOwnProperty(marketplaceFields[i].name)) {
-          let datavalue: any = data[marketplaceFields[i].name];
-
-          console.log('Datavalue::', datavalue);
-
-          let marketplaceValueData: any = [];
-          marketplaceValueData.push({
-            id: uuidv4(),
-            locationId: location.id,
-            fieldId: marketplaceFields[i].id,
-            value: data[marketplaceFields[i].name]
-          });
-          await MarketPlaceValueModel.bulkCreate(marketplaceValueData, { transaction });
-        }
-      }
-
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -263,10 +161,9 @@ export class LocationController {
         const checkValidWoringTime = await req.body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
           );
         }
-
         const workingsTimes = (req.body.workingTimes as []).map((value: any) => ({
           locationId: location.id,
           weekday: value.day,
@@ -278,50 +175,11 @@ export class LocationController {
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
       await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
-      await transaction.commit();
+
       //commit transaction
-      let newLocation: any = await LocationModel.findOne({
-        where: { id: location.id },
-        include: [
-          {
-            model: MarketPlaceValueModel,
-            as: 'marketplaceValues',
-            required: true,
-            attributes: ['value'],
-            include: [
-              {
-                model: MarketPlaceFieldsModel,
-                as: 'marketplaceField',
-                required: true,
-                attributes: ['name']
-              }
-            ]
-          }
-        ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      });
-      // console.log('New Location::', newLocation);
-      // console.log('marketplaceValues::', newLocation.marketplaceValues);
-      // const locationDetail = newLocation.marketplaceValues?.reduce(
-      //   (acc: any, { value, marketplaceField: { name, type } }: any) => {
-      //     console.log('type', type);
-      //     return  {
-      //     ...acc,
-      //     [name]: parseDatabyField[type](value)
-      //     };
-      // },
-      //   {}
-      // );
-
-      // newLocation = {
-      //   ...newLocation.dataValues,
-      //   ...locationDetail,
-      //   marketplaceValues: undefined
-      // };
-
-      return await res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
-      console.log(error);
       //rollback transaction
       if (transaction) {
         await transaction.rollback();
@@ -329,6 +187,7 @@ export class LocationController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /branch/location/get-all-locations:
@@ -696,6 +555,7 @@ export class LocationController {
    *                   type: string
    *
    */
+
   /**
    * @swagger
    * /branch/location/update-location/{locationId}:
@@ -869,6 +729,7 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
+
       const data: any = {
         name: body.name ? body.name : location.name,
         phone: body.phone ? body.phone : location.phone,
@@ -897,23 +758,7 @@ export class LocationController {
         companyDetail: undefined
       }));
 
-      let dataDetails: any = {
-        title: body.title,
-        payment: body.payment,
-        parking: body.parking,
-        recoveryRooms: body.recoveryRooms,
-        totalBookings: body.totalBookings,
-        gender: body.gender,
-        openedAt: body.openedAt
-      };
-
-      if (data.address) {
-        dataDetails = {
-          ...dataDetails,
-          pathName: normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
-        };
-      }
-
+  
       if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       // await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
@@ -927,8 +772,9 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
-
       return next(error);
     }
   };
+
+
 }
