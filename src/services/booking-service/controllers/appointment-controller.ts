@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op } from 'sequelize';
+import { FindOptions, Op, fn, col } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 require('dotenv').config();
@@ -1608,7 +1608,9 @@ export class AppointmentController extends BaseController {
   public getAllMyAppointment = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const queryUpcomingAppt: FindOptions = {
-        // attributes: [[fn('sum', col('service.salePrice')), 'subtotal']],
+        attributes: {
+          include: [[fn('sum', col('appointmentDetails->service.sale_price')), 'subtotal']]
+        },
         where: {
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
@@ -1636,10 +1638,18 @@ export class AppointmentController extends BaseController {
               }
             ]
           }
+        ],
+        group: [
+          'AppointmentModel.id',
+          'appointmentDetails.id',
+          'appointmentDetails->service.id',
+          'appointmentDetails->staffs.id',
+          'appointmentDetails->staffs->AppointmentDetailStaffModel.id'
         ]
+
       };
       const queryPastAppt: FindOptions = {
-        // attributes: [[fn('sum', col('appointmentDetails.service.sale_price')), 'subtotal']],
+        attributes: [[fn('sum', col('appointmentDetails.service.sale_price')), 'subtotal']],
         where: {
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
@@ -1668,7 +1678,13 @@ export class AppointmentController extends BaseController {
             ]
           }
         ],
-        group: ['id', 'appointmentDetails.id', 'appointmentDetails.service.id']
+        group: [
+          'AppointmentModel.id',
+          'appointmentDetails.id',
+          'appointmentDetails->service.id',
+          'appointmentDetails->staffs.id',
+          'appointmentDetails->staffs->AppointmentDetailStaffModel.id'
+        ]
       };
       let myAppointments: any = {};
       const upcomingApointments = await AppointmentModel.findAll(queryUpcomingAppt);
