@@ -166,11 +166,7 @@ DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: '
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
-MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, {
-  foreignKey: 'fieldId',
-  sourceKey: 'id',
-  as: 'marketplaceValues'
-});
+MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, { foreignKey: 'fieldId', sourceKey: 'id', as: 'marketplaceValues'});
 MarketPlaceValueModel.belongsTo(MarketPlaceFieldsModel, { foreignKey: 'fieldId', as: 'marketplaceField' });
 
 LocationModel.hasMany(MarketPlaceValueModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'marketplaceValues' });
@@ -178,6 +174,7 @@ MarketPlaceValueModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: '
 
 CustomerWisereModel.hasMany(ContactModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'contacts' });
 ContactModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
+
 export {
   sequelize,
   StaffModel,
