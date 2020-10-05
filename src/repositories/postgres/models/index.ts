@@ -119,19 +119,19 @@ CustomerWisereModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'comp
 CustomerWisereModel.hasMany(AppointmentModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'appointments' });
 AppointmentModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
-PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStage' });
+PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStages' });
 PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipelineId', as: 'pipeline' });
 
-CompanyModel.hasMany(PipelineModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'pipeline' });
+CompanyModel.hasMany(PipelineModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'pipelines' });
 PipelineModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
-StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deal' });
+StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
 
-CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deal' });
+CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
-PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
+PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
 export {
