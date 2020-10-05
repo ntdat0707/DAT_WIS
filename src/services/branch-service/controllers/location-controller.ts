@@ -160,19 +160,19 @@ export class LocationController {
         email: req.body.email,
         district: req.body.district,
         title: req.body.title,
-        description: req.body.description,
+        //  description: req.body.description || '',
         city: req.body.city,
         ward: req.body.ward,
-        address: req.body.address,
+        //  address: req.body.address || '',
         latitude: req.body.latitude,
         longitude: req.body.longitude,
         workingTimes: req.body.workingTimes,
-        payment: req.body.payment,
-        parking: req.body.parking,
-        rating: req.body.rating,
-        recoveryRooms: req.body.recoveryRooms,
-        totalBookings: req.body.totalBookings,
-        gender: req.body.gender,
+        payment: req.body.payment || 'all',
+        parking: req.body.parking || 'active',
+        rating: req.body.rating || '4',
+        recoveryRooms: req.body.recoveryRooms || '10',
+        totalBookings: req.body.totalBookings || '10',
+        gender: req.body.gender || '2',
         openedAt: req.body.openedAt
       };
 
@@ -182,6 +182,7 @@ export class LocationController {
       }
 
       console.log('Checked Validate');
+
       data.companyId = res.locals.staffPayload.companyId;
       const company: any = await CompanyModel.findOne({
         where: { id: data.companyId },
@@ -214,7 +215,7 @@ export class LocationController {
       if (req.file) data.photo = (req.file as any).location;
       let pathNameAssign = '';
       if (!data.address) {
-        pathNameAssign = normalizeRemoveAccent(company.businessName);
+        pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + uuidv4();
       } else {
         pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
       }
@@ -222,6 +223,7 @@ export class LocationController {
       const pathNameObject: any = { pathName: pathNameAssign };
       data = Object.assign(data, pathNameObject);
       console.log('Path Name::', pathNameAssign);
+
       if (data.photo) {
         await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
       }
@@ -234,12 +236,15 @@ export class LocationController {
       ).map((marketplaceField: any) => ({
         ...marketplaceField.dataValues
       }));
-      // marketplaceField = marketplaceField.dataValues;
+
       console.log('marketplaceField::', marketplaceFields);
+
       for (let i = 0; i < marketplaceFields.length; i++) {
         if (data.hasOwnProperty(marketplaceFields[i].name)) {
-          let datavalue = data[marketplaceFields[i].name];
+          let datavalue: any = data[marketplaceFields[i].name];
+
           console.log('Datavalue::', datavalue);
+
           let marketplaceValueData: any = [];
           marketplaceValueData.push({
             id: uuidv4(),
@@ -250,6 +255,7 @@ export class LocationController {
           await MarketPlaceValueModel.bulkCreate(marketplaceValueData, { transaction });
         }
       }
+
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -912,7 +918,7 @@ export class LocationController {
           pathName: normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
         };
       }
-      
+
       if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       // await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });

@@ -77,7 +77,6 @@ const companyIdSchema = Joi.string()
   .required()
   .label('companyId');
 
-
 const createLocationWorkingTimeSchema = Joi.object({
   locationId: Joi.string()
     .guid({
