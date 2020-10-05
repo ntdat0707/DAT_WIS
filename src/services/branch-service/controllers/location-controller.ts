@@ -54,6 +54,7 @@ export class LocationController {
    *                   type: string
    *
    */
+  
   /**
    * @swagger
    * /branch/location/create-location:
@@ -555,8 +556,7 @@ export class LocationController {
    *                   type: string
    *
    */
-
-  /**
+/**
    * @swagger
    * /branch/location/update-location/{locationId}:
    *   put:
@@ -609,34 +609,6 @@ export class LocationController {
    *       type: string
    *       required: true
    *     - in: "formData"
-   *       name: "title"
-   *       type: string
-   *     - in: "formData"
-   *       name: "payment"
-   *       type: string
-   *       enum:
-   *          - Cash
-   *          - Card
-   *     - in: "formData"
-   *       name: "parking"
-   *       type: string
-   *       enum:
-   *          - Active
-   *          - Inactive
-   *     - in: "formData"
-   *       name: "recoveryRooms"
-   *       type: number
-   *     - in: "formData"
-   *       name: "totalBookings"
-   *       type: number
-   *     - in: "formData"
-   *       name: "gender"
-   *       type: number
-   *     - in: "formData"
-   *       name: "openedAt"
-   *       type: string
-   *       format: date-time
-   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -664,22 +636,19 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-
       const location = await LocationModel.findOne({
         where: {
           id: params.locationId,
           companyId: companyId
         }
       });
-
-      if (!location) {
+      if (!location)
         return next(
           new CustomError(
             locationErrorDetails.E_1000(`locationId ${params.locationId} not found`),
             HttpStatus.NOT_FOUND
           )
         );
-      }
 
       // start transaction
       transaction = await sequelize.transaction();
@@ -697,17 +666,13 @@ export class LocationController {
             )
           );
         }
-
-        // console.log('Pass Working Location::');
-
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
         };
-
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
           );
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
@@ -729,7 +694,6 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
-
       const data: any = {
         name: body.name ? body.name : location.name,
         phone: body.phone ? body.phone : location.phone,
@@ -741,29 +705,8 @@ export class LocationController {
         latitude: body.latitude,
         longitude: body.longitude
       };
-
-      const company: any = await CompanyModel.findOne({
-        where: { id: companyId },
-        include: [
-          {
-            model: CompanyDetailModel,
-            as: 'companyDetail',
-            required: true,
-            attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
-          }
-        ]
-      }).then((cpn: any) => ({
-        ...cpn.dataValues,
-        ...cpn.companyDetail?.dataValues,
-        companyDetail: undefined
-      }));
-
-  
       if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
-      // await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
-      await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
-
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send();

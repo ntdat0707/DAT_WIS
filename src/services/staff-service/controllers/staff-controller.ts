@@ -839,6 +839,7 @@ export class StaffController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /staff/complete-onboard:
@@ -862,7 +863,9 @@ export class StaffController {
   public completeOnboard = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
+      console.log('Company:::', company);
       await StaffModel.update({ onboardStep: 5 }, { where: { id: company.ownerId } });
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }

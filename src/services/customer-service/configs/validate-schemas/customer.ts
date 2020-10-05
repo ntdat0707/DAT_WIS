@@ -17,7 +17,6 @@ const createCustomerWisereSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .required()
     .label('ownerId'),
   moreEmailContact: Joi.array()
     .items(
