@@ -9,7 +9,32 @@ const createCustomerWisereSchema = Joi.object({
   email: Joi.string().allow(null).email().label('email'),
   birthDate: Joi.string().isoDate().label('birthDate'),
   passportNumber: Joi.string().label('passportNumber'),
-  address: Joi.string().label('address')
+  address: Joi.string().label('address'),
+  source: Joi.string().label('source'),
+  note: Joi.string().label('note'),
+  job: Joi.string().label('job'),
+  ownerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('ownerId'),
+  moreEmailContact: Joi.array()
+    .items(
+      Joi.object({
+        email: Joi.string().required().email().label('email'),
+        type: Joi.string().required()
+      })
+    )
+    .label('moreEmailContact'),
+  morePhoneContact: Joi.array()
+    .items(
+      Joi.object({
+        phone: Joi.string().regex(/^\d+$/).required().label('phone'),
+        type: Joi.string().required()
+      })
+    )
+    .label('morePhoneContact')
 });
 
 const updateCustomerWisereSchema = Joi.object({

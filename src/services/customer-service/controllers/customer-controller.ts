@@ -4,8 +4,18 @@ require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { customerErrorDetails, generalErrorDetails } from '../../../utils/response-messages/error-details';
-import { CustomerModel, CustomerWisereModel } from '../../../repositories/postgres/models';
+import {
+  customerErrorDetails,
+  generalErrorDetails,
+  staffErrorDetails
+} from '../../../utils/response-messages/error-details';
+import {
+  CustomerModel,
+  CustomerWisereModel,
+  StaffModel,
+  sequelize,
+  ContactModel
+} from '../../../repositories/postgres/models';
 import {
   createCustomerWisereSchema,
   customerWireseIdSchema,
@@ -17,7 +27,7 @@ import {
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { paginate } from '../../../utils/paginator';
-import { FindOptions } from 'sequelize/types';
+import { FindOptions, Transaction } from 'sequelize';
 import { hash, compare } from 'bcryptjs';
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import {
@@ -36,33 +46,29 @@ import {
 } from '../../../utils/validator/validate-social-token';
 import { generateAppleToken } from '../../../utils/lib/generateAppleToken';
 import jwt from 'jsonwebtoken';
+import shortid from 'shortid';
 
 export class CustomerController {
   /**
    * @swagger
    * definitions:
-   *   customerWisereCreate:
+   *   MoreEmailContact:
    *       properties:
-   *           firstName:
-   *               type: string
-   *           lastName:
-   *               type: string
-   *           gender:
-   *               type: integer
-   *               required: true
-   *               enum: [0, 1, 2]
-   *           phone:
-   *               required: true
-   *               type: string
    *           email:
    *               type: string
-   *           birthDate:
-   *               type: string
-   *           passportNumber:
-   *               type: string
-   *           address:
+   *           type:
    *               type: string
    *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   MorePhoneContact:
+   *       properties:
+   *           phone:
+   *               type: string
+   *           type:
+   *               type: string
    *
    */
   /**
@@ -74,12 +80,64 @@ export class CustomerController {
    *     security:
    *       - Bearer: []
    *     name: createCustomerWisere
+   *     consumes:
+   *     - multipart/form-data
    *     parameters:
-   *     - in: "body"
-   *       name: "body"
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: firstName
+   *       type: string
    *       required: true
-   *       schema:
-   *         $ref: '#/definitions/customerWisereCreate'
+   *     - in: "formData"
+   *       name: lastName
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: gender
+   *       type: integer
+   *       required: true
+   *       enum: [0, 1, 2]
+   *     - in: "formData"
+   *       name: phone
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: email
+   *       type: string
+   *     - in: "formData"
+   *       name: birthDate
+   *       type: string
+   *     - in: "formData"
+   *       name: passport
+   *       type: string
+   *     - in: "formData"
+   *       name: address
+   *       type: string
+   *     - in: "formData"
+   *       name: ownerId
+   *       type: string
+   *     - in: "formData"
+   *       name: source
+   *       type: string
+   *     - in: "formData"
+   *       name: note
+   *       type: string
+   *     - in: "formData"
+   *       name: job
+   *       type: string
+   *     - in: "formData"
+   *       name: "moreEmailContact"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/MoreEmailContact'
+   *     - in: "formData"
+   *       name: "morePhoneContact"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/MorePhoneContact'
    *     responses:
    *       200:
    *         description: success
@@ -89,6 +147,7 @@ export class CustomerController {
    *         description:
    */
   public createCustomerWisere = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       const data: any = {
         firstName: req.body.firstName,
@@ -98,7 +157,13 @@ export class CustomerController {
         email: req.body.email ? req.body.email : null,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
-        address: req.body.address
+        address: req.body.address,
+        ownerId: req.body.ownerId,
+        source: req.body.source,
+        note: req.body.note,
+        job: req.body.job,
+        moreEmailContact: req.body.moreEmailContact,
+        morePhoneContact: req.body.morePhoneContact
       };
       const validateErrors = validate(data, createCustomerWisereSchema);
       if (validateErrors) {
@@ -107,15 +172,68 @@ export class CustomerController {
       data.companyId = res.locals.staffPayload.companyId;
       const existPhone = await CustomerWisereModel.findOne({ where: { phone: data.phone, companyId: data.companyId } });
       if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
-      if (req.body.email) {
+      if (data.email) {
         const existEmail = await CustomerWisereModel.findOne({
           where: { email: data.email, companyId: data.companyId }
         });
         if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
-      const customerWisere = await CustomerWisereModel.create(data);
+      if (data.ownerId) {
+        const existStaff = await StaffModel.findOne({
+          where: { id: data.ownerId, mainLocationId: res.locals.staffPayload.workingLocationIds }
+        });
+        if (!existStaff)
+          return next(
+            new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND)
+          );
+      }
+      data.code = shortid.generate();
+      transaction = await sequelize.transaction();
+      const customerWisere = await CustomerWisereModel.create(data, { transaction });
+      if (data.moreEmailContact && data.moreEmailContact.length > 0) {
+        const arrInsertEmailContact = [];
+        for (let i = 0; i < data.moreEmailContact.length; i++) {
+          const existEmailCustomer = await CustomerWisereModel.findOne({
+            where: { email: data.moreEmailContact[i].email, companyId: data.companyId }
+          });
+          if (existEmailCustomer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+          const existEmailContact = await ContactModel.findOne({
+            where: { email: data.moreEmailContact[i].email }
+          });
+          if (existEmailContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          arrInsertEmailContact.push({
+            email: data.moreEmailContact[i].email,
+            type: data.moreEmailContact[i].type,
+            customerWisereId: customerWisere.id
+          });
+        }
+        await ContactModel.bulkCreate(arrInsertEmailContact, { transaction });
+      }
+      if (data.morePhoneContact && data.morePhoneContact.length > 0) {
+        const arrInsertPhoneContact = [];
+        for (let i = 0; i < data.morePhoneContact.length; i++) {
+          const existPhoneCustomer = await CustomerWisereModel.findOne({
+            where: { phone: data.morePhoneContact[i].phone, companyId: data.companyId }
+          });
+          if (existPhoneCustomer) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          const existPhoneContact = await ContactModel.findOne({
+            where: { phone: data.morePhoneContact[i].phone }
+          });
+          if (existPhoneContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          arrInsertPhoneContact.push({
+            phone: data.morePhoneContact[i].phone,
+            type: data.morePhoneContact[i].type,
+            customerWisereId: customerWisere.id
+          });
+        }
+        await ContactModel.bulkCreate(arrInsertPhoneContact, { transaction });
+      }
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customerWisere));
     } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

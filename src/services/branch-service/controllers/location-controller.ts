@@ -212,8 +212,13 @@ export class LocationController {
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
       if (req.file) data.photo = (req.file as any).location;
+      let pathNameAssign = '';
+      if (!data.address) {
+        pathNameAssign = normalizeRemoveAccent(company.businessName);
+      } else {
+        pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
+      }
 
-      const pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
       const pathNameObject: any = { pathName: pathNameAssign };
       data = Object.assign(data, pathNameObject);
       console.log('Path Name::', pathNameAssign);
@@ -907,6 +912,7 @@ export class LocationController {
           pathName: normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address)
         };
       }
+      
       if (file) data.photo = (file as any).location;
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       // await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });

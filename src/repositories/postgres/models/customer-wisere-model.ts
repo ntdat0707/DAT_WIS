@@ -13,6 +13,9 @@ class CustomerWisereModel extends Model {
   public companyId!: string;
   public otpCode: string;
   public avatarPath: string;
+  public ownerId: string;
+  public source: string;
+  public code: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -52,6 +55,12 @@ CustomerWisereModel.init(
       allowNull: true,
       field: 'email'
     },
+    code: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: true,
+      field: 'code'
+    },
     birthDate: {
       type: DataTypes.DATE,
       field: 'birth_date'
@@ -79,6 +88,16 @@ CustomerWisereModel.init(
       type: DataTypes.STRING,
       allowNull: true,
       field: 'avatar_path'
+    },
+    ownerId: {
+      field: 'owner_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    source: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'source'
     },
     createdAt: {
       field: 'created_at',

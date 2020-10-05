@@ -28,6 +28,7 @@ import { CustomerWisereModel } from './customer-wisere-model';
 import { RecentBookingModel } from './recent-booking-model';
 import { MarketPlaceFieldsModel } from './marketplace-fields-model';
 import { MarketPlaceValueModel } from './marketplace-value-model';
+import { ContactModel } from './contact-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -175,6 +176,8 @@ MarketPlaceValueModel.belongsTo(MarketPlaceFieldsModel, { foreignKey: 'fieldId',
 LocationModel.hasMany(MarketPlaceValueModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'marketplaceValues' });
 MarketPlaceValueModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
+CustomerWisereModel.hasMany(ContactModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'contacts' });
+ContactModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 export {
   sequelize,
   StaffModel,
@@ -195,11 +198,10 @@ export {
   LocationWorkingHourModel,
   LocationImageModel,
   CustomerSearchModel,
-  CustomerWisereModel,
   RecentBookingModel,
   PipelineModel,
   PipelineStageModel,
   DealModel,
-  MarketPlaceFieldsModel,
-  MarketPlaceValueModel
+  CustomerWisereModel,
+  ContactModel
 };
