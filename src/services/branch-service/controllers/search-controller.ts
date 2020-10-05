@@ -828,7 +828,6 @@ export class SearchController {
     }
   };
 
-
   private recentBookingSuggested = async (searchOption: any) => {
     try {
       let recentBookings: any = (
