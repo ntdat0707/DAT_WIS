@@ -254,15 +254,8 @@ export class StaffController {
     let transaction = null;
     try {
       transaction = await sequelize.transaction();
-      let dataInput: any = { ...req.body };
 
-      let workingIdsArray: any[] = dataInput.workingLocationIds.split(',');
-      let workingIds: any = [];
-      for (let i = 0; i < workingIdsArray.length; i++) {
-        workingIds.push(workingIdsArray[i]);
-      }
-      dataInput.workingLocationIds = workingIds;
-      const validateErrors = validate(dataInput, createStaffSchema);
+      const validateErrors = validate(req.body, createStaffSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
@@ -391,14 +384,8 @@ export class StaffController {
     let transaction = null;
     try {
       transaction = await sequelize.transaction();
-      let dataInput: any = { ...req.body };
-      let workingIdsArray: any[] = dataInput.workingLocationIds.split(',');
-      let workingIds: any = [];
-      for (let i = 0; i < workingIdsArray.length; i++) {
-        workingIds.push(workingIdsArray[i]);
-      }
-      dataInput.workingLocationIds = workingIds;
-      const validateErrors = validate(dataInput, updateStaffSchema);
+
+      const validateErrors = validate(req.body, updateStaffSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }

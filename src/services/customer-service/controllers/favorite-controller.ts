@@ -10,6 +10,7 @@ import { CustomerModel } from '../../../repositories/postgres/models/customer-mo
 import { Op } from 'sequelize';
 import { MarketPlaceValueModel } from '../../../repositories/postgres/models/marketplace-value-model';
 import { MarketPlaceFieldsModel } from '../../../repositories/postgres/models';
+import { parseDatabyField } from '../../../services/branch-service/utils';
 export class FavoriteController {
   /**
    * @swagger
@@ -75,6 +76,7 @@ export class FavoriteController {
           );
         }
       }
+
       return res.status(httpStatus.OK).send(buildSuccessMessage(favorite));
     } catch (error) {
       return next(error);
@@ -112,7 +114,7 @@ export class FavoriteController {
         })
       ).map((locationId: any) => locationId.locationId);
 
-      const locations = await LocationModel.findAll({
+      let locations: any = await LocationModel.findAll({
         where: {
           id: { [Op.in]: locationIds }
         },
@@ -121,19 +123,42 @@ export class FavoriteController {
             model: MarketPlaceValueModel,
             as: 'marketplaceValues',
             required: true,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            attributes: ['value'],
             include: [
               {
                 model: MarketPlaceFieldsModel,
                 as: 'marketplaceField',
                 required: true,
-                attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+                attributes: ['name', 'type']
               }
             ]
           }
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
+      // ).map((location: any) => ({
+      //   ...location,
+      //   ...location.marketplaceValues.map((marketplaceValue: any) => ({
+      //     ...marketplaceValue,
+      //     ...marketplaceValue.marketplaceField,
+      //     marketplaceField: undefined
+      //   })),
+      // }));
+      //console.log('Locationss::', locations.dataValues);
+
+      const locationDetail = locations.marketplaceValues?.reduce(
+        (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+          ...acc,
+          [name]: parseDatabyField[type](value)
+        }),
+        {}
+      );
+
+      locations = {
+        ...locations.dataValues,
+        ...locationDetail,
+        marketplaceValues: undefined
+      };
 
       return res.status(httpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
