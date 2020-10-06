@@ -186,13 +186,13 @@ export class LocationController {
           {
             model: CompanyDetailModel,
             as: 'companyDetail',
-            required: true,
+            required: false,
             attributes: ['businessType', 'businessName']
           }
         ]
       }).then((cpn: any) => ({
         ...cpn.dataValues,
-        ...cpn.companyDetail.dataValues,
+        ...cpn.companyDetail?.dataValues,
         ['companyDetail']: undefined
       }));
 

@@ -53,7 +53,7 @@ const getWorkingLocations = async (companyId: string, staffId: string, isOwner: 
 
 const getCompany = async (staffId: string) => {
   try {
-    const company = await (CompanyModel.findOne({
+    let company:any = await CompanyModel.findOne({
       include: [
         {
           model: LocationModel,
@@ -72,15 +72,20 @@ const getCompany = async (staffId: string) => {
         {
           model: CompanyDetailModel,
           as: 'companyDetail',
-          required: true,
+          required: false,
           attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
         }
       ]
-    })).then(( cpn: any ) => ({
-      ...cpn.dataValues,
-      ...cpn.companyDetail?.dataValues,
-      companyDetail: undefined
-    }));
+    });
+
+    if (company && company.companyDetail) {
+      company = {
+        ...company.dataValues,
+        ...company.companyDetail?.dataValues,
+        companyDetail: undefined
+      };
+    }
+
     return company;
   } catch (error) {
     throw error;
@@ -229,6 +234,7 @@ const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthentica
         if ((staff as any).hasCompany && (staff as any).hasCompany.id) {
           companyId = (staff as any).hasCompany.id;
         } else {
+          console.log('AUTHEN: STAFFID', staff.id);
           const company = await getCompany(staff.id);
           companyId = company.id;
         }

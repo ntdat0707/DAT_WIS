@@ -168,14 +168,14 @@ export class CompanyController {
           {
             model: CompanyDetailModel,
             as: 'companyDetail',
-            required: true,
+            required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
       company = company.dataValues;
-      company = { ...company, ...company.companyDetail.dataValues, ['companyDetail']: undefined };
+      company = { ...company, ...company.companyDetail?.dataValues, ['companyDetail']: undefined };
       transaction = await sequelize.transaction();
       if (!company) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));

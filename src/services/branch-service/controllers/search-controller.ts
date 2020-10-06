@@ -224,7 +224,7 @@ export class SearchController {
               {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
-                required: true,
+                required: false,
                 attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
               }
             ]
@@ -726,7 +726,7 @@ export class SearchController {
               {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
-                required: true,
+                required: false,
                 attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
               }
             ]
@@ -1052,7 +1052,7 @@ export class SearchController {
               {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
-                required: true,
+                required: false,
                 attributes: ['businessType', 'businessName']
               }
             ]
