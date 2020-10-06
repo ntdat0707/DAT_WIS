@@ -113,6 +113,9 @@ PipelineModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' }
 StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
 
+StaffModel.hasMany(DealModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listDeal' });
+DealModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
+
 CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
