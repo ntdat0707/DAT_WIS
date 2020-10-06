@@ -24,7 +24,7 @@ enum EGender {
   UNISEX = 2
 }
 
-enum EPayment{
+enum EPayment {
   CASH = 'cash',
   CARD = 'card',
   ALL = 'all'
@@ -35,7 +35,7 @@ enum ELocationStatus {
   INACTIVE = 'inactive'
 }
 
-enum EParkingStatus{
+enum EParkingStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive'
 }
@@ -73,7 +73,7 @@ enum EOrder {
 }
 
 enum ETypeMarketPlaceField {
-  NUMBER =  'NUMBER',
+  NUMBER = 'NUMBER',
   STRING = 'STRING',
   BOOLEAN = 'BOOLEAN'
 }
@@ -116,4 +116,21 @@ export enum StatusPipelineStage {
   OPEN = 'Open',
   WON = 'Won',
   LOST = 'Lost'
+}
+
+export enum ESource {
+  FACEBOOK = 'Facebook',
+  ZALO = 'Zalo',
+  SHOPEE = 'Shopee',
+  WISERE = 'Wisere',
+  MARKETPLACE = 'Marketplace',
+  OTHER = 'Other'
+}
+
+export enum ELabel {
+  CUSTOMER = 'customer',
+  HOT_LEAD = 'hot_lead',
+  WARM_LEAD = 'warm_lead',
+  COLD_LEAD = 'cold_lead',
+  NONE = 'none'
 }

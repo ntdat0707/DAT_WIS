@@ -10,7 +10,8 @@ import { CustomerModel } from '../../../repositories/postgres/models/customer-mo
 import { Op } from 'sequelize';
 import { MarketPlaceValueModel } from '../../../repositories/postgres/models/marketplace-value-model';
 import { MarketPlaceFieldsModel } from '../../../repositories/postgres/models';
-import { parseDatabyField } from '../../../services/branch-service/utils';
+import { parseDatabyType } from '../../../services/branch-service/utils/marketplace-field';
+
 export class FavoriteController {
   /**
    * @swagger
@@ -144,15 +145,15 @@ export class FavoriteController {
       //     marketplaceField: undefined
       //   })),
       // }));
-      //console.log('Locationss::', locations.dataValues);
+      console.log('Locationss::', locations);
 
       const locationDetail = locations.marketplaceValues?.reduce(
-        (acc: any, { value, marketplaceField: { name, type } }: any) => ({
-          ...acc,
-          [name]: parseDatabyField[type](value)
-        }),
+        (acc: any, { value, marketplaceField: { name, type } }: any) => {
+          return { ...acc, [name]: parseDatabyType[type](value) };
+        },
         {}
       );
+      console.log('LocationDetails::',locationDetail);
 
       locations = {
         ...locations.dataValues,
