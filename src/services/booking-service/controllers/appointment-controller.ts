@@ -3,6 +3,7 @@ import HttpStatus from 'http-status-codes';
 import { FindOptions, Op, fn, col } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
+import shortid from 'shortid';
 require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
@@ -183,7 +184,8 @@ export class AppointmentController extends BaseController {
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
         customerWisereId: dataInput.customerWisereId ? dataInput.customerWisereId : null,
-        bookingSource: dataInput.bookingSource
+        bookingSource: dataInput.bookingSource,
+        appointmentCode: shortid.generate()
       };
 
       if (dataInput.appointmentGroupId) {
@@ -406,6 +408,12 @@ export class AppointmentController extends BaseController {
    *           type: array
    *           items:
    *               type: string
+   *     - in: query
+   *       name: resourceIds
+   *       schema:
+   *           type: array
+   *           items:
+   *               type: string
    *     responses:
    *       200:
    *         description: success
@@ -421,7 +429,8 @@ export class AppointmentController extends BaseController {
         locationId: req.query.locationId,
         startTime: req.query.startTime,
         endTime: req.query.endTime,
-        staffIds: req.query.staffIds
+        staffIds: req.query.staffIds,
+        resourceIds: req.query.resourceIds
       };
       const validateErrors = validate(conditions, filterAppointmentDetailChema);
       if (validateErrors) {
@@ -468,10 +477,6 @@ export class AppointmentController extends BaseController {
             required: true
           },
           {
-            model: ResourceModel,
-            as: 'resource'
-          },
-          {
             model: StaffModel,
             as: 'staffs',
             required: true,
@@ -503,7 +508,20 @@ export class AppointmentController extends BaseController {
             required: true,
             through: { attributes: [] }
           };
+      const conditionResources: any = conditions.resourceIds
+        ? {
+            model: ResourceModel,
+            as: 'resource',
+            required: false,
+            where: { id: conditions.resourceIds }
+          }
+        : {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          };
       query.include.push(conditionsStaffs);
+      query.include.push(conditionResources);
       const appointmentDetails = await AppointmentDetailModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetails));
     } catch (error) {
@@ -922,7 +940,8 @@ export class AppointmentController extends BaseController {
                 : null,
               bookingSource: AppointmentBookingSource.STAFF,
               appointmentGroupId: appointmentGroupId,
-              isPrimary: false
+              isPrimary: false,
+              appointmentCode: shortid.generate()
             };
             await AppointmentModel.create(newAppointmentData, { transaction });
             const appointmentDetailData: any[] = [];
@@ -1393,7 +1412,8 @@ export class AppointmentController extends BaseController {
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
         customerId: id,
-        bookingSource: dataInput.bookingSource
+        bookingSource: dataInput.bookingSource,
+        appointmentCode: shortid.generate()
       };
 
       if (dataInput.appointmentGroupId) {

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
-
+import shortid from 'shortid';
 import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { branchErrorDetails, bookingErrorDetails } from '../../../utils/response-messages/error-details';
@@ -145,7 +145,8 @@ export class AppointmentGroupController extends BaseController {
           locationId: data.locationId,
           date: data.date,
           customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
-          isPrimary: apptData.isPrimary === true ? true : false
+          isPrimary: apptData.isPrimary === true ? true : false,
+          appointmentCode: shortid.generate()
         });
 
         //appointment detail data
@@ -605,7 +606,8 @@ export class AppointmentGroupController extends BaseController {
             locationId: data.locationId,
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
-            isPrimary: apptData.isPrimary === true ? true : false
+            isPrimary: apptData.isPrimary === true ? true : false,
+            appointmentCode: shortid.generate()
           });
 
           //appointment detail data
