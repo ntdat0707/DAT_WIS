@@ -20,6 +20,7 @@ import { PipelineModel } from './pipeline-model';
 import { PipelineStageModel } from './pipeline-stage-model';
 import { DealModel } from './deal-model';
 import { CustomerWisereModel } from './customer-wisere-model';
+import { ContactModel } from './contact-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -122,6 +123,8 @@ DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: '
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
+CustomerWisereModel.hasMany(ContactModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'contacts' });
+ContactModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 export {
   sequelize,
   StaffModel,
@@ -139,5 +142,6 @@ export {
   PipelineModel,
   PipelineStageModel,
   DealModel,
-  CustomerWisereModel
+  CustomerWisereModel,
+  ContactModel
 };
