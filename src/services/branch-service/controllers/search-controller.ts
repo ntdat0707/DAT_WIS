@@ -33,7 +33,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
-import { parseDatabyField } from '../utils';
+import { parseDatabyType } from '../utils';
 import {
   deleteRecentBookingSchema,
   deleteRecentViewSchema
@@ -344,7 +344,7 @@ export class SearchController {
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyField[type](value)
+            [name]: parseDatabyType[type](value)
           }),
           {}
         );
@@ -1098,7 +1098,7 @@ export class SearchController {
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyField[type](value)
+            [name]: parseDatabyType[type](value)
           }),
           {}
         );

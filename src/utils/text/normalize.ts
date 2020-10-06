@@ -82,11 +82,12 @@ const CHARACTER_MAP: any = {
 Object.freeze(CHARACTER_MAP);
 
 export const removeAccents = (text: string) => {
+  if (!text) { return ''; }
   return Object
     .keys(CHARACTER_MAP)
     .reduce((acc, cur) =>
       acc.replace(new RegExp(CHARACTER_MAP[cur], 'g'), cur)
-      , text
+      , text.toString()
     );
 };
 
