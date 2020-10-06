@@ -32,7 +32,7 @@ import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { normalizeRemoveAccent } from '../../../utils/text';
-import { dataDefaultbyType } from '../utils';
+import { dataDefaultbyType, parseDatabyType } from '../utils';
 
 export class LocationController {
   /**
@@ -205,7 +205,7 @@ export class LocationController {
       if (!city) { // when can't find city then default city is 'Ho Chi Minh'
         city = await CityModel.findOne({
           where: {
-            name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%Ho Chi Minh%')`)
+            name: Sequelize.literal('unaccent("CityModel"."name") ilike unaccent(\'%Ho Chi Minh%\')')
           },
           attributes: ['id', 'name']
         });
@@ -275,20 +275,20 @@ export class LocationController {
       await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
       await transaction.commit();
       //commit transaction
-      const newLocation: any = (await LocationModel.findOne({
+      let newLocation: any = (await LocationModel.findOne({
         where: { id: location.id },
         include: [
           {
             model: MarketPlaceValueModel,
             as: 'marketplaceValues',
             required: false,
-            attributes: ['value'],
+            attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] },
             include: [
               {
                 model: MarketPlaceFieldsModel,
                 as: 'marketplaceField',
                 required: false,
-                attributes: ['name']
+                attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
               }
             ]
           }
@@ -300,24 +300,22 @@ export class LocationController {
          'marketplaceValues->marketplaceField.id'
         ]
       }));
-      // console.log('New Location::', newLocation);
-      // console.log('marketplaceValues::', newLocation.marketplaceValues);
-      // const locationDetail = newLocation.marketplaceValues?.reduce(
-      //   (acc: any, { value, marketplaceField: { name, type } }: any) => {
-      //     console.log('type', type);
-      //     return  {
-      //     ...acc,
-      //     [name]: parseDatabyField[type](value)
-      //     };
-      // },
-      //   {}
-      // );
 
-      // newLocation = {
-      //   ...newLocation.dataValues,
-      //   ...locationDetail,
-      //   marketplaceValues: undefined
-      // };
+      const locationDetail = newLocation.marketplaceValues?.reduce(
+        (acc: any, { value, marketplaceField: { name, type }}: any) => {
+          return  {
+            ...acc,
+            [name]: parseDatabyType[type](value)
+          };
+        },
+        {}
+      );
+
+      newLocation = {
+        ...newLocation.dataValues,
+        ...locationDetail,
+        marketplaceValues: undefined
+      };
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
     } catch (error) {
