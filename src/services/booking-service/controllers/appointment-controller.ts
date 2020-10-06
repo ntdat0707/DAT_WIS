@@ -173,6 +173,7 @@ export class AppointmentController extends BaseController {
           );
         }
       }
+
       const appointmentId = uuidv4();
       const appointmentDetails = await this.verifyAppointmentDetails(
         dataInput.appointmentDetails,
