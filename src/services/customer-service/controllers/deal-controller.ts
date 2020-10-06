@@ -33,6 +33,7 @@ import {
 import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { StatusPipelineStage } from '../../../utils/consts';
+import * as _ from 'lodash';
 export class DealController {
   /**
    * @swagger
@@ -435,7 +436,27 @@ export class DealController {
           httpStatus.NOT_FOUND
         );
       }
+      const checkPipeline = await PipelineModel.findOne({
+        where: {
+          id: { [Op.ne]: req.params.pipelineId },
+          name: req.body.name,
+          companyId: res.locals.staffPayload.companyId
+        }
+      });
+      if (checkPipeline) {
+        throw new CustomError(
+          pipelineErrorDetails.E_3102(`name ${req.body.name} exists in pipeline`),
+          httpStatus.BAD_REQUEST
+        );
+      }
       await pipeline.update({ name: req.body.name }, { transaction });
+      const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
+      if (req.body.listPipelineStage.length !== checkUniqName.length) {
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3202(`pipeline stage name exists in pipeline stage`),
+          httpStatus.BAD_REQUEST
+        );
+      }
       for (let i = 0; i < req.body.listPipelineStage.length; i++) {
         const data = {
           name: req.body.listPipelineStage[i].name,
