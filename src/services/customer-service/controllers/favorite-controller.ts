@@ -6,7 +6,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createFavoriteSchema, getListFavoriteSchema } from '../configs/validate-schemas/favorite';
 import { FavoriteModel } from '../../../repositories/postgres/models/favorite-model';
 import { LocationModel } from '../../../repositories/postgres/models/location';
-import { CustomerModel } from '../../../repositories/postgres/models/customer-model';
+// import { CustomerModel } from '../../../repositories/postgres/models/customer-model';
 import { Op } from 'sequelize';
 import { MarketPlaceValueModel } from '../../../repositories/postgres/models/marketplace-value-model';
 import { MarketPlaceFieldsModel } from '../../../repositories/postgres/models';
@@ -145,21 +145,22 @@ export class FavoriteController {
       //     marketplaceField: undefined
       //   })),
       // }));
-      console.log('Locationss::', locations);
 
-      const locationDetail = locations.marketplaceValues?.reduce(
-        (acc: any, { value, marketplaceField: { name, type } }: any) => {
-          return { ...acc, [name]: parseDatabyType[type](value) };
-        },
-        {}
-      );
-      console.log('LocationDetails::',locationDetail);
-
-      locations = {
-        ...locations.dataValues,
-        ...locationDetail,
-        marketplaceValues: undefined
-      };
+      locations = locations.map((location: any) => {
+         const locationDetail = location.marketplaceValues?.reduce(
+            (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+               ...acc,
+               [name]: parseDatabyType[type](value)
+            }),
+            {}
+         );
+         location = {
+            ...location.dataValues,
+            ...locationDetail,
+            marketplaceValues: undefined
+         };
+         return location;
+      });
 
       return res.status(httpStatus.OK).send(buildSuccessMessage(locations));
     } catch (error) {
