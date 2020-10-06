@@ -1579,13 +1579,15 @@ export class AppointmentController extends BaseController {
         {
           model: PipelineStageModel,
           as: 'pipelineStages',
-          where: { name: 'New' }
+          where: { order: '1' }
         }
       ]
     });
-    dataDeal.setDataValue('pipelineStageId', pipeline.pipelineStages[0].id);
-    dataDeal.setDataValue('createdBy', staffId);
-    await DealModel.create(dataDeal.dataValues, transaction);
+    if (pipeline) {
+      dataDeal.setDataValue('pipelineStageId', pipeline.pipelineStages[0].id);
+      dataDeal.setDataValue('createdBy', staffId);
+      await DealModel.create(dataDeal.dataValues, transaction);
+    }
   }
 
   /**
@@ -1608,9 +1610,9 @@ export class AppointmentController extends BaseController {
   public getAllMyAppointment = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const queryUpcomingAppt: FindOptions = {
-        attributes: {
-          include: [[fn('sum', col('appointmentDetails->service.sale_price')), 'subtotal']]
-        },
+        // attributes: {
+        //   include: [[fn('sum', col('appointmentDetails->service.sale_price')), 'subtotal']]
+        // },
         where: {
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
@@ -1638,18 +1640,17 @@ export class AppointmentController extends BaseController {
               }
             ]
           }
-        ],
-        group: [
-          'AppointmentModel.id',
-          'appointmentDetails.id',
-          'appointmentDetails->service.id',
-          'appointmentDetails->staffs.id',
-          'appointmentDetails->staffs->AppointmentDetailStaffModel.id'
         ]
-
+        // group: [
+        //   'AppointmentModel.id',
+        //   'appointmentDetails.id',
+        //   'appointmentDetails->service.id',
+        //   'appointmentDetails->staffs.id',
+        //   'appointmentDetails->staffs->AppointmentDetailStaffModel.id'
+        // ]
       };
       const queryPastAppt: FindOptions = {
-        attributes: [[fn('sum', col('appointmentDetails.service.sale_price')), 'subtotal']],
+        // attributes: [[fn('sum', col('appointmentDetails.service.sale_price')), 'subtotal']],
         where: {
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
@@ -1677,14 +1678,14 @@ export class AppointmentController extends BaseController {
               }
             ]
           }
-        ],
-        group: [
-          'AppointmentModel.id',
-          'appointmentDetails.id',
-          'appointmentDetails->service.id',
-          'appointmentDetails->staffs.id',
-          'appointmentDetails->staffs->AppointmentDetailStaffModel.id'
         ]
+        // group: [
+        //   'AppointmentModel.id',
+        //   'appointmentDetails.id',
+        //   'appointmentDetails->service.id',
+        //   'appointmentDetails->staffs.id',
+        //   'appointmentDetails->staffs->AppointmentDetailStaffModel.id'
+        // ]
       };
       let myAppointments: any = {};
       const upcomingApointments = await AppointmentModel.findAll(queryUpcomingAppt);
