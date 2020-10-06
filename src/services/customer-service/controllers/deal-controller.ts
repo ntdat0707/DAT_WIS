@@ -424,10 +424,16 @@ export class DealController {
   public settingPipelineStage = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      transaction = await sequelize.transaction();
       const validateErrors = validate(req.body, settingPipelineStageSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
+      if (req.body.listPipelineStage.length !== checkUniqName.length) {
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3202(`pipeline stage name exists in pipeline stage`),
+          httpStatus.BAD_REQUEST
+        );
       }
       const pipeline = await PipelineModel.findOne({ where: { id: req.params.pipelineId } });
       if (!pipeline) {
@@ -449,14 +455,8 @@ export class DealController {
           httpStatus.BAD_REQUEST
         );
       }
+      transaction = await sequelize.transaction();
       await pipeline.update({ name: req.body.name }, { transaction });
-      const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
-      if (req.body.listPipelineStage.length !== checkUniqName.length) {
-        throw new CustomError(
-          pipelineStageErrorDetails.E_3202(`pipeline stage name exists in pipeline stage`),
-          httpStatus.BAD_REQUEST
-        );
-      }
       for (let i = 0; i < req.body.listPipelineStage.length; i++) {
         const data = {
           name: req.body.listPipelineStage[i].name,
@@ -465,7 +465,7 @@ export class DealController {
           probability: req.body.listPipelineStage[i].probability,
           pipelineId: req.params.pipelineId
         };
-        let checkPipelineStage;
+        let checkPipelineStage: any;
         if (!req.body.listPipelineStage[i].id) {
           checkPipelineStage = await PipelineStageModel.findOne({
             where: { pipelineId: data.pipelineId, name: data.name }
