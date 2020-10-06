@@ -6,7 +6,6 @@ import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { initCompanySchema, updateCompanyDetailSchema } from '../configs/validate-schemas/company';
 import { CompanyModel } from '../../../repositories/postgres/models';
-import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
 import { v4 as uuidv4 } from 'uuid';
 import { CompanyDetailModel } from '../../../repositories/postgres/models/company-detail-model';
 export class CompanyController {

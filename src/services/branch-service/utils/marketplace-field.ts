@@ -2,7 +2,7 @@ import {ETypeMarketPlaceField} from '../../../utils/consts';
 import Joi from 'joi';
 import {MarketPlaceFieldsModel} from '../../../repositories/postgres/models';
 
-export const parseDatabyField: any = {
+export const parseDatabyType: any = {
    [ETypeMarketPlaceField.NUMBER](value: string) {
       return +value;
    },
@@ -13,10 +13,16 @@ export const parseDatabyField: any = {
       if (value.toLowerCase() === 'true') { return true; }
       if (value.toLowerCase() === 'false') { return false; }
       return null;
-   }
+   },
 };
 
-export const validateValuebyField = (marketPlaceField: MarketPlaceFieldsModel): any => {
+export const dataDefaultbyType: any = {
+   [ETypeMarketPlaceField.NUMBER]: '0',
+   [ETypeMarketPlaceField.STRING]: '',
+   [ETypeMarketPlaceField.BOOLEAN]: 'false'
+};
+
+export const validateValuebyType = (marketPlaceField: MarketPlaceFieldsModel): any => {
   return {
    [ETypeMarketPlaceField.NUMBER]: Joi.number().required().label('value'),
    [ETypeMarketPlaceField.STRING]: marketPlaceField.options

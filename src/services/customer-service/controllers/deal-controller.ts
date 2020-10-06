@@ -612,6 +612,11 @@ export class DealController {
           {
             model: CustomerWisereModel,
             as: 'customerWisere'
+          },
+          {
+            model: StaffModel,
+            as: 'owner',
+            required: false
           }
         ]
       };
@@ -794,7 +799,8 @@ export class DealController {
           },
           {
             model: StaffModel,
-            as: 'staff'
+            as: 'owner',
+            required: false
           }
         ]
       });

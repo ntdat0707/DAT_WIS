@@ -13,9 +13,6 @@ import {
   LocationWorkingHourModel,
   StaffModel,
   CityModel,
-  CompanyDetailModel,
-  MarketPlaceFieldsModel,
-  MarketPlaceValueModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -24,15 +21,11 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema
 } from '../configs/validate-schemas';
-import { FindOptions, Op, Sequelize } from 'sequelize';
+import { FindOptions, Sequelize } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
 import moment from 'moment';
-import uuid, { v4 as uuidv4 } from 'uuid';
-import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
-import { normalizeRemoveAccent } from '../../../utils/text';
-import { parseDatabyField } from '../utils/marketplace-field';
 
 export class LocationController {
   /**
@@ -54,7 +47,7 @@ export class LocationController {
    *                   type: string
    *
    */
-  
+
   /**
    * @swagger
    * /branch/location/create-location:
@@ -116,7 +109,7 @@ export class LocationController {
    *         description:
    */
   public createLocation = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction = null;
+    let transaction: any = null;
     try {
       let data: any = {
         name: req.body.name,
@@ -705,7 +698,8 @@ export class LocationController {
         latitude: body.latitude,
         longitude: body.longitude
       };
-      if (file) data.photo = (file as any).location;
+
+      if (file) { data.photo = (file as any).location; }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
       await transaction.commit();

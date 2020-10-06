@@ -183,7 +183,6 @@ const searchSchema = Joi.object({
   customerId: Joi.string().uuid().allow(null, '').label('customerId'),
   latitude: Joi.number().allow(null, '').label('latitude'),
   longitude: Joi.number().allow(null, '').label('longitude'),
-  cityName: Joi.string().allow(null, '').label('cityName'),
   order: Joi.string()
     .valid(EOrder.NEWEST, EOrder.NEWEST, EOrder.PRICE_LOWEST, EOrder.PRICE_HIGHEST)
     .allow(null)
