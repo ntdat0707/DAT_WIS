@@ -12,7 +12,7 @@ import {
   CompanyModel,
   LocationWorkingHourModel,
   StaffModel,
-  CityModel,
+  CityModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -131,15 +131,23 @@ export class LocationController {
       data.companyId = res.locals.staffPayload.companyId;
       if (req.file) data.photo = (req.file as any).location;
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
-
-      const city = await CityModel.findOne({
+      const existLocation = LocationModel.findOne({
         where: {
-          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
+          companyId: company.id
         }
       });
-      const cityDetail: any = { cityId: city.id, city: city.name };
-      data = Object.assign(data, cityDetail);
-      console.log('Data', data);
+      let updateStaff = false;
+      if (existLocation) {
+        updateStaff = true;
+      }
+      // const city = await CityModel.findOne({
+      //   where: {
+      //     name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
+      //   }
+      // });
+      // const cityDetail: any = { cityId: city.id, city: city.name };
+      // data = Object.assign(data, cityDetail);
+      // console.log('Data', data);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
@@ -168,7 +176,9 @@ export class LocationController {
         await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
-      await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
+      if (updateStaff) {
+        await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
+      }
 
       //commit transaction
       await transaction.commit();
@@ -549,7 +559,7 @@ export class LocationController {
    *                   type: string
    *
    */
-/**
+  /**
    * @swagger
    * /branch/location/update-location/{locationId}:
    *   put:
@@ -699,7 +709,9 @@ export class LocationController {
         longitude: body.longitude
       };
 
-      if (file) { data.photo = (file as any).location; }
+      if (file) {
+        data.photo = (file as any).location;
+      }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
       await transaction.commit();
@@ -712,6 +724,4 @@ export class LocationController {
       return next(error);
     }
   };
-
-
 }

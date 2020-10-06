@@ -364,6 +364,11 @@ export class ServiceController {
    *       schema:
    *          type: integer
    *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
    *       name: searchValue
    *       required: false
    *       schema:
@@ -379,11 +384,6 @@ export class ServiceController {
    *       items:
    *         type: string
    *       required: true
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
    *     responses:
    *       200:
    *         description: success
