@@ -77,7 +77,7 @@ const getCompany = async (staffId: string) => {
         }
       ]
     })).then(( cpn: any ) => ({
-      ...cpn.datavalues,
+      ...cpn.dataValues,
       ...cpn.companyDetail?.dataValues,
       companyDetail: undefined
     }));
