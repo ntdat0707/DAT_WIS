@@ -2,17 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
-import { PipelineStageModel, DealModel, CustomerWisereModel, StaffModel } from '../../../repositories/postgres/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { createDealSchema } from '../configs/validate-schemas/deal';
-import {
-  pipelineStageErrorDetails,
-  staffErrorDetails,
-  customerErrorDetails
-} from '../../../utils/response-messages/error-details';
 import { createFavorite } from '../configs/validate-schemas/favorite';
 import { FavoriteModel } from '../../../repositories/postgres/models/favorite-model';
-import { where } from 'sequelize/types';
 export class FavoriteController {
   /**
    * @swagger

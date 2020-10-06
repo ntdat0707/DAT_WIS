@@ -1,5 +1,4 @@
 import Joi from 'joi';
-import { StatusPipelineStage } from '../../../../utils/consts';
 const createFavorite = Joi.object({
   customerId: Joi.string()
     .guid({
