@@ -503,23 +503,23 @@ export class AppointmentController extends BaseController {
           where: { id: conditions.staffIds }
         }
         : {
-            model: StaffModel,
-            as: 'staffs',
-            required: true,
-            through: { attributes: [] }
-          };
+          model: StaffModel,
+          as: 'staffs',
+          required: true,
+          through: { attributes: [] }
+        };
       const conditionResources: any = conditions.resourceIds
         ? {
-            model: ResourceModel,
-            as: 'resource',
-            required: false,
-            where: { id: conditions.resourceIds }
-          }
+          model: ResourceModel,
+          as: 'resource',
+          required: false,
+          where: { id: conditions.resourceIds }
+        }
         : {
-            model: ResourceModel,
-            as: 'resource',
-            required: false
-          };
+          model: ResourceModel,
+          as: 'resource',
+          required: false
+        };
       query.include.push(conditionsStaffs);
       query.include.push(conditionResources);
       const appointmentDetails = await AppointmentDetailModel.findAll(query);

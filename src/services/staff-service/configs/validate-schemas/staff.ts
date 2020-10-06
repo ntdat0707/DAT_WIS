@@ -1,4 +1,4 @@
-import Joi, { required } from 'joi';
+import Joi from 'joi';
 import { EGender } from '../../../../utils/consts';
 
 const staffIdSchema = Joi.string()
@@ -12,6 +12,7 @@ export const createStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
+  email: Joi.string().allow(null, '').label('email'),
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   birthDate: Joi.string().isoDate().required(),
@@ -136,9 +137,7 @@ const getStaffAvailableTimeSlots = Joi.object({
     })
     .required()
     .label('mainLocationId'),
-  workDay: Joi.string()
-    .required()
-    .label('workDay')
-})
+  workDay: Joi.string().required().label('workDay')
+});
 
-export { staffIdSchema, filterStaffSchema, getStaffMultipleService,getStaffAvailableTimeSlots };
+export { staffIdSchema, filterStaffSchema, getStaffMultipleService, getStaffAvailableTimeSlots };

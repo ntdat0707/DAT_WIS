@@ -6,10 +6,12 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createFavoriteSchema, getListFavoriteSchema } from '../configs/validate-schemas/favorite';
 import { FavoriteModel } from '../../../repositories/postgres/models/favorite-model';
 import { LocationModel } from '../../../repositories/postgres/models/location';
-import { CustomerModel } from '../../../repositories/postgres/models/customer-model';
+// import { CustomerModel } from '../../../repositories/postgres/models/customer-model';
 import { Op } from 'sequelize';
 import { MarketPlaceValueModel } from '../../../repositories/postgres/models/marketplace-value-model';
 import { MarketPlaceFieldsModel } from '../../../repositories/postgres/models';
+import { parseDatabyType } from '../../../services/branch-service/utils/marketplace-field';
+
 export class FavoriteController {
   /**
    * @swagger
@@ -75,6 +77,7 @@ export class FavoriteController {
           );
         }
       }
+
       return res.status(httpStatus.OK).send(buildSuccessMessage(favorite));
     } catch (error) {
       return next(error);
@@ -112,7 +115,7 @@ export class FavoriteController {
         })
       ).map((locationId: any) => locationId.locationId);
 
-      const locations = await LocationModel.findAll({
+      let locations: any = await LocationModel.findAll({
         where: {
           id: { [Op.in]: locationIds }
         },
@@ -121,18 +124,42 @@ export class FavoriteController {
             model: MarketPlaceValueModel,
             as: 'marketplaceValues',
             required: true,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            attributes: ['value'],
             include: [
               {
                 model: MarketPlaceFieldsModel,
                 as: 'marketplaceField',
                 required: true,
-                attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+                attributes: ['name', 'type']
               }
             ]
           }
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+      // ).map((location: any) => ({
+      //   ...location,
+      //   ...location.marketplaceValues.map((marketplaceValue: any) => ({
+      //     ...marketplaceValue,
+      //     ...marketplaceValue.marketplaceField,
+      //     marketplaceField: undefined
+      //   })),
+      // }));
+
+      locations = locations.map((location: any) => {
+         const locationDetail = location.marketplaceValues?.reduce(
+            (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+               ...acc,
+               [name]: parseDatabyType[type](value)
+            }),
+            {}
+         );
+         location = {
+            ...location.dataValues,
+            ...locationDetail,
+            marketplaceValues: undefined
+         };
+         return location;
       });
 
       return res.status(httpStatus.OK).send(buildSuccessMessage(locations));

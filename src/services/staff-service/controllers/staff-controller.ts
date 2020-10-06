@@ -12,6 +12,12 @@ import { CustomError } from '../../../utils/error-handlers';
 import { staffErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
+import { iterator } from '../../../utils/iterator';
+import { timeSlots } from '../../../utils/time-slots';
+import { minutesToNum } from '../../../utils/minutes-to-number';
+import { dayOfWeek } from '../../../utils/day-of-week';
+import { getStaffUnavailTime } from '../../../utils/unavail-time-array';
+import { staffWithTime } from '../../../utils/staff-with-time';
 import {
   sequelize,
   StaffModel,
@@ -20,7 +26,8 @@ import {
   LocationStaffModel,
   AppointmentModel,
   AppointmentDetailModel,
-  CompanyModel
+  CompanyModel,
+  LocationWorkingHourModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -28,7 +35,8 @@ import {
   createStaffSchema,
   filterStaffSchema,
   createStaffsSchema,
-  updateStaffSchema
+  updateStaffSchema,
+  getStaffMultipleService
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
@@ -219,6 +227,10 @@ export class StaffController {
    *     - in: "formData"
    *       name: phone
    *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: email
+   *       type: string
    *     - in: "formData"
    *       name: birthDate
    *       type: string
@@ -254,15 +266,7 @@ export class StaffController {
     let transaction = null;
     try {
       transaction = await sequelize.transaction();
-      let dataInput: any = { ...req.body };
-
-      let workingIdsArray: any[] = dataInput.workingLocationIds.split(',');
-      let workingIds: any = [];
-      for (let i = 0; i < workingIdsArray.length; i++) {
-        workingIds.push(workingIdsArray[i]);
-      }
-      dataInput.workingLocationIds = workingIds;
-      const validateErrors = validate(dataInput, createStaffSchema);
+      const validateErrors = validate(req.body, createStaffSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
@@ -296,17 +300,18 @@ export class StaffController {
           );
         }
       }
-      console.log('diff OK:::');
+      if (req.body.email) {
+        const checkEmailExists = await StaffModel.findOne({ where: { email: req.body.email } });
+        if (checkEmailExists) return next(new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST));
+      }
       if (req.file) profile.avatarPath = (req.file as any).location;
       const staff = await StaffModel.create(profile, { transaction });
-      console.log('Created Staff::', staff);
       if (req.body.workingLocationIds) {
         const workingLocationData = (req.body.workingLocationIds as []).map((x) => ({
           locationId: x,
           staffId: profile.id
         }));
         await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
-        console.log('created working locationData:::', workingLocationData);
       }
       if (req.body.serviceIds) {
         const serviceStaffData = (req.body.serviceIds as []).map((x) => ({
@@ -391,14 +396,7 @@ export class StaffController {
     let transaction = null;
     try {
       transaction = await sequelize.transaction();
-      let dataInput: any = { ...req.body };
-      let workingIdsArray: any[] = dataInput.workingLocationIds.split(',');
-      let workingIds: any = [];
-      for (let i = 0; i < workingIdsArray.length; i++) {
-        workingIds.push(workingIdsArray[i]);
-      }
-      dataInput.workingLocationIds = workingIds;
-      const validateErrors = validate(dataInput, updateStaffSchema);
+      const validateErrors = validate(req.body, updateStaffSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
@@ -531,6 +529,7 @@ export class StaffController {
       locationIdsAdded
     };
   }
+
 
   async handleEditStaffServices(staffId: string, serviceIdsPayload: string[]) {
     const currentServiceIdsOfStaff = await ServiceStaffModel.findAll({
@@ -839,7 +838,6 @@ export class StaffController {
       return next(error);
     }
   };
-
   /**
    * @swagger
    * /staff/complete-onboard:
@@ -866,6 +864,483 @@ export class StaffController {
       console.log('Company:::', company);
       await StaffModel.update({ onboardStep: 5 }, { where: { id: company.ownerId } });
       return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+  /**
+   * @swagger
+   * definitions:
+   *   StaffMultipleService:
+   *       required:
+   *           - mainLocationId
+   *           - serviceIds
+   *       properties:
+   *           mainLocationId:
+   *               type: string
+   *           serviceIds:
+   *               type: array
+   *               items:
+   *                   type: string
+   *
+   */
+
+  /**
+   * @swagger
+   * /staff/get-staffs-multiple-service:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: getStaffsServices
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/StaffMultipleService'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getStaffsServices = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = { ...req.body };
+      const validateErrors = validate(dataInput, getStaffMultipleService);
+      // const serviceIds = req.query.serviceIds;
+
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
+      const staffIds = await ServiceStaffModel.findAll({
+        where: {
+          serviceId: {
+            [Op.in]: dataInput.serviceIds
+          }
+        }
+      }).then((services) => services.map((service) => service.staffId));
+      const staffs = await StaffModel.findAll({
+        where: {
+          mainLocationId: dataInput.mainLocationId,
+          id: {
+            [Op.in]: staffIds
+          }
+        }
+      });
+
+      if (!staffs) {
+        return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
+      }
+
+      res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+    } catch (error) {
+      return error;
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   StaffAvailableTimeSlots:
+   *       required:
+   *           - staffId
+   *           - currentTime
+   *           - workDay
+   *           - serviceDuration
+   *       properties:
+   *           staffId:
+   *               type: string
+   *           currentTime:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD
+   *           workDay:
+   *               type: string
+   *           serviceDuration:
+   *               type: integer
+   */
+
+  /**
+   * @swagger
+   * /staff/get-staff-available-time:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: complete-onboard
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getStaffAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const rangelist: number[] = [];
+      const dataInput = { ...req.body };
+      const validateErrors = validate(dataInput.staffId, staffIdSchema);
+      const workDay = dataInput.workDay;
+      const serviceDuration = dataInput.serviceDuration;
+      const durationTime = minutesToNum(serviceDuration);
+      const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const workingTime = await StaffModel.findOne({
+        attributes: [],
+        include: [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            required: true,
+            through: { attributes: [] },
+            include: [
+              {
+                model: LocationWorkingHourModel,
+                as: 'workingTimes',
+                attributes: ['weekday', 'startTime', 'endTime', 'isEnabled']
+              }
+            ]
+          }
+        ],
+        where: {
+          id: dataInput.staffId
+        },
+        raw: false,
+        nest: true
+      });
+      const preData = JSON.stringify(workingTime.toJSON());
+      const simplyData = JSON.parse(preData);
+      const data = simplyData.workingLocations['0'].workingTimes;
+      console.log(data);
+      const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
+      const day = dayOfWeek(workDay);
+      const workTime = iterator(data, day);
+      //console.log(workTime);
+      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      //console.log(timeSlot);
+      const doctorSchedule = await StaffModel.findAndCountAll({
+        attributes: [],
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            through: { attributes: [] },
+            attributes: ['duration', 'start_time', 'status'],
+            where: {
+              [Op.and]: [
+                sequelize.Sequelize.where(
+                  sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')),
+                  appointmentDay
+                ),
+                {
+                  [Op.not]: [{ status: { [Op.like]: 'cancel' } }]
+                }
+              ]
+            }
+          }
+        ],
+        where: {
+          id: dataInput.staffId
+        }
+      });
+      const preDataFirst = JSON.stringify(doctorSchedule);
+      const preDataSecond = JSON.parse(preDataFirst);
+      if (preDataSecond.count > 0) {
+        preDataSecond.rows[0].appointmentDetails.forEach((obj: any) => {
+          obj.start_time = moment(obj.start_time).format('HH:mm').toString();
+          const firstTimeSlot = parseInt(obj.start_time.split(':').join(''), 10);
+          let finalTimeSlot;
+          if (obj.duration >= 60) {
+            const hour = Math.floor(obj.duration / 60);
+            const minute = Math.round((obj.duration / 60 - hour) * 60);
+            const finalTimeSlotM = (firstTimeSlot % 100) + minute;
+            const finalTimeSlotH = Math.floor(firstTimeSlot / 100) + hour;
+            const finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
+            finalTimeSlot = parseInt(finalTimeSlotString, 10);
+          } else {
+            //console.log(firstTimeSlot);
+            const hour = Math.floor(obj.duration / 60);
+            const minute = Math.round((obj.duration / 60 - hour) * 60);
+            let finalTimeSlotM = (firstTimeSlot % 100) + minute;
+            let finalTimeSlotH = Math.round(firstTimeSlot / 100) + hour;
+            if (finalTimeSlotM === 60) {
+              finalTimeSlotH = Math.floor(firstTimeSlot / 100) + 1;
+              finalTimeSlotM = 0;
+            } else if (finalTimeSlotM > 60) {
+              finalTimeSlotH = Math.floor(firstTimeSlot / 100) + 1;
+              finalTimeSlotM = finalTimeSlotM - 60;
+            }
+            const finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
+            finalTimeSlot = parseInt(finalTimeSlotString, 10);
+          }
+          const finTimeSlot = moment(finalTimeSlot, 'hmm').format('HH:mm');
+          const firstTime = moment(firstTimeSlot, 'hmm').format('HH:mm');
+          if (timeSlot.hasOwnProperty(obj.start_time)) {
+            timeSlot[firstTime] = false;
+            timeSlot[finTimeSlot] = false;
+          }
+          rangelist.push(finalTimeSlot);
+          Object.keys(timeSlot).forEach((key: any, index: any) => {
+            const indexStart = Object.keys(timeSlot).indexOf(firstTime);
+            const indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot);
+            if (index < indexEndTime && index > indexStart) {
+              timeSlot[key] = false;
+            }
+          });
+        });
+      }
+
+      for (let i = 0; i < rangelist.length - 1; i++) {
+        for (let k = 1; k < rangelist.length; k++) {
+          if (i + 1 === k) {
+            if (rangelist[k] - rangelist[i] <= durationTime) {
+              let temp;
+              while (rangelist[i] < rangelist[k]) {
+                rangelist[i] = rangelist[i] + 5;
+                if (rangelist[i] % 100 === 60) {
+                  rangelist[i] = (Math.floor(rangelist[i] / 100) + 1) * 100;
+                }
+                temp = moment(rangelist[i], 'hmm').format('HH:mm');
+                timeSlot[temp] = false;
+              }
+            }
+            const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm')
+              .add(-timeZone, 'm')
+              .format('HH:mm');
+            //let semiEndtime = moment();
+            const endTime = parseInt(stringEndtime.split(':').join(''), 10);
+            timeSlot[stringEndtime] = false;
+            if (endTime - rangelist[k] < durationTime) {
+              let temp;
+              while (rangelist[k] < endTime) {
+                rangelist[k] = rangelist[k] + 5;
+                if (rangelist[k] % 100 === 60) {
+                  rangelist[k] = (Math.floor(rangelist[k] / 100) + 1) * 100;
+                }
+                temp = moment(rangelist[k], 'hmm').format('HH:mm');
+                timeSlot[temp] = false;
+              }
+            }
+          }
+        }
+      }
+      Object.keys(timeSlot).forEach((key: any) => {
+        let temp;
+        if (timeSlot[key] === true) {
+          const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').add(-timeZone, 'm').format('HH:mm');
+          const endTime = parseInt(stringEndtime.split(':').join(''), 10);
+          temp = parseInt(key.split(':').join(''), 10);
+          let tempTime = temp + durationTime;
+          let firstTwoDigits = Math.floor(tempTime / 100);
+          let lastTwoDigits = tempTime % 100;
+          if (lastTwoDigits >= 60) {
+            firstTwoDigits = Math.floor(tempTime / 100) + 1;
+            lastTwoDigits = (tempTime % 100) - 60;
+            tempTime = firstTwoDigits * 100 + lastTwoDigits;
+          }
+          if (tempTime > endTime) {
+            timeSlot[key] = false;
+          }
+        }
+      });
+      const currentTime = parseInt(moment().utc().format('HH:mm').split(':').join(''), 10);
+      const currentDay = moment().utc().format('YYYY-MM-DD');
+      Object.keys(timeSlot).forEach((key: any) => {
+        const temp = parseInt(key.split(':').join(''), 10);
+        if (temp <= currentTime && currentDay === workDay) {
+          const stringTemp = moment(temp, 'hmm').format('HH:mm');
+          timeSlot[stringTemp] = false;
+        }
+      });
+
+      const isBefore = moment(appointmentDay).isBefore(currentDay);
+      if (isBefore === true) {
+        Object.keys(timeSlot).forEach((key: any) => {
+          timeSlot[key] = false;
+        });
+      }
+      //console.log(rangelist);
+      let newTimeSlot: any;
+      const tempIsAvail: any[] = [];
+      Object.keys(timeSlot).forEach((key: any) => {
+        let tempTime = key.split(':').join('');
+        const tempBool = timeSlot[key];
+        tempIsAvail.push(tempBool);
+        tempTime = moment(tempTime, 'hmm').add(timeZone, 'm').format('HH:mm');
+        newTimeSlot = { ...newTimeSlot, [tempTime]: true };
+      });
+      for (let i = 0; i < tempIsAvail.length; i++) {
+        Object.keys(newTimeSlot).forEach((key: any) => {
+          if (Object.keys(newTimeSlot).indexOf(key) === i) {
+            newTimeSlot[key] = tempIsAvail[i];
+          }
+        });
+      }
+      if (!workingTime) {
+        return next(
+          new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND)
+        );
+      }
+      res.status(HttpStatus.OK).send(buildSuccessMessage(newTimeSlot));
+    } catch (error) {
+      return error;
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   RandomAvailableTimeSlots:
+   *       required:
+   *           - locationId
+   *           - currentTime
+   *           - workDay
+   *           - serviceDuration
+   *       properties:
+   *           locationId:
+   *               type: string
+   *           currentTime:
+   *               type: string
+   *               format: date-time
+   *               description: YYYY-MM-DD
+   *           workDay:
+   *               type: string
+   *           serviceDuration:
+   *               type: integer
+   */
+
+  /**
+   * @swagger
+   * /staff/get-random-available-time:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     name: getRandomAvailableTimeSlots
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/RandomAvailableTimeSlots'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getRandomAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = { ...req.body };
+      const serviceDuration = dataInput.serviceDuration;
+      const locationId = dataInput.locationId;
+      const workDay = dataInput.workDay;
+      const staffIds: string[] = [];
+      const durationTime = minutesToNum(serviceDuration);
+      //console.log(duration);
+      const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
+
+      const workingTime = await LocationModel.findOne({
+        attributes: [],
+        include: [
+          {
+            model: LocationWorkingHourModel,
+            as: 'workingTimes',
+            attributes: ['weekday', 'startTime', 'endTime', 'isEnabled']
+          }
+        ],
+        where: {
+          id: locationId
+        },
+        raw: false,
+        nest: true
+      });
+      const preData = JSON.stringify(workingTime.toJSON());
+      const simplyData = JSON.parse(preData);
+      const data = simplyData.workingTimes;
+
+      const day = dayOfWeek(workDay);
+      const workTime = iterator(data, day);
+
+      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      //console.log(workDay);
+      //console.log(timeSlot);
+      const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
+
+      const doctorsSchedule = await StaffModel.findAndCountAll({
+        attributes: ['id'],
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            through: { attributes: [] },
+            attributes: ['duration', 'start_time', 'status'],
+            where: {
+              [Op.and]: [
+                sequelize.Sequelize.where(
+                  sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')),
+                  appointmentDay
+                ),
+                {
+                  [Op.not]: [{ status: { [Op.like]: 'cancel' } }]
+                }
+              ]
+            }
+          }
+        ],
+        where: {
+          main_location_id: locationId
+        }
+      });
+      const preDataFirst = JSON.stringify(doctorsSchedule);
+      const preDataSecond = JSON.parse(preDataFirst);
+      //console.log(preDataSecond);
+      const len = preDataSecond.rows.length;
+      for (let i = 0; i < len; i++) {
+        preDataSecond.rows[i].appointmentDetails.forEach((e: any) => {
+          e.start_time = moment(e.start_time).format('HH:mm');
+        });
+      }
+      const staffUnavailTime = getStaffUnavailTime(preDataSecond);
+      //console.log(staffUnavailTime);
+      const doctors = await StaffModel.findAndCountAll({
+        attributes: ['id'],
+        where: {
+          main_location_id: locationId
+        }
+      });
+      for (let i = 0; i < doctors.count; i++) {
+        staffIds.push(doctors.rows[i].id);
+      }
+      const noReferencesTimeSlots = staffWithTime(
+        staffIds,
+        staffUnavailTime,
+        timeSlot,
+        durationTime,
+        appointmentDay,
+        workDay
+      );
+      if (doctorsSchedule.count === 0) {
+        for (let i = 0; i < noReferencesTimeSlots.length; i++) {
+          noReferencesTimeSlots[i].staffId = staffIds[Math.floor(Math.random() * staffIds.length)];
+        }
+      }
+      const newTimeSlot: any[] = [];
+      Object.keys(timeSlot).forEach((key: any) => {
+        let tempTime = key.split(':').join('');
+        tempTime = moment(tempTime, 'hmm').add(timeZone, 'm').format('HH:mm');
+        // console.log(tempTime);
+        newTimeSlot.push(tempTime);
+      });
+      for (let i = 0; i < noReferencesTimeSlots.length; i++) {
+        noReferencesTimeSlots[i].time = newTimeSlot[i];
+      }
+      res.status(HttpStatus.OK).send(buildSuccessMessage(noReferencesTimeSlots));
     } catch (error) {
       return next(error);
     }

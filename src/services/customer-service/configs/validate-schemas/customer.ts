@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EGender, ESocialType } from '../../../../utils/consts';
+import { EGender, ESocialType, ESource, ELabel } from '../../../../utils/consts';
 
 const createCustomerWisereSchema = Joi.object({
   firstName: Joi.string().required().label('firstName'),
