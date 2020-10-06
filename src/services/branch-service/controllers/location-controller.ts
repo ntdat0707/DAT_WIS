@@ -13,9 +13,6 @@ import {
   LocationWorkingHourModel,
   StaffModel,
   CityModel,
-  CompanyDetailModel,
-  MarketPlaceFieldsModel,
-  MarketPlaceValueModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -29,10 +26,6 @@ import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
 import moment from 'moment';
-import { v4 as uuidv4 } from 'uuid';
-import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
-import { normalizeRemoveAccent } from '../../../utils/text';
-import { dataDefaultbyType, parseDatabyType } from '../utils';
 
 export class LocationController {
   /**
@@ -101,41 +94,6 @@ export class LocationController {
    *       name: "longitude"
    *       type: number
    *     - in: "formData"
-   *       name: "description"
-   *       type: string
-   *     - in: "formData"
-   *       name: "title"
-   *       type: string
-   *     - in: "formData"
-   *       name: "payment"
-   *       type: string
-   *       enum:
-   *          - cash
-   *          - card
-   *          - all
-   *     - in: "formData"
-   *       name: "parking"
-   *       type: string
-   *       enum:
-   *          - active
-   *          - inactive
-   *     - in: "formData"
-   *       name: "rating"
-   *       type: number
-   *     - in: "formData"
-   *       name: "recoveryRooms"
-   *       type: number
-   *     - in: "formData"
-   *       name: "totalBookings"
-   *       type: number
-   *     - in: "formData"
-   *       name: "gender"
-   *       type: number
-   *     - in: "formData"
-   *       name: "openedAt"
-   *       type: string
-   *       format: date-time
-   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -157,95 +115,34 @@ export class LocationController {
         name: req.body.name,
         phone: req.body.phone,
         email: req.body.email,
+        city: !req.body.city ? 'Ho Chi Minh' : req.body.city,
         district: req.body.district,
-        title: req.body.title,
-        description: req.body.description,
-        city: req.body.city,
         ward: req.body.ward,
         address: req.body.address,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
-        workingTimes: req.body.workingTimes,
-        payment: req.body.payment,
-        parking: req.body.parking,
-        rating: req.body.rating,
-        recoveryRooms: req.body.recoveryRooms,
-        totalBookings: req.body.totalBookings,
-        gender: req.body.gender,
-        openedAt: req.body.openedAt
+        workingTimes: req.body.workingTimes
       };
+
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-
       data.companyId = res.locals.staffPayload.companyId;
-      const company: any = await CompanyModel.findOne({
-        where: { id: data.companyId },
-        include: [
-          {
-            model: CompanyDetailModel,
-            as: 'companyDetail',
-            required: true,
-            attributes: ['businessType', 'businessName']
-          }
-        ]
-      }).then((cpn: any) => ({
-        ...cpn.dataValues,
-        ...cpn.companyDetail.dataValues,
-        ['companyDetail']: undefined
-      }));
+      if (req.file) data.photo = (req.file as any).location;
+      const company = await CompanyModel.findOne({ where: { id: data.companyId } });
 
-      let city: any = await CityModel.findOne({
+      const city = await CityModel.findOne({
         where: {
           name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
-        },
-        attributes: ['id', 'name']
+        }
       });
-      if (!city) { // when can't find city then default city is 'Ho Chi Minh'
-        city = await CityModel.findOne({
-          where: {
-            name: Sequelize.literal('unaccent("CityModel"."name") ilike unaccent(\'%Ho Chi Minh%\')')
-          },
-          attributes: ['id', 'name']
-        });
-      }
-
-      city = city.dataValues;
-
       const cityDetail: any = { cityId: city.id, city: city.name };
       data = Object.assign(data, cityDetail);
+      console.log('Data', data);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
-      if (req.file) { data.photo = (req.file as any).location; }
-      const pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
-      const pathNameObject: any = { pathName: pathNameAssign };
-      data = Object.assign(data, pathNameObject);
-
-      if (data.photo) {
-        await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
-      }
-      //const marketplaceValueData: any = [];
-
-      const marketplaceFields: any = (
-        await MarketPlaceFieldsModel.findAll({
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-        })
-      ).map((marketplaceField: any) => ({
-        ...marketplaceField.dataValues
-      }));
-
-      await marketplaceFields.forEach(async (marketplaceField: any) => {
-        const marketplaceValueData: any = {
-          id: uuidv4(),
-          locationId: location.id,
-          fieldId: marketplaceField.id,
-          value: data[marketplaceField.name] || dataDefaultbyType[marketplaceField.type]
-        };
-        await MarketPlaceValueModel.create(marketplaceValueData, { transaction });
-      });
-
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -258,10 +155,9 @@ export class LocationController {
         const checkValidWoringTime = await req.body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
           );
         }
-
         const workingsTimes = (req.body.workingTimes as []).map((value: any) => ({
           locationId: location.id,
           weekday: value.day,
@@ -273,53 +169,11 @@ export class LocationController {
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
       await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
-      await transaction.commit();
+
       //commit transaction
-      let newLocation: any = (await LocationModel.findOne({
-        where: { id: location.id },
-        include: [
-          {
-            model: MarketPlaceValueModel,
-            as: 'marketplaceValues',
-            required: false,
-            attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] },
-            include: [
-              {
-                model: MarketPlaceFieldsModel,
-                as: 'marketplaceField',
-                required: false,
-                attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
-              }
-            ]
-          }
-        ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-        group: [
-         'LocationModel.id',
-         'marketplaceValues.id',
-         'marketplaceValues->marketplaceField.id'
-        ]
-      }));
-
-      const locationDetail = newLocation.marketplaceValues?.reduce(
-        (acc: any, { value, marketplaceField: { name, type }}: any) => {
-          return  {
-            ...acc,
-            [name]: parseDatabyType[type](value)
-          };
-        },
-        {}
-      );
-
-      newLocation = {
-        ...newLocation.dataValues,
-        ...locationDetail,
-        marketplaceValues: undefined
-      };
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
-      console.log(error);
       //rollback transaction
       if (transaction) {
         await transaction.rollback();
@@ -327,6 +181,7 @@ export class LocationController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /branch/location/get-all-locations:
@@ -694,7 +549,7 @@ export class LocationController {
    *                   type: string
    *
    */
-  /**
+/**
    * @swagger
    * /branch/location/update-location/{locationId}:
    *   put:
@@ -747,34 +602,6 @@ export class LocationController {
    *       type: string
    *       required: true
    *     - in: "formData"
-   *       name: "title"
-   *       type: string
-   *     - in: "formData"
-   *       name: "payment"
-   *       type: string
-   *       enum:
-   *          - Cash
-   *          - Card
-   *     - in: "formData"
-   *       name: "parking"
-   *       type: string
-   *       enum:
-   *          - Active
-   *          - Inactive
-   *     - in: "formData"
-   *       name: "recoveryRooms"
-   *       type: number
-   *     - in: "formData"
-   *       name: "totalBookings"
-   *       type: number
-   *     - in: "formData"
-   *       name: "gender"
-   *       type: number
-   *     - in: "formData"
-   *       name: "openedAt"
-   *       type: string
-   *       format: date-time
-   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -802,22 +629,19 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-
       const location = await LocationModel.findOne({
         where: {
           id: params.locationId,
           companyId: companyId
         }
       });
-
-      if (!location) {
+      if (!location)
         return next(
           new CustomError(
             locationErrorDetails.E_1000(`locationId ${params.locationId} not found`),
             HttpStatus.NOT_FOUND
           )
         );
-      }
 
       // start transaction
       transaction = await sequelize.transaction();
@@ -835,17 +659,13 @@ export class LocationController {
             )
           );
         }
-
-        // console.log('Pass Working Location::');
-
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
         };
-
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
           );
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
@@ -881,9 +701,6 @@ export class LocationController {
 
       if (file) { data.photo = (file as any).location; }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
-      // await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
-      await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
-
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
@@ -892,8 +709,9 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
-
       return next(error);
     }
   };
+
+
 }

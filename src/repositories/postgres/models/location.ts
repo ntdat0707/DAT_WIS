@@ -71,7 +71,7 @@ LocationModel.init(
     cityId: {
       field: 'city_id',
       type: DataTypes.UUIDV4,
-      allowNull: false
+      allowNull: true
     },
     district: {
       field: 'district',
@@ -86,8 +86,7 @@ LocationModel.init(
     address: {
       field: 'address',
       type: DataTypes.STRING,
-      allowNull: true,
-      defaultValue: null
+      allowNull: true
     },
     latitude: {
       field: 'latitude',
@@ -102,8 +101,7 @@ LocationModel.init(
     description: {
       field: 'description',
       type: DataTypes.STRING,
-      allowNull: true,
-      defaultValue: null
+      allowNull: true
     },
     gender: {
       type: DataTypes.TINYINT,
