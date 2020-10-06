@@ -1,5 +1,5 @@
 import Joi from 'joi';
-const createFavorite = Joi.object({
+const createFavoriteSchema = Joi.object({
   customerId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -13,4 +13,11 @@ const createFavorite = Joi.object({
     .allow(null, '')
     .label('locationId')
 });
-export { createFavorite };
+
+const getListFavoriteSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('customerId');
+export { createFavoriteSchema, getListFavoriteSchema };

@@ -12,5 +12,6 @@ export class FavoriteRoutes {
   }
   private config(): void {
     this.router.post('/create-favorite', isAuthenticatedCustomer, this.favoriteController.createFavorite);
+    this.router.get('/:customerId/list-favorite', this.favoriteController.listFavorite);
   }
 }
