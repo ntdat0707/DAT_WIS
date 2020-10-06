@@ -14,8 +14,9 @@ import {
   StaffModel,
   CityModel,
   CompanyDetailModel,
+  LocationImageModel,
   MarketPlaceFieldsModel,
-  MarketPlaceValueModel
+  MarketPlaceValueModel,
 } from '../../../repositories/postgres/models';
 
 import {
@@ -30,8 +31,7 @@ import { locationErrorDetails } from '../../../utils/response-messages/error-det
 import _ from 'lodash';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
-import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
-import { normalizeRemoveAccent } from '../../../utils/text';
+import {normalizeRemoveAccent} from '../../../utils/text';
 import { dataDefaultbyType, parseDatabyType } from '../utils';
 
 export class LocationController {
@@ -327,6 +327,7 @@ export class LocationController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /branch/location/get-all-locations:
@@ -747,34 +748,6 @@ export class LocationController {
    *       type: string
    *       required: true
    *     - in: "formData"
-   *       name: "title"
-   *       type: string
-   *     - in: "formData"
-   *       name: "payment"
-   *       type: string
-   *       enum:
-   *          - Cash
-   *          - Card
-   *     - in: "formData"
-   *       name: "parking"
-   *       type: string
-   *       enum:
-   *          - Active
-   *          - Inactive
-   *     - in: "formData"
-   *       name: "recoveryRooms"
-   *       type: number
-   *     - in: "formData"
-   *       name: "totalBookings"
-   *       type: number
-   *     - in: "formData"
-   *       name: "gender"
-   *       type: number
-   *     - in: "formData"
-   *       name: "openedAt"
-   *       type: string
-   *       format: date-time
-   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -802,14 +775,12 @@ export class LocationController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-
       const location = await LocationModel.findOne({
         where: {
           id: params.locationId,
           companyId: companyId
         }
       });
-
       if (!location) {
         return next(
           new CustomError(
@@ -835,13 +806,9 @@ export class LocationController {
             )
           );
         }
-
-        // console.log('Pass Working Location::');
-
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
         };
-
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
@@ -881,9 +848,6 @@ export class LocationController {
 
       if (file) { data.photo = (file as any).location; }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
-      // await LocationDetailModel.update(dataDetails, { where: { locationId: params.locationId }, transaction });
-      await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
-
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
@@ -892,8 +856,9 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
-
       return next(error);
     }
   };
+
+
 }

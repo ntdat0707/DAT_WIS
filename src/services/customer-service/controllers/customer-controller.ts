@@ -98,7 +98,6 @@ export class CustomerController {
    *     - in: "formData"
    *       name: gender
    *       type: integer
-   *       required: true
    *       enum: [0, 1, 2]
    *     - in: "formData"
    *       name: phone
