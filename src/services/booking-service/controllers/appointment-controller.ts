@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op, fn, col } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 import shortid from 'shortid';
@@ -1580,13 +1580,7 @@ export class AppointmentController extends BaseController {
     dataDeal.setDataValue('dealTitle', title);
     dataDeal.setDataValue('source', appointment.bookingSource);
     dataDeal.setDataValue('customerWisereId', appointment.customerWisere.id);
-    let note;
-    if (appointment.appointmentGroup) {
-      note = appointment.id + '/' + appointment.appointmentGroup.id;
-    } else {
-      note = appointment.id;
-    }
-    dataDeal.setDataValue('note', note);
+    dataDeal.setDataValue('note', appointment.appointmentCode);
     dataDeal.setDataValue('expectedCloseDate', appointment.date);
     let amount = 0;
     listAppointmentDetail.forEach((appointmentDetail: any) => {
@@ -1630,9 +1624,6 @@ export class AppointmentController extends BaseController {
   public getAllMyAppointment = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const queryUpcomingAppt: FindOptions = {
-        // attributes: {
-        //   include: [[fn('sum', col('appointmentDetails->service.sale_price')), 'subtotal']]
-        // },
         where: {
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
@@ -1659,18 +1650,15 @@ export class AppointmentController extends BaseController {
                 required: false
               }
             ]
+          },
+          {
+            model: LocationModel,
+            as: 'location',
+            required: false
           }
         ]
-        // group: [
-        //   'AppointmentModel.id',
-        //   'appointmentDetails.id',
-        //   'appointmentDetails->service.id',
-        //   'appointmentDetails->staffs.id',
-        //   'appointmentDetails->staffs->AppointmentDetailStaffModel.id'
-        // ]
       };
       const queryPastAppt: FindOptions = {
-        // attributes: [[fn('sum', col('appointmentDetails.service.sale_price')), 'subtotal']],
         where: {
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
@@ -1697,15 +1685,13 @@ export class AppointmentController extends BaseController {
                 required: false
               }
             ]
+          },
+          {
+            model: LocationModel,
+            as: 'location',
+            required: false
           }
         ]
-        // group: [
-        //   'AppointmentModel.id',
-        //   'appointmentDetails.id',
-        //   'appointmentDetails->service.id',
-        //   'appointmentDetails->staffs.id',
-        //   'appointmentDetails->staffs->AppointmentDetailStaffModel.id'
-        // ]
       };
       let myAppointments: any = {};
       const upcomingApointments = await AppointmentModel.findAll(queryUpcomingAppt);
