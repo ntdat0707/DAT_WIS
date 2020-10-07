@@ -32,7 +32,7 @@ export class CountryController {
    */
   public getCountry = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      let dataInput = req.params.countryCode;
+      const dataInput = req.params.countryCode;
       const validateErrors = validate(dataInput, countryCodeSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));

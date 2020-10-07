@@ -860,7 +860,7 @@ export class StaffController {
   public completeOnboard = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
-      console.log('Company:::', company);
+      // console.log('Company:::', company);
       await StaffModel.update({ onboardStep: 5 }, { where: { id: company.ownerId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
@@ -1014,12 +1014,12 @@ export class StaffController {
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingLocations['0'].workingTimes;
-      console.log(data);
+      // console.log(data);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
       //console.log(workTime);
-      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       //console.log(timeSlot);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
@@ -1266,7 +1266,7 @@ export class StaffController {
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
 
-      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       //console.log(workDay);
       //console.log(timeSlot);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();

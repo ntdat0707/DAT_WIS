@@ -144,9 +144,9 @@ export class AuthController {
           companyId: companyId
         }
       ];
-      const x = await PipelineModel.bulkCreate(dataPipeline, { transaction });
+      await PipelineModel.bulkCreate(dataPipeline, { transaction });
 
-      console.log('Created PIpeline::', x);
+      // console.log('Created PIpeline::', x);
       const dataStage = [
         {
           pipelineId: pipelineId1,
@@ -246,7 +246,7 @@ export class AuthController {
       ];
 
       await PipelineStageModel.bulkCreate(dataStage, { transaction });
-      console.log('Created PIpelineStage::', PipelineStageModel);
+      // console.log('Created PIpelineStage::', PipelineStageModel);
       //commit transaction
       await transaction.commit();
       const dataSendMail: IStaffRegisterAccountTemplate = {

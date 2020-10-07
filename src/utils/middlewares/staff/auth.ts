@@ -234,7 +234,6 @@ const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthentica
         if ((staff as any).hasCompany && (staff as any).hasCompany.id) {
           companyId = (staff as any).hasCompany.id;
         } else {
-          console.log('AUTHEN: STAFFID', staff.id);
           const company = await getCompany(staff.id);
           companyId = company.id;
         }

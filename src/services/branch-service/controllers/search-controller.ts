@@ -653,7 +653,7 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       return next(error);
     }
   };
@@ -883,7 +883,7 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       return next(error);
     }
   };
@@ -1216,7 +1216,7 @@ export class SearchController {
 
   public deleteRecentView = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log('CustomerId::', res.locals.customerPayload);
+      // console.log('CustomerId::', res.locals.customerPayload);
       const dataInput = {
         customerId: res.locals.customerPayload.id,
         recentViewId: req.params.recentViewId

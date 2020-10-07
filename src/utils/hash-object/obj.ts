@@ -1,4 +1,4 @@
-const TimeSlotObj = <any>{};
+const TimeSlotObj = {} as any;
 
 export {TimeSlotObj};
 
