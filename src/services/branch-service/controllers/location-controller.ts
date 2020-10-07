@@ -12,7 +12,7 @@ import {
   CompanyModel,
   LocationWorkingHourModel,
   StaffModel,
-  CityModel,
+  CityModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -132,13 +132,14 @@ export class LocationController {
       if (req.file) data.photo = (req.file as any).location;
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
 
-      const city = await CityModel.findOne({
-        where: {
-          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
-        }
-      });
-      const cityDetail: any = { cityId: city.id, city: city.name };
-      data = Object.assign(data, cityDetail);
+      // const city = await CityModel.findOne({
+      //   where: {
+      //     name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
+      //   }
+      // });
+
+      // const cityDetail: any = { cityId: city.id, city: city.name };
+      // data = Object.assign(data, cityDetail);
       console.log('Data', data);
       // start transaction
       transaction = await sequelize.transaction();
@@ -549,7 +550,7 @@ export class LocationController {
    *                   type: string
    *
    */
-/**
+  /**
    * @swagger
    * /branch/location/update-location/{locationId}:
    *   put:
@@ -699,7 +700,9 @@ export class LocationController {
         longitude: body.longitude
       };
 
-      if (file) { data.photo = (file as any).location; }
+      if (file) {
+        data.photo = (file as any).location;
+      }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
       await transaction.commit();
@@ -712,6 +715,4 @@ export class LocationController {
       return next(error);
     }
   };
-
-
 }
