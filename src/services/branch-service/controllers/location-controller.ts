@@ -137,7 +137,7 @@ export class LocationController {
         }
       });
       let updateStaff = false;
-      if (existLocation) {
+      if (!existLocation) {
         updateStaff = true;
       }
       let city = await CityModel.findOne({
