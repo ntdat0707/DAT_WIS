@@ -129,7 +129,7 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      if (req.file) data.photo = (req.file as any).location;
+      if (req.file) { data.photo = (req.file as any).location; }
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
       const existLocation = LocationModel.findOne({
         where: {
@@ -140,14 +140,20 @@ export class LocationController {
       if (existLocation) {
         updateStaff = true;
       }
-      const city = await CityModel.findOne({
+      let city = await CityModel.findOne({
         where: {
           name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
         }
       });
+      if (!city) {
+        city = await CityModel.findOne({
+          where: {
+            name: Sequelize.literal('unaccent("CityModel"."name") ilike unaccent(\'%Ho Chi Minh%\')')
+          }
+        });
+      }
       const cityDetail: any = { cityId: city.id, city: city.name };
       data = Object.assign(data, cityDetail);
-      console.log('Data', data);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
@@ -645,13 +651,14 @@ export class LocationController {
           companyId: companyId
         }
       });
-      if (!location)
+      if (!location) {
         return next(
           new CustomError(
             locationErrorDetails.E_1000(`locationId ${params.locationId} not found`),
             HttpStatus.NOT_FOUND
           )
         );
+      }
 
       // start transaction
       transaction = await sequelize.transaction();
