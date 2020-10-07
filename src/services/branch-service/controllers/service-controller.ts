@@ -415,59 +415,67 @@ export class ServiceController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const query: FindOptions = {
-        include: [
-          {
-            model: LocationModel,
-            as: 'locations',
-            required: true,
-            where: {
-              id: (req.query.locationIds as [])?.length ? req.query.locationIds : workingLocationIds
-            }
-          },
-          {
-            model: CateServiceModel,
-            as: 'cateService',
-            required: true,
-            attributes: []
-          },
-          {
-            model: ServiceImageModel,
-            as: 'images',
-            required: false
-          }
-        ]
-      };
+      // const query: FindOptions = {
+      //   include: [
+      //     {
+      //       model: LocationModel,
+      //       as: 'locations',
+      //       required: true,
+      //       where: {
+      //         [Op.and]: [
+      //           { id: (req.query.locationIds as [])?.length ? req.query.locationIds : workingLocationIds },
+      //           { id: { [Op.not]: ['ee44fb05-12ce-440f-a538-6958b9dae7e1', '5ffbd124-9d20-4108-8736-a46518f6d850'] } }
+      //         ]
+      //       }
+      //     },
 
-      if (req.query.searchValue) {
-        query.where = {
-          [Op.or]: [
-            Sequelize.literal(
-              `unaccent("ServiceModel"."name") ilike unaccent('%${
-                req.query.searchValue ? req.query.searchValue : ''
-              }%')`
-            ),
-            Sequelize.literal(
-              `unaccent("ServiceModel"."service_code") ilike unaccent('%${
-                req.query.searchValue ? req.query.searchValue : ''
-              }%')`
-            )
-          ]
-        };
-      }
+      //     {
+      //       model: CateServiceModel,
+      //       as: 'cateService',
+      //       required: true,
+      //       attributes: []
+      //     },
+      //     {
+      //       model: ServiceImageModel,
+      //       as: 'images',
+      //       required: false
+      //     }
+      //   ]
+      // };
 
-      if (req.query.staffId) {
-        query.include.push({
-          model: StaffModel,
-          as: 'staffs',
-          required: true,
-          where: {
-            id: req.query.staffId
-          },
-          attributes: []
-        });
-      }
+      // if (req.query.searchValue) {
+      //   query.where = {
+      //     [Op.or]: [
+      //       Sequelize.literal(
+      //         `unaccent("ServiceModel"."name") ilike unaccent('%${
+      //           req.query.searchValue ? req.query.searchValue : ''
+      //         }%')`
+      //       ),
+      //       Sequelize.literal(
+      //         `unaccent("ServiceModel"."service_code") ilike unaccent('%${
+      //           req.query.searchValue ? req.query.searchValue : ''
+      //         }%')`
+      //       )
+      //     ]
+      //   };
+      // }
 
+      // if (req.query.staffId) {
+      //   query.include.push({
+      //     model: StaffModel,
+      //     as: 'staffs',
+      //     required: true,
+      //     where: {
+      //       id: req.query.staffId
+      //     },
+      //     attributes: []
+      //   });
+      // }
+
+      const query: FindOptions = Sequelize.literal(`select * FROM service s LEFT JOIN location_services ls ON s.id = ls.service_id
+  WHERE ls.location_id = ${req.query.locationId}`);
+
+//const query: FindOptions = 
       // console.log('Test::', query.include);
       const services = await paginate(
         ServiceModel,
