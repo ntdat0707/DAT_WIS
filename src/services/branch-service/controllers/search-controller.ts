@@ -761,7 +761,7 @@ export class SearchController {
           ...recentSearch.company?.companyDetail?.dataValues,
           companyDetails: undefined
         },
-        service: recentSearch.service?.datavalues,
+        service: recentSearch.service?.dataValues,
         location: recentSearch.location?.dataValues
       };
       return recentSearch;

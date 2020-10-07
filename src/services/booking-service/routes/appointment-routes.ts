@@ -35,5 +35,6 @@ export class AppointmentRoutes {
       isAuthenticatedCustomer,
       this.appointmentController.customerCreateAppointment
     );
+    this.router.get('/get-all-my-appointment', isAuthenticatedCustomer, this.appointmentController.getAllMyAppointment);
   }
 }

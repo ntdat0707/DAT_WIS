@@ -129,18 +129,31 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
-      if (req.file) data.photo = (req.file as any).location;
+      if (req.file) { data.photo = (req.file as any).location; }
       const company = await CompanyModel.findOne({ where: { id: data.companyId } });
-
-      // const city = await CityModel.findOne({
-      //   where: {
-      //     name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
-      //   }
-      // });
-
-      // const cityDetail: any = { cityId: city.id, city: city.name };
-      // data = Object.assign(data, cityDetail);
-      console.log('Data', data);
+      const existLocation = LocationModel.findOne({
+        where: {
+          companyId: company.id
+        }
+      });
+      let updateStaff = false;
+      if (!existLocation) {
+        updateStaff = true;
+      }
+      let city = await CityModel.findOne({
+        where: {
+          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
+        }
+      });
+      if (!city) {
+        city = await CityModel.findOne({
+          where: {
+            name: Sequelize.literal('unaccent("CityModel"."name") ilike unaccent(\'%Ho Chi Minh%\')')
+          }
+        });
+      }
+      const cityDetail: any = { cityId: city.id, city: city.name };
+      data = Object.assign(data, cityDetail);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
@@ -156,7 +169,7 @@ export class LocationController {
         const checkValidWoringTime = await req.body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
         const workingsTimes = (req.body.workingTimes as []).map((value: any) => ({
@@ -169,7 +182,9 @@ export class LocationController {
         await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
-      await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
+      if (updateStaff) {
+        await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
+      }
 
       //commit transaction
       await transaction.commit();
@@ -636,13 +651,14 @@ export class LocationController {
           companyId: companyId
         }
       });
-      if (!location)
+      if (!location) {
         return next(
           new CustomError(
             locationErrorDetails.E_1000(`locationId ${params.locationId} not found`),
             HttpStatus.NOT_FOUND
           )
         );
+      }
 
       // start transaction
       transaction = await sequelize.transaction();
@@ -666,7 +682,7 @@ export class LocationController {
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
           return next(
-            new CustomError(locationErrorDetails.E_1004(`startTime not before endTime`), HttpStatus.BAD_REQUEST)
+            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
           );
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
