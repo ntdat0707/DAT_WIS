@@ -94,7 +94,6 @@ export class CateServiceController {
   public getAllCateService = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
-      console.log('CompanyId::',companyId);
       const cateService = await CateServiceModel.findAll({ where: { companyId } });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(cateService));
     } catch (error) {
@@ -342,5 +341,4 @@ export class CateServiceController {
       return next(error);
     }
   };
-
 }

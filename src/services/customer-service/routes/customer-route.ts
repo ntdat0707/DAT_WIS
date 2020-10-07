@@ -11,7 +11,7 @@ export class CustomerRoutes {
   constructor() {
     this.config();
   }
-  private config(): void { 
+  private config(): void {
     this.router.post(
       '/create-customer-wisere',
       isAuthenticated,
@@ -19,8 +19,9 @@ export class CustomerRoutes {
       this.customerController.createCustomerWisere
     );
     this.router.put(
-      '/update-customer-wisere/:customerWisereId',
+      '/update-customer-wisere/:customerWisereId?',
       isAuthenticated,
+      uploadAsMiddleware('photo'),
       this.customerController.updateCustomerWisere
     );
     this.router.get('/get-all-customer-wisere', isAuthenticated, this.customerController.getAllCustomerWisereInCompany);

@@ -179,7 +179,6 @@ export class CompanyController {
       if (!company) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       } else {
-        console.log('Data::', data);
         company.phone = !data.phone && data.phone != 'string' ? company.phone : data.phone;
         company.businessName =
           !data.businessName && data.businessName != 'string' ? company.businessName : data.businessName;
@@ -187,7 +186,6 @@ export class CompanyController {
           !data.businessType && data.businessType != 'string' ? company.businessType : data.businessType;
         company.description =
           !data.description && data.description != 'string' ? company.description : data.description;
-        console.log('companyUpdate::', company);
         await CompanyDetailModel.update(
           {
             phone: company.phone,
