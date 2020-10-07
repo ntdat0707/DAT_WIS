@@ -144,7 +144,7 @@ export class AuthController {
           companyId: companyId
         }
       ];
-      const x = await PipelineModel.bulkCreate(dataPipeline, { transaction });
+      await PipelineModel.bulkCreate(dataPipeline, { transaction });
 
       const dataStage = [
         {

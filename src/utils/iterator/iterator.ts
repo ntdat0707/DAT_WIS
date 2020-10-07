@@ -1,11 +1,11 @@
-const iterator = function (data: any, day: any) {
+const iterator = (data: any, day: any) => {
     for (let i = 0; i < data.length; i++) {
-        if (data[i].weekday == day) {
-            let startTime = data[i].startTime;
-            let endTime = data[i].endTime;
-            let timeOfDay = { startTime,endTime  };
+        if (data[i].weekday === day) {
+            const startTime = data[i].startTime;
+            const endTime = data[i].endTime;
+            const timeOfDay = { startTime,endTime  };
             return timeOfDay;
         }
     }
-}
+};
 export { iterator };

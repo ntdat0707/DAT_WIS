@@ -1464,9 +1464,9 @@ export class AppointmentController extends BaseController {
 
       const appointmentDetailData: any[] = [];
       const appointmentDetailStaffData = [];
-      const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
-      const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
-      const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      // const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
+      // const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      // const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
       const recentBookingData: any = [];
       for (let i = 0; i < appointmentDetails.length; i++) {
         const appointmentDetailId = uuidv4();

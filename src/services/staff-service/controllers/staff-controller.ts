@@ -871,10 +871,10 @@ export class StaffController {
    * definitions:
    *   StaffMultipleService:
    *       required:
-   *           - mainLocationId
+   *           - locationId
    *           - serviceIds
    *       properties:
-   *           mainLocationId:
+   *           locationId:
    *               type: string
    *           serviceIds:
    *               type: array
@@ -921,7 +921,7 @@ export class StaffController {
       }).then((services) => services.map((service) => service.staffId));
       const staffs = await StaffModel.findAll({
         where: {
-          mainLocationId: dataInput.mainLocationId,
+          mainLocationId: dataInput.locationId,
           id: {
             [Op.in]: staffIds
           }

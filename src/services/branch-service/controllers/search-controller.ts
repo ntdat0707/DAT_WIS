@@ -225,7 +225,7 @@ export class SearchController {
               {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
-                required: true,
+                required: false,
                 attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
               }
             ]
@@ -658,7 +658,7 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       return next(error);
     }
   };
@@ -731,7 +731,7 @@ export class SearchController {
               {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
-                required: true,
+                required: false,
                 attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
               }
             ]
@@ -888,7 +888,7 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       return next(error);
     }
   };
@@ -1057,7 +1057,7 @@ export class SearchController {
               {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
-                required: true,
+                required: false,
                 attributes: ['businessType', 'businessName']
               }
             ]

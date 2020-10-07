@@ -21,7 +21,6 @@ import { LocationImageModel } from './location-image';
 import { CountryModel } from './country-model';
 import { CityModel } from './city-model';
 import { CustomerSearchModel } from './customer-search-model';
-import { LocationDetailModel } from './location-detail-model';
 import { PipelineModel } from './pipeline-model';
 import { PipelineStageModel } from './pipeline-stage-model';
 import { DealModel } from './deal-model';

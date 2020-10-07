@@ -6,10 +6,12 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createFavoriteSchema, getListFavoriteSchema } from '../configs/validate-schemas/favorite';
 import { FavoriteModel } from '../../../repositories/postgres/models/favorite-model';
 import { LocationModel } from '../../../repositories/postgres/models/location';
-import { CustomerModel } from '../../../repositories/postgres/models/customer-model';
+// import { CustomerModel } from '../../../repositories/postgres/models/customer-model';
 import { Op } from 'sequelize';
 import { MarketPlaceValueModel } from '../../../repositories/postgres/models/marketplace-value-model';
 import { MarketPlaceFieldsModel } from '../../../repositories/postgres/models';
+import { parseDatabyType } from '../../../services/branch-service/utils/marketplace-field';
+
 export class FavoriteController {
   /**
    * @swagger
@@ -60,7 +62,7 @@ export class FavoriteController {
       if (!favorite) {
         favorite = await FavoriteModel.create(data);
       } else {
-        if (favorite.isFavorite == false) {
+        if (favorite.isFavorite === false) {
           await FavoriteModel.update(
             { isFavorite: true },
             { where: { locationId: data.locationId, customerId: data.customerId } }
@@ -80,11 +82,11 @@ export class FavoriteController {
 
   /**
    * @swagger
-   * /customer/favorite/{customerId}/list-favorite:
+   * /customer/favorite/{customerId}/share-list-favorite:
    *   get:
    *     tags:
    *       - Customer
-   *     name: listFavorite
+   *     name: shareListFavorite
    *     parameters:
    *     - in: path
    *       name: customerId
@@ -97,7 +99,7 @@ export class FavoriteController {
    *       500:
    *         description:
    */
-  public listFavorite = async (req: Request, res: Response, next: NextFunction) => {
+  public shareListFavorite = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validateErrors = validate(req.params.customerId, getListFavoriteSchema);
       if (validateErrors) {
@@ -109,7 +111,7 @@ export class FavoriteController {
         })
       ).map((locationId: any) => locationId.locationId);
 
-      const locations = await LocationModel.findAll({
+      let locations: any = await LocationModel.findAll({
         where: {
           id: { [Op.in]: locationIds }
         },
@@ -118,18 +120,109 @@ export class FavoriteController {
             model: MarketPlaceValueModel,
             as: 'marketplaceValues',
             required: true,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            attributes: ['value'],
             include: [
               {
                 model: MarketPlaceFieldsModel,
                 as: 'marketplaceField',
                 required: true,
-                attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+                attributes: ['name', 'type']
               }
             ]
           }
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+
+      locations = locations.map((location: any) => {
+        const locationDetail = location.marketplaceValues?.reduce(
+          (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            ...acc,
+            [name]: parseDatabyType[type](value)
+          }),
+          {}
+        );
+        location = {
+          ...location.dataValues,
+          ...locationDetail,
+          marketplaceValues: undefined
+        };
+        return location;
+      });
+
+      return res.status(httpStatus.OK).send(buildSuccessMessage(locations));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/favorite/list-favorite:
+   *   get:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: listFavorite
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public listFavorite = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = res.locals.customerPayload.id;
+      const validateErrors = validate(customerId, getListFavoriteSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const locationIds: any = (
+        await FavoriteModel.findAll({
+          where: { customerId: customerId, isFavorite: true }
+        })
+      ).map((locationId: any) => locationId.locationId);
+
+      let locations: any = await LocationModel.findAll({
+        where: {
+          id: { [Op.in]: locationIds }
+        },
+        include: [
+          {
+            model: MarketPlaceValueModel,
+            as: 'marketplaceValues',
+            required: true,
+            attributes: ['value'],
+            include: [
+              {
+                model: MarketPlaceFieldsModel,
+                as: 'marketplaceField',
+                required: true,
+                attributes: ['name', 'type']
+              }
+            ]
+          }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+
+      locations = locations.map((location: any) => {
+        const locationDetail = location.marketplaceValues?.reduce(
+          (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            ...acc,
+            [name]: parseDatabyType[type](value)
+          }),
+          {}
+        );
+        location = {
+          ...location.dataValues,
+          ...locationDetail,
+          marketplaceValues: undefined
+        };
+        return location;
       });
 
       return res.status(httpStatus.OK).send(buildSuccessMessage(locations));

@@ -6,6 +6,7 @@ import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { initCompanySchema, updateCompanyDetailSchema } from '../configs/validate-schemas/company';
 import { CompanyModel } from '../../../repositories/postgres/models';
+// import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
 import { v4 as uuidv4 } from 'uuid';
 import { CompanyDetailModel } from '../../../repositories/postgres/models/company-detail-model';
 export class CompanyController {
@@ -167,25 +168,24 @@ export class CompanyController {
           {
             model: CompanyDetailModel,
             as: 'companyDetail',
-            required: true,
+            required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
       company = company.dataValues;
-      company = { ...company, ...company.companyDetail.dataValues, ['companyDetail']: undefined };
+      company = { ...company, ...company.companyDetail?.dataValues, ['companyDetail']: undefined };
       transaction = await sequelize.transaction();
       if (!company) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       } else {
-        company.phone = !data.phone && data.phone != 'string' ? company.phone : data.phone;
-        company.businessName =
-          !data.businessName && data.businessName != 'string' ? company.businessName : data.businessName;
-        company.businessType =
-          !data.businessType && data.businessType != 'string' ? company.businessType : data.businessType;
-        company.description =
-          !data.description && data.description != 'string' ? company.description : data.description;
+        // console.log('Data::', data);
+        company.phone = !data.phone ? company.phone : data.phone;
+        company.businessName = !data.businessName ? company.businessName : data.businessName;
+        company.businessType = !data.businessType ? company.businessType : data.businessType;
+        company.description = !data.description ? company.description : data.description;
+        // console.log('companyUpdate::', company);
         await CompanyDetailModel.update(
           {
             phone: company.phone,

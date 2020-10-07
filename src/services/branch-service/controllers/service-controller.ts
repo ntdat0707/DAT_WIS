@@ -125,6 +125,7 @@ export class ServiceController {
           )
         );
       }
+      // console.log('Body::', body);
       const validateErrors = validate(body, createServiceSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -195,10 +196,11 @@ export class ServiceController {
             }
           ]
         });
-
+        // console.log('Staffs::', staffs);
         const staffIds = staffs.map((staff) => staff.id);
         // .then((staffs) => staffs.map((staff) => staff.id));
 
+        // console.log('staffId::', staffIds);
         if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
           return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
         }
@@ -397,6 +399,8 @@ export class ServiceController {
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const { workingLocationIds } = res.locals.staffPayload;
       const locationIdsDiff = _.difference(req.query.locationIds as string[], workingLocationIds);
+      // console.log('Locations::', locationIdsDiff);
+
       if (locationIdsDiff.length > 0) {
         return next(
           new CustomError(
@@ -434,11 +438,20 @@ export class ServiceController {
           }
         ]
       };
+
       if (req.query.searchValue) {
         query.where = {
           [Op.or]: [
-            Sequelize.literal(`unaccent("ServiceModel"."name") ilike unaccent('%${req.query.searchValue}%')`),
-            Sequelize.literal(`unaccent("ServiceModel"."service_code") ilike unaccent('%${req.query.searchValue}%')`)
+            Sequelize.literal(
+              `unaccent("ServiceModel"."name") ilike unaccent('%${
+                req.query.searchValue ? req.query.searchValue : ''
+              }%')`
+            ),
+            Sequelize.literal(
+              `unaccent("ServiceModel"."service_code") ilike unaccent('%${
+                req.query.searchValue ? req.query.searchValue : ''
+              }%')`
+            )
           ]
         };
       }
@@ -454,6 +467,8 @@ export class ServiceController {
           attributes: []
         });
       }
+
+      // console.log('Test::', query.include);
       const services = await paginate(
         ServiceModel,
         query,
@@ -1013,7 +1028,7 @@ export class ServiceController {
         ],
         group: ['CateServiceModel.id', 'services.id', 'services.duration', 'services.name', 'services.sale_price']
       });
-      console.log('CateServices:::', cateServices.length);
+      // console.log('CateServices:::', cateServices.length);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
     } catch (error) {
       return next(error);
