@@ -77,7 +77,6 @@ export class FavoriteController {
           );
         }
       }
-
       return res.status(httpStatus.OK).send(buildSuccessMessage(favorite));
     } catch (error) {
       return next(error);

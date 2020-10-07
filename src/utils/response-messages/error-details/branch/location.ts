@@ -74,6 +74,4 @@ const locationErrorDetails = {
   },
 };
 
-
-
 export { locationErrorDetails };

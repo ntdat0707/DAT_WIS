@@ -71,4 +71,5 @@ const customerErrorDetails = {
     return e;
   }
 };
+
 export { customerErrorDetails };
