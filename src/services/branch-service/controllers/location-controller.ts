@@ -226,10 +226,9 @@ export class LocationController {
       }
 
       const cityDetail: any = { cityId: city.id, city: city.name };
-      data = Object.assign(data, cityDetail);
+      data = {...data, ...cityDetail};
       // start transaction
       transaction = await sequelize.transaction();
-      const location = await LocationModel.create(data, { transaction });
       if (req.file) { data.photo = (req.file as any).location; }
 
       let pathName = '';
@@ -239,7 +238,9 @@ export class LocationController {
         pathName = normalizeRemoveAccent(company.businessName) + '-' + uuidv4();
       }
 
-      data = Object.assign(data, { pathName } );
+      data = { ...data,  pathName };
+
+      const location = await LocationModel.create(data, { transaction });
 
       if (data.photo) {
         await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
@@ -341,7 +342,6 @@ export class LocationController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
     } catch (error) {
-      // console.log(error);
       //rollback transaction
       if (transaction) {
         await transaction.rollback();
