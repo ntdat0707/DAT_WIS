@@ -180,7 +180,8 @@ export class LocationController {
       }
 
       data.companyId = res.locals.staffPayload.companyId;
-      const company: any = await CompanyModel.findOne({
+      if (req.file) { data.photo = (req.file as any).location; }
+      let company: any = await CompanyModel.findOne({
         where: { id: data.companyId },
         include: [
           {
@@ -190,13 +191,26 @@ export class LocationController {
             attributes: ['businessType', 'businessName']
           }
         ]
-      }).then((cpn: any) => ({
-        ...cpn.dataValues,
-        ...cpn.companyDetail?.dataValues,
-        ['companyDetail']: undefined
-      }));
+      });
 
-      let city: any = await CityModel.findOne({
+      if (company) {
+        company = {
+          ...company.dataValues,
+          ...company.companyDetail?.dataValues,
+          ['companyDetail']: undefined
+        };
+      }
+
+      const existLocation = LocationModel.findOne({
+        where: {
+          companyId: company.id
+        }
+      });
+      let updateStaff = false;
+      if (!existLocation) {
+        updateStaff = true;
+      }
+      let city = await CityModel.findOne({
         where: {
           name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
         },
@@ -211,17 +225,21 @@ export class LocationController {
         });
       }
 
-      city = city.dataValues;
-
       const cityDetail: any = { cityId: city.id, city: city.name };
       data = Object.assign(data, cityDetail);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
       if (req.file) { data.photo = (req.file as any).location; }
-      const pathNameAssign = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
-      const pathNameObject: any = { pathName: pathNameAssign };
-      data = Object.assign(data, pathNameObject);
+
+      let pathName = '';
+      if (data.address) {
+        pathName = normalizeRemoveAccent(company.businessName) + '-' + normalizeRemoveAccent(data.address);
+      } else {
+        pathName = normalizeRemoveAccent(company.businessName) + '-' + uuidv4();
+      }
+
+      data = Object.assign(data, { pathName } );
 
       if (data.photo) {
         await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
@@ -272,7 +290,11 @@ export class LocationController {
         await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
       }
       await LocationStaffModel.create({ staffId: company.ownerId, locationId: location.id }, { transaction });
-      await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
+
+      if (updateStaff) {
+        await StaffModel.update({ onboardStep: 1 }, { where: { id: company.ownerId }, transaction });
+      }
+
       await transaction.commit();
       //commit transaction
       let newLocation: any = (await LocationModel.findOne({
@@ -846,7 +868,9 @@ export class LocationController {
         longitude: body.longitude
       };
 
-      if (file) { data.photo = (file as any).location; }
+      if (file) {
+        data.photo = (file as any).location;
+      }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
       await transaction.commit();
@@ -859,6 +883,4 @@ export class LocationController {
       return next(error);
     }
   };
-
-
 }

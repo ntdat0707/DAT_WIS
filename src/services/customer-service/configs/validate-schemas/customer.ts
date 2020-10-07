@@ -10,7 +10,12 @@ const createCustomerWisereSchema = Joi.object({
   birthDate: Joi.string().isoDate().label('birthDate'),
   passportNumber: Joi.string().label('passportNumber'),
   address: Joi.string().label('address'),
-  source: Joi.string().label('source'),
+  source: Joi.string()
+    .valid(ESource.FACEBOOK, ESource.MARKETPLACE, ESource.OTHER, ESource.SHOPEE, ESource.WISERE, ESource.ZALO)
+    .label('source'),
+  label: Joi.string()
+    .valid(ELabel.COLD_LEAD, ELabel.CUSTOMER, ELabel.HOT_LEAD, ELabel.NONE, ELabel.WARM_LEAD)
+    .label('label'),
   note: Joi.string().label('note'),
   job: Joi.string().label('job'),
   ownerId: Joi.string()

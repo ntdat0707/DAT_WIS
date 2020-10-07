@@ -122,6 +122,9 @@ export class CustomerController {
    *       name: source
    *       type: string
    *     - in: "formData"
+   *       name: label
+   *       type: string
+   *     - in: "formData"
    *       name: note
    *       type: string
    *     - in: "formData"
@@ -161,6 +164,7 @@ export class CustomerController {
         source: req.body.source,
         note: req.body.note,
         job: req.body.job,
+        label: req.body.label,
         moreEmailContact: req.body.moreEmailContact,
         morePhoneContact: req.body.morePhoneContact
       };
@@ -236,7 +240,7 @@ export class CustomerController {
       return next(error);
     }
   };
-  
+
   /**
    * @swagger
    * definitions:

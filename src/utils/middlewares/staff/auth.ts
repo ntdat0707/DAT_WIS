@@ -78,7 +78,7 @@ const getCompany = async (staffId: string) => {
       ]
     });
 
-    if (company && company.companyDetail) {
+    if (company) {
       company = {
         ...company.dataValues,
         ...company.companyDetail?.dataValues,
