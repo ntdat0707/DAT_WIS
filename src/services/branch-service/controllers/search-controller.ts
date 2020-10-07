@@ -44,16 +44,25 @@ import Joi from 'joi';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const X = {
+      lat: _.isNumber(+lat1) ? + lat1 : 0,
+      lon: _.isNumber(+lon1) ? + lon1 : 0
+    };
+    const Y = {
+      lon: _.isNumber(+lon2) ? + lon2 : 0,
+      lat: _.isNumber(+lat2) ? + lat2 : 0
+    };
+
     const R = 6371; // km
     const toRad = (value: number) => (value * Math.PI) / 180; // Converts numeric degrees to radians
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    lat1 = toRad(lat1);
-    lat2 = toRad(lat2);
+    const dLat = toRad(Y.lat - X.lat);
+    const dLon = toRad(Y.lon - X.lon);
+    X.lat = toRad(X.lat);
+    Y.lat = toRad(Y.lat);
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(X.lat) * Math.cos(Y.lat);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c;
     return d;
@@ -81,6 +90,15 @@ export class SearchController {
    *       required: true
    *       schema:
    *          type: integer
+   *     - in: query
+   *       name: searchBy
+   *       schema:
+   *          type: string
+   *          enum:
+   *            - service
+   *            - cateservice
+   *            - company
+   *            - green
    *     - in: query
    *       name: latitude
    *       schema:
@@ -163,8 +181,7 @@ export class SearchController {
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
-      // tslint:disable-next-line:no-console
-      console.log('CheckedValidate:::');
+      // console.log('CheckedValidate:::');
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
@@ -243,6 +260,7 @@ export class SearchController {
           }
         ],
         where: {
+          isoMarketplace: true,
           [Op.and]: [
             {
               [Op.or]: [
@@ -1222,7 +1240,7 @@ export class SearchController {
         recentViewId: req.params.recentViewId
       };
       const validateErrors = validate(dataInput, deleteRecentViewSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
       await RecentViewModel.destroy({
         where: { id: dataInput.recentViewId }
       });
@@ -1261,7 +1279,7 @@ export class SearchController {
         recentBookingId: req.params.recentBookingId
       };
       const validateErrors = validate(dataInput, deleteRecentBookingSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
       await RecentBookingModel.destroy({
         where: { id: dataInput.recentBookingId }
       });
@@ -1290,7 +1308,7 @@ export class SearchController {
    *         description: Server internal errors
    */
 
-  public suggestCountryAndCity = async (req: Request, res: Response, next: NextFunction) => {
+  public suggestCountryAndCity = async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const countries = await CountryModel.findAll({
           attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
