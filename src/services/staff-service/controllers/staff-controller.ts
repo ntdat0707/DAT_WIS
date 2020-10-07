@@ -530,6 +530,7 @@ export class StaffController {
     };
   }
 
+
   async handleEditStaffServices(staffId: string, serviceIdsPayload: string[]) {
     const currentServiceIdsOfStaff = await ServiceStaffModel.findAll({
       where: {
