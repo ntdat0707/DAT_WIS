@@ -21,7 +21,7 @@ export class CompanyDetailController {
    *           - businessName
    *           - phone
    *           - description
-   *           - businessType
+   *           - businessTyp
    *       properties:
    *           companyId:
    *               type: string

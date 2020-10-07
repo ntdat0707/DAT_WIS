@@ -431,7 +431,7 @@ export class DealController {
       const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
       if (req.body.listPipelineStage.length !== checkUniqName.length) {
         throw new CustomError(
-          pipelineStageErrorDetails.E_3202(`pipeline stage name exists in pipeline stage`),
+          pipelineStageErrorDetails.E_3202('pipeline stage name exists in pipeline stage'),
           httpStatus.BAD_REQUEST
         );
       }

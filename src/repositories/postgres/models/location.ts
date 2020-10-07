@@ -21,6 +21,7 @@ class LocationModel extends Model {
   public description: string;
   public title?: string;
   public pathName?: string;
+  public isoMarketplace: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -117,6 +118,11 @@ LocationModel.init(
       field: 'title',
       type: DataTypes.STRING,
       defaultValue: ''
+    },
+    isoMarketplace: {
+      field: 'iso_marketplace',
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
     openedAt: {
       field: 'opened_at',
