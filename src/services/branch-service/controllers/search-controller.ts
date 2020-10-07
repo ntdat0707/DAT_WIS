@@ -144,15 +144,17 @@ export class SearchController {
       };
 
       const cityName = (await CityModel.findAll({ attributes: ['name'] })).map((city: any) => city.get('name'));
-      const countryCode = (await CountryModel.findAll({ attributes: ['country_code'] })).map((country: any) => country.get('country_code'));
+      const countryCode = (await CountryModel.findAll({ attributes: ['country_code'] })).map((country: any) =>
+        country.get('country_code')
+      );
 
       const newSearchSchema = searchSchema.append({
-        'cityName': Joi.string()
+        cityName: Joi.string()
           .valid(...cityName)
           .optional()
           .allow(null, '')
           .label('cityName'),
-        'countryCode': Joi.string()
+        countryCode: Joi.string()
           .valid(...countryCode)
           .optional()
           .allow(null, '')
@@ -164,11 +166,10 @@ export class SearchController {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
       // tslint:disable-next-line:no-console
-      console.log('CheckedValidate:::');
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -248,7 +249,9 @@ export class SearchController {
               [Op.or]: [
                 Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
                 Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(
+                  `unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`
+                ),
                 Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
                 Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`)
               ]
@@ -274,7 +277,9 @@ export class SearchController {
       if (req.query.cityCode) {
         queryLocations.where[Op.and].push(Sequelize.literal(`"cityy"."name" like '${search.cityName}'`));
       } else if (req.query.countryCode) {
-        queryLocations.where[Op.and].push(Sequelize.literal(`"cityy->country"."country_code" like '${search.countryCode}'`));
+        queryLocations.where[Op.and].push(
+          Sequelize.literal(`"cityy->country"."country_code" like '${search.countryCode}'`)
+        );
       }
 
       if (req.query.order === EOrder.NEWEST) {
@@ -620,7 +625,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -775,7 +780,7 @@ export class SearchController {
       const cateServices = await CateServiceModel.findAll({
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal('\'cateService\''), 'type']],
+          include: [[Sequelize.literal("'cateService'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -783,7 +788,7 @@ export class SearchController {
       const companies = (
         await CompanyModel.findAll({
           attributes: {
-            include: [[Sequelize.literal('\'company\''), 'type']],
+            include: [[Sequelize.literal("'company'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
@@ -805,7 +810,7 @@ export class SearchController {
       const services = await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal('\'service\''), 'type']],
+          include: [[Sequelize.literal("'service'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -819,7 +824,7 @@ export class SearchController {
           ]
         },
         attributes: {
-          include: [[Sequelize.literal('\'location\''), 'type']],
+          include: [[Sequelize.literal("'location'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -1216,7 +1221,6 @@ export class SearchController {
 
   public deleteRecentView = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // console.log('CustomerId::', res.locals.customerPayload);
       const dataInput = {
         customerId: res.locals.customerPayload.id,
         recentViewId: req.params.recentViewId
@@ -1292,18 +1296,18 @@ export class SearchController {
 
   public suggestCountryAndCity = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const countries = await CountryModel.findAll({
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-          include: [
-            {
-              model: CityModel,
-              as: 'cities',
-              required: false,
-              attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-            }
-          ]
-        });
-        return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
+      const countries = await CountryModel.findAll({
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+        include: [
+          {
+            model: CityModel,
+            as: 'cities',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          }
+        ]
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
     } catch (error) {
       return next(error);
     }

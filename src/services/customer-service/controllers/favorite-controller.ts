@@ -48,7 +48,6 @@ export class FavoriteController {
 
   public createFavorite = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // console.log('customerID:::', res.locals.customerPayload);
       const data = {
         locationId: req.body.locationId,
         customerId: res.locals.customerPayload.id
@@ -57,11 +56,9 @@ export class FavoriteController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      // console.log('checked create favorite');
       let favorite = await FavoriteModel.findOne({
         where: { locationId: data.locationId, customerId: data.customerId }
       });
-      // console.log('Favorite::', favorite);
       if (!favorite) {
         favorite = await FavoriteModel.create(data);
       } else {

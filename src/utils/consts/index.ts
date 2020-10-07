@@ -134,3 +134,10 @@ export enum ELabel {
   COLD_LEAD = 'cold_lead',
   NONE = 'none'
 }
+
+export enum EContactType {
+  WORK = 'work',
+  HOME = 'home',
+  OTHER = 'other',
+  MOBILE = 'mobile'
+}
