@@ -117,7 +117,6 @@ export class SearchController {
 
   public marketPlaceSearch = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // let locations: any[] = [];
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
         pageNum: req.query.pageNum,
@@ -360,7 +359,7 @@ export class SearchController {
           ...locationDetail,
           company: {
             ...location.company?.dataValues,
-            ...location.company?.companyDetail.dataValues,
+            ...location.company?.companyDetail?.dataValues,
             companyDetail: undefined
           },
           service: (location.services || [])[0],
@@ -846,6 +845,8 @@ export class SearchController {
    *   get:
    *     tags:
    *       - Branch
+   *     security:
+   *       - Bearer: []
    *     name: marketPlaceSuggestedRecent
    *     responses:
    *       200:
@@ -859,25 +860,27 @@ export class SearchController {
   public marketPlaceSuggestedRecent = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const search = {
-        customerId: req.query.customerId
+        customerId: res.locals.customerPayload.id
       };
 
       const validateErrorsSearch = validate(search, suggestedSchema);
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
-
+      let recentSearch = null;
+      let recentBooking = null;
+      let recentView = null;
       let customer = null;
       if (search.customerId) {
         customer = await CustomerModel.findOne({ where: { id: search.customerId } });
       }
-      let recentSearch = null;
-      let recentBooking = null;
-      let recentView = null;
       if (customer) {
         recentSearch = await this.searchRecentSuggested(search);
+        console.log('Pass recent Search::');
         recentBooking = await this.recentBookingSuggested(search);
+        console.log('Pass recent booking::');
         recentView = await this.recentViewSuggested(search);
+        console.log('Pass recent view::');
       }
 
       const results = {
