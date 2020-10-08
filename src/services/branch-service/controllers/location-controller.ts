@@ -241,9 +241,9 @@ export class LocationController {
 
       data = Object.assign(data, { pathName } );
 
-      if (data.photo) {
-        await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
-      }
+      // if (data.photo) {
+      //   await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
+      // }
       //const marketplaceValueData: any = [];
 
       const marketplaceFields: any = (
