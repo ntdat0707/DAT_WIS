@@ -27,7 +27,7 @@ import { searchSchema, suggestedSchema, getLocationMarketPlace } from '../config
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import _ from 'lodash';
-import { EOrder } from '../../../utils/consts';
+import { EOrder, ESearchBy } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
@@ -44,16 +44,25 @@ import Joi from 'joi';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const X = {
+      lat: _.isNumber(+lat1) ? + lat1 : 0,
+      lon: _.isNumber(+lon1) ? + lon1 : 0
+    };
+    const Y = {
+      lon: _.isNumber(+lon2) ? + lon2 : 0,
+      lat: _.isNumber(+lat2) ? + lat2 : 0
+    };
+
     const R = 6371; // km
     const toRad = (value: number) => (value * Math.PI) / 180; // Converts numeric degrees to radians
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    lat1 = toRad(lat1);
-    lat2 = toRad(lat2);
+    const dLat = toRad(Y.lat - X.lat);
+    const dLon = toRad(Y.lon - X.lon);
+    X.lat = toRad(X.lat);
+    Y.lat = toRad(Y.lat);
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(X.lat) * Math.cos(Y.lat);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const d = R * c;
     return d;
@@ -81,6 +90,15 @@ export class SearchController {
    *       required: true
    *       schema:
    *          type: integer
+   *     - in: query
+   *       name: searchBy
+   *       schema:
+   *          type: string
+   *          enum:
+   *            - service
+   *            - cate-service
+   *            - company
+   *            - city
    *     - in: query
    *       name: latitude
    *       schema:
@@ -140,7 +158,8 @@ export class SearchController {
         longitude: req.query.longitude,
         cityName: req.query.cityName,
         countryCode: req.query.countryCode,
-        order: req.query.order
+        order: req.query.order,
+        searchBy: req.query.searchBy
       };
 
       const cityName = (await CityModel.findAll({ attributes: ['name'] })).map((city: any) => city.get('name'));
@@ -165,11 +184,10 @@ export class SearchController {
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
-      // tslint:disable-next-line:no-console
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -244,14 +262,10 @@ export class SearchController {
           }
         ],
         where: {
+          isoMarketplace: true,
           [Op.and]: [
             {
               [Op.or]: [
-                Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(
-                  `unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`
-                ),
                 Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
                 Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`)
               ]
@@ -273,6 +287,75 @@ export class SearchController {
           'cityy->country.id'
         ]
       };
+
+      if (!search.searchBy) {
+        queryLocations.where = {
+          ...queryLocations.where,
+          [Op.and]: [
+            {
+              [Op.or]: [
+                ...queryLocations.where[Op.and][0][Op.or],
+                Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(`unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`)
+              ]
+            }
+          ]
+        };
+      } else {
+        switch(search.searchBy) {
+          case ESearchBy.CITY:
+            {
+              queryLocations.where = {
+                ...queryLocations.where,
+                [Op.and]: [
+                  ...queryLocations.where[Op.and],
+                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
+                ]
+              };
+            }
+            break;
+          case  ESearchBy.COMPANY:
+            {
+              queryLocations.where = {
+                ...queryLocations.where,
+                [Op.and]: [
+                  ...queryLocations.where[Op.and],
+                  {
+                    [Op.or]: [
+                      Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
+                      Sequelize.literal(`unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`),
+                    ]
+                  }
+                ]
+              };
+            }
+            break;
+          case ESearchBy.CATE_SERVICE:
+            {
+              queryLocations.where = {
+                ...queryLocations.where,
+                [Op.and]: [
+                  ...queryLocations.where[Op.and],
+                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
+                ]
+              };
+            }
+            break;
+          case ESearchBy.SERVICE:
+            {
+              queryLocations.where = {
+                ...queryLocations.where,
+                [Op.and]: [
+                  ...queryLocations.where[Op.and],
+                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
+
+                ]
+              };
+            }
+            break;
+        }
+      }
 
       if (req.query.cityCode) {
         queryLocations.where[Op.and].push(Sequelize.literal(`"cityy"."name" like '${search.cityName}'`));
@@ -360,7 +443,7 @@ export class SearchController {
           ...locationDetail,
           company: {
             ...location.company?.dataValues,
-            ...location.company?.companyDetail.dataValues,
+            ...location.company?.companyDetail?.dataValues,
             companyDetail: undefined
           },
           service: (location.services || [])[0],
@@ -625,7 +708,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -780,7 +863,7 @@ export class SearchController {
       const cateServices = await CateServiceModel.findAll({
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal("'cateService'"), 'type']],
+          include: [[Sequelize.literal('\'cateService\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -788,7 +871,7 @@ export class SearchController {
       const companies = (
         await CompanyModel.findAll({
           attributes: {
-            include: [[Sequelize.literal("'company'"), 'type']],
+            include: [[Sequelize.literal('\'company\''), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
@@ -810,7 +893,7 @@ export class SearchController {
       const services = await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal("'service'"), 'type']],
+          include: [[Sequelize.literal('\'service\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -824,7 +907,7 @@ export class SearchController {
           ]
         },
         attributes: {
-          include: [[Sequelize.literal("'location'"), 'type']],
+          include: [[Sequelize.literal('\'location\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -1199,6 +1282,209 @@ export class SearchController {
 
   /**
    * @swagger
+   * /branch/location/market-place/get-location-by-id/{locationId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     - in: query
+   *       name: customerId
+   *       schema:
+   *          type: string
+   *     name: getLocationMarketPlaceById
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+  public getLocationMarketPlaceById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = {
+        locationId: req.params.locationId,
+        customerId: req.query.customerId
+      };
+
+      const validateErrors = validate(data, getLocationMarketPlace);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+
+      let staffs: any = [];
+      let locations: any = [];
+      let cateServices: any = [];
+      let location: any = await LocationModel.findOne({
+        include: [
+          {
+            model: MarketPlaceValueModel,
+            as: 'marketplaceValues',
+            required: false,
+            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
+            include: [
+              {
+                model: MarketPlaceFieldsModel,
+                as: 'marketplaceField',
+                required: false,
+                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
+              }
+            ]
+          },
+          {
+            model: CompanyModel,
+            as: 'company',
+            required: true,
+            attributes: ['ownerId'],
+            include: [
+              {
+                model: CompanyDetailModel,
+                as: 'companyDetail',
+                required: false,
+                attributes: ['businessType', 'businessName']
+              }
+            ]
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            attributes: ['path', 'is_avatar']
+          }
+        ],
+        where: { id: data.locationId },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+
+      if (location) {
+        locations = (
+          await LocationModel.findAll({
+            where: { companyId: location.companyId },
+            include: [
+              {
+                model: LocationWorkingHourModel,
+                as: 'workingTimes',
+                required: true,
+                where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
+                order: [['weekday', 'DESC']],
+                attributes: ['weekday', 'startTime', 'endTime']
+              }
+            ],
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            group: [
+              'LocationModel.id',
+              'workingTimes.id',
+              'workingTimes.start_time',
+              'workingTimes.end_time',
+              'workingTimes.weekday'
+            ]
+          })
+        ).map((locate: any) => ({
+          ...locate.dataValues
+        }));
+
+        const locationDetail = location.marketplaceValues.reduce(
+          (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            ...acc,
+            [name]: parseDatabyType[type](value)
+          }),
+          {}
+        );
+
+        location = location.dataValues;
+        location = {
+          ...location,
+          ...locationDetail,
+          ...location.locationImages?.dataValues,
+          ...location.company?.dataValues,
+          ['marketplaceValues']: undefined,
+          ['company']: undefined
+        };
+
+        staffs = await StaffModel.findAll({
+          raw: true,
+          where: { mainLocationId: location.id },
+          attributes: ['id', 'firstName', 'avatarPath'],
+          order: Sequelize.literal(
+            'case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"'
+          )
+        });
+
+        const serviceIds: any = (
+          await LocationServiceModel.findAll({
+            raw: true,
+            where: { locationId: location.id },
+            attributes: ['service_id']
+          })
+        ).map((serviceId: any) => serviceId.service_id);
+
+        cateServices = await CateServiceModel.findAll({
+          where: { companyId: location.companyId },
+          attributes: ['id', 'name'],
+          include: [
+            {
+              model: ServiceModel,
+              as: 'services',
+              required: true,
+              attributes: ['id', 'name', 'duration', 'sale_price'],
+              where: { id: serviceIds }
+            }
+          ],
+          group: ['CateServiceModel.id', 'services.id']
+        });
+      } else {
+        location = {};
+      }
+
+      let customer = null;
+      if (data.customerId) {
+        customer = await CustomerModel.findOne({ where: { id: data.customerId } });
+      }
+
+      if (customer && location) {
+        let recentViews: any = await RecentViewModel.findOne({
+          where: { customerId: data.customerId, locationId: location.id }
+        });
+        if (!recentViews) {
+          const recentViewData: any = {
+            id: uuidv4(),
+            customerId: data.customerId,
+            locationId: location.id
+          };
+          await RecentViewModel.create(recentViewData);
+        } else {
+          recentViews = recentViews.dataValues;
+          recentViews.view += 1;
+          await RecentViewModel.update(
+            { view: recentViews.view },
+            {
+              where: {
+                id: recentViews.id
+              }
+            }
+          );
+        }
+      }
+
+      const locationDetails = {
+        locations: locations,
+        locationInformation: location,
+        cateServices: cateServices,
+        staffs: staffs
+      };
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
+    } catch (error) {
+      // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
    * /branch/location/market-place/delete-recent-view/{recentViewId}:
    *   delete:
    *     tags:
@@ -1226,7 +1512,7 @@ export class SearchController {
         recentViewId: req.params.recentViewId
       };
       const validateErrors = validate(dataInput, deleteRecentViewSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
       await RecentViewModel.destroy({
         where: { id: dataInput.recentViewId }
       });
@@ -1265,7 +1551,7 @@ export class SearchController {
         recentBookingId: req.params.recentBookingId
       };
       const validateErrors = validate(dataInput, deleteRecentBookingSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
       await RecentBookingModel.destroy({
         where: { id: dataInput.recentBookingId }
       });
@@ -1294,7 +1580,7 @@ export class SearchController {
    *         description: Server internal errors
    */
 
-  public suggestCountryAndCity = async (req: Request, res: Response, next: NextFunction) => {
+  public suggestCountryAndCity = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const countries = await CountryModel.findAll({
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
