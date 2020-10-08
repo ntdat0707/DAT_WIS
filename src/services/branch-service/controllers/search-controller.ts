@@ -419,13 +419,6 @@ export class SearchController {
           }
         }
       };
-
-      // if (!!locationIds.length) {
-      //   query.order = Sequelize.literal(`(${
-      //     locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')
-      //   }) DESC`);
-      // }
-
       if (search.customerId && search.keywords) {
         req.query = {
           ...req.query,
