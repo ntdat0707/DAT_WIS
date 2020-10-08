@@ -18,6 +18,8 @@ class CustomerWisereModel extends Model {
   public source: string;
   public code: string;
   public label: string;
+  public color: string;
+  public job: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -94,6 +96,16 @@ CustomerWisereModel.init(
     ownerId: {
       field: 'owner_id',
       type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    color: {
+      field: 'color',
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
+    job: {
+      field: 'job',
+      type: DataTypes.STRING(100),
       allowNull: true
     },
     source: {

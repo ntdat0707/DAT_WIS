@@ -28,7 +28,7 @@ import { branchErrorDetails } from '../../../utils/response-messages/error-detai
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 import { FindOptions, Transaction, Op, Sequelize } from 'sequelize';
-import { paginate } from '../../../utils/paginator';
+import { paginate, paginateRawData } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
@@ -400,7 +400,7 @@ export class ServiceController {
       const { workingLocationIds } = res.locals.staffPayload;
       const locationIdsDiff = _.difference(req.query.locationIds as string[], workingLocationIds);
       // console.log('Locations::', locationIdsDiff);
-
+      const {QueryTypes} = require('sequelize');
       if (locationIdsDiff.length > 0) {
         return next(
           new CustomError(
@@ -410,80 +410,26 @@ export class ServiceController {
         );
       }
       const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
+        pageNum: +req.query.pageNum,
+        pageSize: +req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      // const query: FindOptions = {
-      //   include: [
-      //     {
-      //       model: LocationModel,
-      //       as: 'locations',
-      //       required: true,
-      //       where: {
-      //         [Op.and]: [
-      //           { id: (req.query.locationIds as [])?.length ? req.query.locationIds : workingLocationIds },
-      //           { id: { [Op.not]: ['ee44fb05-12ce-440f-a538-6958b9dae7e1', '5ffbd124-9d20-4108-8736-a46518f6d850'] } }
-      //         ]
-      //       }
-      //     },
-
-      //     {
-      //       model: CateServiceModel,
-      //       as: 'cateService',
-      //       required: true,
-      //       attributes: []
-      //     },
-      //     {
-      //       model: ServiceImageModel,
-      //       as: 'images',
-      //       required: false
-      //     }
-      //   ]
-      // };
-
-      // if (req.query.searchValue) {
-      //   query.where = {
-      //     [Op.or]: [
-      //       Sequelize.literal(
-      //         `unaccent("ServiceModel"."name") ilike unaccent('%${
-      //           req.query.searchValue ? req.query.searchValue : ''
-      //         }%')`
-      //       ),
-      //       Sequelize.literal(
-      //         `unaccent("ServiceModel"."service_code") ilike unaccent('%${
-      //           req.query.searchValue ? req.query.searchValue : ''
-      //         }%')`
-      //       )
-      //     ]
-      //   };
-      // }
-
-      // if (req.query.staffId) {
-      //   query.include.push({
-      //     model: StaffModel,
-      //     as: 'staffs',
-      //     required: true,
-      //     where: {
-      //       id: req.query.staffId
-      //     },
-      //     attributes: []
-      //   });
-      // }
-
-      const query: FindOptions = Sequelize.literal(`select * FROM service s LEFT JOIN location_services ls ON s.id = ls.service_id
-  WHERE ls.location_id = ${req.query.locationId}`);
-
-//const query: FindOptions = 
-      // console.log('Test::', query.include);
-      const services = await paginate(
-        ServiceModel,
-        query,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+      const locationIds = (req.query.locationIds as []).map((locationId: string)=>`'${locationId}'`).join(',');
+      const services = await sequelize.query(
+        `Select service.id as id, service.status as status, service.created_at as "createdAt", service.updated_at as "updatedAt", service.deleted_at as "deletedAt", service.description, service.sale_price as "salePrice", service.duration, service.name, service.color, service.service_code as "serviceCode", service.unit_price as "unitPrice", service.allow_gender as "allowGender", service.name_en as "nameEn" FROM service INNER JOIN location_services ON service.id = location_services.service_id LEFT JOIN service_image ON service_image.service_id = service.id INNER JOIN cate_service ON cate_service.id = service.cate_service_id WHERE location_services.location_id in(${locationIds})`,
+        {
+          type: QueryTypes.SELECT
+        }
+      );
+      
+      const result =  paginateRawData(
+        services,
+        paginateOptions,
         fullPath
       );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
+      console.log(result);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(result));
     } catch (error) {
       return next(error);
     }
