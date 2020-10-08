@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
+import { ESource, ELabel } from '../../../utils/consts';
 class CustomerWisereModel extends Model {
   public id: string;
   public firstName!: string;
@@ -16,6 +17,9 @@ class CustomerWisereModel extends Model {
   public ownerId: string;
   public source: string;
   public code: string;
+  public label: string;
+  public color: string;
+  public job: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -94,10 +98,34 @@ CustomerWisereModel.init(
       type: DataTypes.UUIDV4,
       allowNull: true
     },
+    color: {
+      field: 'color',
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
+    job: {
+      field: 'job',
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
     source: {
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM(
+        ESource.FACEBOOK,
+        ESource.MARKETPLACE,
+        ESource.OTHER,
+        ESource.SHOPEE,
+        ESource.WISERE,
+        ESource.ZALO
+      ),
       allowNull: true,
-      field: 'source'
+      field: 'source',
+      defaultValue: ESource.OTHER
+    },
+    label: {
+      type: DataTypes.ENUM(ELabel.COLD_LEAD, ELabel.CUSTOMER, ELabel.HOT_LEAD, ELabel.NONE, ELabel.WARM_LEAD),
+      allowNull: true,
+      field: 'label',
+      defaultValue: ELabel.NONE
     },
     createdAt: {
       field: 'created_at',

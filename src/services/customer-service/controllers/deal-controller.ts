@@ -551,7 +551,7 @@ export class DealController {
   /**
    * @swagger
    * definitions:
-   *   daelCreate:
+   *   dealCreate:
    *       properties:
    *           dealTitle:
    *               type: string
@@ -590,7 +590,7 @@ export class DealController {
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/daelCreate'
+   *         $ref: '#/definitions/dealCreate'
    *     responses:
    *       200:
    *         description: success

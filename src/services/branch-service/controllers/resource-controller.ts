@@ -399,10 +399,11 @@ export class ResourceController {
           id: body.resourceId
         }
       });
-      if (!resource)
+      if (!resource) {
         return next(
           new CustomError(resourceErrorDetails.E_1101(`resourceId ${body.resourceId} not found`), HttpStatus.NOT_FOUND)
         );
+      }
       if (!workingLocationIds.includes(resource.locationId)) {
         return next(
           new CustomError(

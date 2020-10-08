@@ -27,6 +27,7 @@ import {
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
   CustomerWisereModel,
+  RecentBookingModel,
   DealModel,
   PipelineModel,
   PipelineStageModel
@@ -176,6 +177,7 @@ export class AppointmentController extends BaseController {
           );
         }
       }
+
       const appointmentId = uuidv4();
       const appointmentDetails = await this.verifyAppointmentDetails(
         dataInput.appointmentDetails,
@@ -1465,6 +1467,10 @@ export class AppointmentController extends BaseController {
 
       const appointmentDetailData: any[] = [];
       const appointmentDetailStaffData = [];
+      // const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
+      // const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      // const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      const recentBookingData: any = [];
       for (let i = 0; i < appointmentDetails.length; i++) {
         const appointmentDetailId = uuidv4();
         appointmentDetailData.push({
@@ -1481,11 +1487,21 @@ export class AppointmentController extends BaseController {
             staffId: appointmentDetails[i].staffIds[j]
           });
         }
+        recentBookingData.push({
+          id: uuidv4(),
+          customerId: id,
+          appointmentId,
+          locationId: dataInput.locationId,
+          serviceId: appointmentDetails[i].serviceId,
+          staffId: appointmentDetails[i].staffIds[0]
+        });
       }
       await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
         transaction
       });
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      await RecentBookingModel.bulkCreate(recentBookingData, { transaction });
+
       // const findQuery: FindOptions = {
       //   where: { id: appointmentId },
       //   include: [

@@ -8,7 +8,6 @@ class MainRoutes {
   private appointmentRoutes = new AppointmentRoutes().router;
   private appointmentDetailRoutes = new AppointmentDetailRoutes().router;
   private appointmentGroupRoutes = new AppointmentGroupRoutes().router;
-
   constructor() {
     this.config();
   }

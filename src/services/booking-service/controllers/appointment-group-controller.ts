@@ -179,40 +179,40 @@ export class AppointmentGroupController extends BaseController {
       await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
       await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
       await transaction.commit();
-      const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
-        where: { id: newAppointmentGroupId },
-        include: [
-          { model: LocationModel, as: 'location', required: true },
-          {
-            model: AppointmentModel,
-            as: 'appointments',
-            required: true,
-            include: [
-              {
-                model: AppointmentDetailModel,
-                as: 'appointmentDetails',
-                required: true,
-                include: [
-                  {
-                    model: StaffModel.scope('safe'),
-                    as: 'staffs',
-                    required: true
-                  },
-                  {
-                    model: ServiceModel,
-                    as: 'service',
-                    required: true
-                  },
-                  {
-                    model: ResourceModel,
-                    as: 'resource'
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      });
+      // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
+      //   where: { id: newAppointmentGroupId },
+      //   include: [
+      //     { model: LocationModel, as: 'location', required: true },
+      //     {
+      //       model: AppointmentModel,
+      //       as: 'appointments',
+      //       required: true,
+      //       include: [
+      //         {
+      //           model: AppointmentDetailModel,
+      //           as: 'appointmentDetails',
+      //           required: true,
+      //           include: [
+      //             {
+      //               model: StaffModel.scope('safe'),
+      //               as: 'staffs',
+      //               required: true
+      //             },
+      //             {
+      //               model: ServiceModel,
+      //               as: 'service',
+      //               required: true
+      //             },
+      //             {
+      //               model: ResourceModel,
+      //               as: 'resource'
+      //             }
+      //           ]
+      //         }
+      //       ]
+      //     }
+      //   ]
+      // });
       const query: FindOptions = {
         include: [
           {
@@ -258,7 +258,7 @@ export class AppointmentGroupController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
-      res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentGroupStoraged));
+      res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();
       return next(error);
@@ -840,7 +840,7 @@ export class AppointmentGroupController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
-      res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentGroupStoraged));
+      res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();
       return next(error);

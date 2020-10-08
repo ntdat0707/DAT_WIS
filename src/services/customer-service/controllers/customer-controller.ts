@@ -14,7 +14,8 @@ import {
   CustomerWisereModel,
   StaffModel,
   sequelize,
-  ContactModel
+  ContactModel,
+  LocationModel
 } from '../../../repositories/postgres/models';
 import {
   createCustomerWisereSchema,
@@ -27,7 +28,7 @@ import {
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { paginate } from '../../../utils/paginator';
-import { FindOptions, Transaction } from 'sequelize';
+import { FindOptions, Transaction, Op } from 'sequelize';
 import { hash, compare } from 'bcryptjs';
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import {
@@ -47,6 +48,7 @@ import {
 import { generateAppleToken } from '../../../utils/lib/generateAppleToken';
 import jwt from 'jsonwebtoken';
 import shortid from 'shortid';
+import _ from 'lodash';
 
 export class CustomerController {
   /**
@@ -73,7 +75,7 @@ export class CustomerController {
    */
   /**
    * @swagger
-   * /customer/create:
+   * /customer/create-customer-wisere:
    *   post:
    *     tags:
    *       - Customer
@@ -98,7 +100,6 @@ export class CustomerController {
    *     - in: "formData"
    *       name: gender
    *       type: integer
-   *       required: true
    *       enum: [0, 1, 2]
    *     - in: "formData"
    *       name: phone
@@ -123,11 +124,18 @@ export class CustomerController {
    *       name: source
    *       type: string
    *     - in: "formData"
+   *       name: label
+   *       type: string
+   *     - in: "formData"
    *       name: note
    *       type: string
    *     - in: "formData"
    *       name: job
    *       type: string
+   *     - in: "formData"
+   *       name: color
+   *       type: string
+   *       required: true
    *     - in: "formData"
    *       name: "moreEmailContact"
    *       type: array
@@ -162,6 +170,8 @@ export class CustomerController {
         source: req.body.source,
         note: req.body.note,
         job: req.body.job,
+        label: req.body.label,
+        color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
         morePhoneContact: req.body.morePhoneContact
       };
@@ -180,7 +190,18 @@ export class CustomerController {
       }
       if (data.ownerId) {
         const existStaff = await StaffModel.findOne({
-          where: { id: data.ownerId, mainLocationId: res.locals.staffPayload.workingLocationIds }
+          where: { id: data.ownerId },
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              required: true,
+              through: {
+                attributes: []
+              },
+              where: { id: res.locals.staffPayload.workingLocationIds }
+            }
+          ]
         });
         if (!existStaff)
           return next(
@@ -188,6 +209,9 @@ export class CustomerController {
           );
       }
       data.code = shortid.generate();
+      if (req.file) {
+        data.avatarPath = (req.file as any).location;
+      }
       transaction = await sequelize.transaction();
       const customerWisere = await CustomerWisereModel.create(data, { transaction });
       if (data.moreEmailContact && data.moreEmailContact.length > 0) {
@@ -237,29 +261,29 @@ export class CustomerController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * definitions:
-   *   customerWisereUpdate:
+   *   MoreEmailContact:
    *       properties:
-   *           lastName:
+   *           email:
    *               type: string
-   *           firstName:
+   *           type:
    *               type: string
-   *           gender:
-   *               type: integer
-   *               required: true
-   *               enum: [0, 1, 2]
-   *           birthDate:
-   *               type: string
-   *           passportNumber:
-   *               type: string
-   *           address:
-   *               type: string
-   *
    *
    */
-
+  /**
+   * @swagger
+   * definitions:
+   *   MorePhoneContact:
+   *       properties:
+   *           phone:
+   *               type: string
+   *           type:
+   *               type: string
+   *
+   */
   /**
    * @swagger
    * /customer/update-customer-wisere/{customerWisereId}:
@@ -269,15 +293,74 @@ export class CustomerController {
    *     security:
    *       - Bearer: []
    *     name: updateCustomerWisere
+   *     consumes:
+   *      - multipart/form-data
    *     parameters:
-   *     - in: "path"
-   *       name: "customerWisereId"
-   *       required: true
-   *     - in: "body"
-   *       name: "body"
+   *     - in: path
+   *       name: customerWisereId
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/customerWisereUpdate'
+   *          type: string
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: firstName
+   *       type: string
+   *     - in: "formData"
+   *       name: lastName
+   *       type: string
+   *     - in: "formData"
+   *       name: phone
+   *       type: string
+   *     - in: "formData"
+   *       name: email
+   *       type: string
+   *     - in: "formData"
+   *       name: gender
+   *       type: integer
+   *       enum: [0, 1, 2]
+   *     - in: "formData"
+   *       name: passport
+   *       type: string
+   *     - in: "formData"
+   *       name: address
+   *       type: string
+   *     - in: "formData"
+   *       name: ownerId
+   *       type: string
+   *     - in: "formData"
+   *       name: source
+   *       type: string
+   *     - in: "formData"
+   *       name: label
+   *       type: string
+   *     - in: "formData"
+   *       name: note
+   *       type: string
+   *     - in: "formData"
+   *       name: job
+   *       type: string
+   *     - in: "formData"
+   *       name: note
+   *       type: string
+   *     - in: "formData"
+   *       name: birthDate
+   *       type: string
+   *     - in: "formData"
+   *       name: color
+   *       type: string
+   *     - in: "formData"
+   *       name: "moreEmailContact"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/MoreEmailContact'
+   *     - in: "formData"
+   *       name: "morePhoneContact"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/MorePhoneContact'
    *     responses:
    *       200:
    *         description: success
@@ -287,32 +370,187 @@ export class CustomerController {
    *         description:
    */
   public updateCustomerWisere = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
-      const { companyId } = res.locals.staffPayload;
+      const { companyId, workingLocationIds } = res.locals.staffPayload;
       const data: any = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
+        phone: req.body.phone,
+        email: req.body.email,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
-        address: req.body.address
+        address: req.body.address,
+        ownerId: req.body.ownerId,
+        source: req.body.source,
+        note: req.body.note,
+        job: req.body.job,
+        label: req.body.label,
+        color: req.body.color,
+        moreEmailContact: req.body.moreEmailContact,
+        morePhoneContact: req.body.morePhoneContact
       };
       const customerWisereId = req.params.customerWisereId;
-      const validateErrors = validate(data, updateCustomerWisereSchema);
+      const validateErrors = validate({ ...data, customerWisereId: customerWisereId }, updateCustomerWisereSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       let customerWisere = await CustomerWisereModel.findOne({
-        where: { id: req.params.customerWisereId, companyId: companyId }
+        where: { id: customerWisereId, companyId: companyId }
       });
       if (!customerWisere)
         throw new CustomError(
           customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
           HttpStatus.NOT_FOUND
         );
-      customerWisere = await customerWisere.update(data);
+      if (data.phone) {
+        const existPhone = await CustomerWisereModel.findOne({
+          where: { phone: data.phone, companyId: companyId, id: { [Op.ne]: customerWisereId } }
+        });
+        if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+      }
+      if (data.email) {
+        const existEmail = await CustomerWisereModel.findOne({
+          where: { email: data.email, companyId: companyId, id: { [Op.ne]: customerWisereId } }
+        });
+        if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+      }
+      if (data.ownerId) {
+        const existStaff = await StaffModel.findOne({
+          where: { id: data.ownerId },
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              required: true,
+              through: {
+                attributes: []
+              },
+              where: { id: workingLocationIds }
+            }
+          ]
+        });
+        if (!existStaff)
+          return next(
+            new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND)
+          );
+      }
+      if (req.file) {
+        data.avatarPath = (req.file as any).location;
+      }
+      transaction = await sequelize.transaction();
+      await customerWisere.update(data, transaction);
+      if (data.moreEmailContact && data.moreEmailContact.length > 0) {
+        const curEmailContacts = await ContactModel.findAll({
+          attributes: ['email', 'type'],
+          where: { customerWisereId: customerWisereId, email: { [Op.not]: null } }
+        });
+        const emailContacts = curEmailContacts.map((curEmailContact) => ({
+          email: curEmailContact.email,
+          type: curEmailContact.type
+        }));
+        const removeEmails = _.differenceWith(emailContacts, data.moreEmailContact, _.isEqual);
+        if (removeEmails.length > 0) {
+          for (let i = 0; i < removeEmails.length; i++) {
+            const contact = await ContactModel.findOne({
+              where: {
+                email: removeEmails[i].email,
+                type: removeEmails[i].type,
+                customerWisereId: customerWisereId
+              }
+            });
+            await ContactModel.destroy({
+              where: {
+                id: contact.id
+              },
+              transaction
+            });
+          }
+        }
+        const addEmails = _.differenceWith(data.moreEmailContact, emailContacts, _.isEqual);
+        const arrInsertEmailContact = [];
+        if (addEmails.length > 0) {
+          for (let i = 0; i < addEmails.length; i++) {
+            const existEmailCustomer = await CustomerWisereModel.findOne({
+              where: {
+                email: addEmails[i].email,
+                companyId: companyId,
+                id: { [Op.not]: customerWisereId }
+              }
+            });
+            if (existEmailCustomer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+            const existEmailContact = await ContactModel.findOne({
+              where: { email: addEmails[i].email, customerWisereId: { [Op.not]: customerWisereId } }
+            });
+            if (existEmailContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            arrInsertEmailContact.push({
+              email: addEmails[i].email,
+              type: addEmails[i].type,
+              customerWisereId: customerWisere.id
+            });
+          }
+          await ContactModel.bulkCreate(arrInsertEmailContact, { transaction });
+        }
+      }
+      if (data.morePhoneContact && data.morePhoneContact.length > 0) {
+        const curPhoneContacts = await ContactModel.findAll({
+          attributes: ['phone', 'type'],
+          where: { customerWisereId: customerWisereId, phone: { [Op.not]: null } }
+        });
+        const phoneContacts = curPhoneContacts.map((curPhoneContact) => ({
+          phone: curPhoneContact.phone,
+          type: curPhoneContact.type
+        }));
+        const removePhones = _.differenceWith(phoneContacts, data.morePhoneContact, _.isEqual);
+        if (removePhones.length > 0) {
+          for (let i = 0; i < removePhones.length; i++) {
+            const contact = await ContactModel.findOne({
+              where: {
+                phone: removePhones[i].phone,
+                type: removePhones[i].type,
+                customerWisereId: customerWisereId
+              }
+            });
+            await ContactModel.destroy({
+              where: {
+                id: contact.id
+              },
+              transaction
+            });
+          }
+        }
+        const addPhones = _.differenceWith(data.morePhoneContact, phoneContacts, _.isEqual);
+        const arrInsertPhoneContact = [];
+        if (addPhones.length > 0) {
+          for (let i = 0; i < addPhones.length; i++) {
+            const existPhoneCustomer = await CustomerWisereModel.findOne({
+              where: {
+                phone: addPhones[i].phone,
+                companyId: companyId,
+                id: { [Op.not]: customerWisereId }
+              }
+            });
+            if (existPhoneCustomer) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            const existPhoneContact = await ContactModel.findOne({
+              where: { phone: addPhones[i].phone, id: { [Op.not]: customerWisereId } }
+            });
+            if (existPhoneContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            arrInsertPhoneContact.push({
+              phone: addPhones[i].phone,
+              type: addPhones[i].type,
+              customerWisereId: customerWisere.id
+            });
+          }
+          await ContactModel.bulkCreate(arrInsertPhoneContact, { transaction });
+        }
+      }
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customerWisere));
     } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
@@ -1026,7 +1264,7 @@ export class CustomerController {
 
   /**
    * @swagger
-   * /customer/register:
+   * /customer/register-customer-marketplace:
    *   post:
    *     tags:
    *       - Customer

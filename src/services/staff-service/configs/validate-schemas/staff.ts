@@ -12,6 +12,7 @@ export const createStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
+  email: Joi.string().allow(null, '').label('email'),
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   birthDate: Joi.string().isoDate().required(),
@@ -112,4 +113,31 @@ export const createStaffsSchema = Joi.object({
     .label('staffDetails')
 });
 
-export { staffIdSchema, filterStaffSchema };
+const getStaffMultipleService = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  serviceIds: Joi.array()
+    .min(1)
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    )
+    .label('serviceIds')
+});
+
+const getStaffAvailableTimeSlots = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('mainLocationId'),
+  workDay: Joi.string().required().label('workDay')
+});
+
+export { staffIdSchema, filterStaffSchema, getStaffMultipleService, getStaffAvailableTimeSlots };

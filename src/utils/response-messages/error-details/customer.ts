@@ -58,6 +58,17 @@ const customerErrorDetails = {
   E_3007(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3007', 'Missing email', detail);
     return e;
+  },
+
+  /**
+   *
+   * Favorite invalid
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_3008(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3008', 'Favorite cannot found', detail);
+    return e;
   }
 };
 

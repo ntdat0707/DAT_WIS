@@ -43,7 +43,7 @@ process.on('exit', (_code) => {
   if (connection !== null) {
     connection.close();
     //tslint:disable-next-line
-    console.log(warningColor('warn') + ': Closing rabbitmq');
+    (warningColor('warn') + ': Closing rabbitmq');
   }
 });
 
