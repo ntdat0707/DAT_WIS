@@ -78,6 +78,13 @@ enum ETypeMarketPlaceField {
   BOOLEAN = 'BOOLEAN'
 }
 
+enum ESearchBy {
+  COMPANY = 'company',
+  CATE_SERVICE = 'cate-service',
+  CITY = 'city',
+  SERVICE = 'service'
+}
+
 export {
   buildingEnvs,
   EServiceStatus,
@@ -93,6 +100,7 @@ export {
   EParkingStatus,
   EFavorite,
   EOrder,
+  ESearchBy,
   ETypeMarketPlaceField,
   IManagementLockAppointmentData,
   IManagementEditAppointmentDetailData

@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EWeekDays, ELocationStatus, EPayment, EParkingStatus, EOrder } from '../../../../utils/consts';
+import { EWeekDays, ELocationStatus, EPayment, EParkingStatus, EOrder, ESearchBy } from '../../../../utils/consts';
 
 const createLocationSchema = Joi.object({
   name: Joi.string().required().label('name'),
@@ -183,6 +183,7 @@ const searchSchema = Joi.object({
   customerId: Joi.string().uuid().allow(null, '').label('customerId'),
   latitude: Joi.number().allow(null, '').label('latitude'),
   longitude: Joi.number().allow(null, '').label('longitude'),
+  searchBy: Joi.string().valid(...Object.values(ESearchBy)).allow(null, '').label('searchBy'),
   order: Joi.string()
     .valid(EOrder.NEWEST, EOrder.NEWEST, EOrder.PRICE_LOWEST, EOrder.PRICE_HIGHEST)
     .allow(null)

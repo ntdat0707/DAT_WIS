@@ -27,7 +27,7 @@ import { searchSchema, suggestedSchema, getLocationMarketPlace } from '../config
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import _ from 'lodash';
-import { EOrder } from '../../../utils/consts';
+import { EOrder, ESearchBy } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
@@ -96,9 +96,9 @@ export class SearchController {
    *          type: string
    *          enum:
    *            - service
-   *            - cateservice
+   *            - cate-service
    *            - company
-   *            - green
+   *            - city
    *     - in: query
    *       name: latitude
    *       schema:
@@ -158,7 +158,8 @@ export class SearchController {
         longitude: req.query.longitude,
         cityName: req.query.cityName,
         countryCode: req.query.countryCode,
-        order: req.query.order
+        order: req.query.order,
+        searchBy: req.query.searchBy
       };
 
       const cityName = (await CityModel.findAll({ attributes: ['name'] })).map((city: any) => city.get('name'));
@@ -264,9 +265,6 @@ export class SearchController {
           [Op.and]: [
             {
               [Op.or]: [
-                Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`),
                 Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywordsQuery}])`),
                 Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywordsQuery}])`)
               ]
@@ -275,7 +273,7 @@ export class SearchController {
         },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
         group: [
-          'LocationModel.id',
+          'Location Model.id',
           'marketplaceValues.id',
           'marketplaceValues->marketplaceField.id',
           'locationImages.id',
@@ -288,6 +286,75 @@ export class SearchController {
           'cityy->country.id'
         ]
       };
+
+      if (!search.searchBy) {
+        queryLocations.where = {
+          ...queryLocations.where,
+          [Op.and]: [
+            {
+              [Op.or]: [
+                ...queryLocations.where[Op.and][0][Op.or],
+                Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
+                Sequelize.literal(`unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`)
+              ]
+            }
+          ]
+        };
+      } else {
+        switch(search.searchBy) {
+          case ESearchBy.CITY:
+            {
+              queryLocations.where = {
+                ...queryLocations.where,
+                [Op.and]: [
+                  ...queryLocations.where[Op.and],
+                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
+                ]
+              };
+            }
+            break;
+          case  ESearchBy.COMPANY:
+            {
+              queryLocations.where = {
+                ...queryLocations.where,
+                [Op.and]: [
+                  ...queryLocations.where[Op.and],
+                  {
+                    [Op.or]: [
+                      Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
+                      Sequelize.literal(`unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`),
+                    ]
+                  }
+                ]
+              };
+            }
+            break;
+          case ESearchBy.CATE_SERVICE:
+            {
+              queryLocations.where = {
+                ...queryLocations.where,
+                [Op.and]: [
+                  ...queryLocations.where[Op.and],
+                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
+                ]
+              };
+            }
+            break;
+          case ESearchBy.SERVICE:
+            {
+              queryLocations.where = {
+                ...queryLocations.where,
+                [Op.and]: [
+                  ...queryLocations.where[Op.and],
+                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
+
+                ]
+              };
+            }
+            break;
+        }
+      }
 
       if (req.query.cityCode) {
         queryLocations.where[Op.and].push(Sequelize.literal(`"cityy"."name" like '${search.cityName}'`));
@@ -373,7 +440,7 @@ export class SearchController {
           ...locationDetail,
           company: {
             ...location.company?.dataValues,
-            ...location.company?.companyDetail.dataValues,
+            ...location.company?.companyDetail?.dataValues,
             companyDetail: undefined
           },
           service: (location.services || [])[0],
