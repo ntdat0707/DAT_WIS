@@ -35,7 +35,35 @@ export class AppointmentRoutes {
       isAuthenticatedCustomer,
       this.appointmentController.customerCreateAppointment
     );
-    this.router.get('/get-all-my-appointment', isAuthenticatedCustomer, this.appointmentController.getAllMyAppointment);
-    this.router.put('/cancel-appointment', isAuthenticatedCustomer, this.appointmentController.cancelAppointment);
+    this.router.get(
+      '/customer-get-all-my-appointment',
+      isAuthenticatedCustomer,
+      this.appointmentController.getAllMyAppointment
+    );
+    this.router.put(
+      '/customer-cancel-appointment',
+      isAuthenticatedCustomer,
+      this.appointmentController.cancelAppointment
+    );
+    this.router.get(
+      '/customer-get-appointment/:appointmentId?',
+      isAuthenticatedCustomer,
+      this.appointmentController.getAppointmentCustomer
+    );
+    this.router.put(
+      '/customer-reschedule-appointment',
+      isAuthenticatedCustomer,
+      this.appointmentController.rescheduleAppointment
+    );
+    this.router.put(
+      '/customer-set-ready-appointment',
+      isAuthenticatedCustomer,
+      this.appointmentController.setReadyAppointment
+    );
+    this.router.put(
+      '/customer-rating-appointment',
+      isAuthenticatedCustomer,
+      this.appointmentController.ratingAppointment
+    );
   }
 }

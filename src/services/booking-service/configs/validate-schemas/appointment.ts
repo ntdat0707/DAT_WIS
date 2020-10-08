@@ -384,6 +384,28 @@ const appointmentCancelSchema = Joi.object({
     .label('appointmentId'),
   cancelReason: Joi.string().required().max(1000).label('cancelReason')
 });
+
+const appointmentRescheduleSchema = Joi.object({
+  appointmentId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('appointmentId'),
+  startTime: Joi.string().isoDate().required().label('startTime')
+});
+
+const ratingAppointmentSchema = Joi.object({
+  appointmentId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('appointmentId'),
+  numberRating: Joi.number().integer().min(0).max(5).required().label('numberRating'),
+  contentReview: Joi.string().required().label('contentReview')
+});
+
 export {
   createAppointmentDetailSchema,
   createAppointmentSchema,
@@ -399,5 +421,7 @@ export {
   appointmentGroupIdSchema,
   customerCreateAppointmentSchema,
   updateAppointmentGroupSchema,
-  appointmentCancelSchema
+  appointmentCancelSchema,
+  appointmentRescheduleSchema,
+  ratingAppointmentSchema
 };
