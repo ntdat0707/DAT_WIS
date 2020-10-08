@@ -23,7 +23,7 @@ import {
   CountryModel
 } from '../../../repositories/postgres/models';
 
-import { searchSchema, suggestedSchema, getLocationMarketPlace } from '../configs/validate-schemas';
+import { searchSchema, suggestedSchema, getLocationMarketPlace, getLocationMarketPlacebyId } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import _ from 'lodash';
@@ -1310,7 +1310,7 @@ export class SearchController {
         customerId: req.query.customerId
       };
 
-      const validateErrors = validate(data, getLocationMarketPlace);
+      const validateErrors = validate(data, getLocationMarketPlacebyId);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }

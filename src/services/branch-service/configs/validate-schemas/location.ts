@@ -70,6 +70,15 @@ const getLocationMarketPlace = Joi.object({
     .label('customerId')
 });
 
+const getLocationMarketPlacebyId = Joi.object({
+  locationId: Joi.string().uuid().required().label('pathName'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('customerId')
+});
+
 const companyIdSchema = Joi.string()
   .guid({
     version: ['uuidv4']
@@ -205,5 +214,6 @@ export {
   companyIdSchema,
   pathNameSchema,
   suggestedSchema,
-  getLocationMarketPlace
+  getLocationMarketPlace,
+  getLocationMarketPlacebyId
 };
