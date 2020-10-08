@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op } from 'sequelize';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 import shortid from 'shortid';
@@ -39,7 +39,8 @@ import {
   appointmentCancelReasonSchema,
   updateAppointmentSchema,
   appointmentIdSchema,
-  customerCreateAppointmentSchema
+  customerCreateAppointmentSchema,
+  appointmentCancelSchema
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
@@ -1624,6 +1625,7 @@ export class AppointmentController extends BaseController {
   public getAllMyAppointment = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const queryUpcomingAppt: FindOptions = {
+        attributes: ['id', 'status', 'customerId'],
         where: {
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
@@ -1638,27 +1640,34 @@ export class AppointmentController extends BaseController {
           {
             model: AppointmentDetailModel,
             as: 'appointmentDetails',
+            attributes: ['id', 'startTime'],
             include: [
               {
                 model: ServiceModel,
                 as: 'service',
+                attributes: ['id', 'cateServiceId', 'description', 'duration', 'name', 'salePrice'],
                 required: false
               },
               {
                 model: StaffModel,
                 as: 'staffs',
-                required: false
+                attributes: ['id', 'firstName', 'avatarPath'],
+                required: false,
+                through: { attributes: [] }
               }
             ]
           },
           {
             model: LocationModel,
             as: 'location',
+            attributes: ['id', 'name', 'photo', 'address'],
             required: false
           }
-        ]
+        ],
+        order: [Sequelize.literal('"appointmentDetails"."start_time"')]
       };
       const queryPastAppt: FindOptions = {
+        attributes: ['id', 'status', 'customerId'],
         where: {
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
@@ -1673,25 +1682,31 @@ export class AppointmentController extends BaseController {
           {
             model: AppointmentDetailModel,
             as: 'appointmentDetails',
+            attributes: ['id', 'startTime'],
             include: [
               {
                 model: ServiceModel,
                 as: 'service',
+                attributes: ['id', 'cateServiceId', 'description', 'duration', 'name', 'salePrice'],
                 required: false
               },
               {
                 model: StaffModel,
                 as: 'staffs',
-                required: false
+                attributes: ['id', 'firstName', 'avatarPath'],
+                required: false,
+                through: { attributes: [] }
               }
             ]
           },
           {
             model: LocationModel,
             as: 'location',
+            attributes: ['id', 'name', 'photo', 'address'],
             required: false
           }
-        ]
+        ],
+        order: [Sequelize.literal('"appointmentDetails"."start_time" DESC')]
       };
       let myAppointments: any = {};
       const upcomingApointments = await AppointmentModel.findAll(queryUpcomingAppt);
@@ -1702,6 +1717,79 @@ export class AppointmentController extends BaseController {
       };
       return res.status(httpStatus.OK).send(buildSuccessMessage(myAppointments));
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentCancel:
+   *       required:
+   *           - appointmentId
+   *           - cancelReason
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           cancelReason:
+   *               type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/cancel-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: cancelAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentCancel'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public cancelAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const data = {
+        appointmentId: req.body.appointmentId,
+        cancelReason: req.body.cancelReason
+      };
+      const validateErrors = validate(data, appointmentCancelSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({ where: { id: data.appointmentId } });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${data.appointmentId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      transaction = await sequelize.transaction();
+      await appointment.update({ status: EAppointmentStatus.CANCEL, cancelReason: data.cancelReason }, { transaction });
+      await AppointmentDetailModel.update(
+        { status: EAppointmentStatus.CANCEL },
+        { where: { appointmentId: data.appointmentId }, transaction }
+      );
+      transaction.commit();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

@@ -374,6 +374,16 @@ const updateAppointmentGroupSchema = Joi.object({
     )
     .label('deleteAppointments')
 });
+
+const appointmentCancelSchema = Joi.object({
+  appointmentId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('appointmentId'),
+  cancelReason: Joi.string().required().max(1000).label('cancelReason')
+});
 export {
   createAppointmentDetailSchema,
   createAppointmentSchema,
@@ -388,5 +398,6 @@ export {
   createAppointmentGroupSchema,
   appointmentGroupIdSchema,
   customerCreateAppointmentSchema,
-  updateAppointmentGroupSchema
+  updateAppointmentGroupSchema,
+  appointmentCancelSchema
 };
