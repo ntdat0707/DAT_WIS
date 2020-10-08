@@ -1282,6 +1282,209 @@ export class SearchController {
 
   /**
    * @swagger
+   * /branch/location/market-place/get-location-by-id/{locationId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     - in: query
+   *       name: customerId
+   *       schema:
+   *          type: string
+   *     name: getLocationMarketPlaceById
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+  public getLocationMarketPlaceById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = {
+        locationId: req.params.locationId,
+        customerId: req.query.customerId
+      };
+
+      const validateErrors = validate(data, getLocationMarketPlace);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+
+      let staffs: any = [];
+      let locations: any = [];
+      let cateServices: any = [];
+      let location: any = await LocationModel.findOne({
+        include: [
+          {
+            model: MarketPlaceValueModel,
+            as: 'marketplaceValues',
+            required: false,
+            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
+            include: [
+              {
+                model: MarketPlaceFieldsModel,
+                as: 'marketplaceField',
+                required: false,
+                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
+              }
+            ]
+          },
+          {
+            model: CompanyModel,
+            as: 'company',
+            required: true,
+            attributes: ['ownerId'],
+            include: [
+              {
+                model: CompanyDetailModel,
+                as: 'companyDetail',
+                required: false,
+                attributes: ['businessType', 'businessName']
+              }
+            ]
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            attributes: ['path', 'is_avatar']
+          }
+        ],
+        where: { id: data.locationId },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+
+      if (location) {
+        locations = (
+          await LocationModel.findAll({
+            where: { companyId: location.companyId },
+            include: [
+              {
+                model: LocationWorkingHourModel,
+                as: 'workingTimes',
+                required: true,
+                where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
+                order: [['weekday', 'DESC']],
+                attributes: ['weekday', 'startTime', 'endTime']
+              }
+            ],
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            group: [
+              'LocationModel.id',
+              'workingTimes.id',
+              'workingTimes.start_time',
+              'workingTimes.end_time',
+              'workingTimes.weekday'
+            ]
+          })
+        ).map((locate: any) => ({
+          ...locate.dataValues
+        }));
+
+        const locationDetail = location.marketplaceValues.reduce(
+          (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            ...acc,
+            [name]: parseDatabyType[type](value)
+          }),
+          {}
+        );
+
+        location = location.dataValues;
+        location = {
+          ...location,
+          ...locationDetail,
+          ...location.locationImages?.dataValues,
+          ...location.company?.dataValues,
+          ['marketplaceValues']: undefined,
+          ['company']: undefined
+        };
+
+        staffs = await StaffModel.findAll({
+          raw: true,
+          where: { mainLocationId: location.id },
+          attributes: ['id', 'firstName', 'avatarPath'],
+          order: Sequelize.literal(
+            'case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"'
+          )
+        });
+
+        const serviceIds: any = (
+          await LocationServiceModel.findAll({
+            raw: true,
+            where: { locationId: location.id },
+            attributes: ['service_id']
+          })
+        ).map((serviceId: any) => serviceId.service_id);
+
+        cateServices = await CateServiceModel.findAll({
+          where: { companyId: location.companyId },
+          attributes: ['id', 'name'],
+          include: [
+            {
+              model: ServiceModel,
+              as: 'services',
+              required: true,
+              attributes: ['id', 'name', 'duration', 'sale_price'],
+              where: { id: serviceIds }
+            }
+          ],
+          group: ['CateServiceModel.id', 'services.id']
+        });
+      } else {
+        location = {};
+      }
+
+      let customer = null;
+      if (data.customerId) {
+        customer = await CustomerModel.findOne({ where: { id: data.customerId } });
+      }
+
+      if (customer && location) {
+        let recentViews: any = await RecentViewModel.findOne({
+          where: { customerId: data.customerId, locationId: location.id }
+        });
+        if (!recentViews) {
+          const recentViewData: any = {
+            id: uuidv4(),
+            customerId: data.customerId,
+            locationId: location.id
+          };
+          await RecentViewModel.create(recentViewData);
+        } else {
+          recentViews = recentViews.dataValues;
+          recentViews.view += 1;
+          await RecentViewModel.update(
+            { view: recentViews.view },
+            {
+              where: {
+                id: recentViews.id
+              }
+            }
+          );
+        }
+      }
+
+      const locationDetails = {
+        locations: locations,
+        locationInformation: location,
+        cateServices: cateServices,
+        staffs: staffs
+      };
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
+    } catch (error) {
+      // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
    * /branch/location/market-place/delete-recent-view/{recentViewId}:
    *   delete:
    *     tags:
