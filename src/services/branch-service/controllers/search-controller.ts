@@ -163,15 +163,17 @@ export class SearchController {
       };
 
       const cityName = (await CityModel.findAll({ attributes: ['name'] })).map((city: any) => city.get('name'));
-      const countryCode = (await CountryModel.findAll({ attributes: ['country_code'] })).map((country: any) => country.get('country_code'));
+      const countryCode = (await CountryModel.findAll({ attributes: ['country_code'] })).map((country: any) =>
+        country.get('country_code')
+      );
 
       const newSearchSchema = searchSchema.append({
-        'cityName': Joi.string()
+        cityName: Joi.string()
           .valid(...cityName)
           .optional()
           .allow(null, '')
           .label('cityName'),
-        'countryCode': Joi.string()
+        countryCode: Joi.string()
           .valid(...countryCode)
           .optional()
           .allow(null, '')
@@ -182,7 +184,6 @@ export class SearchController {
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
-      // console.log('CheckedValidate:::');
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
@@ -359,7 +360,9 @@ export class SearchController {
       if (req.query.cityCode) {
         queryLocations.where[Op.and].push(Sequelize.literal(`"cityy"."name" like '${search.cityName}'`));
       } else if (req.query.countryCode) {
-        queryLocations.where[Op.and].push(Sequelize.literal(`"cityy->country"."country_code" like '${search.countryCode}'`));
+        queryLocations.where[Op.and].push(
+          Sequelize.literal(`"cityy->country"."country_code" like '${search.countryCode}'`)
+        );
       }
 
       if (req.query.order === EOrder.NEWEST) {
@@ -1301,7 +1304,6 @@ export class SearchController {
 
   public deleteRecentView = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // console.log('CustomerId::', res.locals.customerPayload);
       const dataInput = {
         customerId: res.locals.customerPayload.id,
         recentViewId: req.params.recentViewId
@@ -1377,18 +1379,18 @@ export class SearchController {
 
   public suggestCountryAndCity = async (_req: Request, res: Response, next: NextFunction) => {
     try {
-        const countries = await CountryModel.findAll({
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-          include: [
-            {
-              model: CityModel,
-              as: 'cities',
-              required: false,
-              attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-            }
-          ]
-        });
-        return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
+      const countries = await CountryModel.findAll({
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+        include: [
+          {
+            model: CityModel,
+            as: 'cities',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          }
+        ]
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
     } catch (error) {
       return next(error);
     }

@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
+import { EContactType } from '../../../utils/consts';
 
 class ContactModel extends Model {
   public id: string;
@@ -37,8 +38,9 @@ ContactModel.init(
     },
     type: {
       field: 'type',
-      type: DataTypes.STRING(20),
-      allowNull: false
+      type: DataTypes.ENUM(EContactType.HOME, EContactType.MOBILE, EContactType.OTHER, EContactType.WORK),
+      allowNull: false,
+      defaultValue: EContactType.WORK
     },
     createdAt: {
       field: 'created_at',

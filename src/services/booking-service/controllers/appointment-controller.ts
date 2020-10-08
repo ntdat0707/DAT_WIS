@@ -498,30 +498,30 @@ export class AppointmentController extends BaseController {
       }
       const conditionsStaffs: any = conditions.staffIds
         ? {
-          model: StaffModel,
-          as: 'staffs',
-          required: true,
-          through: { attributes: [] },
-          where: { id: conditions.staffIds }
-        }
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] },
+            where: { id: conditions.staffIds }
+          }
         : {
-          model: StaffModel,
-          as: 'staffs',
-          required: true,
-          through: { attributes: [] }
-        };
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          };
       const conditionResources: any = conditions.resourceIds
         ? {
-          model: ResourceModel,
-          as: 'resource',
-          required: false,
-          where: { id: conditions.resourceIds }
-        }
+            model: ResourceModel,
+            as: 'resource',
+            required: false,
+            where: { id: conditions.resourceIds }
+          }
         : {
-          model: ResourceModel,
-          as: 'resource',
-          required: false
-        };
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          };
       query.include.push(conditionsStaffs);
       query.include.push(conditionResources);
       const appointmentDetails = await AppointmentDetailModel.findAll(query);
@@ -1492,7 +1492,6 @@ export class AppointmentController extends BaseController {
           serviceId: appointmentDetails[i].serviceId,
           staffId: appointmentDetails[i].staffIds[0]
         });
-
       }
       await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
         transaction

@@ -860,7 +860,6 @@ export class StaffController {
   public completeOnboard = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
-      // console.log('Company:::', company);
       await StaffModel.update({ onboardStep: 5 }, { where: { id: company.ownerId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
@@ -872,10 +871,10 @@ export class StaffController {
    * definitions:
    *   StaffMultipleService:
    *       required:
-   *           - mainLocationId
+   *           - locationId
    *           - serviceIds
    *       properties:
-   *           mainLocationId:
+   *           locationId:
    *               type: string
    *           serviceIds:
    *               type: array
@@ -922,7 +921,7 @@ export class StaffController {
       }).then((services) => services.map((service) => service.staffId));
       const staffs = await StaffModel.findAll({
         where: {
-          mainLocationId: dataInput.mainLocationId,
+          mainLocationId: dataInput.locationId,
           id: {
             [Op.in]: staffIds
           }
@@ -1014,13 +1013,10 @@ export class StaffController {
       const preData = JSON.stringify(workingTime.toJSON());
       const simplyData = JSON.parse(preData);
       const data = simplyData.workingLocations['0'].workingTimes;
-      // console.log(data);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
-      //console.log(workTime);
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
-      //console.log(timeSlot);
+      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
         include: [
@@ -1061,7 +1057,6 @@ export class StaffController {
             const finalTimeSlotString = finalTimeSlotH.toString().concat(finalTimeSlotM.toString());
             finalTimeSlot = parseInt(finalTimeSlotString, 10);
           } else {
-            //console.log(firstTimeSlot);
             const hour = Math.floor(obj.duration / 60);
             const minute = Math.round((obj.duration / 60 - hour) * 60);
             let finalTimeSlotM = (firstTimeSlot % 100) + minute;
@@ -1162,7 +1157,6 @@ export class StaffController {
           timeSlot[key] = false;
         });
       }
-      //console.log(rangelist);
       let newTimeSlot: any;
       const tempIsAvail: any[] = [];
       Object.keys(timeSlot).forEach((key: any) => {
@@ -1241,7 +1235,6 @@ export class StaffController {
       const workDay = dataInput.workDay;
       const staffIds: string[] = [];
       const durationTime = minutesToNum(serviceDuration);
-      //console.log(duration);
       const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
 
       const workingTime = await LocationModel.findOne({
@@ -1266,9 +1259,7 @@ export class StaffController {
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
 
-      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
-      //console.log(workDay);
-      //console.log(timeSlot);
+      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
 
       const doctorsSchedule = await StaffModel.findAndCountAll({
@@ -1298,7 +1289,6 @@ export class StaffController {
       });
       const preDataFirst = JSON.stringify(doctorsSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
-      //console.log(preDataSecond);
       const len = preDataSecond.rows.length;
       for (let i = 0; i < len; i++) {
         preDataSecond.rows[i].appointmentDetails.forEach((e: any) => {
@@ -1306,7 +1296,6 @@ export class StaffController {
         });
       }
       const staffUnavailTime = getStaffUnavailTime(preDataSecond);
-      //console.log(staffUnavailTime);
       const doctors = await StaffModel.findAndCountAll({
         attributes: ['id'],
         where: {
