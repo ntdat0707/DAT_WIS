@@ -16,7 +16,7 @@ import {
   CompanyDetailModel,
   LocationImageModel,
   MarketPlaceFieldsModel,
-  MarketPlaceValueModel,
+  MarketPlaceValueModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -31,7 +31,7 @@ import { locationErrorDetails } from '../../../utils/response-messages/error-det
 import _ from 'lodash';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
-import {normalizeRemoveAccent} from '../../../utils/text';
+import { normalizeRemoveAccent } from '../../../utils/text';
 import { dataDefaultbyType, parseDatabyType } from '../utils';
 
 export class LocationController {
@@ -180,7 +180,9 @@ export class LocationController {
       }
 
       data.companyId = res.locals.staffPayload.companyId;
-      if (req.file) { data.photo = (req.file as any).location; }
+      if (req.file) {
+        data.photo = (req.file as any).location;
+      }
       let company: any = await CompanyModel.findOne({
         where: { id: data.companyId },
         include: [
@@ -216,7 +218,8 @@ export class LocationController {
         },
         attributes: ['id', 'name']
       });
-      if (!city) { // when can't find city then default city is 'Ho Chi Minh'
+      if (!city) {
+        // when can't find city then default city is 'Ho Chi Minh'
         city = await CityModel.findOne({
           where: {
             name: Sequelize.literal('unaccent("CityModel"."name") ilike unaccent(\'%Ho Chi Minh%\')')
@@ -230,7 +233,9 @@ export class LocationController {
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
-      if (req.file) { data.photo = (req.file as any).location; }
+      if (req.file) {
+        data.photo = (req.file as any).location;
+      }
 
       let pathName = '';
       if (data.address) {
@@ -239,7 +244,7 @@ export class LocationController {
         pathName = normalizeRemoveAccent(company.businessName) + '-' + uuidv4();
       }
 
-      data = Object.assign(data, { pathName } );
+      data = Object.assign(data, { pathName });
 
       // if (data.photo) {
       //   await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
@@ -297,7 +302,7 @@ export class LocationController {
 
       await transaction.commit();
       //commit transaction
-      let newLocation: any = (await LocationModel.findOne({
+      let newLocation: any = await LocationModel.findOne({
         where: { id: location.id },
         include: [
           {
@@ -316,16 +321,12 @@ export class LocationController {
           }
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-        group: [
-         'LocationModel.id',
-         'marketplaceValues.id',
-         'marketplaceValues->marketplaceField.id'
-        ]
-      }));
+        group: ['LocationModel.id', 'marketplaceValues.id', 'marketplaceValues->marketplaceField.id']
+      });
 
       const locationDetail = newLocation.marketplaceValues?.reduce(
-        (acc: any, { value, marketplaceField: { name, type }}: any) => {
-          return  {
+        (acc: any, { value, marketplaceField: { name, type } }: any) => {
+          return {
             ...acc,
             [name]: parseDatabyType[type](value)
           };
