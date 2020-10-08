@@ -274,7 +274,7 @@ export class SearchController {
         },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
         group: [
-          'Location Model.id',
+          'LocationModel.id',
           'marketplaceValues.id',
           'marketplaceValues->marketplaceField.id',
           'locationImages.id',
