@@ -14,7 +14,6 @@ export default class APIGateway {
   }
 
   private async config(): Promise<void> {
-    // console.log(process.env.SVC_USER_HOST, process.env.SVC_USER_PORT);
     this.app.set('port', process.env.API_GTW_PORT || 4000);
 
     this.app.use(bodyParser.json());
