@@ -444,7 +444,6 @@ export class ServiceController {
       });
 
       const result = paginateRawData(services, paginateOptions, fullPath);
-      console.log(result);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(result));
     } catch (error) {
       return next(error);
