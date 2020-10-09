@@ -13,15 +13,14 @@ import {
 } from '../../../repositories/postgres/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
-  createPipelineSchema,
-  updatePipelineSchema,
   pipelineIdSchema,
   pipelineStageIdSchema,
   settingPipelineStageSchema,
   filterDeal,
   createDealSchema,
   dealIdSchema,
-  updateDealSchema
+  updateDealSchema,
+  settingPipelineSchema
 } from '../configs/validate-schemas/deal';
 import {
   dealErrorDetails,
@@ -34,6 +33,7 @@ import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { StatusPipelineStage } from '../../../utils/consts';
 import * as _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
 export class DealController {
   /**
    * @swagger
@@ -68,140 +68,6 @@ export class DealController {
         ]
       });
       return res.status(httpStatus.OK).send(buildSuccessMessage(pipelines));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * definitions:
-   *   pipelineCreate:
-   *       properties:
-   *           name:
-   *               type: string
-   *           isActiveProbability:
-   *               type: boolean
-   */
-
-  /**
-   * @swagger
-   * /customer/deal/create-pipeline:
-   *   post:
-   *     tags:
-   *       - Customer
-   *     security:
-   *       - Bearer: []
-   *     name: createPipeline
-   *     parameters:
-   *     - in: "body"
-   *       name: "body"
-   *       required: true
-   *       schema:
-   *         $ref: '#/definitions/pipelineCreate'
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public createPipeline = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const data: any = {
-        name: req.body.name,
-        isActiveProbability: req.body.isActiveProbability
-      };
-      const validateErrors = validate(data, createPipelineSchema);
-      if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
-      }
-      const companyId = res.locals.staffPayload.companyId;
-      const checkPipeline = await PipelineModel.findOne({
-        where: { companyId: companyId, name: data.name }
-      });
-      if (checkPipeline) {
-        throw new CustomError(
-          pipelineErrorDetails.E_3102(`Pipeline name ${data.name} exists in companyId ${companyId}`),
-          httpStatus.BAD_REQUEST
-        );
-      }
-      data.companyId = companyId;
-      const pipeline = await PipelineModel.create(data);
-      return res.status(httpStatus.OK).send(buildSuccessMessage(pipeline));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * definitions:
-   *   pipelineUpdate:
-   *       properties:
-   *           name:
-   *               type: string
-   *           isActiveProbability:
-   *               type: boolean
-   *
-   */
-
-  /**
-   * @swagger
-   * /customer/deal/update-pipeline/{pipelineId}:
-   *   put:
-   *     tags:
-   *       - Customer
-   *     security:
-   *       - Bearer: []
-   *     name: updatePipeline
-   *     parameters:
-   *     - in: "path"
-   *       name: "pipelineId"
-   *       required: true
-   *     - in: "body"
-   *       name: "body"
-   *       required: true
-   *       schema:
-   *         $ref: '#/definitions/pipelineUpdate'
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public updatePipeline = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const pipelineId = req.params.pipelineId;
-      const data: any = {
-        name: req.body.name,
-        isActiveProbability: req.body.isActiveProbability
-      };
-      const validateErrors = validate(data, updatePipelineSchema);
-      if (validateErrors) {
-        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
-      }
-      let pipeline = await PipelineModel.findOne({ where: { id: pipelineId } });
-      if (!pipeline) {
-        throw new CustomError(pipelineErrorDetails.E_3101(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND);
-      }
-      const conditionId = { [Op.ne]: pipelineId };
-      const checkPipeline = await PipelineModel.findOne({
-        where: { id: conditionId, companyId: res.locals.staffPayload.companyId, name: data.name }
-      });
-      if (checkPipeline) {
-        throw new CustomError(
-          pipelineErrorDetails.E_3102(
-            `Pipeline name ${data.name} exists in companyId ${res.locals.staffPayload.companyId}`
-          ),
-          httpStatus.BAD_REQUEST
-        );
-      }
-      pipeline = await pipeline.update(data);
-      return res.status(httpStatus.OK).send(buildSuccessMessage(pipeline));
     } catch (error) {
       return next(error);
     }
@@ -381,10 +247,13 @@ export class DealController {
    *   settingStage:
    *       required:
    *           name
+   *           isActiveProbability
    *           listPipelineStage
    *       properties:
    *           name:
    *               type: string
+   *           isActiveProbability:
+   *               type: boolean
    *           listPipelineStage:
    *               type: array
    *               items:
@@ -431,7 +300,7 @@ export class DealController {
       const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
       if (req.body.listPipelineStage.length !== checkUniqName.length) {
         throw new CustomError(
-          pipelineStageErrorDetails.E_3202('pipeline stage name exists in pipeline stage'),
+          pipelineStageErrorDetails.E_3202(`pipeline stage name exists in pipeline`),
           httpStatus.BAD_REQUEST
         );
       }
@@ -451,12 +320,15 @@ export class DealController {
       });
       if (checkPipeline) {
         throw new CustomError(
-          pipelineErrorDetails.E_3102(`name ${req.body.name} exists in pipeline`),
+          pipelineErrorDetails.E_3102(`name ${req.body.name} exists in company`),
           httpStatus.BAD_REQUEST
         );
       }
       transaction = await sequelize.transaction();
-      await pipeline.update({ name: req.body.name }, { transaction });
+      await pipeline.update(
+        { name: req.body.name, isActiveProbability: req.body.isActiveProbability },
+        { transaction }
+      );
       for (let i = 0; i < req.body.listPipelineStage.length; i++) {
         const data = {
           name: req.body.listPipelineStage[i].name,
@@ -1035,6 +907,110 @@ export class DealController {
       deal = await deal.update({ pipelineStageId: newPipelineStageId });
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   stageSetting:
+   *       properties:
+   *           name:
+   *               type: string
+   *           rottingIn:
+   *               type: integer
+   *           probability:
+   *               type: number
+   *               format: float
+   *           order:
+   *               type: integer
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   settingPipeline:
+   *       required:
+   *           name
+   *           isActiveProbability
+   *           listPipelineStage
+   *       properties:
+   *           name:
+   *               type: string
+   *           isActiveProbability:
+   *               type: boolean
+   *           listPipelineStage:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/stageSetting'
+   */
+
+  /**
+   * @swagger
+   * /customer/deal/setting-pipeline:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: settingPipeline
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/settingPipeline'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public settingPipeline = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const validateErrors = validate(req.body, settingPipelineSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
+      if (req.body.listPipelineStage.length !== checkUniqName.length) {
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3202(`duplicate pipeline stage name`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      const dataPipeline = {
+        id: uuidv4(),
+        name: req.body.name,
+        isActiveProbability: req.body.isActiveProbability,
+        companyId: res.locals.staffPayload.companyId
+      };
+      const checkPipeline = await PipelineModel.findOne({
+        where: { name: dataPipeline.name, companyId: dataPipeline.companyId }
+      });
+      if (checkPipeline) {
+        throw new CustomError(
+          pipelineErrorDetails.E_3102(`name ${req.body.name} exists in company`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      transaction = await sequelize.transaction();
+      await PipelineModel.create(dataPipeline, { transaction });
+      for (let i = 0; i < req.body.listPipelineStage.length; i++) {
+        req.body.listPipelineStage[i].pipelineId = dataPipeline.id;
+      }
+      await PipelineStageModel.bulkCreate(req.body.listPipelineStage, { transaction });
+      transaction.commit();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
