@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
-import shortid from 'shortid';
 import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { branchErrorDetails, bookingErrorDetails } from '../../../utils/response-messages/error-details';
@@ -28,6 +27,7 @@ import {
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
+import { generate } from 'randomstring';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -138,6 +138,22 @@ export class AppointmentGroupController extends BaseController {
       const createAppointmentDetailTasks = [];
       const createAppointmentDetailStaffTasks = [];
       for (const apptData of data.appointments) {
+        let appointmentCode = '';
+        for (let i = 0; i < 10; i++) {
+          appointmentCode = generate({
+            length: 8,
+            charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+          });
+
+          const existAppCode = await AppointmentModel.findOne({
+            where: {
+              appointmentCode: appointmentCode
+            }
+          });
+          if (!existAppCode) {
+            break;
+          }
+        }
         const newAppointmentId = uuidv4();
         createAppointmentTasks.push({
           id: newAppointmentId,
@@ -146,7 +162,7 @@ export class AppointmentGroupController extends BaseController {
           date: data.date,
           customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
           isPrimary: apptData.isPrimary === true ? true : false,
-          appointmentCode: shortid.generate()
+          appointmentCode: appointmentCode
         });
 
         //appointment detail data
@@ -599,6 +615,22 @@ export class AppointmentGroupController extends BaseController {
         const createAppointmentDetailTasks = [];
         const createAppointmentDetailStaffTasks = [];
         for (const apptData of data.createNewAppointments) {
+          let appointmentCode = '';
+          for (let i = 0; i < 10; i++) {
+            appointmentCode = generate({
+              length: 8,
+              charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            });
+
+            const existAppCode = await AppointmentModel.findOne({
+              where: {
+                appointmentCode: appointmentCode
+              }
+            });
+            if (!existAppCode) {
+              break;
+            }
+          }
           const newAppointmentId = uuidv4();
           createAppointmentTasks.push({
             id: newAppointmentId,
@@ -607,7 +639,7 @@ export class AppointmentGroupController extends BaseController {
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
-            appointmentCode: shortid.generate()
+            appointmentCode: appointmentCode
           });
 
           //appointment detail data
@@ -637,6 +669,7 @@ export class AppointmentGroupController extends BaseController {
       }
 
       if (data.updateAppointments && data.updateAppointments.length > 0) {
+        const arrApptCode = [];
         for (let i = 0; i < data.updateAppointments.length; i++) {
           const appointment = await AppointmentModel.findOne({
             where: {
@@ -653,6 +686,7 @@ export class AppointmentGroupController extends BaseController {
               )
             );
           }
+          arrApptCode.push(appointment.appointmentCode);
           await AppointmentModel.destroy({
             where: { id: data.updateAppointments[i].appointmentId },
             transaction
@@ -687,6 +721,7 @@ export class AppointmentGroupController extends BaseController {
         const createAppointmentTasks = [];
         const createAppointmentDetailTasks = [];
         const createAppointmentDetailStaffTasks = [];
+        let index = 0;
         for (const apptData of data.updateAppointments) {
           const newAppointmentId = uuidv4();
           createAppointmentTasks.push({
@@ -695,8 +730,10 @@ export class AppointmentGroupController extends BaseController {
             locationId: data.locationId,
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
-            isPrimary: apptData.isPrimary === true ? true : false
+            isPrimary: apptData.isPrimary === true ? true : false,
+            appointmentCode: arrApptCode[index]
           });
+          index++;
 
           //appointment detail data
           for (const apptDetailData of apptData.appointmentDetails) {

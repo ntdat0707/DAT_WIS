@@ -3,7 +3,6 @@ import HttpStatus from 'http-status-codes';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
-import shortid from 'shortid';
 require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
@@ -48,6 +47,7 @@ import {
 import { BaseController } from './base-controller';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import httpStatus from 'http-status';
+import { generate } from 'randomstring';
 export class AppointmentController extends BaseController {
   /**
    * @swagger
@@ -183,6 +183,22 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+      let appointmentCode = '';
+      for (let i = 0; i < 10; i++) {
+        appointmentCode = generate({
+          length: 8,
+          charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        });
+
+        const existAppCode = await AppointmentModel.findOne({
+          where: {
+            appointmentCode: appointmentCode
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
@@ -190,7 +206,8 @@ export class AppointmentController extends BaseController {
         status: EAppointmentStatus.NEW,
         customerWisereId: dataInput.customerWisereId ? dataInput.customerWisereId : null,
         bookingSource: dataInput.bookingSource,
-        appointmentCode: shortid.generate()
+        appointmentCode: appointmentCode,
+        date: dataInput.date
       };
 
       if (dataInput.appointmentGroupId) {
@@ -935,6 +952,22 @@ export class AppointmentController extends BaseController {
               data.createNewAppointments[i].appointmentDetails,
               data.locationId
             );
+            let appointmentCode = '';
+            for (let j = 0; j < 10; j++) {
+              appointmentCode = generate({
+                length: 8,
+                charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+              });
+
+              const existAppCode = await AppointmentModel.findOne({
+                where: {
+                  appointmentCode: appointmentCode
+                }
+              });
+              if (!existAppCode) {
+                break;
+              }
+            }
             //insert appointment here
             const newAppointmentData: any = {
               id: appointmentId,
@@ -946,7 +979,8 @@ export class AppointmentController extends BaseController {
               bookingSource: AppointmentBookingSource.STAFF,
               appointmentGroupId: appointmentGroupId,
               isPrimary: false,
-              appointmentCode: shortid.generate()
+              date: data.date,
+              appointmentCode: appointmentCode
             };
             await AppointmentModel.create(newAppointmentData, { transaction });
             const appointmentDetailData: any[] = [];
@@ -1411,6 +1445,22 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+      let appointmentCode = '';
+      for (let i = 0; i < 10; i++) {
+        appointmentCode = generate({
+          length: 8,
+          charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        });
+
+        const existAppCode = await AppointmentModel.findOne({
+          where: {
+            appointmentCode: appointmentCode
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
@@ -1418,7 +1468,8 @@ export class AppointmentController extends BaseController {
         status: EAppointmentStatus.NEW,
         customerId: id,
         bookingSource: dataInput.bookingSource,
-        appointmentCode: shortid.generate()
+        appointmentCode: appointmentCode,
+        date: dataInput.date
       };
 
       if (dataInput.appointmentGroupId) {

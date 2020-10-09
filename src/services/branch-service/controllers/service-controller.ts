@@ -418,7 +418,7 @@ export class ServiceController {
       }
 
       let query = '';
-      query += `select service.id as id, service.status as status, service.created_at as "createdAt", service.updated_at as "updatedAt", service.deleted_at as "deletedAt", service.description, service.sale_price as "salePrice", service.duration, service.name, service.color, service.service_code as "serviceCode", service.unit_price as "unitPrice", service.allow_gender as "allowGender", service.name_en as "nameEn", service.cate_service_id as "cateSericeId" 
+      query += `select distinct service.id as id, service.status as status, service.created_at as "createdAt", service.updated_at as "updatedAt", service.deleted_at as "deletedAt", service.description, service.sale_price as "salePrice", service.duration, service.name, service.color, service.service_code as "serviceCode", service.unit_price as "unitPrice", service.allow_gender as "allowGender", service.name_en as "nameEn", service.cate_service_id as "cateSericeId" 
                 FROM service 
                 INNER JOIN location_services ON service.id = location_services.service_id
                 INNER JOIN cate_service ON cate_service.id = service.cate_service_id 
