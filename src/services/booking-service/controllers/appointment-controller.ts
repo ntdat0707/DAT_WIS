@@ -1789,7 +1789,9 @@ export class AppointmentController extends BaseController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const appointment = await AppointmentModel.findOne({ where: { id: data.appointmentId } });
+      const appointment = await AppointmentModel.findOne({
+        where: { id: data.appointmentId, customerId: res.locals.customerPayload.id }
+      });
       if (!appointment) {
         return next(
           new CustomError(
@@ -1811,7 +1813,7 @@ export class AppointmentController extends BaseController {
         { status: EAppointmentStatus.CANCEL },
         { where: { appointmentId: data.appointmentId }, transaction }
       );
-      transaction.commit();
+      await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
       //rollback transaction
@@ -1854,7 +1856,7 @@ export class AppointmentController extends BaseController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const appointment = await AppointmentModel.findOne({
-        where: { id: req.params.appointmentId },
+        where: { id: req.params.appointmentId, customerId: res.locals.customerPayload.id },
         include: [
           {
             model: LocationModel,
@@ -1864,11 +1866,6 @@ export class AppointmentController extends BaseController {
           {
             model: CustomerModel,
             as: 'customer',
-            required: false
-          },
-          {
-            model: CustomerWisereModel,
-            as: 'customerWisere',
             required: false
           },
           {
@@ -1949,7 +1946,7 @@ export class AppointmentController extends BaseController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const appointment = await AppointmentModel.findOne({
-        where: { id: req.body.appointmentId }
+        where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
       });
       if (!appointment) {
         return next(
@@ -2019,7 +2016,9 @@ export class AppointmentController extends BaseController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      const appointment = await AppointmentModel.findOne({ where: { id: appointmentId } });
+      const appointment = await AppointmentModel.findOne({
+        where: { id: appointmentId, customerId: res.locals.customerPayload.id }
+      });
       if (!appointment) {
         return next(
           new CustomError(bookingErrorDetails.E_2002(`appointment ${appointmentId} not found`), HttpStatus.NOT_FOUND)
@@ -2039,7 +2038,7 @@ export class AppointmentController extends BaseController {
         { status: EAppointmentStatus.ARRIVED },
         { where: { appointmentId: appointmentId }, transaction }
       );
-      transaction.commit();
+      await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
       //rollback transaction
@@ -2095,7 +2094,9 @@ export class AppointmentController extends BaseController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      let appointment = await AppointmentModel.findOne({ where: { id: req.body.appointmentId } });
+      let appointment = await AppointmentModel.findOne({
+        where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
+      });
       if (!appointment) {
         return next(
           new CustomError(
