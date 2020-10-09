@@ -761,40 +761,40 @@ export class AppointmentGroupController extends BaseController {
         }
       }
       await transaction.commit();
-      const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
-        where: { id: data.appointmentGroupId },
-        include: [
-          { model: LocationModel, as: 'location', required: true },
-          {
-            model: AppointmentModel,
-            as: 'appointments',
-            required: true,
-            include: [
-              {
-                model: AppointmentDetailModel,
-                as: 'appointmentDetails',
-                required: true,
-                include: [
-                  {
-                    model: StaffModel.scope('safe'),
-                    as: 'staffs',
-                    required: true
-                  },
-                  {
-                    model: ServiceModel,
-                    as: 'service',
-                    required: true
-                  },
-                  {
-                    model: ResourceModel,
-                    as: 'resource'
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      });
+      // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
+      //   where: { id: data.appointmentGroupId },
+      //   include: [
+      //     { model: LocationModel, as: 'location', required: true },
+      //     {
+      //       model: AppointmentModel,
+      //       as: 'appointments',
+      //       required: true,
+      //       include: [
+      //         {
+      //           model: AppointmentDetailModel,
+      //           as: 'appointmentDetails',
+      //           required: true,
+      //           include: [
+      //             {
+      //               model: StaffModel.scope('safe'),
+      //               as: 'staffs',
+      //               required: true
+      //             },
+      //             {
+      //               model: ServiceModel,
+      //               as: 'service',
+      //               required: true
+      //             },
+      //             {
+      //               model: ResourceModel,
+      //               as: 'resource'
+      //             }
+      //           ]
+      //         }
+      //       ]
+      //     }
+      //   ]
+      // });
       const query: FindOptions = {
         include: [
           {

@@ -14,7 +14,6 @@ import {
   StaffModel,
   CityModel,
   CompanyDetailModel,
-  LocationImageModel,
   MarketPlaceFieldsModel,
   MarketPlaceValueModel
 } from '../../../repositories/postgres/models';
