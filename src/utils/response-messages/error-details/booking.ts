@@ -112,6 +112,16 @@ const bookingErrorDetails = {
   E_2010(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('2010', 'Duplicate appointment in delete and update', detail);
     return e;
+  },
+  /**
+   * Appointment must has detail
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2011(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2011', 'Status appointment must be complete', detail);
+    return e;
   }
 };
 

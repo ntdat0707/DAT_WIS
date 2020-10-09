@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EGender, ESocialType } from '../../../../utils/consts';
+import { EGender, ESocialType, ESource, ELabel, EContactType } from '../../../../utils/consts';
 
 const createCustomerWisereSchema = Joi.object({
   firstName: Joi.string().required().label('firstName'),
@@ -10,20 +10,25 @@ const createCustomerWisereSchema = Joi.object({
   birthDate: Joi.string().isoDate().label('birthDate'),
   passportNumber: Joi.string().label('passportNumber'),
   address: Joi.string().label('address'),
-  source: Joi.string().label('source'),
+  color: Joi.string().regex(/^#[0-9A-F]{6}$/i),
+  source: Joi.string()
+    .valid(ESource.FACEBOOK, ESource.MARKETPLACE, ESource.OTHER, ESource.SHOPEE, ESource.WISERE, ESource.ZALO)
+    .label('source'),
+  label: Joi.string()
+    .valid(ELabel.COLD_LEAD, ELabel.CUSTOMER, ELabel.HOT_LEAD, ELabel.NONE, ELabel.WARM_LEAD)
+    .label('label'),
   note: Joi.string().label('note'),
   job: Joi.string().label('job'),
   ownerId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .required()
     .label('ownerId'),
   moreEmailContact: Joi.array()
     .items(
       Joi.object({
         email: Joi.string().required().email().label('email'),
-        type: Joi.string().required()
+        type: Joi.string().required().valid(EContactType.HOME, EContactType.WORK, EContactType.OTHER).label('type')
       })
     )
     .label('moreEmailContact'),
@@ -31,19 +36,66 @@ const createCustomerWisereSchema = Joi.object({
     .items(
       Joi.object({
         phone: Joi.string().regex(/^\d+$/).required().label('phone'),
-        type: Joi.string().required()
+        type: Joi.string()
+          .required()
+          .valid(EContactType.HOME, EContactType.WORK, EContactType.OTHER, EContactType.MOBILE)
+          .label('type')
       })
     )
     .label('morePhoneContact')
 });
 
 const updateCustomerWisereSchema = Joi.object({
-  firstName: Joi.string().required().label('firstName'),
-  lastName: Joi.string().required().label('lastName'),
-  gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
-  birthDate: Joi.string().isoDate().label('birthDate'),
-  passportNumber: Joi.string().label('passportNumber'),
-  address: Joi.string().label('address')
+  customerWisereId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('customerWisereId'),
+  firstName: Joi.string().disallow(null, '').label('firstName'),
+  lastName: Joi.string().disallow(null, '').label('lastName'),
+  gender: Joi.number().integer().disallow(null, '').valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
+  phone: Joi.string().regex(/^\d+$/).disallow(null, '').label('phone'),
+  email: Joi.string().allow(null, '').email().label('email'),
+  birthDate: Joi.string().allow(null, '').isoDate().label('birthDate'),
+  passportNumber: Joi.string().allow(null, '').label('passportNumber'),
+  address: Joi.string().allow(null, '').label('address'),
+  color: Joi.string().regex(/^#[0-9A-F]{6}$/i),
+  source: Joi.string()
+    .allow(null)
+    .valid(ESource.FACEBOOK, ESource.MARKETPLACE, ESource.OTHER, ESource.SHOPEE, ESource.WISERE, ESource.ZALO)
+    .label('source'),
+  label: Joi.string()
+    .allow(null)
+    .valid(ELabel.COLD_LEAD, ELabel.CUSTOMER, ELabel.HOT_LEAD, ELabel.NONE, ELabel.WARM_LEAD)
+    .label('label'),
+  note: Joi.string().allow(null, '').label('note'),
+  job: Joi.string().allow(null, '').label('job'),
+  ownerId: Joi.string()
+    .allow(null)
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('ownerId'),
+  moreEmailContact: Joi.array()
+    .items(
+      Joi.object({
+        email: Joi.string().required().email().label('email'),
+        type: Joi.string().required().valid(EContactType.HOME, EContactType.WORK, EContactType.OTHER).label('type')
+      })
+    )
+    .label('moreEmailContact'),
+  morePhoneContact: Joi.array()
+    .items(
+      Joi.object({
+        phone: Joi.string().regex(/^\d+$/).required().label('phone'),
+        type: Joi.string()
+          .required()
+          .valid(EContactType.HOME, EContactType.WORK, EContactType.OTHER, EContactType.MOBILE)
+          .label('type')
+      })
+    )
+    .label('morePhoneContact')
 });
 
 const customerWireseIdSchema = Joi.string()
@@ -51,7 +103,7 @@ const customerWireseIdSchema = Joi.string()
     version: ['uuidv4']
   })
   .required()
-  .label('customerId');
+  .label('customerWisereId');
 
 const loginSchema = Joi.object({
   email: Joi.string().required().email().label('email'),

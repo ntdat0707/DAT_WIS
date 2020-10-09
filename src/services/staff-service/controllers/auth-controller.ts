@@ -116,10 +116,12 @@ export class AuthController {
       data.onboardStep = 0;
       await StaffModel.create({ ...data, ...{ isBusinessAccount: true, id: staffId } }, { transaction });
       await CompanyModel.create({ id: companyId, ownerId: staffId }, { transaction });
+
       const pipelineId1 = uuidv4();
       const pipelineId2 = uuidv4();
       const pipelineId3 = uuidv4();
       const pipelineId4 = uuidv4();
+
       const dataPipeline = [
         {
           id: pipelineId1,
@@ -143,6 +145,7 @@ export class AuthController {
         }
       ];
       await PipelineModel.bulkCreate(dataPipeline, { transaction });
+
       const dataStage = [
         {
           pipelineId: pipelineId1,
@@ -240,6 +243,7 @@ export class AuthController {
           order: 4
         }
       ];
+
       await PipelineStageModel.bulkCreate(dataStage, { transaction });
       //commit transaction
       await transaction.commit();

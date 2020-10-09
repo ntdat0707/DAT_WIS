@@ -24,10 +24,22 @@ enum EGender {
   UNISEX = 2
 }
 
+enum EPayment {
+  CASH = 'cash',
+  CARD = 'card',
+  ALL = 'all'
+}
+
 enum ELocationStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive'
 }
+
+enum EParkingStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
+}
+
 enum EServiceStatus {
   ACTIVE = 'active',
   IN_ACTIVE = 'in_active'
@@ -38,6 +50,11 @@ enum ESocialType {
   GOOGLE = 'google'
 }
 
+enum EFavorite {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
+}
+
 enum EWeekDays {
   MONDAY = 'monday',
   TUESDAY = 'tuesday',
@@ -46,6 +63,26 @@ enum EWeekDays {
   FRIDAY = 'friday',
   SATURDAY = 'saturday',
   SUNDAY = 'sunday'
+}
+
+enum EOrder {
+  NEAREST = 'nearest',
+  NEWEST = 'newest',
+  PRICE_LOWEST = 'price_lowest',
+  PRICE_HIGHEST = 'price_highest'
+}
+
+enum ETypeMarketPlaceField {
+  NUMBER = 'NUMBER',
+  STRING = 'STRING',
+  BOOLEAN = 'BOOLEAN'
+}
+
+enum ESearchBy {
+  COMPANY = 'company',
+  CATE_SERVICE = 'cate-service',
+  CITY = 'city',
+  SERVICE = 'service'
 }
 
 export {
@@ -59,6 +96,12 @@ export {
   AppointmentStatusRules,
   ESocialType,
   EWeekDays,
+  EPayment,
+  EParkingStatus,
+  EFavorite,
+  EOrder,
+  ESearchBy,
+  ETypeMarketPlaceField,
   IManagementLockAppointmentData,
   IManagementEditAppointmentDetailData
 };
@@ -71,6 +114,7 @@ export enum BusinessType {
   BABER_SHOP = 'BABER_SHOP',
   MASSAGE = 'MASSAGE'
 }
+
 export enum AppointmentBookingSource {
   STAFF = 'STAFF',
   MARKETPLACE = 'MARKETPLACE'
@@ -80,4 +124,28 @@ export enum StatusPipelineStage {
   OPEN = 'Open',
   WON = 'Won',
   LOST = 'Lost'
+}
+
+export enum ESource {
+  FACEBOOK = 'Facebook',
+  ZALO = 'Zalo',
+  SHOPEE = 'Shopee',
+  WISERE = 'Wisere',
+  MARKETPLACE = 'Marketplace',
+  OTHER = 'Other'
+}
+
+export enum ELabel {
+  CUSTOMER = 'customer',
+  HOT_LEAD = 'hot_lead',
+  WARM_LEAD = 'warm_lead',
+  COLD_LEAD = 'cold_lead',
+  NONE = 'none'
+}
+
+export enum EContactType {
+  WORK = 'work',
+  HOME = 'home',
+  OTHER = 'other',
+  MOBILE = 'mobile'
 }

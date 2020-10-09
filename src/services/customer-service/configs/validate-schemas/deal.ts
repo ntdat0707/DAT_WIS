@@ -26,6 +26,7 @@ const pipelineStageIdSchema = Joi.string()
 
 const settingPipelineStageSchema = Joi.object({
   name: Joi.string().required().label('name'),
+  isActiveProbability: Joi.boolean().required().label('isActiveProbability'),
   listPipelineStage: Joi.array()
     .min(1)
     .required()
@@ -156,6 +157,23 @@ const updateDealSchema = Joi.object({
     .label('status')
 });
 
+const settingPipelineSchema = Joi.object({
+  name: Joi.string().required().label('name'),
+  isActiveProbability: Joi.boolean().required().label('isActiveProbability'),
+  listPipelineStage: Joi.array()
+    .min(1)
+    .required()
+    .items(
+      Joi.object({
+        name: Joi.string().required(),
+        rottingIn: Joi.number().integer().required(),
+        probability: Joi.number().max(500).required(),
+        order: Joi.number().integer().required()
+      })
+    )
+    .label('listPipelineStage')
+});
+
 export {
   createPipelineSchema,
   updatePipelineSchema,
@@ -165,5 +183,6 @@ export {
   filterDeal,
   createDealSchema,
   dealIdSchema,
-  updateDealSchema
+  updateDealSchema,
+  settingPipelineSchema
 };

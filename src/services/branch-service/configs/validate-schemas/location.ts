@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EWeekDays, ELocationStatus } from '../../../../utils/consts';
+import { EWeekDays, ELocationStatus, EPayment, EParkingStatus, EOrder, ESearchBy } from '../../../../utils/consts';
 
 const createLocationSchema = Joi.object({
   name: Joi.string().required().label('name'),
@@ -40,7 +40,16 @@ const createLocationSchema = Joi.object({
           .label('range')
       })
     )
-    .label('workingTimes')
+    .label('workingTimes'),
+  description: Joi.string().label('description'),
+  title: Joi.string().label('title'),
+  payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
+  parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
+  gender: Joi.number().label('gender'),
+  rating: Joi.number().label('rating'),
+  recoveryRooms: Joi.number().label('recoveryRooms'),
+  totalBookings: Joi.number().label('totalBookings'),
+  openedAt: Joi.string().isoDate()
 });
 
 const locationIdSchema = Joi.string()
@@ -49,6 +58,33 @@ const locationIdSchema = Joi.string()
   })
   .required()
   .label('locationId');
+
+const pathNameSchema = Joi.string().required().label('pathName');
+
+const getLocationMarketPlace = Joi.object({
+  pathName: Joi.string().required().label('pathName'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('customerId')
+});
+
+const getLocationMarketPlacebyId = Joi.object({
+  locationId: Joi.string().uuid().required().label('pathName'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('customerId')
+});
+
+const companyIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('companyId');
 
 const createLocationWorkingTimeSchema = Joi.object({
   locationId: Joi.string()
@@ -100,7 +136,25 @@ const updateLocationSchema = Joi.object({
   address: Joi.string().label('address'),
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
-  status: Joi.string().required().label('status').valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE),
+  title: Joi.string().label('title'),
+  deleteImages: Joi.array()
+    .items(
+      Joi.string()
+        .guid({
+          version: ['uuidv4']
+        })
+        .allow(null, '')
+    )
+    .label('deleteImages')
+    .allow(null),
+
+  // payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
+  // parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
+  status: Joi.string()
+    .required()
+    .label('status')
+    .valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE)
+    .label('status'),
   workingTimes: Joi.array()
     .length(7)
     .unique()
@@ -133,4 +187,33 @@ const updateLocationSchema = Joi.object({
     .label('workingTimes')
 });
 
-export { createLocationSchema, locationIdSchema, createLocationWorkingTimeSchema, updateLocationSchema };
+const searchSchema = Joi.object({
+  keywords: Joi.string().allow(null, '').label('keywords'),
+  customerId: Joi.string().uuid().allow(null, '').label('customerId'),
+  latitude: Joi.number().allow(null, '').label('latitude'),
+  longitude: Joi.number().allow(null, '').label('longitude'),
+  searchBy: Joi.string().valid(...Object.values(ESearchBy)).allow(null, '').label('searchBy'),
+  order: Joi.string()
+    .valid(EOrder.NEWEST, EOrder.NEWEST, EOrder.PRICE_LOWEST, EOrder.PRICE_HIGHEST)
+    .allow(null)
+    .label('order')
+});
+
+const suggestedSchema = Joi.object({
+  keywords: Joi.string().allow(null, '').label('keywords'),
+  customerId: Joi.string().uuid().allow(null, '').label('customerId'),
+  cityName: Joi.string().allow(null, '').label('cityName')
+});
+
+export {
+  createLocationSchema,
+  locationIdSchema,
+  createLocationWorkingTimeSchema,
+  updateLocationSchema,
+  searchSchema,
+  companyIdSchema,
+  pathNameSchema,
+  suggestedSchema,
+  getLocationMarketPlace,
+  getLocationMarketPlacebyId
+};

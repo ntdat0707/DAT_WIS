@@ -13,14 +13,15 @@ export class CustomerRoutes {
   }
   private config(): void {
     this.router.post(
-      '/create',
+      '/create-customer-wisere',
       isAuthenticated,
       uploadAsMiddleware('photo'),
       this.customerController.createCustomerWisere
     );
     this.router.put(
-      '/update-customer-wisere/:customerWisereId',
+      '/update-customer-wisere/:customerWisereId?',
       isAuthenticated,
+      uploadAsMiddleware('photo'),
       this.customerController.updateCustomerWisere
     );
     this.router.get('/get-all-customer-wisere', isAuthenticated, this.customerController.getAllCustomerWisereInCompany);
@@ -39,6 +40,6 @@ export class CustomerRoutes {
     this.router.post('/verify-token', this.customerController.verifyTokenCustomer);
     this.router.post('/login-social', this.customerController.loginSocial);
     this.router.post('/login-apple', this.customerController.loginApple);
-    this.router.post('/register', this.customerController.registerCustomer);
+    this.router.post('/register-customer-marketplace', this.customerController.registerCustomer);
   }
 }
