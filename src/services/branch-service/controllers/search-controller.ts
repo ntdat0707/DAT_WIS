@@ -23,7 +23,12 @@ import {
   CountryModel
 } from '../../../repositories/postgres/models';
 
-import { searchSchema, suggestedSchema, getLocationMarketPlace, getLocationMarketPlacebyId } from '../configs/validate-schemas';
+import {
+  searchSchema,
+  suggestedSchema,
+  getLocationMarketPlace,
+  getLocationMarketPlacebyId
+} from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import _ from 'lodash';
@@ -45,12 +50,12 @@ import Joi from 'joi';
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
     const X = {
-      lat: _.isNumber(+lat1) ? + lat1 : 0,
-      lon: _.isNumber(+lon1) ? + lon1 : 0
+      lat: _.isNumber(+lat1) ? +lat1 : 0,
+      lon: _.isNumber(+lon1) ? +lon1 : 0
     };
     const Y = {
-      lon: _.isNumber(+lon2) ? + lon2 : 0,
-      lat: _.isNumber(+lat2) ? + lat2 : 0
+      lon: _.isNumber(+lon2) ? +lon2 : 0,
+      lat: _.isNumber(+lat2) ? +lat2 : 0
     };
 
     const R = 6371; // km
@@ -187,7 +192,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -297,13 +302,15 @@ export class SearchController {
                 ...queryLocations.where[Op.and][0][Op.or],
                 Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
                 Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`)
+                Sequelize.literal(
+                  `unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`
+                )
               ]
             }
           ]
         };
       } else {
-        switch(search.searchBy) {
+        switch (search.searchBy) {
           case ESearchBy.CITY:
             {
               queryLocations.where = {
@@ -315,7 +322,7 @@ export class SearchController {
               };
             }
             break;
-          case  ESearchBy.COMPANY:
+          case ESearchBy.COMPANY:
             {
               queryLocations.where = {
                 ...queryLocations.where,
@@ -324,7 +331,9 @@ export class SearchController {
                   {
                     [Op.or]: [
                       Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
-                      Sequelize.literal(`unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`),
+                      Sequelize.literal(
+                        `unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`
+                      )
                     ]
                   }
                 ]
@@ -349,7 +358,6 @@ export class SearchController {
                 [Op.and]: [
                   ...queryLocations.where[Op.and],
                   Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
-
                 ]
               };
             }
@@ -708,7 +716,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -741,7 +749,6 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
     } catch (error) {
-      // console.log(error);
       return next(error);
     }
   };
@@ -863,7 +870,7 @@ export class SearchController {
       const cateServices = await CateServiceModel.findAll({
         where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal('\'cateService\''), 'type']],
+          include: [[Sequelize.literal("'cateService'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -871,7 +878,7 @@ export class SearchController {
       const companies = (
         await CompanyModel.findAll({
           attributes: {
-            include: [[Sequelize.literal('\'company\''), 'type']],
+            include: [[Sequelize.literal("'company'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
@@ -893,7 +900,7 @@ export class SearchController {
       const services = await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal('\'service\''), 'type']],
+          include: [[Sequelize.literal("'service'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -907,7 +914,7 @@ export class SearchController {
           ]
         },
         attributes: {
-          include: [[Sequelize.literal('\'location\''), 'type']],
+          include: [[Sequelize.literal("'location'"), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -971,7 +978,6 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
     } catch (error) {
-      // console.log(error);
       return next(error);
     }
   };
@@ -1512,7 +1518,9 @@ export class SearchController {
         recentViewId: req.params.recentViewId
       };
       const validateErrors = validate(dataInput, deleteRecentViewSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       await RecentViewModel.destroy({
         where: { id: dataInput.recentViewId }
       });
@@ -1551,7 +1559,9 @@ export class SearchController {
         recentBookingId: req.params.recentBookingId
       };
       const validateErrors = validate(dataInput, deleteRecentBookingSchema);
-      if (validateErrors) { return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST)); }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       await RecentBookingModel.destroy({
         where: { id: dataInput.recentBookingId }
       });

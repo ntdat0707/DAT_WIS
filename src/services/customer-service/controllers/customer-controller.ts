@@ -343,9 +343,6 @@ export class CustomerController {
    *       name: job
    *       type: string
    *     - in: "formData"
-   *       name: note
-   *       type: string
-   *     - in: "formData"
    *       name: birthDate
    *       type: string
    *     - in: "formData"

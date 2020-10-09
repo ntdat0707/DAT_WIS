@@ -28,7 +28,6 @@ const makeStorage = (permission: EFileACL) => {
     bucket: process.env.DO_SPACES_BUCKET,
     acl: permission,
     key(_request, file, cb) {
-      //   console.log(file);
       cb(null, shortid.generate() + shortid.generate() + '-' + file.originalname);
     }
   });
@@ -102,7 +101,7 @@ const uploadAsMiddleware = (
 ): any => {
   return (req: Request, res: Response, next: NextFunction): void => {
     //const maxSize = 1 * 1024 * 1024;
-   // fileSize = maxSize;
+    // fileSize = maxSize;
     const multerInstance = multer({
       storage: makeStorage(permission),
       //tslint:disable-next-line

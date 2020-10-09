@@ -180,12 +180,10 @@ export class CompanyController {
       if (!company) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       } else {
-        // console.log('Data::', data);
         company.phone = !data.phone ? company.phone : data.phone;
         company.businessName = !data.businessName ? company.businessName : data.businessName;
         company.businessType = !data.businessType ? company.businessType : data.businessType;
         company.description = !data.description ? company.description : data.description;
-        // console.log('companyUpdate::', company);
         await CompanyDetailModel.update(
           {
             phone: company.phone,
