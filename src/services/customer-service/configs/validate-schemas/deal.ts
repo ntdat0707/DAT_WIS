@@ -174,6 +174,13 @@ const settingPipelineSchema = Joi.object({
     .label('listPipelineStage')
 });
 
+const movePipelineStageIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .allow(null, '')
+  .label('movePipelineStageId');
+
 export {
   createPipelineSchema,
   updatePipelineSchema,
@@ -184,5 +191,6 @@ export {
   createDealSchema,
   dealIdSchema,
   updateDealSchema,
-  settingPipelineSchema
+  settingPipelineSchema,
+  movePipelineStageIdSchema
 };
