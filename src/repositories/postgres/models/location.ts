@@ -70,7 +70,7 @@ LocationModel.init(
       allowNull: true
     },
     cityId: {
-      field: 'city_id',
+      field: 'cityId',
       type: DataTypes.UUIDV4,
       allowNull: true
     },
