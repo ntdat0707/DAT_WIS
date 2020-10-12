@@ -12,7 +12,8 @@ import {
   serviceIdSchema,
   createServicesSchema,
   getAllServiceSchema,
-  updateServiceSchema
+  updateServiceSchema,
+  locationIdSchema
 } from '../configs/validate-schemas';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
 import {
@@ -26,8 +27,8 @@ import { ServiceStaffModel } from '../../../repositories/postgres/models/service
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-import { FindOptions, Transaction, Op, Sequelize } from 'sequelize';
-import { paginate } from '../../../utils/paginator';
+import { FindOptions, Transaction, QueryTypes } from 'sequelize';
+import { paginateRawData } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
@@ -194,7 +195,6 @@ export class ServiceController {
             }
           ]
         });
-
         const staffIds = staffs.map((staff) => staff.id);
         // .then((staffs) => staffs.map((staff) => staff.id));
 
@@ -329,6 +329,11 @@ export class ServiceController {
             model: ServiceImageModel,
             as: 'images',
             required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: false
           }
         ]
       });
@@ -358,7 +363,17 @@ export class ServiceController {
    *       schema:
    *          type: integer
    *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
    *       name: searchValue
+   *       required: false
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: staffId
    *       required: false
    *       schema:
    *          type: string
@@ -368,11 +383,6 @@ export class ServiceController {
    *       items:
    *         type: string
    *       required: true
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
    *     responses:
    *       200:
    *         description: success
@@ -395,50 +405,46 @@ export class ServiceController {
         );
       }
       const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
+        pageNum: +req.query.pageNum,
+        pageSize: +req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const query: FindOptions = {
-        include: [
-          {
-            model: LocationModel,
-            as: 'locations',
-            required: true,
-            where: {
-              id: (req.query.locationIds as [])?.length ? req.query.locationIds : workingLocationIds
-            }
-          },
-          {
-            model: CateServiceModel,
-            as: 'cateService',
-            required: true,
-            attributes: []
-          },
-          {
-            model: ServiceImageModel,
-            as: 'images',
-            required: false
-          }
-        ]
-      };
-      if (req.query.searchValue) {
-        query.where = {
-          [Op.or]: [
-            Sequelize.literal(`unaccent("ServiceModel"."name") ilike unaccent('%${req.query.searchValue}%')`),
-            Sequelize.literal(`unaccent("ServiceModel"."service_code") ilike unaccent('%${req.query.searchValue}%')`)
-          ]
-        };
+
+      let locationIds: string;
+      if (req.query.locationIds && typeof req.query.locationIds !== 'string' && req.query.locationIds.length > 0) {
+        locationIds = (req.query.locationIds as []).map((locationId: string) => `'${locationId}'`).join(',');
+      } else {
+        locationIds = workingLocationIds.map((locationId: string) => `'${locationId}'`).join(',');
       }
 
-      const services = await paginate(
-        ServiceModel,
-        query,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
-        fullPath
-      );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
+      let query = '';
+      query += `select distinct service.id as id, service.status as status, service.created_at as "createdAt", service.updated_at as "updatedAt", service.deleted_at as "deletedAt", service.description, service.sale_price as "salePrice", service.duration, service.name, service.color, service.service_code as "serviceCode", service.unit_price as "unitPrice", service.allow_gender as "allowGender", service.name_en as "nameEn", service.cate_service_id as "cateSericeId"
+                FROM service
+                INNER JOIN location_services ON service.id = location_services.service_id
+                INNER JOIN cate_service ON cate_service.id = service.cate_service_id
+                LEFT JOIN service_staff on service.id = service_staff.service_id
+                LEFT JOIN service_image ON service_image.service_id = service.id
+                WHERE location_services.location_id in (${locationIds})
+                and service.deleted_at is null and location_services.deleted_at is null 
+                and cate_service.deleted_at is null and service_staff.deleted_at is null
+                and service_image.deleted_at is null
+                `;
+
+      if (req.query.searchValue) {
+        query += `and (unaccent(service.name) ilike unaccent('%${req.query.searchValue}%')) or service.service_code like '%${req.query.searchValue}%' `;
+      }
+
+      if (req.query.staffId) {
+        query += `and service_staff.staff_id = '${req.query.staffId}'`;
+      }
+
+      const services = await sequelize.query(query, {
+        type: QueryTypes.SELECT
+      });
+
+      const result = paginateRawData(services, paginateOptions, fullPath);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(result));
     } catch (error) {
       return next(error);
     }
@@ -878,6 +884,7 @@ export class ServiceController {
         status: body.status,
         allowGender: body.allowGender ? body.allowGender : service.allowGender
       };
+
       if (body.deleteImages && body.deleteImages.length > 0) {
         const serviceImages = await ServiceImageModel.findAll({
           where: {
@@ -911,6 +918,87 @@ export class ServiceController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/search-services:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: searchService
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public searchService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const services: any = await ServiceModel.findAll({ order: ['name', 'ASC'] });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/service/market-place/get-services/{locationId}:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: getServicesByLocation
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getServicesByLocation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.params.locationId, locationIdSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
+      const serviceLocationIds: any = await LocationServiceModel.findAll({
+        raw: true,
+        where: { locationId: req.params.locationId },
+        attributes: ['id', 'service_id', 'location_id']
+      });
+      const locationInfor: any = await LocationModel.findOne({
+        where: { id: req.params.locationId },
+        attributes: ['id', 'company_id'],
+        raw: true
+      });
+
+      const serviceIds = serviceLocationIds.map((serviceId: any) => serviceId.service_id);
+      const cateServices = await CateServiceModel.findAll({
+        where: { companyId: locationInfor.company_id },
+        attributes: ['id', 'name'],
+        include: [
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: true,
+            attributes: ['id', 'name', 'duration', 'sale_price'],
+            where: { id: serviceIds }
+          }
+        ],
+        group: ['CateServiceModel.id', 'services.id', 'services.duration', 'services.name', 'services.sale_price']
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
+    } catch (error) {
       return next(error);
     }
   };

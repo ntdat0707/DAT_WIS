@@ -13,22 +13,28 @@ import {
 } from '../../../repositories/postgres/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
-  createPipelineSchema,
-  updatePipelineSchema,
   pipelineIdSchema,
+  pipelineStageIdSchema,
   settingPipelineStageSchema,
   filterDeal,
   createDealSchema,
-  dealIdSchema
+  dealIdSchema,
+  updateDealSchema,
+  settingPipelineSchema,
+  movePipelineStageIdSchema
 } from '../configs/validate-schemas/deal';
 import {
   dealErrorDetails,
   pipelineErrorDetails,
-  pipelineStageErrorDetails
-} from '../../../utils/response-messages/error-details/deal';
+  pipelineStageErrorDetails,
+  staffErrorDetails,
+  customerErrorDetails
+} from '../../../utils/response-messages/error-details';
 import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
-
+import { StatusPipelineStage } from '../../../utils/consts';
+import * as _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
 export class DealController {
   /**
    * @swagger
@@ -52,7 +58,7 @@ export class DealController {
   public getAllPipeline = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const staffId = res.locals.staffPayload.id;
-      const pipeline = await PipelineModel.findAll({
+      const pipelines = await PipelineModel.findAll({
         include: [
           {
             model: CompanyModel,
@@ -62,141 +68,7 @@ export class DealController {
           }
         ]
       });
-      return res.status(httpStatus.OK).send(buildSuccessMessage(pipeline));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * definitions:
-   *   pipelineCreate:
-   *       properties:
-   *           name:
-   *               type: string
-   *           isActiveProbability:
-   *               type: boolean
-   */
-
-  /**
-   * @swagger
-   * /customer/deal/create-pipeline:
-   *   post:
-   *     tags:
-   *       - Customer
-   *     security:
-   *       - Bearer: []
-   *     name: createPipeline
-   *     parameters:
-   *     - in: "body"
-   *       name: "body"
-   *       required: true
-   *       schema:
-   *         $ref: '#/definitions/pipelineCreate'
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public createPipeline = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const data: any = {
-        name: req.body.name,
-        isActiveProbability: req.body.isActiveProbability
-      };
-      const validateErrors = validate(data, createPipelineSchema);
-      if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
-      }
-      const companyId = res.locals.staffPayload.companyId;
-      const checkPipeline = await PipelineModel.findOne({
-        where: { companyId: companyId, name: data.name }
-      });
-      if (checkPipeline) {
-        throw new CustomError(
-          pipelineErrorDetails.E_3102(`Pipeline name ${data.name} exists in companyId ${companyId}`),
-          httpStatus.BAD_REQUEST
-        );
-      }
-      data.companyId = companyId;
-      const pipeline = await PipelineModel.create(data);
-      return res.status(httpStatus.OK).send(buildSuccessMessage(pipeline));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * definitions:
-   *   pipelineUpdate:
-   *       properties:
-   *           name:
-   *               type: string
-   *           isActiveProbability:
-   *               type: boolean
-   *
-   */
-
-  /**
-   * @swagger
-   * /customer/deal/update-pipeline/{pipelineId}:
-   *   put:
-   *     tags:
-   *       - Customer
-   *     security:
-   *       - Bearer: []
-   *     name: updatePipeline
-   *     parameters:
-   *     - in: "path"
-   *       name: "pipelineId"
-   *       required: true
-   *     - in: "body"
-   *       name: "body"
-   *       required: true
-   *       schema:
-   *         $ref: '#/definitions/pipelineUpdate'
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public updatePipeline = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const pipelineId = req.params.pipelineId;
-      const data: any = {
-        name: req.body.name,
-        isActiveProbability: req.body.isActiveProbability
-      };
-      const validateErrors = validate(data, updatePipelineSchema);
-      if (validateErrors) {
-        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
-      }
-      let pipeline = await PipelineModel.findOne({ where: { id: pipelineId } });
-      if (!pipeline) {
-        throw new CustomError(pipelineErrorDetails.E_3101(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND);
-      }
-      const conditionId = { [Op.ne]: pipelineId };
-      const checkPipeline = await PipelineModel.findOne({
-        where: { id: conditionId, companyId: res.locals.staffPayload.companyId, name: data.name }
-      });
-      if (checkPipeline) {
-        throw new CustomError(
-          pipelineErrorDetails.E_3102(
-            `Pipeline name ${data.name} exists in companyId ${res.locals.staffPayload.companyId}`
-          ),
-          httpStatus.BAD_REQUEST
-        );
-      }
-      pipeline = await pipeline.update(data);
-      return res.status(httpStatus.OK).send(buildSuccessMessage(pipeline));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(pipelines));
     } catch (error) {
       return next(error);
     }
@@ -216,6 +88,9 @@ export class DealController {
    *       name: pipelineId
    *       schema:
    *          type: string
+   *     - in: query
+   *       name: movePipelineStageId
+   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -227,30 +102,63 @@ export class DealController {
   public deletePipeline = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      transaction = await sequelize.transaction();
       const pipelineId = req.params.pipelineId;
-      const validateErrors = validate(pipelineId, pipelineIdSchema);
+      const movePipelineStageId = req.query.movePipelineStageId;
+      let validateErrors: any;
+      validateErrors = validate(pipelineId, pipelineIdSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const pipeline = await PipelineModel.findOne({ where: { id: pipelineId } });
-      if (!pipeline) {
+      validateErrors = validate(movePipelineStageId, movePipelineStageIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const checkPipeline = await PipelineModel.findOne({
+        where: { id: pipelineId, companyId: res.locals.staffPayload.companyId }
+      });
+      if (!checkPipeline) {
         return next(
           new CustomError(pipelineErrorDetails.E_3101(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
         );
       }
-      const pipelineStage = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId } });
-      if (pipelineStage) {
-        for (let i = 0; i < pipelineStage.length; i++) {
-          await DealModel.destroy({ where: { pipelineStageId: pipelineStage[i].id }, transaction });
+      transaction = await sequelize.transaction();
+      const pipelineStages = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId } });
+      if (movePipelineStageId) {
+        const checkMovePipelineStage = await PipelineStageModel.findOne({
+          where: { id: movePipelineStageId },
+          include: [
+            {
+              model: PipelineModel,
+              as: 'pipeline',
+              where: { companyId: res.locals.staffPayload.companyId, id: { [Op.ne]: pipelineId } }
+            }
+          ]
+        });
+        if (!checkMovePipelineStage) {
+          return next(
+            new CustomError(
+              pipelineStageErrorDetails.E_3201(`movePipelineId ${movePipelineStageId} not found`),
+              httpStatus.NOT_FOUND
+            )
+          );
         }
-        await PipelineStageModel.destroy({ where: { pipelineId: pipelineId }, transaction });
+        for (let i = 0; i < pipelineStages.length; i++) {
+          await DealModel.update(
+            { pipelineStageId: movePipelineStageId },
+            { where: { pipelineStageId: pipelineStages[i].id }, transaction }
+          );
+        }
+      } else {
+        for (let i = 0; i < pipelineStages.length; i++) {
+          await DealModel.destroy({ where: { pipelineStageId: pipelineStages[i].id }, transaction });
+        }
       }
+      await PipelineStageModel.destroy({ where: { pipelineId: pipelineId }, transaction });
       await PipelineModel.destroy({ where: { id: pipelineId }, transaction });
-      transaction.commit();
+      await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
-      //rollback transaction
+      // rollback transaction
       if (transaction) {
         await transaction.rollback();
       }
@@ -286,20 +194,20 @@ export class DealController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const pipelineStage: any = await PipelineStageModel.findAll({
+      const listPipelineStage: any = await PipelineStageModel.findAll({
         where: { pipelineId: pipelineId },
         order: ['order']
       });
-      if (!pipelineStage) {
+      if (!listPipelineStage) {
         return next(
           new CustomError(pipelineStageErrorDetails.E_3201(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
         );
       }
-      for (let i = 0; i < pipelineStage.length; i++) {
+      for (let i = 0; i < listPipelineStage.length; i++) {
         let totalValueDeal = 0;
         let totalValueStage = 0;
         let probationReality = 0;
-        const deal = await DealModel.findAll({ where: { pipelineStageId: pipelineStage[i].id } });
+        const deal = await DealModel.findAll({ where: { pipelineStageId: listPipelineStage[i].id } });
         if (deal.length > 0) {
           let valueStage: number;
           for (let j = 0; j < deal.length; j++) {
@@ -308,9 +216,9 @@ export class DealController {
               include: [
                 {
                   model: PipelineStageModel,
-                  as: 'pipelineStage',
+                  as: 'pipelineStages',
                   required: true,
-                  where: { id: pipelineStage[i].id }
+                  where: { id: listPipelineStage[i].id }
                 }
               ]
             });
@@ -318,24 +226,24 @@ export class DealController {
               if (deal[j].probability) {
                 valueStage = (deal[j].amount * deal[j].probability) / 100;
               } else {
-                valueStage = (deal[j].amount * pipeline.pipelineStage[0].probability) / 100;
+                valueStage = (deal[j].amount * pipeline.pipelineStages[0].probability) / 100;
               }
             } else {
-              valueStage = (deal[j].amount * pipeline.pipelineStage[0].probability) / 100;
+              valueStage = (deal[j].amount * pipeline.pipelineStages[0].probability) / 100;
             }
             totalValueStage += valueStage;
           }
           probationReality = Math.round((totalValueStage / totalValueDeal) * 100);
         }
-        pipelineStage[i] = {
-          ...pipelineStage[i].dataValues,
+        listPipelineStage[i] = {
+          ...listPipelineStage[i].dataValues,
           totalDeal: deal.length,
           totalValueDeal: totalValueDeal,
           totalValueStage: totalValueStage,
           probationReality: probationReality
         };
       }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(pipelineStage));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(listPipelineStage));
     } catch (error) {
       return next(error);
     }
@@ -376,10 +284,13 @@ export class DealController {
    *   settingStage:
    *       required:
    *           name
+   *           isActiveProbability
    *           listPipelineStage
    *       properties:
    *           name:
    *               type: string
+   *           isActiveProbability:
+   *               type: boolean
    *           listPipelineStage:
    *               type: array
    *               items:
@@ -419,10 +330,16 @@ export class DealController {
   public settingPipelineStage = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      transaction = await sequelize.transaction();
       const validateErrors = validate(req.body, settingPipelineStageSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
+      if (req.body.listPipelineStage.length !== checkUniqName.length) {
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3202(`pipeline stage name exists in pipeline`),
+          httpStatus.BAD_REQUEST
+        );
       }
       const pipeline = await PipelineModel.findOne({ where: { id: req.params.pipelineId } });
       if (!pipeline) {
@@ -431,7 +348,24 @@ export class DealController {
           httpStatus.NOT_FOUND
         );
       }
-      await pipeline.update({ name: req.body.name }, { transaction });
+      const checkPipeline = await PipelineModel.findOne({
+        where: {
+          id: { [Op.ne]: req.params.pipelineId },
+          name: req.body.name,
+          companyId: res.locals.staffPayload.companyId
+        }
+      });
+      if (checkPipeline) {
+        throw new CustomError(
+          pipelineErrorDetails.E_3102(`name ${req.body.name} exists in company`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      transaction = await sequelize.transaction();
+      await pipeline.update(
+        { name: req.body.name, isActiveProbability: req.body.isActiveProbability },
+        { transaction }
+      );
       for (let i = 0; i < req.body.listPipelineStage.length; i++) {
         const data = {
           name: req.body.listPipelineStage[i].name,
@@ -440,7 +374,7 @@ export class DealController {
           probability: req.body.listPipelineStage[i].probability,
           pipelineId: req.params.pipelineId
         };
-        let checkPipelineStage;
+        let checkPipelineStage: any;
         if (!req.body.listPipelineStage[i].id) {
           checkPipelineStage = await PipelineStageModel.findOne({
             where: { pipelineId: data.pipelineId, name: data.name }
@@ -608,6 +542,11 @@ export class DealController {
           {
             model: CustomerWisereModel,
             as: 'customerWisere'
+          },
+          {
+            model: StaffModel,
+            as: 'owner',
+            required: false
           }
         ]
       };
@@ -634,13 +573,13 @@ export class DealController {
             as: 'pipelineStage'
           };
       query.include.push(conditionPipelineId);
-      const deal = await paginate(
+      const deals = await paginate(
         DealModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
-      return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deals));
     } catch (error) {
       return next(error);
     }
@@ -649,7 +588,7 @@ export class DealController {
   /**
    * @swagger
    * definitions:
-   *   daelCreate:
+   *   dealCreate:
    *       properties:
    *           dealTitle:
    *               type: string
@@ -660,7 +599,8 @@ export class DealController {
    *           currency:
    *               type: string
    *           probability:
-   *               type: integer
+   *               type: number
+   *               format: float
    *           source:
    *               type: string
    *           expectedCloseDate:
@@ -687,7 +627,7 @@ export class DealController {
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/daelCreate'
+   *         $ref: '#/definitions/dealCreate'
    *     responses:
    *       200:
    *         description: success
@@ -713,9 +653,28 @@ export class DealController {
         note: req.body.note,
         pipelineStageId: req.body.pipelineStageId,
         customerWisereId: req.body.customerWisereId,
-        status: 'Open',
         createdBy: res.locals.staffPayload.id
       };
+      if (data.ownerId) {
+        const checkOwnerId = await StaffModel.findOne({ where: { id: data.ownerId } });
+        if (!checkOwnerId) {
+          throw new CustomError(staffErrorDetails.E_4000(`ownerId ${data.ownerId} not found`), httpStatus.NOT_FOUND);
+        }
+      }
+      const checkPipelineStageId = await PipelineStageModel.findOne({ where: { id: data.pipelineStageId } });
+      if (!checkPipelineStageId) {
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3201(`pipelineStageId ${data.pipelineStageId} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
+      const checkCustomerWisereId = await CustomerWisereModel.findOne({ where: { id: data.customerWisereId } });
+      if (!checkCustomerWisereId) {
+        throw new CustomError(
+          customerErrorDetails.E_3001(`customerWisereId ${data.customerWisereId} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
       const deal = await DealModel.create(data);
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
     } catch (error) {
@@ -770,7 +729,8 @@ export class DealController {
           },
           {
             model: StaffModel,
-            as: 'staff'
+            as: 'owner',
+            required: false
           }
         ]
       });
@@ -779,6 +739,315 @@ export class DealController {
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
     } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   dealUpdate:
+   *       properties:
+   *           dealTitle:
+   *               type: string
+   *           ownerId:
+   *               type: string
+   *           amount:
+   *               type: integer
+   *           currency:
+   *               type: string
+   *           probability:
+   *               type: number
+   *               format: float
+   *           source:
+   *               type: string
+   *           expectedCloseDate:
+   *               type: string
+   *           note:
+   *               type: string
+   *           pipelineStageId:
+   *               type: string
+   *           customerWisereId:
+   *               type: string
+   *           status:
+   *               type: string
+   *
+   */
+
+  /**
+   * @swagger
+   * /customer/deal/update-deal/{dealId}:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: updateDeal
+   *     parameters:
+   *     - in: "path"
+   *       name: "dealId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/dealUpdate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updateDeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dealId = req.params.dealId;
+      const data: any = {
+        dealTitle: req.body.dealTitle,
+        ownerId: req.body.ownerId,
+        amount: req.body.amount,
+        currency: req.body.currency,
+        probability: req.body.probability,
+        source: req.body.source,
+        expectedCloseDate: req.body.expectedCloseDate,
+        note: req.body.note,
+        pipelineStageId: req.body.pipelineStageId,
+        customerWisereId: req.body.customerWisereId,
+        status: req.body.status
+      };
+      const validateErrors = validate(data, updateDealSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      let deal = await DealModel.findOne({ where: { id: dealId } });
+      if (!deal) {
+        throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
+      }
+      if (data.status === StatusPipelineStage.WON || data.status === StatusPipelineStage.LOST) {
+        data.closingDate = Date.now();
+      }
+      deal = await deal.update(data);
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/deal/delete-deal/{dealId}:
+   *   delete:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: deleteDeal
+   *     parameters:
+   *     - in: path
+   *       name: dealId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public deleteDeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dealId = req.params.dealId;
+      const validateErrors = validate(dealId, dealIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const deal = await DealModel.findOne({ where: { id: dealId } });
+      if (!deal) {
+        return next(new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND));
+      }
+      await DealModel.destroy({ where: { id: dealId } });
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/deal/update-pipeline-stage-of-deal/{dealId}:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: updatePipelineStageOfDeal
+   *     parameters:
+   *     - in: "path"
+   *       name: "dealId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         properties:
+   *           newPipelineStageId:
+   *               type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updatePipelineStageOfDeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dealId = req.params.dealId;
+      const newPipelineStageId = req.body.newPipelineStageId;
+      const validateErrors = validate(newPipelineStageId, pipelineStageIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      let deal: any = await DealModel.findOne({
+        where: { id: dealId },
+        include: [
+          {
+            model: PipelineStageModel,
+            as: 'pipelineStage'
+          }
+        ]
+      });
+      if (!deal) {
+        return next(new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND));
+      }
+      const checkNewPipelineStage = await PipelineStageModel.findOne({ where: { id: newPipelineStageId } });
+      if (!checkNewPipelineStage) {
+        return next(
+          new CustomError(
+            pipelineStageErrorDetails.E_3201(`newPipelineStageId ${newPipelineStageId} not found`),
+            httpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (deal.pipelineStage.pipelineId !== checkNewPipelineStage.pipelineId) {
+        return next(
+          new CustomError(
+            dealErrorDetails.E_3302(
+              `newPipelineStageId ${newPipelineStageId} and oldPipelineStageId ${deal.pipelineStage.pipelineId} not same pipeline`
+            ),
+            httpStatus.BAD_REQUEST
+          )
+        );
+      }
+      deal = await deal.update({ pipelineStageId: newPipelineStageId });
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   stageSetting:
+   *       properties:
+   *           name:
+   *               type: string
+   *           rottingIn:
+   *               type: integer
+   *           probability:
+   *               type: number
+   *               format: float
+   *           order:
+   *               type: integer
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   settingPipeline:
+   *       required:
+   *           name
+   *           isActiveProbability
+   *           listPipelineStage
+   *       properties:
+   *           name:
+   *               type: string
+   *           isActiveProbability:
+   *               type: boolean
+   *           listPipelineStage:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/stageSetting'
+   */
+
+  /**
+   * @swagger
+   * /customer/deal/setting-pipeline:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: settingPipeline
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/settingPipeline'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public settingPipeline = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const validateErrors = validate(req.body, settingPipelineSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
+      if (req.body.listPipelineStage.length !== checkUniqName.length) {
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3202(`duplicate pipeline stage name`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      const dataPipeline = {
+        id: uuidv4(),
+        name: req.body.name,
+        isActiveProbability: req.body.isActiveProbability,
+        companyId: res.locals.staffPayload.companyId
+      };
+      const checkPipeline = await PipelineModel.findOne({
+        where: { name: dataPipeline.name, companyId: dataPipeline.companyId }
+      });
+      if (checkPipeline) {
+        throw new CustomError(
+          pipelineErrorDetails.E_3102(`name ${req.body.name} exists in company`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      transaction = await sequelize.transaction();
+      await PipelineModel.create(dataPipeline, { transaction });
+      for (let i = 0; i < req.body.listPipelineStage.length; i++) {
+        req.body.listPipelineStage[i].pipelineId = dataPipeline.id;
+      }
+      await PipelineStageModel.bulkCreate(req.body.listPipelineStage, { transaction });
+      await transaction.commit();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };

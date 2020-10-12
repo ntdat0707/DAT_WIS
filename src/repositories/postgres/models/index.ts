@@ -16,19 +16,39 @@ import { ServiceImageModel } from './service-image';
 import { LocationServiceModel } from './location-service';
 import { AppointmentGroupModel } from './appointment-group-model';
 import { LocationWorkingHourModel } from './location-working-hour-model';
+import { CompanyDetailModel } from './company-detail-model';
+import { LocationImageModel } from './location-image';
+import { CountryModel } from './country-model';
+import { CityModel } from './city-model';
+import { CustomerSearchModel } from './customer-search-model';
 import { PipelineModel } from './pipeline-model';
 import { PipelineStageModel } from './pipeline-stage-model';
 import { DealModel } from './deal-model';
 import { CustomerWisereModel } from './customer-wisere-model';
+import { RecentBookingModel } from './recent-booking-model';
+import { MarketPlaceFieldsModel } from './marketplace-fields-model';
+import { MarketPlaceValueModel } from './marketplace-value-model';
+import { ContactModel } from './contact-model';
+import { FavoriteModel } from './favorite-model';
+import { PositionModel } from './position-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
+CompanyModel.hasOne(CompanyDetailModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'companyDetail' });
+CompanyDetailModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'companyDetail' });
+
 CompanyModel.hasMany(LocationModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'locations' });
 LocationModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
+CompanyModel.hasMany(CateServiceModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'cateServices' });
+CateServiceModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
 StaffModel.belongsToMany(LocationModel, { through: LocationStaffModel, as: 'workingLocations', foreignKey: 'staffId' });
 LocationModel.belongsToMany(StaffModel, { through: LocationStaffModel, as: 'staffs', foreignKey: 'locationId' });
+
+// LocationModel.hasMany(StaffModel, { foreignKey: 'mainLocationId', sourceKey: 'id', as: 'staffs' });
+// StaffModel.belongsTo(StaffModel, { foreignKey: 'mainLocationId', as: 'location' });
 
 ServiceModel.belongsToMany(StaffModel, { through: ServiceStaffModel, as: 'staffs', foreignKey: 'serviceId' });
 StaffModel.belongsToMany(ServiceModel, { through: ServiceStaffModel, as: 'services', foreignKey: 'staffId' });
@@ -74,6 +94,7 @@ StaffModel.belongsToMany(AppointmentDetailModel, {
   as: 'appointmentDetails',
   foreignKey: 'staffId'
 });
+
 AppointmentDetailModel.belongsToMany(StaffModel, {
   through: AppointmentDetailStaffModel,
   as: 'staffs',
@@ -95,6 +116,7 @@ AppointmentModel.belongsTo(AppointmentGroupModel, { foreignKey: 'appointmentGrou
 
 LocationModel.hasMany(AppointmentGroupModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'appointmentGroups' });
 AppointmentGroupModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
 LocationModel.hasMany(LocationWorkingHourModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'workingTimes' });
 LocationWorkingHourModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
@@ -104,37 +126,108 @@ CustomerWisereModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'comp
 CustomerWisereModel.hasMany(AppointmentModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'appointments' });
 AppointmentModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
-PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStage' });
+LocationModel.hasMany(LocationImageModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'locationImages' });
+LocationImageModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+CountryModel.hasMany(CityModel, { foreignKey: 'countryId', sourceKey: 'id', as: 'cities' });
+CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
+
+CityModel.hasMany(LocationModel, { foreignKey: 'cityId', sourceKey: 'id', as: 'locations' });
+LocationModel.belongsTo(CityModel, { foreignKey: 'cityId', as: 'cityy' });
+
+CustomerModel.hasMany(CustomerSearchModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'customerSearches' });
+CustomerSearchModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
+
+ServiceModel.hasMany(CustomerSearchModel, { foreignKey: 'serviceId', sourceKey: 'id', as: 'customerSearches' });
+CustomerSearchModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'service' });
+
+CateServiceModel.hasMany(CustomerSearchModel, { foreignKey: 'cateServiceId', sourceKey: 'id', as: 'customerSearches' });
+CustomerSearchModel.belongsTo(CateServiceModel, { foreignKey: 'cateServiceId', as: 'cateService' });
+
+CompanyModel.hasMany(CustomerSearchModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'customerSearches' });
+CustomerSearchModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+LocationModel.hasMany(CustomerSearchModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'customerSearches' });
+CustomerSearchModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+AppointmentModel.hasOne(RecentBookingModel, { foreignKey: 'appointmentId', sourceKey: 'id', as: 'appointment' });
+RecentBookingModel.belongsTo(AppointmentModel, { foreignKey: 'appointmentId', as: 'recentBooking' });
+
+PipelineModel.hasMany(PipelineStageModel, { foreignKey: 'pipelineId', sourceKey: 'id', as: 'pipelineStages' });
 PipelineStageModel.belongsTo(PipelineModel, { foreignKey: 'pipelineId', as: 'pipeline' });
 
-CompanyModel.hasMany(PipelineModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'pipeline' });
+CompanyModel.hasMany(PipelineModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'pipelines' });
 PipelineModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
-StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deal' });
+StaffModel.hasMany(DealModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
 
-CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deal' });
+StaffModel.hasMany(DealModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listDeal' });
+DealModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
+
+CustomerWisereModel.hasMany(DealModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
-PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deal' });
+PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
+
+MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, {
+  foreignKey: 'fieldId',
+  sourceKey: 'id',
+  as: 'marketplaceValues'
+});
+MarketPlaceValueModel.belongsTo(MarketPlaceFieldsModel, { foreignKey: 'fieldId', as: 'marketplaceField' });
+
+LocationModel.hasMany(MarketPlaceValueModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'marketplaceValues' });
+MarketPlaceValueModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+CustomerWisereModel.hasMany(ContactModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'contacts' });
+ContactModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
+
+CustomerModel.belongsToMany(LocationModel, {
+  through: FavoriteModel,
+  as: 'favoriteCustomers',
+  foreignKey: 'customerId'
+});
+LocationModel.belongsToMany(CustomerModel, {
+  through: FavoriteModel,
+  as: 'favoriteLocations',
+  foreignKey: 'locationId'
+});
+
+StaffModel.hasMany(PositionModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'position' });
+PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
+
+StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
+PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
 export {
   sequelize,
   StaffModel,
   CompanyModel,
+  CompanyDetailModel,
+  CountryModel,
+  CityModel,
   CustomerModel,
   LocationModel,
   ServiceModel,
   ResourceModel,
+  CateServiceModel,
   LocationStaffModel,
   AppointmentModel,
   AppointmentDetailModel,
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
   LocationWorkingHourModel,
+  LocationImageModel,
+  CustomerSearchModel,
+  RecentBookingModel,
   PipelineModel,
   PipelineStageModel,
   DealModel,
-  CustomerWisereModel
+  CustomerWisereModel,
+  ContactModel,
+  MarketPlaceValueModel,
+  MarketPlaceFieldsModel,
+  FavoriteModel
 };

@@ -22,7 +22,7 @@ const pipelineStageErrorDetails = {
     return e;
   },
   E_3203(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3203', 'Old Pipeline stage and move pipeline stage have different pipelineId', detail);
+    const e = buildErrorDetail('3203', 'Old Pipeline stage and move pipeline stage not same pipeline', detail);
     return e;
   }
 };
@@ -30,6 +30,10 @@ const pipelineStageErrorDetails = {
 const dealErrorDetails = {
   E_3301(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3301', 'Deal not found', detail);
+    return e;
+  },
+  E_3302(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3302', 'Pipeline is different', detail);
     return e;
   }
 };

@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
+import { ESource, ELabel, EGender } from '../../../utils/consts';
 class CustomerWisereModel extends Model {
   public id: string;
   public firstName!: string;
@@ -13,6 +14,12 @@ class CustomerWisereModel extends Model {
   public companyId!: string;
   public otpCode: string;
   public avatarPath: string;
+  public ownerId: string;
+  public source: string;
+  public code: string;
+  public label: string;
+  public color: string;
+  public job: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -37,7 +44,7 @@ CustomerWisereModel.init(
       field: 'last_name'
     },
     gender: {
-      type: DataTypes.TINYINT,
+      type: DataTypes.ENUM(...Object.keys(EGender)),
       field: 'gender',
       allowNull: true
     },
@@ -51,6 +58,12 @@ CustomerWisereModel.init(
       unique: true,
       allowNull: true,
       field: 'email'
+    },
+    code: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: true,
+      field: 'code'
     },
     birthDate: {
       type: DataTypes.DATE,
@@ -79,6 +92,45 @@ CustomerWisereModel.init(
       type: DataTypes.STRING,
       allowNull: true,
       field: 'avatar_path'
+    },
+    ownerId: {
+      field: 'owner_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    color: {
+      field: 'color',
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
+    job: {
+      field: 'job',
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
+    note: {
+      field: 'note',
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
+    source: {
+      type: DataTypes.ENUM(
+        ESource.FACEBOOK,
+        ESource.MARKETPLACE,
+        ESource.OTHER,
+        ESource.SHOPEE,
+        ESource.WISERE,
+        ESource.ZALO
+      ),
+      allowNull: true,
+      field: 'source',
+      defaultValue: ESource.OTHER
+    },
+    label: {
+      type: DataTypes.ENUM(ELabel.COLD_LEAD, ELabel.CUSTOMER, ELabel.HOT_LEAD, ELabel.NONE, ELabel.WARM_LEAD),
+      allowNull: true,
+      field: 'label',
+      defaultValue: ELabel.NONE
     },
     createdAt: {
       field: 'created_at',

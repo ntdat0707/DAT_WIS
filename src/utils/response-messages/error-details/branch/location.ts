@@ -55,6 +55,22 @@ const locationErrorDetails = {
   E_1004(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1004', 'Start time before end time', detail);
     return e;
+  },
+
+  /**
+   * Location Images is not exits
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_1006(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1006', 'location Images Ids not exists', detail);
+    return e;
+  },
+
+  E_1007(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1007', 'location detail is null', detail);
+    return e;
   }
 };
 

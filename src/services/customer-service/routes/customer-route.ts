@@ -3,6 +3,7 @@ import { CustomerController } from '../controllers/customer-controller';
 require('dotenv').config();
 
 import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
+import { uploadAsMiddleware } from '../../../utils/file-manager';
 export class CustomerRoutes {
   public router: express.Router = express.Router();
   private customerController = new CustomerController();
@@ -11,10 +12,16 @@ export class CustomerRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post('/create', isAuthenticated, this.customerController.createCustomerWisere);
-    this.router.put(
-      '/update-customer-wisere/:customerWisereId',
+    this.router.post(
+      '/create-customer-wisere',
       isAuthenticated,
+      uploadAsMiddleware('photo'),
+      this.customerController.createCustomerWisere
+    );
+    this.router.put(
+      '/update-customer-wisere/:customerWisereId?',
+      isAuthenticated,
+      uploadAsMiddleware('photo'),
       this.customerController.updateCustomerWisere
     );
     this.router.get('/get-all-customer-wisere', isAuthenticated, this.customerController.getAllCustomerWisereInCompany);
@@ -33,6 +40,8 @@ export class CustomerRoutes {
     this.router.post('/verify-token', this.customerController.verifyTokenCustomer);
     this.router.post('/login-social', this.customerController.loginSocial);
     this.router.post('/login-apple', this.customerController.loginApple);
-    this.router.post('/register', this.customerController.registerCustomer);
+    this.router.post('/register-customer-marketplace', this.customerController.registerCustomer);
+    this.router.post('/request-new-password', this.customerController.requestNewPassword);
+    this.router.put('/change-password', this.customerController.changePassword);
   }
 }

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op } from 'sequelize';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 require('dotenv').config();
@@ -25,7 +25,11 @@ import {
   LocationModel,
   AppointmentDetailStaffModel,
   AppointmentGroupModel,
-  CustomerWisereModel
+  CustomerWisereModel,
+  RecentBookingModel,
+  DealModel,
+  PipelineModel,
+  PipelineStageModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -35,10 +39,14 @@ import {
   appointmentCancelReasonSchema,
   updateAppointmentSchema,
   appointmentIdSchema,
-  customerCreateAppointmentSchema
+  customerCreateAppointmentSchema,
+  appointmentCancelSchema,
+  appointmentRescheduleSchema,
+  ratingAppointmentSchema
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
+import httpStatus from 'http-status';
 export class AppointmentController extends BaseController {
   /**
    * @swagger
@@ -168,18 +176,35 @@ export class AppointmentController extends BaseController {
           );
         }
       }
+
       const appointmentId = uuidv4();
       const appointmentDetails = await this.verifyAppointmentDetails(
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+      let appointmentCode = '';
+      for (let i = 0; i < 10; i++) {
+        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+        const randomCode = random.toUpperCase();
+        appointmentCode = randomCode;
+        const existAppCode = await AppointmentModel.findOne({
+          where: {
+            appointmentCode: appointmentCode
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
         customerWisereId: dataInput.customerWisereId ? dataInput.customerWisereId : null,
-        bookingSource: dataInput.bookingSource
+        bookingSource: dataInput.bookingSource,
+        appointmentCode: appointmentCode,
+        date: dataInput.date
       };
 
       if (dataInput.appointmentGroupId) {
@@ -326,6 +351,11 @@ export class AppointmentController extends BaseController {
                 model: CustomerWisereModel,
                 as: 'customerWisere',
                 required: false
+              },
+              {
+                model: AppointmentGroupModel,
+                as: 'appointmentGroup',
+                required: false
               }
             ]
           },
@@ -350,6 +380,9 @@ export class AppointmentController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      if (listAppointmentDetail[0].appointment.customerWisere) {
+        await this.convertApptToDeal(listAppointmentDetail, companyId, res.locals.staffPayload.id, transaction);
+      }
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
@@ -394,6 +427,12 @@ export class AppointmentController extends BaseController {
    *           type: array
    *           items:
    *               type: string
+   *     - in: query
+   *       name: resourceIds
+   *       schema:
+   *           type: array
+   *           items:
+   *               type: string
    *     responses:
    *       200:
    *         description: success
@@ -409,7 +448,8 @@ export class AppointmentController extends BaseController {
         locationId: req.query.locationId,
         startTime: req.query.startTime,
         endTime: req.query.endTime,
-        staffIds: req.query.staffIds
+        staffIds: req.query.staffIds,
+        resourceIds: req.query.resourceIds
       };
       const validateErrors = validate(conditions, filterAppointmentDetailChema);
       if (validateErrors) {
@@ -456,10 +496,6 @@ export class AppointmentController extends BaseController {
             required: true
           },
           {
-            model: ResourceModel,
-            as: 'resource'
-          },
-          {
             model: StaffModel,
             as: 'staffs',
             required: true,
@@ -491,7 +527,20 @@ export class AppointmentController extends BaseController {
             required: true,
             through: { attributes: [] }
           };
+      const conditionResources: any = conditions.resourceIds
+        ? {
+            model: ResourceModel,
+            as: 'resource',
+            required: false,
+            where: { id: conditions.resourceIds }
+          }
+        : {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          };
       query.include.push(conditionsStaffs);
+      query.include.push(conditionResources);
       const appointmentDetails = await AppointmentDetailModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetails));
     } catch (error) {
@@ -595,13 +644,25 @@ export class AppointmentController extends BaseController {
           return next(new CustomError(validateReasonErrors, HttpStatus.BAD_REQUEST));
         }
         await AppointmentModel.update(
-          { status: data.status, cancelReason: req.body.cancelReason },
+          { status: data.status, cancelReason: req.body.cancelReason, isPrimary: false },
           { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
         );
         await AppointmentDetailModel.update(
           { status: data.status },
           { where: { appointmentId: data.appointmentId }, transaction }
         );
+
+        if (appointment.appointmentGroupId && appointment.isPrimary) {
+          const appointmentInGroup = await AppointmentModel.findOne({
+            where: {
+              appointmentGroupId: appointment.appointmentGroupId,
+              id: { [Op.not]: data.appointmentId }
+            }
+          });
+          if (appointmentInGroup) {
+            await AppointmentModel.update({ isPrimary: true }, { where: { id: appointmentInGroup.id }, transaction });
+          }
+        }
       } else {
         await AppointmentModel.update(
           { status: data.status },
@@ -722,6 +783,21 @@ export class AppointmentController extends BaseController {
   /**
    * @swagger
    * definitions:
+   *   CreateNewAppointment:
+   *       required:
+   *           - appointmentDetails
+   *       properties:
+   *           customerWisereId:
+   *               type: string
+   *           appointmentDetails:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CreateAppointmentDetail'
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
    *   UpdateAppointment:
    *       properties:
    *           customerWisereId:
@@ -732,18 +808,22 @@ export class AppointmentController extends BaseController {
    *               type: string
    *               format: date-time
    *               description: YYYY-MM-DD HH:mm:ss
-   *           createNewAppointments:
+   *           createNewAppointmentDetails:
    *               type: array
    *               items:
    *                   $ref: '#/definitions/CreateNewAppointmentDetail'
-   *           updateAppointments:
+   *           updateAppointmentDetails:
    *               type: array
    *               items:
    *                   $ref: '#/definitions/UpdateAppointmentDetail'
-   *           deleteAppointments:
+   *           deleteAppointmentDetails:
    *               type: array
    *               items:
    *                   type: string
+   *           createNewAppointments:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/CreateNewAppointment'
    *
    */
   /**
@@ -783,9 +863,10 @@ export class AppointmentController extends BaseController {
       const data = {
         locationId: req.body.locationId,
         appointmentId: req.params.appointmentId,
+        createNewAppointmentDetails: req.body.createNewAppointmentDetails,
+        updateAppointmentDetails: req.body.updateAppointmentDetails,
+        deleteAppointmentDetails: req.body.deleteAppointmentDetails,
         createNewAppointments: req.body.createNewAppointments,
-        updateAppointments: req.body.updateAppointments,
-        deleteAppointments: req.body.deleteAppointments,
         customerWisereId: req.body.customerWisereId,
         date: req.body.date
       };
@@ -841,15 +922,102 @@ export class AppointmentController extends BaseController {
       // start transaction
       transaction = await sequelize.transaction();
 
+      let appointmentGroupId = null;
+      if (data.createNewAppointments && data.createNewAppointments.length > 0) {
+        appointmentGroupId = uuidv4();
+        await AppointmentGroupModel.create(
+          { id: appointmentGroupId, locationId: data.locationId, date: data.date },
+          { transaction }
+        );
+        for (let i = 0; i < data.createNewAppointments.length; i++) {
+          if (data.createNewAppointments[i].customerWisereId) {
+            const customerWisere = await CustomerWisereModel.findOne({
+              where: { id: data.createNewAppointments[i].customerWisereId, companyId }
+            });
+            if (!customerWisere) {
+              return next(
+                new CustomError(
+                  customerErrorDetails.E_3001(
+                    `Can not find customerWisere ${data.createNewAppointments[i].customerWisereId} in location ${data.locationId}`
+                  ),
+                  HttpStatus.BAD_REQUEST
+                )
+              );
+            }
+            const appointmentId = uuidv4();
+            const appointmentDetails = await this.verifyAppointmentDetails(
+              data.createNewAppointments[i].appointmentDetails,
+              data.locationId
+            );
+            let appointmentCode = '';
+            for (let j = 0; j < 10; j++) {
+              const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+              const randomCode = random.toUpperCase();
+              appointmentCode = randomCode;
+              const existAppCode = await AppointmentModel.findOne({
+                where: {
+                  appointmentCode: appointmentCode
+                }
+              });
+              if (!existAppCode) {
+                break;
+              }
+            }
+            //insert appointment here
+            const newAppointmentData: any = {
+              id: appointmentId,
+              locationId: data.locationId,
+              status: EAppointmentStatus.NEW,
+              customerWisereId: data.createNewAppointments[i].customerWisereId
+                ? data.createNewAppointments[i].customerWisereId
+                : null,
+              bookingSource: AppointmentBookingSource.STAFF,
+              appointmentGroupId: appointmentGroupId,
+              isPrimary: false,
+              date: data.date,
+              appointmentCode: appointmentCode
+            };
+            await AppointmentModel.create(newAppointmentData, { transaction });
+            const appointmentDetailData: any[] = [];
+            const appointmentDetailStaffData = [];
+            for (let index = 0; index < appointmentDetails.length; index++) {
+              const appointmentDetailId = uuidv4();
+              appointmentDetailData.push({
+                id: appointmentDetailId,
+                appointmentId,
+                serviceId: appointmentDetails[index].serviceId,
+                resourceId: appointmentDetails[index].resourceId ? appointmentDetails[index].resourceId : null,
+                startTime: appointmentDetails[index].startTime,
+                duration: appointmentDetails[index].duration
+              });
+              for (let j = 0; j < appointmentDetails[index].staffIds.length; j++) {
+                appointmentDetailStaffData.push({
+                  appointmentDetailId,
+                  staffId: appointmentDetails[index].staffIds[j]
+                });
+              }
+            }
+            await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
+              transaction
+            });
+            await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+          }
+        }
+      }
+
       //update appointment here
       const appointmentData: any = {
         date: data.date,
-        customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId
+        customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId,
+        appointmentGroupId: appointmentGroupId
       };
       await AppointmentModel.update(appointmentData, { where: { id: data.appointmentId }, transaction });
 
-      if (data.createNewAppointments && data.createNewAppointments.length > 0) {
-        const appointmentDetails = await this.verifyAppointmentDetails(data.createNewAppointments, data.locationId);
+      if (data.createNewAppointmentDetails && data.createNewAppointmentDetails.length > 0) {
+        const appointmentDetails = await this.verifyAppointmentDetails(
+          data.createNewAppointmentDetails,
+          data.locationId
+        );
         const appointmentDetailData: any[] = [];
         const appointmentDetailStaffData = [];
         for (let i = 0; i < appointmentDetails.length; i++) {
@@ -875,11 +1043,11 @@ export class AppointmentController extends BaseController {
         });
         await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       }
-      if (data.updateAppointments && data.updateAppointments.length > 0) {
-        for (let i = 0; i < data.updateAppointments.length; i++) {
+      if (data.updateAppointmentDetails && data.updateAppointmentDetails.length > 0) {
+        for (let i = 0; i < data.updateAppointmentDetails.length; i++) {
           const appointmentDetail = await AppointmentDetailModel.findOne({
             where: {
-              id: data.updateAppointments[i].appointmentDetailId,
+              id: data.updateAppointmentDetails[i].appointmentDetailId,
               appointmentId: data.appointmentId
             }
           });
@@ -888,24 +1056,24 @@ export class AppointmentController extends BaseController {
             return next(
               new CustomError(
                 bookingErrorDetails.E_2004(
-                  `Appointment detail ${data.updateAppointments[i].appointmentDetailId} not exist`
+                  `Appointment detail ${data.updateAppointmentDetails[i].appointmentDetailId} not exist`
                 ),
                 HttpStatus.NOT_FOUND
               )
             );
           }
           await AppointmentDetailModel.destroy({
-            where: { id: data.updateAppointments[i].appointmentDetailId },
+            where: { id: data.updateAppointmentDetails[i].appointmentDetailId },
             transaction
           });
           await AppointmentDetailStaffModel.destroy({
-            where: { appointmentDetailId: data.updateAppointments[i].appointmentDetailId },
+            where: { appointmentDetailId: data.updateAppointmentDetails[i].appointmentDetailId },
             transaction
           });
         }
         const appointmentDetailData: any[] = [];
         const appointmentDetailStaffData = [];
-        const appointmentDetails = await this.verifyAppointmentDetails(data.updateAppointments, data.locationId);
+        const appointmentDetails = await this.verifyAppointmentDetails(data.updateAppointmentDetails, data.locationId);
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
           appointmentDetailData.push({
@@ -928,11 +1096,11 @@ export class AppointmentController extends BaseController {
         });
         await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       }
-      if (data.deleteAppointments && data.deleteAppointments.length > 0) {
-        for (let i = 0; i < data.deleteAppointments.length; i++) {
+      if (data.deleteAppointmentDetails && data.deleteAppointmentDetails.length > 0) {
+        for (let i = 0; i < data.deleteAppointmentDetails.length; i++) {
           const appointmentDetail = await AppointmentDetailModel.findOne({
             where: {
-              id: data.deleteAppointments[i],
+              id: data.deleteAppointmentDetails[i],
               appointmentId: data.appointmentId
             }
           });
@@ -940,17 +1108,17 @@ export class AppointmentController extends BaseController {
           if (!appointmentDetail) {
             return next(
               new CustomError(
-                bookingErrorDetails.E_2004(`Appointment detail ${data.deleteAppointments[i]} not exist`),
+                bookingErrorDetails.E_2004(`Appointment detail ${data.deleteAppointmentDetails[i]} not exist`),
                 HttpStatus.NOT_FOUND
               )
             );
           }
           await AppointmentDetailStaffModel.destroy({
-            where: { appointmentDetailId: data.deleteAppointments[i] },
+            where: { appointmentDetailId: data.deleteAppointmentDetails[i] },
             transaction
           });
           await AppointmentDetailModel.destroy({
-            where: { id: data.deleteAppointments[i] },
+            where: { id: data.deleteAppointmentDetails[i] },
             transaction
           });
         }
@@ -1272,13 +1440,29 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+      let appointmentCode = '';
+      for (let i = 0; i < 10; i++) {
+        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+        const randomCode = random.toUpperCase();
+        appointmentCode = randomCode;
+        const existAppCode = await AppointmentModel.findOne({
+          where: {
+            appointmentCode: appointmentCode
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
         locationId: dataInput.locationId,
         status: EAppointmentStatus.NEW,
         customerId: id,
-        bookingSource: dataInput.bookingSource
+        bookingSource: dataInput.bookingSource,
+        appointmentCode: appointmentCode,
+        date: dataInput.date
       };
 
       if (dataInput.appointmentGroupId) {
@@ -1327,32 +1511,11 @@ export class AppointmentController extends BaseController {
 
       const appointmentDetailData: any[] = [];
       const appointmentDetailStaffData = [];
-      const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
-      const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
-      const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      // const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
+      // const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      // const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+      const recentBookingData: any = [];
       for (let i = 0; i < appointmentDetails.length; i++) {
-        serviceDataNotify.push({
-          id: appointmentDetails[i].serviceId,
-          time: {
-            start: appointmentDetails[i].startTime,
-            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
-          }
-        });
-        if (appointmentDetails[i].resourceId)
-          resourceDataNotify.push({
-            id: appointmentDetails[i].resourceId,
-            time: {
-              start: appointmentDetails[i].startTime,
-              end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
-            }
-          });
-        staffDataNotify.push({
-          ids: appointmentDetails[i].staffIds,
-          time: {
-            start: appointmentDetails[i].startTime,
-            end: moment(appointmentDetails[i].startTime).add(appointmentDetails[i].duration, 'minutes').toDate()
-          }
-        });
         const appointmentDetailId = uuidv4();
         appointmentDetailData.push({
           id: appointmentDetailId,
@@ -1368,11 +1531,21 @@ export class AppointmentController extends BaseController {
             staffId: appointmentDetails[i].staffIds[j]
           });
         }
+        recentBookingData.push({
+          id: uuidv4(),
+          customerId: id,
+          appointmentId,
+          locationId: dataInput.locationId,
+          serviceId: appointmentDetails[i].serviceId,
+          staffId: appointmentDetails[i].staffIds[0]
+        });
       }
       await AppointmentDetailModel.bulkCreate(appointmentDetailData, {
         transaction
       });
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
+      await RecentBookingModel.bulkCreate(recentBookingData, { transaction });
+
       // const findQuery: FindOptions = {
       //   where: { id: appointmentId },
       //   include: [
@@ -1452,6 +1625,545 @@ export class AppointmentController extends BaseController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  public async convertApptToDeal(listAppointmentDetail: any, companyId: any, staffId: any, transaction: any) {
+    const dataDeal: any = new DealModel();
+    const appointment = listAppointmentDetail[0].appointment;
+    const title =
+      appointment.date.getDate() +
+      '/' +
+      (appointment.date.getMonth() + 1) +
+      '_' +
+      appointment.customerWisere.lastName +
+      '_' +
+      appointment.customerWisere.phone;
+    dataDeal.setDataValue('dealTitle', title);
+    dataDeal.setDataValue('source', appointment.bookingSource);
+    dataDeal.setDataValue('customerWisereId', appointment.customerWisere.id);
+    dataDeal.setDataValue('note', appointment.appointmentCode);
+    dataDeal.setDataValue('expectedCloseDate', appointment.date);
+    let amount = 0;
+    listAppointmentDetail.forEach((appointmentDetail: any) => {
+      amount += appointmentDetail.service.salePrice;
+    });
+    dataDeal.setDataValue('amount', amount);
+    const pipeline: any = await PipelineModel.findOne({
+      where: { companyId: companyId, name: 'Appointment' },
+      include: [
+        {
+          model: PipelineStageModel,
+          as: 'pipelineStages',
+          where: { order: '1' }
+        }
+      ]
+    });
+    if (pipeline) {
+      dataDeal.setDataValue('pipelineStageId', pipeline.pipelineStages[0].id);
+      dataDeal.setDataValue('createdBy', staffId);
+      await DealModel.create(dataDeal.dataValues, transaction);
+    }
+  }
+
+  /**
+   * @swagger
+   * /booking/appointment/customer-get-all-my-appointment:
+   *   get:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAllMyAppointment
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAllMyAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = res.locals.customerPayload.id;
+      const queryUpcomingAppt: FindOptions = {
+        attributes: ['id', 'status', 'customerId'],
+        where: {
+          customerId: customerId,
+          bookingSource: AppointmentBookingSource.MARKETPLACE,
+          status: {
+            [Op.and]: [
+              { [Op.ne]: EAppointmentStatus.CANCEL },
+              { [Op.ne]: EAppointmentStatus.COMPLETED },
+              { [Op.ne]: EAppointmentStatus.NO_SHOW }
+            ]
+          }
+        },
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            attributes: ['id', 'startTime'],
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service',
+                attributes: ['id', 'cateServiceId', 'description', 'duration', 'name', 'salePrice'],
+                required: false
+              },
+              {
+                model: StaffModel,
+                as: 'staffs',
+                attributes: ['id', 'firstName', 'avatarPath'],
+                required: false,
+                through: { attributes: [] }
+              }
+            ]
+          },
+          {
+            model: LocationModel,
+            as: 'location',
+            attributes: ['id', 'name', 'photo', 'address'],
+            required: false
+          }
+        ],
+        order: [Sequelize.literal('"appointmentDetails"."start_time"')]
+      };
+      const queryPastAppt: FindOptions = {
+        attributes: ['id', 'status', 'customerId', 'contentReview', 'numberRating'],
+        where: {
+          customerId: customerId,
+          bookingSource: AppointmentBookingSource.MARKETPLACE,
+          status: {
+            [Op.or]: [
+              { [Op.eq]: EAppointmentStatus.CANCEL },
+              { [Op.eq]: EAppointmentStatus.COMPLETED },
+              { [Op.eq]: EAppointmentStatus.NO_SHOW }
+            ]
+          }
+        },
+        include: [
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            attributes: ['id', 'startTime'],
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service',
+                attributes: ['id', 'cateServiceId', 'description', 'duration', 'name', 'salePrice'],
+                required: false
+              },
+              {
+                model: StaffModel,
+                as: 'staffs',
+                attributes: ['id', 'firstName', 'avatarPath'],
+                required: false,
+                through: { attributes: [] }
+              }
+            ]
+          },
+          {
+            model: LocationModel,
+            as: 'location',
+            attributes: ['id', 'name', 'photo', 'address'],
+            required: false
+          }
+        ],
+        order: [Sequelize.literal('"appointmentDetails"."start_time" DESC')]
+      };
+      let myAppointments: any = {};
+      const upcomingApointments = await AppointmentModel.findAll(queryUpcomingAppt);
+      const pastApointments = await AppointmentModel.findAll(queryPastAppt);
+      myAppointments = {
+        upcomingApointments,
+        pastApointments
+      };
+      return res.status(httpStatus.OK).send(buildSuccessMessage(myAppointments));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentCancel:
+   *       required:
+   *           - appointmentId
+   *           - cancelReason
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           cancelReason:
+   *               type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/customer-cancel-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: cancelAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentCancel'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public cancelAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const data = {
+        appointmentId: req.body.appointmentId,
+        cancelReason: req.body.cancelReason
+      };
+      const validateErrors = validate(data, appointmentCancelSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({
+        where: { id: data.appointmentId, customerId: res.locals.customerPayload.id }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${data.appointmentId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (
+        appointment.status !== EAppointmentStatus.NEW &&
+        appointment.status !== EAppointmentStatus.CONFIRMED &&
+        appointment.status !== EAppointmentStatus.ARRIVED
+      ) {
+        return next(new CustomError(bookingErrorDetails.E_2003(`Can not cancel appointment`), HttpStatus.BAD_REQUEST));
+      }
+      transaction = await sequelize.transaction();
+      await appointment.update({ status: EAppointmentStatus.CANCEL, cancelReason: data.cancelReason }, { transaction });
+      await AppointmentDetailModel.update(
+        { status: EAppointmentStatus.CANCEL },
+        { where: { appointmentId: data.appointmentId }, transaction }
+      );
+      await transaction.commit();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /booking/appointment/customer-get-appointment/{appointmentId}:
+   *   get:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAppointmentCustomer
+   *     parameters:
+   *     - in: path
+   *       name: appointmentId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: FORBIDDEN
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAppointmentCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.params.appointmentId, appointmentIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({
+        where: { id: req.params.appointmentId, customerId: res.locals.customerPayload.id },
+        include: [
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
+          },
+          {
+            model: CustomerModel,
+            as: 'customer',
+            required: false
+          },
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service',
+                required: true
+              },
+              {
+                model: ResourceModel,
+                as: 'resource'
+              },
+              {
+                model: StaffModel.scope('safe'),
+                as: 'staffs'
+              }
+            ]
+          }
+        ]
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointment));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentReschedule:
+   *       required:
+   *           - appointmentId
+   *           - startTime
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           startTime:
+   *               type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/customer-reschedule-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: rescheduleAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentReschedule'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public rescheduleAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.body, appointmentRescheduleSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({
+        where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (
+        appointment.status !== EAppointmentStatus.NEW &&
+        appointment.status !== EAppointmentStatus.CONFIRMED &&
+        appointment.status !== EAppointmentStatus.ARRIVED
+      ) {
+        return next(
+          new CustomError(bookingErrorDetails.E_2003(`Can not reschedule appointment`), HttpStatus.BAD_REQUEST)
+        );
+      }
+      await AppointmentDetailModel.update(
+        { startTime: req.body.startTime },
+        { where: { appointmentId: req.body.appointmentId } }
+      );
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentReady:
+   *       required:
+   *           - appointmentId
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/customer-set-ready-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: setReadyAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentReady'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public setReadyAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const appointmentId = req.body.appointmentId;
+      const validateErrors = validate(appointmentId, appointmentIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({
+        where: { id: appointmentId, customerId: res.locals.customerPayload.id }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(bookingErrorDetails.E_2002(`appointment ${appointmentId} not found`), HttpStatus.NOT_FOUND)
+        );
+      }
+      if (appointment.status !== EAppointmentStatus.NEW && appointment.status !== EAppointmentStatus.CONFIRMED) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2003(`Can not update status ready for appointment`),
+            HttpStatus.BAD_REQUEST
+          )
+        );
+      }
+      transaction = await sequelize.transaction();
+      await appointment.update({ status: EAppointmentStatus.ARRIVED }, { transaction });
+      await AppointmentDetailModel.update(
+        { status: EAppointmentStatus.ARRIVED },
+        { where: { appointmentId: appointmentId }, transaction }
+      );
+      await transaction.commit();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentRating:
+   *       required:
+   *           - appointmentId
+   *           - numberRating
+   *           - contentReview
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           numberRating:
+   *                type: integer
+   *           contentReview:
+   *                 type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/customer-rating-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: ratingAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentRating'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public ratingAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.body, ratingAppointmentSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      let appointment = await AppointmentModel.findOne({
+        where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (appointment.status !== EAppointmentStatus.COMPLETED) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2011(`Status appointment ${req.body.appointmentId} must be complete`),
+            HttpStatus.BAD_REQUEST
+          )
+        );
+      }
+      const data = {
+        numberRating: req.body.numberRating,
+        contentReview: req.body.contentReview
+      };
+      appointment = await appointment.update(data, { where: { id: req.body.appointmentId } });
+      return res.status(httpStatus.OK).send(appointment);
+    } catch (error) {
       return next(error);
     }
   };

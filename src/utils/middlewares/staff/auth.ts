@@ -7,7 +7,7 @@ import { buildErrorMessage, buildErrorDetail } from '../../response-messages';
 import { logger } from '../../logger';
 import { verifyAccessToken } from '../../jwt';
 import { CustomError } from '../../error-handlers';
-import { StaffModel, CompanyModel, LocationModel } from '../../../repositories/postgres/models';
+import { StaffModel, CompanyModel, LocationModel, CompanyDetailModel } from '../../../repositories/postgres/models';
 
 const LOG_LABEL = process.env.NODE_NAME || 'development-mode';
 
@@ -53,7 +53,7 @@ const getWorkingLocations = async (companyId: string, staffId: string, isOwner: 
 
 const getCompany = async (staffId: string) => {
   try {
-    const company = await CompanyModel.findOne({
+    let company: any = await CompanyModel.findOne({
       include: [
         {
           model: LocationModel,
@@ -68,9 +68,24 @@ const getCompany = async (staffId: string) => {
               through: { attributes: [], where: { staffId } }
             }
           ]
+        },
+        {
+          model: CompanyDetailModel,
+          as: 'companyDetail',
+          required: false,
+          attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
         }
       ]
     });
+
+    if (company) {
+      company = {
+        ...company.dataValues,
+        ...company.companyDetail?.dataValues,
+        companyDetail: undefined
+      };
+    }
+
     return company;
   } catch (error) {
     throw error;

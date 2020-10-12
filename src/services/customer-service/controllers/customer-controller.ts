@@ -4,8 +4,19 @@ require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { customerErrorDetails, generalErrorDetails } from '../../../utils/response-messages/error-details';
-import { CustomerModel, CustomerWisereModel } from '../../../repositories/postgres/models';
+import {
+  customerErrorDetails,
+  generalErrorDetails,
+  staffErrorDetails
+} from '../../../utils/response-messages/error-details';
+import {
+  CustomerModel,
+  CustomerWisereModel,
+  StaffModel,
+  sequelize,
+  ContactModel,
+  LocationModel
+} from '../../../repositories/postgres/models';
 import {
   createCustomerWisereSchema,
   customerWireseIdSchema,
@@ -17,7 +28,7 @@ import {
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { paginate } from '../../../utils/paginator';
-import { FindOptions } from 'sequelize/types';
+import { FindOptions, Transaction, Op } from 'sequelize';
 import { hash, compare } from 'bcryptjs';
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import {
@@ -36,50 +47,114 @@ import {
 } from '../../../utils/validator/validate-social-token';
 import { generateAppleToken } from '../../../utils/lib/generateAppleToken';
 import jwt from 'jsonwebtoken';
+import shortid from 'shortid';
+import _ from 'lodash';
+import { emailSchema, changePasswordSchema } from '../configs/validate-schemas/customer';
+import { v4 as uuidv4 } from 'uuid';
+import { redis, EKeys } from '../../../repositories/redis';
+import { ICustomerRecoveryPasswordTemplate } from '../../../utils/emailer/templates/customer-recovery-password';
+import * as ejs from 'ejs';
+import * as path from 'path';
+import { sendEmail } from '../../../utils/emailer';
 
+const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
+const frontEndUrl = process.env.MARKETPLACE_URL;
 export class CustomerController {
   /**
    * @swagger
    * definitions:
-   *   customerWisereCreate:
+   *   MoreEmailContact:
    *       properties:
-   *           firstName:
-   *               type: string
-   *           lastName:
-   *               type: string
-   *           gender:
-   *               type: integer
-   *               required: true
-   *               enum: [0, 1, 2]
-   *           phone:
-   *               required: true
-   *               type: string
    *           email:
    *               type: string
-   *           birthDate:
+   *           type:
    *               type: string
-   *           passportNumber:
-   *               type: string
-   *           address:
-   *               type: string
-   *
    *
    */
   /**
    * @swagger
-   * /customer/create:
+   * definitions:
+   *   MorePhoneContact:
+   *       properties:
+   *           phone:
+   *               type: string
+   *           type:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/create-customer-wisere:
    *   post:
    *     tags:
    *       - Customer
    *     security:
    *       - Bearer: []
    *     name: createCustomerWisere
+   *     consumes:
+   *     - multipart/form-data
    *     parameters:
-   *     - in: "body"
-   *       name: "body"
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: firstName
+   *       type: string
    *       required: true
-   *       schema:
-   *         $ref: '#/definitions/customerWisereCreate'
+   *     - in: "formData"
+   *       name: lastName
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: gender
+   *       type: integer
+   *       enum: [0, 1, 2]
+   *     - in: "formData"
+   *       name: phone
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: email
+   *       type: string
+   *     - in: "formData"
+   *       name: birthDate
+   *       type: string
+   *     - in: "formData"
+   *       name: passport
+   *       type: string
+   *     - in: "formData"
+   *       name: address
+   *       type: string
+   *     - in: "formData"
+   *       name: ownerId
+   *       type: string
+   *     - in: "formData"
+   *       name: source
+   *       type: string
+   *     - in: "formData"
+   *       name: label
+   *       type: string
+   *     - in: "formData"
+   *       name: note
+   *       type: string
+   *     - in: "formData"
+   *       name: job
+   *       type: string
+   *     - in: "formData"
+   *       name: color
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: "moreEmailContact"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/MoreEmailContact'
+   *     - in: "formData"
+   *       name: "morePhoneContact"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/MorePhoneContact'
    *     responses:
    *       200:
    *         description: success
@@ -89,6 +164,7 @@ export class CustomerController {
    *         description:
    */
   public createCustomerWisere = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       const data: any = {
         firstName: req.body.firstName,
@@ -98,7 +174,15 @@ export class CustomerController {
         email: req.body.email ? req.body.email : null,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
-        address: req.body.address
+        address: req.body.address,
+        ownerId: req.body.ownerId,
+        source: req.body.source,
+        note: req.body.note,
+        job: req.body.job,
+        label: req.body.label,
+        color: req.body.color,
+        moreEmailContact: req.body.moreEmailContact,
+        morePhoneContact: req.body.morePhoneContact
       };
       const validateErrors = validate(data, createCustomerWisereSchema);
       if (validateErrors) {
@@ -107,41 +191,108 @@ export class CustomerController {
       data.companyId = res.locals.staffPayload.companyId;
       const existPhone = await CustomerWisereModel.findOne({ where: { phone: data.phone, companyId: data.companyId } });
       if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
-      if (req.body.email) {
+      if (data.email) {
         const existEmail = await CustomerWisereModel.findOne({
           where: { email: data.email, companyId: data.companyId }
         });
         if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
-      const customerWisere = await CustomerWisereModel.create(data);
+      if (data.ownerId) {
+        const existStaff = await StaffModel.findOne({
+          where: { id: data.ownerId },
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              required: true,
+              through: {
+                attributes: []
+              },
+              where: { id: res.locals.staffPayload.workingLocationIds }
+            }
+          ]
+        });
+        if (!existStaff)
+          return next(
+            new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND)
+          );
+      }
+      data.code = shortid.generate();
+      if (req.file) {
+        data.avatarPath = (req.file as any).location;
+      }
+      transaction = await sequelize.transaction();
+      const customerWisere = await CustomerWisereModel.create(data, { transaction });
+      if (data.moreEmailContact && data.moreEmailContact.length > 0) {
+        const arrInsertEmailContact = [];
+        for (let i = 0; i < data.moreEmailContact.length; i++) {
+          const existEmailCustomer = await CustomerWisereModel.findOne({
+            where: { email: data.moreEmailContact[i].email, companyId: data.companyId }
+          });
+          if (existEmailCustomer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+          const existEmailContact = await ContactModel.findOne({
+            where: { email: data.moreEmailContact[i].email }
+          });
+          if (existEmailContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          arrInsertEmailContact.push({
+            email: data.moreEmailContact[i].email,
+            type: data.moreEmailContact[i].type,
+            customerWisereId: customerWisere.id
+          });
+        }
+        await ContactModel.bulkCreate(arrInsertEmailContact, { transaction });
+      }
+      if (data.morePhoneContact && data.morePhoneContact.length > 0) {
+        const arrInsertPhoneContact = [];
+        for (let i = 0; i < data.morePhoneContact.length; i++) {
+          const existPhoneCustomer = await CustomerWisereModel.findOne({
+            where: { phone: data.morePhoneContact[i].phone, companyId: data.companyId }
+          });
+          if (existPhoneCustomer) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          const existPhoneContact = await ContactModel.findOne({
+            where: { phone: data.morePhoneContact[i].phone }
+          });
+          if (existPhoneContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          arrInsertPhoneContact.push({
+            phone: data.morePhoneContact[i].phone,
+            type: data.morePhoneContact[i].type,
+            customerWisereId: customerWisere.id
+          });
+        }
+        await ContactModel.bulkCreate(arrInsertPhoneContact, { transaction });
+      }
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customerWisere));
     } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
+
   /**
    * @swagger
    * definitions:
-   *   customerWisereUpdate:
+   *   MoreEmailContact:
    *       properties:
-   *           lastName:
+   *           email:
    *               type: string
-   *           firstName:
+   *           type:
    *               type: string
-   *           gender:
-   *               type: integer
-   *               required: true
-   *               enum: [0, 1, 2]
-   *           birthDate:
-   *               type: string
-   *           passportNumber:
-   *               type: string
-   *           address:
-   *               type: string
-   *
    *
    */
-
+  /**
+   * @swagger
+   * definitions:
+   *   MorePhoneContact:
+   *       properties:
+   *           phone:
+   *               type: string
+   *           type:
+   *               type: string
+   *
+   */
   /**
    * @swagger
    * /customer/update-customer-wisere/{customerWisereId}:
@@ -151,15 +302,71 @@ export class CustomerController {
    *     security:
    *       - Bearer: []
    *     name: updateCustomerWisere
+   *     consumes:
+   *      - multipart/form-data
    *     parameters:
-   *     - in: "path"
-   *       name: "customerWisereId"
-   *       required: true
-   *     - in: "body"
-   *       name: "body"
+   *     - in: path
+   *       name: customerWisereId
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/customerWisereUpdate'
+   *          type: string
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: firstName
+   *       type: string
+   *     - in: "formData"
+   *       name: lastName
+   *       type: string
+   *     - in: "formData"
+   *       name: phone
+   *       type: string
+   *     - in: "formData"
+   *       name: email
+   *       type: string
+   *     - in: "formData"
+   *       name: gender
+   *       type: integer
+   *       enum: [0, 1, 2]
+   *     - in: "formData"
+   *       name: passport
+   *       type: string
+   *     - in: "formData"
+   *       name: address
+   *       type: string
+   *     - in: "formData"
+   *       name: ownerId
+   *       type: string
+   *     - in: "formData"
+   *       name: source
+   *       type: string
+   *     - in: "formData"
+   *       name: label
+   *       type: string
+   *     - in: "formData"
+   *       name: note
+   *       type: string
+   *     - in: "formData"
+   *       name: job
+   *       type: string
+   *     - in: "formData"
+   *       name: birthDate
+   *       type: string
+   *     - in: "formData"
+   *       name: color
+   *       type: string
+   *     - in: "formData"
+   *       name: "moreEmailContact"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/MoreEmailContact'
+   *     - in: "formData"
+   *       name: "morePhoneContact"
+   *       type: array
+   *       items:
+   *           $ref: '#/definitions/MorePhoneContact'
    *     responses:
    *       200:
    *         description: success
@@ -169,32 +376,187 @@ export class CustomerController {
    *         description:
    */
   public updateCustomerWisere = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
-      const { companyId } = res.locals.staffPayload;
+      const { companyId, workingLocationIds } = res.locals.staffPayload;
       const data: any = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
+        phone: req.body.phone,
+        email: req.body.email,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
-        address: req.body.address
+        address: req.body.address,
+        ownerId: req.body.ownerId,
+        source: req.body.source,
+        note: req.body.note,
+        job: req.body.job,
+        label: req.body.label,
+        color: req.body.color,
+        moreEmailContact: req.body.moreEmailContact,
+        morePhoneContact: req.body.morePhoneContact
       };
       const customerWisereId = req.params.customerWisereId;
-      const validateErrors = validate(data, updateCustomerWisereSchema);
+      const validateErrors = validate({ ...data, customerWisereId: customerWisereId }, updateCustomerWisereSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      let customerWisere = await CustomerWisereModel.findOne({
-        where: { id: req.params.customerWisereId, companyId: companyId }
+      const customerWisere = await CustomerWisereModel.findOne({
+        where: { id: customerWisereId, companyId: companyId }
       });
       if (!customerWisere)
         throw new CustomError(
           customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
           HttpStatus.NOT_FOUND
         );
-      customerWisere = await customerWisere.update(data);
+      if (data.phone) {
+        const existPhone = await CustomerWisereModel.findOne({
+          where: { phone: data.phone, companyId: companyId, id: { [Op.ne]: customerWisereId } }
+        });
+        if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+      }
+      if (data.email) {
+        const existEmail = await CustomerWisereModel.findOne({
+          where: { email: data.email, companyId: companyId, id: { [Op.ne]: customerWisereId } }
+        });
+        if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+      }
+      if (data.ownerId) {
+        const existStaff = await StaffModel.findOne({
+          where: { id: data.ownerId },
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              required: true,
+              through: {
+                attributes: []
+              },
+              where: { id: workingLocationIds }
+            }
+          ]
+        });
+        if (!existStaff)
+          return next(
+            new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND)
+          );
+      }
+      if (req.file) {
+        data.avatarPath = (req.file as any).location;
+      }
+      transaction = await sequelize.transaction();
+      await customerWisere.update(data, transaction);
+      if (data.moreEmailContact && data.moreEmailContact.length > 0) {
+        const curEmailContacts = await ContactModel.findAll({
+          attributes: ['email', 'type'],
+          where: { customerWisereId: customerWisereId, email: { [Op.not]: null } }
+        });
+        const emailContacts = curEmailContacts.map((curEmailContact) => ({
+          email: curEmailContact.email,
+          type: curEmailContact.type
+        }));
+        const removeEmails = _.differenceWith(emailContacts, data.moreEmailContact, _.isEqual);
+        if (removeEmails.length > 0) {
+          for (let i = 0; i < removeEmails.length; i++) {
+            const contact = await ContactModel.findOne({
+              where: {
+                email: removeEmails[i].email,
+                type: removeEmails[i].type,
+                customerWisereId: customerWisereId
+              }
+            });
+            await ContactModel.destroy({
+              where: {
+                id: contact.id
+              },
+              transaction
+            });
+          }
+        }
+        const addEmails = _.differenceWith(data.moreEmailContact, emailContacts, _.isEqual);
+        const arrInsertEmailContact = [];
+        if (addEmails.length > 0) {
+          for (let i = 0; i < addEmails.length; i++) {
+            const existEmailCustomer = await CustomerWisereModel.findOne({
+              where: {
+                email: addEmails[i].email,
+                companyId: companyId,
+                id: { [Op.not]: customerWisereId }
+              }
+            });
+            if (existEmailCustomer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+            const existEmailContact = await ContactModel.findOne({
+              where: { email: addEmails[i].email, customerWisereId: { [Op.not]: customerWisereId } }
+            });
+            if (existEmailContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            arrInsertEmailContact.push({
+              email: addEmails[i].email,
+              type: addEmails[i].type,
+              customerWisereId: customerWisere.id
+            });
+          }
+          await ContactModel.bulkCreate(arrInsertEmailContact, { transaction });
+        }
+      }
+      if (data.morePhoneContact && data.morePhoneContact.length > 0) {
+        const curPhoneContacts = await ContactModel.findAll({
+          attributes: ['phone', 'type'],
+          where: { customerWisereId: customerWisereId, phone: { [Op.not]: null } }
+        });
+        const phoneContacts = curPhoneContacts.map((curPhoneContact) => ({
+          phone: curPhoneContact.phone,
+          type: curPhoneContact.type
+        }));
+        const removePhones = _.differenceWith(phoneContacts, data.morePhoneContact, _.isEqual);
+        if (removePhones.length > 0) {
+          for (let i = 0; i < removePhones.length; i++) {
+            const contact = await ContactModel.findOne({
+              where: {
+                phone: removePhones[i].phone,
+                type: removePhones[i].type,
+                customerWisereId: customerWisereId
+              }
+            });
+            await ContactModel.destroy({
+              where: {
+                id: contact.id
+              },
+              transaction
+            });
+          }
+        }
+        const addPhones = _.differenceWith(data.morePhoneContact, phoneContacts, _.isEqual);
+        const arrInsertPhoneContact = [];
+        if (addPhones.length > 0) {
+          for (let i = 0; i < addPhones.length; i++) {
+            const existPhoneCustomer = await CustomerWisereModel.findOne({
+              where: {
+                phone: addPhones[i].phone,
+                companyId: companyId,
+                id: { [Op.not]: customerWisereId }
+              }
+            });
+            if (existPhoneCustomer) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            const existPhoneContact = await ContactModel.findOne({
+              where: { phone: addPhones[i].phone, id: { [Op.not]: customerWisereId } }
+            });
+            if (existPhoneContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            arrInsertPhoneContact.push({
+              phone: addPhones[i].phone,
+              type: addPhones[i].type,
+              customerWisereId: customerWisere.id
+            });
+          }
+          await ContactModel.bulkCreate(arrInsertPhoneContact, { transaction });
+        }
+      }
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customerWisere));
     } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
@@ -367,7 +729,17 @@ export class CustomerController {
       const validateErrors = validate(customerWisereId, customerWireseIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const customerWisere = await CustomerWisereModel.findOne({
-        where: { id: customerWisereId, companyId: companyId }
+        where: {
+          id: customerWisereId,
+          companyId: companyId
+        },
+        include: [
+          {
+            model: ContactModel,
+            as: 'contacts',
+            required: false
+          }
+        ]
       });
       if (!customerWisere)
         return next(
@@ -908,7 +1280,7 @@ export class CustomerController {
 
   /**
    * @swagger
-   * /customer/register:
+   * /customer/register-customer-marketplace:
    *   post:
    *     tags:
    *       - Customer
@@ -953,6 +1325,139 @@ export class CustomerController {
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
       const customer = await CustomerModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerRequestNewPassword:
+   *       required:
+   *           - email
+   *       properties:
+   *           email:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/request-new-password:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     name: customer-request-new-password
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerRequestNewPassword'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public requestNewPassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const email = req.body.email;
+      const validateErrors = validate({ email: email }, emailSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      if (!customer) return next(new CustomError(customerErrorDetails.E_3001('Email not found'), HttpStatus.NOT_FOUND));
+      const uuidToken = uuidv4();
+      const dataSendMail: ICustomerRecoveryPasswordTemplate = {
+        customerEmail: email,
+        yourURL: `${frontEndUrl}/forgot-password?token=${uuidToken}`
+      };
+      await redis.setData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
+        key: 'EX',
+        value: recoveryPasswordUrlExpiresIn
+      });
+      const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/customer-recovery-password.ejs');
+      ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
+        if (!err) {
+          await sendEmail({
+            receivers: email,
+            subject: 'Change your account password',
+            type: 'html',
+            message: dataEjs
+          });
+        }
+      });
+
+      res.status(HttpStatus.OK).send(buildSuccessMessage({ msg: 'Please check your email' }));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerChangePassword:
+   *       required:
+   *           - token
+   *           - newPassword
+   *       properties:
+   *           token:
+   *               type: string
+   *           newPassword:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/change-password:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     name: customer-change-password
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerChangePassword'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public changePassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = {
+        token: req.body.token,
+        newPassword: req.body.newPassword
+      };
+      const validateErrors = validate(body, changePasswordSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const tokenStoraged = await redis.getData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${body.token}`);
+      if (!tokenStoraged)
+        return next(new CustomError(customerErrorDetails.E_3009('Invalid token'), HttpStatus.UNAUTHORIZED));
+      const data = JSON.parse(tokenStoraged);
+      const customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: data.email } });
+      if (!customer) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
+      const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
+      await CustomerModel.update(
+        { password: password },
+        {
+          where: {
+            email: data.email
+          }
+        }
+      );
+      await redis.deleteData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${body.token}`);
+      res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }

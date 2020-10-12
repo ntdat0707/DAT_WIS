@@ -47,7 +47,7 @@ import * as path from 'path';
 import { generatePWD } from '../../../utils/lib/generatePassword';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
-const fontEndUrl = process.env.FRONT_END_URL;
+const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
   /**
    * @swagger
@@ -116,10 +116,12 @@ export class AuthController {
       data.onboardStep = 0;
       await StaffModel.create({ ...data, ...{ isBusinessAccount: true, id: staffId } }, { transaction });
       await CompanyModel.create({ id: companyId, ownerId: staffId }, { transaction });
+
       const pipelineId1 = uuidv4();
       const pipelineId2 = uuidv4();
       const pipelineId3 = uuidv4();
       const pipelineId4 = uuidv4();
+
       const dataPipeline = [
         {
           id: pipelineId1,
@@ -143,122 +145,105 @@ export class AuthController {
         }
       ];
       await PipelineModel.bulkCreate(dataPipeline, { transaction });
+
       const dataStage = [
         {
           pipelineId: pipelineId1,
           name: 'Onsite',
-          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId1,
           name: 'Interactive',
-          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId1,
           name: 'Proposal made',
-          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId1,
           name: 'Demo Scheduled',
-          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId2,
           name: 'Lead-in',
-          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId2,
           name: 'Contact made',
-          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId2,
           name: 'Demo Scheduled',
-          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId2,
           name: 'Proposal made',
-          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId2,
           name: 'Negotiation Started',
-          probability: 100,
           order: 5
         },
         {
           pipelineId: pipelineId3,
           name: 'Contact made',
-          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId3,
           name: 'SMS sent',
-          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId3,
           name: 'Filter',
-          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId3,
           name: 'Interactive',
-          probability: 100,
           order: 4
         },
         {
           pipelineId: pipelineId3,
           name: 'Proposal made',
-          probability: 100,
           order: 5
         },
         {
           pipelineId: pipelineId3,
           name: 'Negotiation Started',
-          probability: 100,
           order: 6
         },
         {
           pipelineId: pipelineId4,
           name: 'New',
-          probability: 100,
           order: 1
         },
         {
           pipelineId: pipelineId4,
           name: 'Confirmed',
-          probability: 100,
           order: 2
         },
         {
           pipelineId: pipelineId4,
           name: 'Purchased',
-          probability: 100,
           order: 3
         },
         {
           pipelineId: pipelineId4,
           name: 'Treatment Planning',
-          probability: 100,
           order: 4
         }
       ];
+
       await PipelineStageModel.bulkCreate(dataStage, { transaction });
       //commit transaction
       await transaction.commit();
@@ -485,7 +470,7 @@ export class AuthController {
       const uuidToken = uuidv4();
       const dataSendMail: IStaffRecoveryPasswordTemplate = {
         staffEmail: email,
-        yourURL: `${fontEndUrl}/users/forgot-password?token=${uuidToken}`
+        yourURL: `${frontEndUrl}/users/forgot-password?token=${uuidToken}`
       };
       await redis.setData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
         key: 'EX',
@@ -924,7 +909,14 @@ export class AuthController {
         return next(new CustomError(generalErrorDetails.E_0003()));
       } else {
         const staff = await StaffModel.scope('safe').findOne({
-          where: { id: accessTokenData.userId }
+          where: { id: accessTokenData.userId },
+          include: [
+            {
+              model: LocationModel,
+              as: 'workingLocations',
+              through: { attributes: [] }
+            }
+          ]
         });
         if (!staff) {
           return next(new CustomError(generalErrorDetails.E_0003()));

@@ -14,6 +14,9 @@ class AppointmentModel extends Model {
   public isPrimary!: boolean;
   public cancelReason: string;
   public bookingSource: string;
+  public appointmentCode!: string;
+  public contentReview: string;
+  public numberRating: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -78,10 +81,25 @@ AppointmentModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
+    appointmentCode: {
+      field: 'appointment_code',
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     bookingSource: {
       field: 'booking_source',
       type: DataTypes.ENUM(...Object.keys(AppointmentBookingSource)),
       allowNull: false
+    },
+    contentReview: {
+      field: 'content_review',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    numberRating: {
+      field: 'number_rating',
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',

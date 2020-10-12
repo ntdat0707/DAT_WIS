@@ -21,7 +21,9 @@ lint: &lint
           # Install Nodejs
           nvm install $(cat .nvmrc)
           nvm alias default $(cat .nvmrc)
-          sudo npm install -g
+          npm config set user 0
+          npm config set unsafe-perm true
+          npm install -g yarn
         - |
           echo 'setup environment'
           export MYIP=`ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
