@@ -1,25 +1,19 @@
+import { EPaymentType } from './../../../utils/consts/index';
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class InvoiceDetail extends Model {
+class PaymentModel extends Model {
   public id: string;
-  public invoiceId!: string;
-  public serviceId!: string;
-  public unit?: number;
-  public quantity!: number;
-  public price!: number;
-  public discount?: number;
-  public tax!: number;
-  public balance: number;
-  public staffId?: number;
-  public subTotal?: number;
+  public invoiceDetailId!: string;
+  public type!: string;
+  public amount!: number;
   public readonly total: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-InvoiceDetail.init(
+PaymentModel.init(
   {
     id: {
       field: 'id',
@@ -32,30 +26,15 @@ InvoiceDetail.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    serviceId: {
-      field: 'service_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
+    type: {
+      field: 'type',
+      type: DataTypes.ENUM(...Object.keys(EPaymentType)),
+      defaultValue: EPaymentType.CASH
     },
-    unit: {
-      field: 'unit',
+    amount: {
+      field: 'amount',
       type: DataTypes.INTEGER,
       allowNull: true
-    },
-    quantity: {
-      field: 'quantity',
-      type: DataTypes.INTEGER,
-      defaultValue: 1
-    },
-    price: {
-      field: 'price',
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    staffId: {
-      field: 'staff_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
     },
     createdAt: {
       field: 'created_at',
@@ -76,10 +55,10 @@ InvoiceDetail.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'invoice_detail',
+    tableName: 'payment',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { InvoiceDetail };
+export { PaymentModel };

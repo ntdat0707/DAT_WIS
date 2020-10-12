@@ -157,3 +157,10 @@ export enum ESourceType {
   MARKETPLACE = 'marketplace',
   OTHER = 'other'
 }
+
+export enum EPaymentType {
+  CASH = 'cash',
+  CARD = 'card',
+  TRANFER = 'tranfer',
+  GIFT_CARD = 'gift_card'
+}
