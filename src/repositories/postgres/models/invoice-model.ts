@@ -1,5 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
-import { ESourceType } from 'src/utils/consts';
+import { ESourceType } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
 class InvoiceModel extends Model {
