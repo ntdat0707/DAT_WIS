@@ -30,6 +30,7 @@ import { MarketPlaceFieldsModel } from './marketplace-fields-model';
 import { MarketPlaceValueModel } from './marketplace-value-model';
 import { ContactModel } from './contact-model';
 import { FavoriteModel } from './favorite-model';
+import { PositionModel } from './position-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -170,7 +171,11 @@ DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: '
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
-MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, { foreignKey: 'fieldId', sourceKey: 'id', as: 'marketplaceValues'});
+MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, {
+  foreignKey: 'fieldId',
+  sourceKey: 'id',
+  as: 'marketplaceValues'
+});
 MarketPlaceValueModel.belongsTo(MarketPlaceFieldsModel, { foreignKey: 'fieldId', as: 'marketplaceField' });
 
 LocationModel.hasMany(MarketPlaceValueModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'marketplaceValues' });
@@ -179,8 +184,22 @@ MarketPlaceValueModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: '
 CustomerWisereModel.hasMany(ContactModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'contacts' });
 ContactModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
-CustomerModel.belongsToMany(LocationModel, { through: FavoriteModel, as: 'favoriteCustomers', foreignKey: 'customerId' });
-LocationModel.belongsToMany(CustomerModel, { through: FavoriteModel, as: 'favoriteLocations', foreignKey: 'locationId' });
+CustomerModel.belongsToMany(LocationModel, {
+  through: FavoriteModel,
+  as: 'favoriteCustomers',
+  foreignKey: 'customerId'
+});
+LocationModel.belongsToMany(CustomerModel, {
+  through: FavoriteModel,
+  as: 'favoriteLocations',
+  foreignKey: 'locationId'
+});
+
+StaffModel.hasMany(PositionModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'position' });
+PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
+
+StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
+PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
 export {
   sequelize,

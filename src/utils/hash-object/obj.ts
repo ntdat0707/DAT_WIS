@@ -1,4 +1,3 @@
 const TimeSlotObj = {} as any;
 
-export {TimeSlotObj};
-
+export { TimeSlotObj };

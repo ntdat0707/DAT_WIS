@@ -41,5 +41,7 @@ export class CustomerRoutes {
     this.router.post('/login-social', this.customerController.loginSocial);
     this.router.post('/login-apple', this.customerController.loginApple);
     this.router.post('/register-customer-marketplace', this.customerController.registerCustomer);
+    this.router.post('/request-new-password', this.customerController.requestNewPassword);
+    this.router.put('/change-password', this.customerController.changePassword);
   }
 }

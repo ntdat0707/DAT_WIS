@@ -1,17 +1,16 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-
-class MarketPlaceValueModel extends Model {
+class PositionModel extends Model {
   public id: string;
-  public fieldId!: string;
-  public locationId!: string;
-  public value!: string;
+  public staffId: string;
+  public ownerId: string;
+  public index: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-MarketPlaceValueModel.init(
+PositionModel.init(
   {
     id: {
       field: 'id',
@@ -19,19 +18,19 @@ MarketPlaceValueModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    fieldId: {
-      field: 'field_id',
-      type: DataTypes.UUID,
-      allowNull: false
-    },
-    locationId: {
-      field: 'location_id',
+    staffId: {
+      field: 'staff_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    value: {
-      field: 'value',
-      type: DataTypes.STRING,
+    ownerId: {
+      field: 'owner_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    index: {
+      field: 'index',
+      type: DataTypes.TINYINT,
       allowNull: false
     },
     createdAt: {
@@ -53,10 +52,10 @@ MarketPlaceValueModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'marketplace_value',
+    tableName: 'position',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { MarketPlaceValueModel };
+export { PositionModel };
