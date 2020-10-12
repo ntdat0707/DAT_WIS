@@ -13,7 +13,7 @@ export class DealRoutes {
 
   private config(): void {
     this.router.get('/all-pipeline', isAuthenticated, this.dealController.getAllPipeline);
-    this.router.delete('/delete-pipeline/:pipelineId?', isAuthenticated, this.dealController.deletePipeline);
+    this.router.delete('/delete-pipeline/:pipelineId', isAuthenticated, this.dealController.deletePipeline);
     this.router.get(
       '/get-pipelineStage/:pipelineId?',
       isAuthenticated,

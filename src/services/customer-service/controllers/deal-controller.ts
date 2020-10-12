@@ -20,7 +20,8 @@ import {
   createDealSchema,
   dealIdSchema,
   updateDealSchema,
-  settingPipelineSchema
+  settingPipelineSchema,
+  movePipelineStageIdSchema
 } from '../configs/validate-schemas/deal';
 import {
   dealErrorDetails,
@@ -87,6 +88,9 @@ export class DealController {
    *       name: pipelineId
    *       schema:
    *          type: string
+   *     - in: query
+   *       name: movePipelineStageId
+   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -98,30 +102,63 @@ export class DealController {
   public deletePipeline = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      transaction = await sequelize.transaction();
       const pipelineId = req.params.pipelineId;
-      const validateErrors = validate(pipelineId, pipelineIdSchema);
+      const movePipelineStageId = req.query.movePipelineStageId;
+      let validateErrors: any;
+      validateErrors = validate(pipelineId, pipelineIdSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const pipeline = await PipelineModel.findOne({ where: { id: pipelineId } });
-      if (!pipeline) {
+      validateErrors = validate(movePipelineStageId, movePipelineStageIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const checkPipeline = await PipelineModel.findOne({
+        where: { id: pipelineId, companyId: res.locals.staffPayload.companyId }
+      });
+      if (!checkPipeline) {
         return next(
           new CustomError(pipelineErrorDetails.E_3101(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
         );
       }
-      const pipelineStage = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId } });
-      if (pipelineStage) {
-        for (let i = 0; i < pipelineStage.length; i++) {
-          await DealModel.destroy({ where: { pipelineStageId: pipelineStage[i].id }, transaction });
+      transaction = await sequelize.transaction();
+      const pipelineStages = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId } });
+      if (movePipelineStageId) {
+        const checkMovePipelineStage = await PipelineStageModel.findOne({
+          where: { id: movePipelineStageId },
+          include: [
+            {
+              model: PipelineModel,
+              as: 'pipeline',
+              where: { companyId: res.locals.staffPayload.companyId, id: { [Op.ne]: pipelineId } }
+            }
+          ]
+        });
+        if (!checkMovePipelineStage) {
+          return next(
+            new CustomError(
+              pipelineStageErrorDetails.E_3201(`movePipelineId ${movePipelineStageId} not found`),
+              httpStatus.NOT_FOUND
+            )
+          );
         }
-        await PipelineStageModel.destroy({ where: { pipelineId: pipelineId }, transaction });
+        for (let i = 0; i < pipelineStages.length; i++) {
+          await DealModel.update(
+            { pipelineStageId: movePipelineStageId },
+            { where: { pipelineStageId: pipelineStages[i].id }, transaction }
+          );
+        }
+      } else {
+        for (let i = 0; i < pipelineStages.length; i++) {
+          await DealModel.destroy({ where: { pipelineStageId: pipelineStages[i].id }, transaction });
+        }
       }
+      await PipelineStageModel.destroy({ where: { pipelineId: pipelineId }, transaction });
       await PipelineModel.destroy({ where: { id: pipelineId }, transaction });
-      transaction.commit();
+      await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
-      //rollback transaction
+      // rollback transaction
       if (transaction) {
         await transaction.rollback();
       }
@@ -1004,7 +1041,7 @@ export class DealController {
         req.body.listPipelineStage[i].pipelineId = dataPipeline.id;
       }
       await PipelineStageModel.bulkCreate(req.body.listPipelineStage, { transaction });
-      transaction.commit();
+      await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
       //rollback transaction
