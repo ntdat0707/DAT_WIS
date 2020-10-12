@@ -45,7 +45,7 @@ export class CountryController {
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(country));
     } catch (error) {
-        return next(error);
+      return next(error);
     }
   };
 }

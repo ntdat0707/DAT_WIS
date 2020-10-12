@@ -25,7 +25,7 @@ const createCompanyDetailSchema = Joi.object({
   businessName: Joi.string().required(),
   businessType: Joi.string()
     .valid(...Object.keys(BusinessType))
-    .allow(null),
+    .allow(null)
 });
 
 export { initCompanySchema, updateCompanyDetailSchema, createCompanyDetailSchema };
