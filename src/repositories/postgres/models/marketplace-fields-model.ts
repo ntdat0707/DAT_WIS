@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-import { ETypeMarketPlaceField  } from '../../../utils/consts';
+import { ETypeMarketPlaceField } from '../../../utils/consts';
 
 class MarketPlaceFieldsModel extends Model {
   public id: string;

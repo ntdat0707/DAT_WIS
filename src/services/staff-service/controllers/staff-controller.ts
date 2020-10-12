@@ -1332,4 +1332,91 @@ export class StaffController {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * definitions:
+   *   PostionStaffDetail:
+   *       required:
+   *           - staffId
+   *           - index
+   *       properties:
+   *           staffId:
+   *               type: string
+   *           index:
+   *               type: number
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   SettingPositionStaff:
+   *       required:
+   *           - ownerId
+   *           - listPostionStaff
+   *       properties:
+   *           ownerId:
+   *               type: string
+   *           listPostionStaff:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/PostionStaffDetail'
+   */
+
+  /**
+   * @swagger
+   * /staff/setting-position-staff:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: settingPositionStaff
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/SettingPositionStaff'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public settingPositionStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = { ...req.body };
+      const validateErrors = validate(dataInput, getStaffMultipleService);
+      // const serviceIds = req.query.serviceIds;
+
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
+      const staffIds = await ServiceStaffModel.findAll({
+        where: {
+          serviceId: {
+            [Op.in]: dataInput.serviceIds
+          }
+        }
+      }).then((services) => services.map((service) => service.staffId));
+      const staffs = await StaffModel.findAll({
+        where: {
+          mainLocationId: dataInput.locationId,
+          id: {
+            [Op.in]: staffIds
+          }
+        }
+      });
+
+      if (!staffs) {
+        return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
+      }
+
+      res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+    } catch (error) {
+      return error;
+    }
+  };
 }

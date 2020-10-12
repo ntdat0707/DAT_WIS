@@ -29,10 +29,6 @@ const emit = async (queueName: EQueueNames, message: object) => {
       await ch.sendToQueue(queueName, Buffer.from(JSON.stringify(message), 'utf8'));
     } else {
       //tslint:disable-next-line
-      console.log(
-        warningColor('warn') + ': Rabbitmq is not ready, message will not be sent to queue.',
-        JSON.stringify(message)
-      );
     }
   } catch (error) {
     throw error;
@@ -43,7 +39,7 @@ process.on('exit', (_code) => {
   if (connection !== null) {
     connection.close();
     //tslint:disable-next-line
-    (warningColor('warn') + ': Closing rabbitmq');
+    warningColor('warn') + ': Closing rabbitmq';
   }
 });
 

@@ -38,7 +38,7 @@ ContactModel.init(
     },
     type: {
       field: 'type',
-      type: DataTypes.ENUM(EContactType.HOME, EContactType.MOBILE, EContactType.OTHER, EContactType.WORK),
+      type: DataTypes.ENUM(...Object.keys(EContactType)),
       allowNull: false,
       defaultValue: EContactType.WORK
     },

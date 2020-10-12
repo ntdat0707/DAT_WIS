@@ -7,7 +7,6 @@ const generalErrorDetails = {
   E_0001(error: any = null, detail: string = null): IErrorDetail {
     if (error && buildingEnvs.includes(process.env.NODE_ENV)) {
       //tslint:disable
-      console.log(error);
     }
     const e = buildErrorDetail('0001', 'Internal server error', detail);
     return e;

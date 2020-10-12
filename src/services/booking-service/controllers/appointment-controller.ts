@@ -3,7 +3,6 @@ import HttpStatus from 'http-status-codes';
 import { FindOptions, Op, Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
-import shortid from 'shortid';
 require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
@@ -183,6 +182,20 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+      let appointmentCode = '';
+      for (let i = 0; i < 10; i++) {
+        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+        const randomCode = random.toUpperCase();
+        appointmentCode = randomCode;
+        const existAppCode = await AppointmentModel.findOne({
+          where: {
+            appointmentCode: appointmentCode
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
@@ -190,7 +203,8 @@ export class AppointmentController extends BaseController {
         status: EAppointmentStatus.NEW,
         customerWisereId: dataInput.customerWisereId ? dataInput.customerWisereId : null,
         bookingSource: dataInput.bookingSource,
-        appointmentCode: shortid.generate()
+        appointmentCode: appointmentCode,
+        date: dataInput.date
       };
 
       if (dataInput.appointmentGroupId) {
@@ -935,6 +949,20 @@ export class AppointmentController extends BaseController {
               data.createNewAppointments[i].appointmentDetails,
               data.locationId
             );
+            let appointmentCode = '';
+            for (let j = 0; j < 10; j++) {
+              const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+              const randomCode = random.toUpperCase();
+              appointmentCode = randomCode;
+              const existAppCode = await AppointmentModel.findOne({
+                where: {
+                  appointmentCode: appointmentCode
+                }
+              });
+              if (!existAppCode) {
+                break;
+              }
+            }
             //insert appointment here
             const newAppointmentData: any = {
               id: appointmentId,
@@ -946,7 +974,8 @@ export class AppointmentController extends BaseController {
               bookingSource: AppointmentBookingSource.STAFF,
               appointmentGroupId: appointmentGroupId,
               isPrimary: false,
-              appointmentCode: shortid.generate()
+              date: data.date,
+              appointmentCode: appointmentCode
             };
             await AppointmentModel.create(newAppointmentData, { transaction });
             const appointmentDetailData: any[] = [];
@@ -1411,6 +1440,20 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+      let appointmentCode = '';
+      for (let i = 0; i < 10; i++) {
+        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+        const randomCode = random.toUpperCase();
+        appointmentCode = randomCode;
+        const existAppCode = await AppointmentModel.findOne({
+          where: {
+            appointmentCode: appointmentCode
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
@@ -1418,7 +1461,8 @@ export class AppointmentController extends BaseController {
         status: EAppointmentStatus.NEW,
         customerId: id,
         bookingSource: dataInput.bookingSource,
-        appointmentCode: shortid.generate()
+        appointmentCode: appointmentCode,
+        date: dataInput.date
       };
 
       if (dataInput.appointmentGroupId) {
