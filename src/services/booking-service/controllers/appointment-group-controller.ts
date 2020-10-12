@@ -27,7 +27,7 @@ import {
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
-import { generate } from 'randomstring';
+//import { generate } from 'randomstring';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -140,11 +140,9 @@ export class AppointmentGroupController extends BaseController {
       for (const apptData of data.appointments) {
         let appointmentCode = '';
         for (let i = 0; i < 10; i++) {
-          appointmentCode = generate({
-            length: 8,
-            charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-          });
-
+          const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+          const randomCode = random.toUpperCase();
+          appointmentCode = randomCode;
           const existAppCode = await AppointmentModel.findOne({
             where: {
               appointmentCode: appointmentCode
@@ -617,11 +615,9 @@ export class AppointmentGroupController extends BaseController {
         for (const apptData of data.createNewAppointments) {
           let appointmentCode = '';
           for (let i = 0; i < 10; i++) {
-            appointmentCode = generate({
-              length: 8,
-              charset: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-            });
-
+            const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+            const randomCode = random.toUpperCase();
+            appointmentCode = randomCode;
             const existAppCode = await AppointmentModel.findOne({
               where: {
                 appointmentCode: appointmentCode
