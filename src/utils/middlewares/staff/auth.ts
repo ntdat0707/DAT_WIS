@@ -53,7 +53,7 @@ const getWorkingLocations = async (companyId: string, staffId: string, isOwner: 
 
 const getCompany = async (staffId: string) => {
   try {
-    let company:any = await CompanyModel.findOne({
+    let company: any = await CompanyModel.findOne({
       include: [
         {
           model: LocationModel,

@@ -396,7 +396,7 @@ export class CustomerController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      let customerWisere = await CustomerWisereModel.findOne({
+      const customerWisere = await CustomerWisereModel.findOne({
         where: { id: customerWisereId, companyId: companyId }
       });
       if (!customerWisere)

@@ -102,7 +102,7 @@ const uploadAsMiddleware = (
 ): any => {
   return (req: Request, res: Response, next: NextFunction): void => {
     //const maxSize = 1 * 1024 * 1024;
-   // fileSize = maxSize;
+    // fileSize = maxSize;
     const multerInstance = multer({
       storage: makeStorage(permission),
       //tslint:disable-next-line

@@ -13,11 +13,11 @@ class LocationDetailModel extends Model {
   public totalBookings?: number;
   public gender?: number;
   public description?: string;
-  public pathName?:string;
+  public pathName?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
-  public openedAt!:Date;
+  public openedAt!: Date;
 }
 
 LocationDetailModel.init(
@@ -33,14 +33,14 @@ LocationDetailModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    title:{
+    title: {
       field: 'title',
-      type:DataTypes.STRING,
+      type: DataTypes.STRING,
       allowNull: false
     },
-    description:{
+    description: {
       field: 'description',
-      type:DataTypes.STRING,
+      type: DataTypes.STRING,
       allowNull: false
     },
     gender: {
@@ -93,7 +93,7 @@ LocationDetailModel.init(
       type: 'TIMESTAMP',
       defaultValue: null
     },
-    openedAt:{
+    openedAt: {
       field: 'opened_at',
       type: 'TIMESTAMP',
       defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')

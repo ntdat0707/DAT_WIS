@@ -192,20 +192,21 @@ const searchSchema = Joi.object({
   customerId: Joi.string().uuid().allow(null, '').label('customerId'),
   latitude: Joi.number().allow(null, '').label('latitude'),
   longitude: Joi.number().allow(null, '').label('longitude'),
-  searchBy: Joi.string().valid(...Object.values(ESearchBy)).allow(null, '').label('searchBy'),
+  searchBy: Joi.string()
+    .valid(...Object.values(ESearchBy))
+    .allow(null, '')
+    .label('searchBy'),
   order: Joi.string()
     .valid(EOrder.NEWEST, EOrder.NEWEST, EOrder.PRICE_LOWEST, EOrder.PRICE_HIGHEST)
     .allow(null)
     .label('order')
 });
 
-
 const suggestedSchema = Joi.object({
   keywords: Joi.string().allow(null, '').label('keywords'),
   customerId: Joi.string().uuid().allow(null, '').label('customerId'),
   cityName: Joi.string().allow(null, '').label('cityName')
 });
-
 
 export {
   searchSchema,

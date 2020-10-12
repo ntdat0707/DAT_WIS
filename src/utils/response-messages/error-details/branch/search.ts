@@ -13,8 +13,7 @@ const searchErrorDetails = {
   E_1000(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1000', 'City is not exist', detail);
     return e;
-  },
-  
+  }
 };
 
 export { searchErrorDetails };

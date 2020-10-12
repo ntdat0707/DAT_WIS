@@ -1016,7 +1016,7 @@ export class StaffController {
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
-      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       const doctorSchedule = await StaffModel.findAndCountAll({
         attributes: [],
         include: [
@@ -1259,7 +1259,7 @@ export class StaffController {
       const day = dayOfWeek(workDay);
       const workTime = iterator(data, day);
 
-      let timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
+      const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
 
       const doctorsSchedule = await StaffModel.findAndCountAll({

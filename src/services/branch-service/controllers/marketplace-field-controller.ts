@@ -294,5 +294,4 @@ export class MarketPlaceFieldController {
   //     return next(error);
   //   }
   // };
-
 }

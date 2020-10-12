@@ -108,7 +108,7 @@ const paginate = async <T extends Model<T>>(
   }
 };
 
-const paginateRawData =  <T extends Model<T>>(
+const paginateRawData = <T extends Model<T>>(
   dataRaw: any[],
   paginateOptions: IPaginateOptions,
   currentUrl: string
