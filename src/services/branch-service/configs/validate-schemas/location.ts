@@ -199,21 +199,23 @@ const searchSchema = Joi.object({
     .label('order')
 });
 
+
 const suggestedSchema = Joi.object({
   keywords: Joi.string().allow(null, '').label('keywords'),
   customerId: Joi.string().uuid().allow(null, '').label('customerId'),
   cityName: Joi.string().allow(null, '').label('cityName')
 });
 
+
 export {
-  createLocationSchema,
-  locationIdSchema,
-  createLocationWorkingTimeSchema,
-  updateLocationSchema,
   searchSchema,
-  companyIdSchema,
   pathNameSchema,
+  companyIdSchema,
   suggestedSchema,
+  locationIdSchema,
+  updateLocationSchema,
+  createLocationSchema,
   getLocationMarketPlace,
-  getLocationMarketPlacebyId
+  getLocationMarketPlacebyId,
+  createLocationWorkingTimeSchema
 };

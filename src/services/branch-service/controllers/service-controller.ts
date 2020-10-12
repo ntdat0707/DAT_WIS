@@ -27,8 +27,8 @@ import { ServiceStaffModel } from '../../../repositories/postgres/models/service
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-import { FindOptions, Transaction, Op, Sequelize } from 'sequelize';
-import { paginate, paginateRawData } from '../../../utils/paginator';
+import { FindOptions, Transaction } from 'sequelize';
+import { paginateRawData } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
@@ -422,7 +422,7 @@ export class ServiceController {
           type: QueryTypes.SELECT
         }
       );
-      
+
       const result =  paginateRawData(
         services,
         paginateOptions,

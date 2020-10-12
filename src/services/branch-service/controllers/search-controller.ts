@@ -387,7 +387,7 @@ export class SearchController {
         locationResults = await LocationModel.findAll(queryLocations);
       }
 
-      const keywordUnaccents = removeAccents(keywords).toLowerCase();
+      const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
 
       let searchCateServiceItem: any = {};
       let searchCompanyItem: any = {};
@@ -396,7 +396,7 @@ export class SearchController {
 
       locationResults = locationResults.map((location: any) => {
         location = location.dataValues;
-        if (location.name && removeAccents(location.name).toLowerCase().search(keywordUnaccents)) {
+        if (location.name && removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)) {
           searchLocationItem = location;
         }
 
@@ -404,7 +404,7 @@ export class SearchController {
           location.company = location.company.dataValues;
           if (
             location.company.businessName &&
-            removeAccents(location.company.businessName).toLowerCase().search(keywordUnaccents)
+            removeAccents(location.company.businessName).toLowerCase().search(keywordRemoveAccents)
           ) {
             searchCompanyItem = location.company;
           }
@@ -413,7 +413,7 @@ export class SearchController {
             location.services &&
             !_.isEmpty(location.services) &&
             location.services[0].name &&
-            removeAccents(location.services[0].name).toLowerCase().search(keywordUnaccents)
+            removeAccents(location.services[0].name).toLowerCase().search(keywordRemoveAccents)
           ) {
             searchServiceItem = location.services[0];
           }
@@ -421,7 +421,7 @@ export class SearchController {
           if (location.company.cateServices && Array.isArray(location.company.cateServices)) {
             location.company.cateServices.map((cateService: any) => {
               cateService = cateService.dataValues;
-              if (removeAccents(cateService.name).toLowerCase().search(keywordUnaccents)) {
+              if (removeAccents(cateService.name).toLowerCase().search(keywordRemoveAccents)) {
                 searchCateServiceItem = cateService;
               }
               return cateService;
@@ -620,7 +620,7 @@ export class SearchController {
    *       schema:
    *          type: integer
    *     - in: query
-   *       name: la titude
+   *       name: latitude
    *       schema:
    *          type: number
    *     - in: query
@@ -673,10 +673,6 @@ export class SearchController {
    *       name: cityName
    *       schema:
    *          type: string
-   *     - in: query
-   *       name: customerId
-   *       schema:
-   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -685,7 +681,6 @@ export class SearchController {
    *       500:
    *         description: Internal server errors
    */
-
   public marketPlaceSuggested = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const trimSpace = (text: string) =>
@@ -696,7 +691,6 @@ export class SearchController {
 
       const search = {
         keywords: trimSpace(req.query.keyword ? req.query.keyword.toString() : ''),
-        customerId: req.query.customerId,
         cityName: req.query.cityName
       };
 
@@ -717,31 +711,14 @@ export class SearchController {
       const popularServices = await this.popularServicesSuggested(keywordsQuery);
       const suggestionByKeywords = await this.keywordsSuggested(keywordsQuery);
 
-      let customer = null;
-      if (search.customerId) {
-        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
-      }
-      let recentSearch = null;
-      let recentBooking = null;
-      let recentView = null;
-      if (customer) {
-        recentSearch = await this.searchRecentSuggested(search);
-        recentBooking = await this.recentBookingSuggested(search);
-        recentView = await this.recentViewSuggested(search);
-      }
-
       const results = {
         suggestionByKeywords,
         cateServices,
-        popularServices,
-        recentSearch,
-        recentView,
-        recentBooking
+        popularServices
       };
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
     } catch (error) {
-      // console.log(error);
       return next(error);
     }
   };
@@ -785,14 +762,50 @@ export class SearchController {
           type: QueryTypes.SELECT
         }
       );
-
       return popularServices;
     } catch (error) {
       throw error;
     }
   };
 
-  private searchRecentSuggested = async (searchOption: any) => {
+  /**
+   * @swagger
+   * /branch/location/market-place/suggested-recent:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: marketPlaceSuggestedRecent
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public marketPlaceSuggestedRecent = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = res.locals.customerPayload.id;
+      const recentSearch = await this.recentSearchSuggested({customerId});
+      const recentBooking = await this.recentBookingSuggested({customerId});
+      const recentView = await this.recentViewSuggested({customerId});
+
+      const results = {
+        recentSearch,
+        recentView,
+        recentBooking
+      };
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  private recentSearchSuggested = async (searchOption: any) => {
     try {
       let recentSearch: any = await CustomerSearchModel.findAll({
         where: {
@@ -809,7 +822,7 @@ export class SearchController {
             model: CompanyModel,
             as: 'company',
             required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] },
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
             include: [
               {
                 model: CompanyDetailModel,
@@ -843,7 +856,7 @@ export class SearchController {
       });
       recentSearch = {
         ...recentSearch.dataValues,
-        cateService: recentSearch.cataService?.dataValues,
+        cateService: recentSearch.cateService?.dataValues,
         company: {
           ...recentSearch.company?.dataValues,
           ...recentSearch.company?.companyDetail?.dataValues,
@@ -923,58 +936,6 @@ export class SearchController {
       throw error;
     }
   };
-  /**
-   * @swagger
-   * /branch/location/market-place/suggested-recent:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: marketPlaceSuggestedRecent
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-
-  public marketPlaceSuggestedRecent = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const search = {
-        customerId: req.query.customerId
-      };
-
-      const validateErrorsSearch = validate(search, suggestedSchema);
-      if (validateErrorsSearch) {
-        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
-      }
-
-      let customer = null;
-      if (search.customerId) {
-        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
-      }
-      let recentSearch = null;
-      let recentBooking = null;
-      let recentView = null;
-      if (customer) {
-        recentSearch = await this.searchRecentSuggested(search);
-        recentBooking = await this.recentBookingSuggested(search);
-        recentView = await this.recentViewSuggested(search);
-      }
-
-      const results = {
-        recentSearch,
-        recentView,
-        recentBooking
-      };
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
-    } catch (error) {
-      // console.log(error);
-      return next(error);
-    }
-  };
 
   private recentBookingSuggested = async (searchOption: any) => {
     try {
@@ -1017,12 +978,6 @@ export class SearchController {
 
         recentBookingHistory.push(staff);
       }
-      //filter Duplication Element
-
-      // recentBookingHistory.filter((item: any, index: any) => {
-      //   return recentBookingHistory.indexOf(item === index);
-      // });
-
       return recentBookingHistory;
     } catch (error) {
       throw error;
@@ -1066,7 +1021,7 @@ export class SearchController {
         })
       ).map((locationView: any) => ({
         ...locationView.dataValues,
-        ...locationView.locationDetail.dataValues,
+        ...locationView.locationDetail?.dataValues,
         ...locationView.locationImages[0]?.dataValues,
         ['locationDetail']: undefined,
         ['locationImages']: undefined
