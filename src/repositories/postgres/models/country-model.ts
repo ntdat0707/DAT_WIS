@@ -26,7 +26,7 @@ CountryModel.init(
     countryCode: {
       field: 'country_code',
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',

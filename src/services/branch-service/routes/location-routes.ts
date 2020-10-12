@@ -43,7 +43,11 @@ export class LocationRoutes {
     this.router.get('/get-location-by-service-provider', this.searchController.getLocationByServiceProvider);
     this.router.get('/market-place/search', this.searchController.marketPlaceSearch);
     this.router.get('/market-place/suggested', this.searchController.marketPlaceSuggested);
-    this.router.get('/market-place/suggested-recent', Customer.isAuthenticated, this.searchController.marketPlaceSuggestedRecent);
+    this.router.get(
+      '/market-place/suggested-recent',
+      Customer.isAuthenticated,
+      this.searchController.marketPlaceSuggestedRecent
+    );
     this.router.delete(
       '/market-place/delete-recent-view/:recentViewId',
       isAuthenticatedCustomer,

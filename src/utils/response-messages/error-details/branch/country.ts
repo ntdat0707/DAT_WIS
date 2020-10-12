@@ -13,7 +13,7 @@ const countryErrorDetails = {
   E_1000(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1000', 'Country is not exists', detail);
     return e;
-  },
+  }
 };
 
 export { countryErrorDetails };

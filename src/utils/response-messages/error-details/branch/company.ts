@@ -14,5 +14,4 @@ const companyErrorDetails = {
   }
 };
 
-
 export { companyErrorDetails };
