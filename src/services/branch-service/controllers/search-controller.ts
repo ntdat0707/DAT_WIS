@@ -38,7 +38,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
-import { parseDatabyType } from '../utils';
+import { parseDataByType } from '../utils';
 import {
   deleteRecentBookingSchema,
   deleteRecentViewSchema
@@ -192,7 +192,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -440,7 +440,7 @@ export class SearchController {
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           }),
           {}
         );
@@ -512,12 +512,6 @@ export class SearchController {
         }
       };
 
-      // if (!!locationIds.length) {
-      //   query.order = Sequelize.literal(`(${
-      //     locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')
-      //   }) DESC`);
-      // }
-
       if (search.customerId && search.keywords) {
         req.query = {
           ...req.query,
@@ -541,6 +535,7 @@ export class SearchController {
           locationId = searchLocationItem.id;
           typeResult = 'location';
         }
+        console.log(typeResult);
         await this.createCustomerSearch(
           req,
           {
@@ -599,6 +594,7 @@ export class SearchController {
         latitude: req.query.latitude,
         longitude: req.query.longitude
       };
+      console.log(customerSearch);
       await CustomerSearchModel.create(customerSearch);
     } catch (error) {
       throw error;
@@ -710,7 +706,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -815,9 +811,15 @@ export class SearchController {
 
   private recentSearchSuggested = async (searchOption: any) => {
     try {
-      let recentSearch: any = await CustomerSearchModel.findAll({
+      console.log(searchOption);
+      // type:
+      //    cateService
+      //    company
+      //    service
+      //    location
+      const recentSearchData: any = await CustomerSearchModel.findAll({
         where: {
-          customerId: searchOption.customerId
+           customerId: searchOption.customerId
         },
         include: [
           {
@@ -860,19 +862,45 @@ export class SearchController {
           'company->companyDetail.id',
           'service.id',
           'location.id'
+        ],
+        attributes: [
+          [Sequelize.fn('DISTINCT', Sequelize.col('keywords')) ,'keywords'],
+          'type',
+          'latitude',
+          'longitude'
         ]
       });
-      recentSearch = {
-        ...recentSearch.dataValues,
-        cateService: recentSearch.cateService?.dataValues,
-        company: {
-          ...recentSearch.company?.dataValues,
-          ...recentSearch.company?.companyDetail?.dataValues,
-          companyDetails: undefined
+      console.log(JSON.stringify(recentSearchData, null, 2));
+      const mapData: any = {
+        ['service'](data: any) {
+          return {...data};
         },
-        service: recentSearch.service?.dataValues,
-        location: recentSearch.location?.dataValues
+        ['cateService'](data: any) {
+          return {...data};
+        },
+        ['company'](data: any) {
+          return {...data};
+        },
+        ['location'](data: any) {
+          return {...data};
+        }
       };
+
+      const recentSearch: Array<{
+        type: string,
+        title?: string,
+        description?: string,
+        image?: string,
+        pathName?: string
+      }> = recentSearchData.map((searchData: any) => {
+        const { type } = searchData;
+        return {
+          ...searchData,
+          ...mapData[type](searchData[type])
+        }
+      });
+      console.log(recentSearch);
+      // console.log(JSON.stringify(recentSearch, null, 2));
       return recentSearch;
     } catch (error) {
       throw error;
@@ -882,9 +910,9 @@ export class SearchController {
   private keywordsSuggested = async (keywords: string) => {
     try {
       const cateServices = await CateServiceModel.findAll({
-        where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
+        where: Sequelize.literal('unaccent("CateServiceModel"."name") ilike any(array[])'),
         attributes: {
-          include: [[Sequelize.literal("'cateService'"), 'type']],
+          include: [[Sequelize.literal('\'cateService\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -892,7 +920,7 @@ export class SearchController {
       const companies = (
         await CompanyModel.findAll({
           attributes: {
-            include: [[Sequelize.literal("'company'"), 'type']],
+            include: [[Sequelize.literal('\'company\''), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
@@ -914,7 +942,7 @@ export class SearchController {
       const services = await ServiceModel.findAll({
         where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
         attributes: {
-          include: [[Sequelize.literal("'service'"), 'type']],
+          include: [[Sequelize.literal('\'service\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -928,7 +956,7 @@ export class SearchController {
           ]
         },
         attributes: {
-          include: [[Sequelize.literal("'location'"), 'type']],
+          include: [[Sequelize.literal('\'location\''), 'type']],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         limit: 3
@@ -1149,7 +1177,7 @@ export class SearchController {
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           }),
           {}
         );
@@ -1352,7 +1380,7 @@ export class SearchController {
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           }),
           {}
         );
@@ -1441,7 +1469,6 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
-      // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
       return next(error);
     }
   };
