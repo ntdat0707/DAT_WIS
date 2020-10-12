@@ -149,3 +149,11 @@ export enum EContactType {
   OTHER = 'other',
   MOBILE = 'mobile'
 }
+
+export enum ESourceType {
+  POS = 'pos',
+  WEBSITE = 'website',
+  FACEBOOK = 'facebook',
+  MARKETPLACE = 'marketplace',
+  OTHER = 'other'
+}
