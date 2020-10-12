@@ -425,8 +425,11 @@ export class ServiceController {
                 INNER JOIN cate_service ON cate_service.id = service.cate_service_id
                 LEFT JOIN service_staff on service.id = service_staff.service_id
                 LEFT JOIN service_image ON service_image.service_id = service.id
-                WHERE location_services.location_id in (${locationIds}
-              )`;
+                WHERE location_services.location_id in (${locationIds})
+                and service.deleted_at is null and location_services.deleted_at is null 
+                and cate_service.deleted_at is null and service_staff.deleted_at is null
+                and service_image.deleted_at is null
+                `;
 
       if (req.query.searchValue) {
         query += `and (unaccent(service.name) ilike unaccent('%${req.query.searchValue}%')) or service.service_code like '%${req.query.searchValue}%' `;
