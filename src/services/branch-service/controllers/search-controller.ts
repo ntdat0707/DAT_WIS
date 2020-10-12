@@ -873,16 +873,16 @@ export class SearchController {
       console.log(JSON.stringify(recentSearchData, null, 2));
       const mapData: any = {
         ['service'](data: any) {
-          return {...data};
+          return {...data.dataValues};
         },
         ['cateService'](data: any) {
-          return {...data};
+          return {...data.dataValues};
         },
         ['company'](data: any) {
-          return {...data};
+          return {...data.dataValues};
         },
         ['location'](data: any) {
-          return {...data};
+          return {...data.dataValues};
         }
       };
 
@@ -895,8 +895,9 @@ export class SearchController {
       }> = recentSearchData.map((searchData: any) => {
         const { type } = searchData;
         return {
-          ...searchData,
-          ...mapData[type](searchData[type])
+          ...searchData.dataValues,
+          ...mapData[type](searchData[type]),
+          [type]: undefined
         }
       });
       console.log(recentSearch);
