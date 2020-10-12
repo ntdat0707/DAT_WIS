@@ -1,10 +1,8 @@
 import amqp from 'amqplib';
-import chalk from 'chalk';
+
 // const rabbitmqURL = `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
 import { EQueueNames, rabbitmqURL } from '../../../utils/event-queues';
 import { excuteSendingEmail, IEmailOptions } from '../../../utils/emailer';
-
-const warningColor = chalk.keyword('yellow');
 
 let open: any;
 export const sendEmail = async () => {
@@ -32,6 +30,5 @@ process.on('exit', (_code) => {
   if (open !== null) {
     open.close();
     //tslint:disable-next-line
-    console.log(warningColor('warn') + ': Closing rabbitmq');
   }
 });

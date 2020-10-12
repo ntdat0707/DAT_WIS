@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op } from 'sequelize';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
-import shortid from 'shortid';
 require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
@@ -40,7 +39,10 @@ import {
   appointmentCancelReasonSchema,
   updateAppointmentSchema,
   appointmentIdSchema,
-  customerCreateAppointmentSchema
+  customerCreateAppointmentSchema,
+  appointmentCancelSchema,
+  appointmentRescheduleSchema,
+  ratingAppointmentSchema
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
@@ -180,6 +182,20 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+      let appointmentCode = '';
+      for (let i = 0; i < 10; i++) {
+        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+        const randomCode = random.toUpperCase();
+        appointmentCode = randomCode;
+        const existAppCode = await AppointmentModel.findOne({
+          where: {
+            appointmentCode: appointmentCode
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
@@ -187,7 +203,8 @@ export class AppointmentController extends BaseController {
         status: EAppointmentStatus.NEW,
         customerWisereId: dataInput.customerWisereId ? dataInput.customerWisereId : null,
         bookingSource: dataInput.bookingSource,
-        appointmentCode: shortid.generate()
+        appointmentCode: appointmentCode,
+        date: dataInput.date
       };
 
       if (dataInput.appointmentGroupId) {
@@ -932,6 +949,20 @@ export class AppointmentController extends BaseController {
               data.createNewAppointments[i].appointmentDetails,
               data.locationId
             );
+            let appointmentCode = '';
+            for (let j = 0; j < 10; j++) {
+              const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+              const randomCode = random.toUpperCase();
+              appointmentCode = randomCode;
+              const existAppCode = await AppointmentModel.findOne({
+                where: {
+                  appointmentCode: appointmentCode
+                }
+              });
+              if (!existAppCode) {
+                break;
+              }
+            }
             //insert appointment here
             const newAppointmentData: any = {
               id: appointmentId,
@@ -943,7 +974,8 @@ export class AppointmentController extends BaseController {
               bookingSource: AppointmentBookingSource.STAFF,
               appointmentGroupId: appointmentGroupId,
               isPrimary: false,
-              appointmentCode: shortid.generate()
+              date: data.date,
+              appointmentCode: appointmentCode
             };
             await AppointmentModel.create(newAppointmentData, { transaction });
             const appointmentDetailData: any[] = [];
@@ -1408,6 +1440,20 @@ export class AppointmentController extends BaseController {
         dataInput.appointmentDetails,
         dataInput.locationId
       );
+      let appointmentCode = '';
+      for (let i = 0; i < 10; i++) {
+        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+        const randomCode = random.toUpperCase();
+        appointmentCode = randomCode;
+        const existAppCode = await AppointmentModel.findOne({
+          where: {
+            appointmentCode: appointmentCode
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       //insert appointment here
       const appointmentData: any = {
         id: appointmentId,
@@ -1415,7 +1461,8 @@ export class AppointmentController extends BaseController {
         status: EAppointmentStatus.NEW,
         customerId: id,
         bookingSource: dataInput.bookingSource,
-        appointmentCode: shortid.generate()
+        appointmentCode: appointmentCode,
+        date: dataInput.date
       };
 
       if (dataInput.appointmentGroupId) {
@@ -1622,7 +1669,7 @@ export class AppointmentController extends BaseController {
 
   /**
    * @swagger
-   * /booking/appointment/get-all-my-appointment:
+   * /booking/appointment/customer-get-all-my-appointment:
    *   get:
    *     tags:
    *       - Booking
@@ -1639,8 +1686,11 @@ export class AppointmentController extends BaseController {
    */
   public getAllMyAppointment = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const customerId = res.locals.customerPayload.id;
       const queryUpcomingAppt: FindOptions = {
+        attributes: ['id', 'status', 'customerId'],
         where: {
+          customerId: customerId,
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
             [Op.and]: [
@@ -1654,28 +1704,36 @@ export class AppointmentController extends BaseController {
           {
             model: AppointmentDetailModel,
             as: 'appointmentDetails',
+            attributes: ['id', 'startTime'],
             include: [
               {
                 model: ServiceModel,
                 as: 'service',
+                attributes: ['id', 'cateServiceId', 'description', 'duration', 'name', 'salePrice'],
                 required: false
               },
               {
                 model: StaffModel,
                 as: 'staffs',
-                required: false
+                attributes: ['id', 'firstName', 'avatarPath'],
+                required: false,
+                through: { attributes: [] }
               }
             ]
           },
           {
             model: LocationModel,
             as: 'location',
+            attributes: ['id', 'name', 'photo', 'address'],
             required: false
           }
-        ]
+        ],
+        order: [Sequelize.literal('"appointmentDetails"."start_time"')]
       };
       const queryPastAppt: FindOptions = {
+        attributes: ['id', 'status', 'customerId', 'contentReview', 'numberRating'],
         where: {
+          customerId: customerId,
           bookingSource: AppointmentBookingSource.MARKETPLACE,
           status: {
             [Op.or]: [
@@ -1689,25 +1747,31 @@ export class AppointmentController extends BaseController {
           {
             model: AppointmentDetailModel,
             as: 'appointmentDetails',
+            attributes: ['id', 'startTime'],
             include: [
               {
                 model: ServiceModel,
                 as: 'service',
+                attributes: ['id', 'cateServiceId', 'description', 'duration', 'name', 'salePrice'],
                 required: false
               },
               {
                 model: StaffModel,
                 as: 'staffs',
-                required: false
+                attributes: ['id', 'firstName', 'avatarPath'],
+                required: false,
+                through: { attributes: [] }
               }
             ]
           },
           {
             model: LocationModel,
             as: 'location',
+            attributes: ['id', 'name', 'photo', 'address'],
             required: false
           }
-        ]
+        ],
+        order: [Sequelize.literal('"appointmentDetails"."start_time" DESC')]
       };
       let myAppointments: any = {};
       const upcomingApointments = await AppointmentModel.findAll(queryUpcomingAppt);
@@ -1717,6 +1781,388 @@ export class AppointmentController extends BaseController {
         pastApointments
       };
       return res.status(httpStatus.OK).send(buildSuccessMessage(myAppointments));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentCancel:
+   *       required:
+   *           - appointmentId
+   *           - cancelReason
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           cancelReason:
+   *               type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/customer-cancel-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: cancelAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentCancel'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public cancelAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const data = {
+        appointmentId: req.body.appointmentId,
+        cancelReason: req.body.cancelReason
+      };
+      const validateErrors = validate(data, appointmentCancelSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({
+        where: { id: data.appointmentId, customerId: res.locals.customerPayload.id }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${data.appointmentId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (
+        appointment.status !== EAppointmentStatus.NEW &&
+        appointment.status !== EAppointmentStatus.CONFIRMED &&
+        appointment.status !== EAppointmentStatus.ARRIVED
+      ) {
+        return next(new CustomError(bookingErrorDetails.E_2003(`Can not cancel appointment`), HttpStatus.BAD_REQUEST));
+      }
+      transaction = await sequelize.transaction();
+      await appointment.update({ status: EAppointmentStatus.CANCEL, cancelReason: data.cancelReason }, { transaction });
+      await AppointmentDetailModel.update(
+        { status: EAppointmentStatus.CANCEL },
+        { where: { appointmentId: data.appointmentId }, transaction }
+      );
+      await transaction.commit();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /booking/appointment/customer-get-appointment/{appointmentId}:
+   *   get:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: getAppointmentCustomer
+   *     parameters:
+   *     - in: path
+   *       name: appointmentId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: FORBIDDEN
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+  public getAppointmentCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.params.appointmentId, appointmentIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({
+        where: { id: req.params.appointmentId, customerId: res.locals.customerPayload.id },
+        include: [
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
+          },
+          {
+            model: CustomerModel,
+            as: 'customer',
+            required: false
+          },
+          {
+            model: AppointmentDetailModel,
+            as: 'appointmentDetails',
+            include: [
+              {
+                model: ServiceModel,
+                as: 'service',
+                required: true
+              },
+              {
+                model: ResourceModel,
+                as: 'resource'
+              },
+              {
+                model: StaffModel.scope('safe'),
+                as: 'staffs'
+              }
+            ]
+          }
+        ]
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointment));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentReschedule:
+   *       required:
+   *           - appointmentId
+   *           - startTime
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           startTime:
+   *               type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/customer-reschedule-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: rescheduleAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentReschedule'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public rescheduleAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.body, appointmentRescheduleSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({
+        where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (
+        appointment.status !== EAppointmentStatus.NEW &&
+        appointment.status !== EAppointmentStatus.CONFIRMED &&
+        appointment.status !== EAppointmentStatus.ARRIVED
+      ) {
+        return next(
+          new CustomError(bookingErrorDetails.E_2003(`Can not reschedule appointment`), HttpStatus.BAD_REQUEST)
+        );
+      }
+      await AppointmentDetailModel.update(
+        { startTime: req.body.startTime },
+        { where: { appointmentId: req.body.appointmentId } }
+      );
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentReady:
+   *       required:
+   *           - appointmentId
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/customer-set-ready-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: setReadyAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentReady'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public setReadyAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const appointmentId = req.body.appointmentId;
+      const validateErrors = validate(appointmentId, appointmentIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const appointment = await AppointmentModel.findOne({
+        where: { id: appointmentId, customerId: res.locals.customerPayload.id }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(bookingErrorDetails.E_2002(`appointment ${appointmentId} not found`), HttpStatus.NOT_FOUND)
+        );
+      }
+      if (appointment.status !== EAppointmentStatus.NEW && appointment.status !== EAppointmentStatus.CONFIRMED) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2003(`Can not update status ready for appointment`),
+            HttpStatus.BAD_REQUEST
+          )
+        );
+      }
+      transaction = await sequelize.transaction();
+      await appointment.update({ status: EAppointmentStatus.ARRIVED }, { transaction });
+      await AppointmentDetailModel.update(
+        { status: EAppointmentStatus.ARRIVED },
+        { where: { appointmentId: appointmentId }, transaction }
+      );
+      await transaction.commit();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   appointmentRating:
+   *       required:
+   *           - appointmentId
+   *           - numberRating
+   *           - contentReview
+   *       properties:
+   *           appointmentId:
+   *               type: string
+   *           numberRating:
+   *                type: integer
+   *           contentReview:
+   *                 type: string
+   */
+  /**
+   * @swagger
+   * /booking/appointment/customer-rating-appointment:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: ratingAppointment
+   *     parameters:
+   *       - in: "body"
+   *         name: "body"
+   *         required: true
+   *         schema:
+   *             $ref: '#/definitions/appointmentRating'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public ratingAppointment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.body, ratingAppointmentSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      let appointment = await AppointmentModel.findOne({
+        where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
+      });
+      if (!appointment) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (appointment.status !== EAppointmentStatus.COMPLETED) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2011(`Status appointment ${req.body.appointmentId} must be complete`),
+            HttpStatus.BAD_REQUEST
+          )
+        );
+      }
+      const data = {
+        numberRating: req.body.numberRating,
+        contentReview: req.body.contentReview
+      };
+      appointment = await appointment.update(data, { where: { id: req.body.appointmentId } });
+      return res.status(httpStatus.OK).send(appointment);
     } catch (error) {
       return next(error);
     }

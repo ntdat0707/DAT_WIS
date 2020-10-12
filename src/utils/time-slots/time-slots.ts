@@ -14,7 +14,6 @@ const timeSlots = (start: any, end: any, step: any) => {
     slots[momentStart] = bool;
   }
   const momentEnd = moment(newEnd.toString(), 'hmm').add(-7, 'h').format('HH:mm');
-  // console.log(momentEnd);
   slots[momentEnd] = bool;
   return slots;
 };

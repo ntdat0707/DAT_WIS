@@ -341,7 +341,6 @@ export class LocationController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
     } catch (error) {
-      // console.log(error);
       //rollback transaction
       if (transaction) {
         await transaction.rollback();

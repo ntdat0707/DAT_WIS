@@ -108,6 +108,11 @@ CustomerWisereModel.init(
       type: DataTypes.STRING(100),
       allowNull: true
     },
+    note: {
+      field: 'note',
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
     source: {
       type: DataTypes.ENUM(
         ESource.FACEBOOK,
