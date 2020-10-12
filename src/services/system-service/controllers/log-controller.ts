@@ -1,9 +1,7 @@
 import amqp from 'amqplib';
-import chalk from 'chalk';
+
 import { EQueueNames, rabbitmqURL } from '../../../utils/event-queues';
 import { LoggerModel, ILogger } from '../../../repositories/mongo/models';
-
-const warningColor = chalk.keyword('yellow');
 let open: any;
 export const writelog = async () => {
   try {
@@ -29,6 +27,5 @@ process.on('exit', (_code) => {
   if (open !== null) {
     open.close();
     //tslint:disable-next-line
-    console.log(warningColor('warn') + ': Closing rabbitmq');
   }
 });

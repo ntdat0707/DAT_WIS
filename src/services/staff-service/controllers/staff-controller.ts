@@ -1322,7 +1322,6 @@ export class StaffController {
       Object.keys(timeSlot).forEach((key: any) => {
         let tempTime = key.split(':').join('');
         tempTime = moment(tempTime, 'hmm').add(timeZone, 'm').format('HH:mm');
-        // console.log(tempTime);
         newTimeSlot.push(tempTime);
       });
       for (let i = 0; i < noReferencesTimeSlots.length; i++) {

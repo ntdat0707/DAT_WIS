@@ -343,9 +343,6 @@ export class CustomerController {
    *       name: job
    *       type: string
    *     - in: "formData"
-   *       name: note
-   *       type: string
-   *     - in: "formData"
    *       name: birthDate
    *       type: string
    *     - in: "formData"
@@ -723,7 +720,17 @@ export class CustomerController {
       const validateErrors = validate(customerWisereId, customerWireseIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const customerWisere = await CustomerWisereModel.findOne({
-        where: { id: customerWisereId, companyId: companyId }
+        where: {
+          id: customerWisereId,
+          companyId: companyId
+        },
+        include: [
+          {
+            model: ContactModel,
+            as: 'contacts',
+            required: false
+          }
+        ]
       });
       if (!customerWisere)
         return next(

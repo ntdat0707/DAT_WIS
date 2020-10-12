@@ -19,7 +19,6 @@ try {
 } catch (e) {
   throw e;
 }
-// console.log(x);
 if (!isEmpty(configChannels)) {
   const logChannels = configChannels as ILogChannel;
   if (logChannels.console !== undefined && logChannels.console === true)

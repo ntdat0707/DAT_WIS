@@ -28,7 +28,6 @@ const makeStorage = (permission: EFileACL) => {
     bucket: process.env.DO_SPACES_BUCKET,
     acl: permission,
     key(_request, file, cb) {
-      //   console.log(file);
       cb(null, shortid.generate() + shortid.generate() + '-' + file.originalname);
     }
   });

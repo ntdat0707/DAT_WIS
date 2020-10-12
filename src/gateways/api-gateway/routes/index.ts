@@ -9,7 +9,6 @@ import { API_BASE_PATH, DOCS_BASE_PATH } from './configs';
 class MainRoutes {
   public router: express.Router = express.Router();
   constructor() {
-    // console.log(this.rootDocsPreFix);
     this.config();
   }
   private config(): void {
