@@ -30,6 +30,7 @@ import { MarketPlaceFieldsModel } from './marketplace-fields-model';
 import { MarketPlaceValueModel } from './marketplace-value-model';
 import { ContactModel } from './contact-model';
 import { FavoriteModel } from './favorite-model';
+import { PositionModel } from './position-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -193,6 +194,12 @@ LocationModel.belongsToMany(CustomerModel, {
   as: 'favoriteLocations',
   foreignKey: 'locationId'
 });
+
+StaffModel.hasMany(PositionModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'position' });
+PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
+
+StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
+PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
 export {
   sequelize,

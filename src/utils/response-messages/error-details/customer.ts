@@ -69,6 +69,17 @@ const customerErrorDetails = {
   E_3008(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3008', 'Favorite cannot found', detail);
     return e;
+  },
+
+  /**
+   *
+   * Invalid token
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_3009(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3009', 'Invalid token', detail);
+    return e;
   }
 };
 

@@ -131,11 +131,27 @@ const registerCustomerSchema = Joi.object({
   password: Joi.string().required().min(8).label('password')
 });
 
+const emailSchema = Joi.object({
+  email: Joi.string().required().email().label('email')
+});
+
+const changePasswordSchema = Joi.object({
+  token: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('token'),
+  newPassword: Joi.string().required().min(8).label('newPassword')
+});
+
 export {
   createCustomerWisereSchema,
   customerWireseIdSchema,
   loginSchema,
   loginSocialSchema,
   updateCustomerWisereSchema,
-  registerCustomerSchema
+  registerCustomerSchema,
+  emailSchema,
+  changePasswordSchema
 };

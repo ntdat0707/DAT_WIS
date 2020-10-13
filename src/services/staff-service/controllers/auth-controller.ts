@@ -47,7 +47,7 @@ import * as path from 'path';
 import { generatePWD } from '../../../utils/lib/generatePassword';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
-const fontEndUrl = process.env.FRONT_END_URL;
+const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
   /**
    * @swagger
@@ -470,7 +470,7 @@ export class AuthController {
       const uuidToken = uuidv4();
       const dataSendMail: IStaffRecoveryPasswordTemplate = {
         staffEmail: email,
-        yourURL: `${fontEndUrl}/users/forgot-password?token=${uuidToken}`
+        yourURL: `${frontEndUrl}/users/forgot-password?token=${uuidToken}`
       };
       await redis.setData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
         key: 'EX',
