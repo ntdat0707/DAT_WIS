@@ -18,7 +18,7 @@ class MainRoutes {
   private countryRoutes = new CountryRoutes().router;
   private cityRoutes = new CityRoutes().router;
   private marketPlaceRoutes = new MarketPlaceRoutes().router;
-  private CompanyDetailRoutes = new CompanyDetailRoutes().router;
+  private companyDetailRoutes = new CompanyDetailRoutes().router;
   constructor() {
     this.config();
   }
@@ -32,7 +32,7 @@ class MainRoutes {
     this.router.use('/country', this.countryRoutes);
     this.router.use('/city', this.cityRoutes);
     this.router.use('/marketplace', this.marketPlaceRoutes);
-    this.router.use('/company-detail', this.CompanyDetailRoutes);
+    this.router.use('/company-detail', this.companyDetailRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;
