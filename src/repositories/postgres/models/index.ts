@@ -31,6 +31,11 @@ import { MarketPlaceValueModel } from './marketplace-value-model';
 import { ContactModel } from './contact-model';
 import { FavoriteModel } from './favorite-model';
 import { PositionModel } from './position-model';
+import { InvoiceModel } from './invoice-model';
+import { InvoiceDetailModel } from './invoice-detail-model';
+import { InvoiceDetailStaffModel } from './invoice-detail-staff-model';
+import { PaymentModel } from './payment-model';
+import { ReceiptModel } from './receipt-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -201,6 +206,12 @@ PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
 PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
+InvoiceModel.hasMany(InvoiceDetailModel, { foreignKey: 'invoiceId', sourceKey: 'id', as: 'invoiceDetails' });
+InvoiceDetailModel.belongsTo(InvoiceModel, { foreignKey: 'invoiceId', as: 'invoice' });
+
+ServiceModel.hasMany(InvoiceDetailModel, { foreignKey: 'serviceId', sourceKey: 'id', as: 'invoiceDetails' });
+InvoiceDetailModel.belongsTo(ServiceModel, { foreignKey: 'serviceId', as: 'invoice' });
+
 export {
   sequelize,
   StaffModel,
@@ -229,5 +240,10 @@ export {
   ContactModel,
   MarketPlaceValueModel,
   MarketPlaceFieldsModel,
-  FavoriteModel
+  FavoriteModel,
+  InvoiceModel,
+  InvoiceDetailModel,
+  InvoiceDetailStaffModel,
+  PaymentModel,
+  ReceiptModel
 };

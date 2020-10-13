@@ -1,18 +1,17 @@
-import { EPaymentType, ESourceType } from './../../../utils/consts/index';
+import { ESourceType } from './../../../utils/consts/index';
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
 class ReceiptModel extends Model {
   public id: string;
   public code: string;
-  public invoiceId!: string;
   public customerId!: string;
   public staffId!: string;
   public amount: number;
   public paymentId: string;
   public type: string;
   public locationId: string;
-  public note: string;
+  public description: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -26,9 +25,9 @@ ReceiptModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    invoiceId: {
-      field: 'invoice_id',
-      type: DataTypes.UUIDV4,
+    code: {
+      field: 'code',
+      type: DataTypes.STRING,
       allowNull: false
     },
     customerId: {
@@ -41,19 +40,29 @@ ReceiptModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    paymentType: {
-      field: 'payment_type',
-      type: DataTypes.ENUM(...Object.keys(EPaymentType)),
-      defaultValue: EPaymentType.CASH
+    paymentId: {
+      field: 'payment_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     type: {
       field: 'type',
       type: DataTypes.ENUM(...Object.keys(ESourceType)),
       defaultValue: ESourceType.POS
     },
+    locationId: {
+      field: 'location_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
     amount: {
       field: 'amount',
       type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    description: {
+      field: 'description',
+      type: DataTypes.STRING,
       allowNull: true
     },
     createdAt: {
@@ -75,7 +84,7 @@ ReceiptModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'payment',
+    tableName: 'receipt',
     timestamps: true,
     paranoid: true
   }
