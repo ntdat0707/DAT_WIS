@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-import { ESource, ELabel } from '../../../utils/consts';
+import { ESource, ELabel, EGender } from '../../../utils/consts';
 class CustomerWisereModel extends Model {
   public id: string;
   public firstName!: string;
@@ -44,7 +44,7 @@ CustomerWisereModel.init(
       field: 'last_name'
     },
     gender: {
-      type: DataTypes.TINYINT,
+      type: DataTypes.ENUM(...Object.keys(EGender)),
       field: 'gender',
       allowNull: true
     },

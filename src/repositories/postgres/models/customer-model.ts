@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
+import { EGender } from '../../../utils/consts';
 class CustomerModel extends Model {
   public id: string;
   public firstName!: string;
@@ -41,13 +42,14 @@ CustomerModel.init(
       field: 'last_name'
     },
     gender: {
-      type: DataTypes.TINYINT,
+      type: DataTypes.ENUM(...Object.keys(EGender)),
       field: 'gender',
-      allowNull: false
+      allowNull: false,
+      defaultValue: EGender.UNISEX
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       field: 'phone'
     },
     email: {

@@ -9,6 +9,10 @@ class InvoiceModel extends Model {
   public reference?: string;
   public source: string;
   public note: string;
+  public discount?: number;
+  public tax!: number;
+  public balance: number;
+  public subTotal?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -40,6 +44,26 @@ InvoiceModel.init(
       field: 'source',
       type: DataTypes.ENUM(...Object.keys(ESourceType)),
       defaultValue: ESourceType.POS
+    },
+    discount: {
+      field: 'discount',
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    tax: {
+      field: 'tax',
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    balance: {
+      field: 'balance',
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    subTotal: {
+      field: 'sub_total',
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
     note: {
       field: 'note',

@@ -1,20 +1,16 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-
-class InvoiceDetail extends Model {
+class PositionModel extends Model {
   public id: string;
-  public invoiceId!: string;
-  public serviceId!: string;
-  public unit?: number;
-  public quantity!: number;
-  public price!: number;
-  public staffId?: number;
+  public staffId: string;
+  public ownerId: string;
+  public index: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-InvoiceDetail.init(
+PositionModel.init(
   {
     id: {
       field: 'id',
@@ -22,34 +18,19 @@ InvoiceDetail.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    invoiceId: {
-      field: 'invoice_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
-    },
-    serviceId: {
-      field: 'service_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
-    },
-    unit: {
-      field: 'unit',
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    quantity: {
-      field: 'quantity',
-      type: DataTypes.INTEGER,
-      defaultValue: 1
-    },
-    price: {
-      field: 'price',
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
     staffId: {
       field: 'staff_id',
       type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    ownerId: {
+      field: 'owner_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    index: {
+      field: 'index',
+      type: DataTypes.TINYINT,
       allowNull: false
     },
     createdAt: {
@@ -71,10 +52,10 @@ InvoiceDetail.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'invoice_detail',
+    tableName: 'position',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { InvoiceDetail };
+export { PositionModel };
