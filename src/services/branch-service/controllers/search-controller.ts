@@ -700,7 +700,7 @@ export class SearchController {
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
-
+      console.log(search);
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
@@ -929,15 +929,30 @@ export class SearchController {
 
   private keywordsSuggested = async (keywords: string) => {
     try {
-      const cateServices = await CateServiceModel.findAll({
-        where: Sequelize.literal('unaccent("CateServiceModel"."name") ilike any(array[])'),
-        attributes: {
-          include: [[Sequelize.literal('\'cateService\''), 'type']],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        limit: 3
-      });
-      const companies = (
+      const dataDefault: any = {
+        type: '',
+        title: '',
+        description: '',
+        image: '',
+        pathName: null,
+      };
+      const cateServices: any = (
+        await CateServiceModel.findAll({
+          where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
+          attributes: {
+            include: [[Sequelize.literal('\'cateService\''), 'type']],
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          limit: 3
+        })
+      ).map(({id, type, name}: any) => ({
+        ...dataDefault,
+        id,
+        type,
+        title: name
+      }));
+
+      const companies: any = (
         await CompanyModel.findAll({
           attributes: {
             include: [[Sequelize.literal('\'company\''), 'type']],
@@ -953,35 +968,54 @@ export class SearchController {
           ],
           where: Sequelize.literal(`unaccent("companyDetail"."business_name") ilike any(array[${keywords}])`)
         })
-      ).map((company: any) => ({
-        ...company.dataValues,
-        ...company.companyDetail?.dataValues,
-        companyDetail: undefined
+      ).map(({id, type, companyDetail: { businessName, description }}:any) => ({
+        ...dataDefault,
+        id,
+        type,
+        name: businessName,
+        description
       }));
 
-      const services = await ServiceModel.findAll({
-        where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
-        attributes: {
-          include: [[Sequelize.literal('\'service\''), 'type']],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        limit: 3
-      });
+      const services: any = (
+        await ServiceModel.findAll({
+          where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
+          attributes: {
+            include: [[Sequelize.literal('\'service\''), 'type']],
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          limit: 3
+       })
+      ).map(({id, type, name, description}: any) => ({
+        ...dataDefault,
+        id,
+        type,
+        title: name,
+        description
+      }));
 
-      const locations = await LocationModel.findAll({
-        where: {
-          [Op.or]: [
-            Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywords}])`),
-            Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywords}])`)
-          ]
-        },
-        attributes: {
-          include: [[Sequelize.literal('\'location\''), 'type']],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        limit: 3
-      });
-
+      const locations: any = (
+        await LocationModel.findAll({
+          where: {
+            [Op.or]: [
+              Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywords}])`),
+              Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywords}])`)
+            ]
+          },
+          attributes: {
+            include: [[Sequelize.literal('\'location\''), 'type']],
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          limit: 3
+        })
+      ).map(({id, type, title, description, pathName, photo}: any) => ({
+        ...dataDefault,
+        id,
+        type,
+        title,
+        pathName,
+        description,
+        image: photo
+      }));
       return {
         cateServices,
         companies,
