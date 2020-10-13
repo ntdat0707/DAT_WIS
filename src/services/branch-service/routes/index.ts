@@ -1,3 +1,4 @@
+import { CompanyDetailRoutes } from './company-detail-routes';
 import * as express from 'express';
 import { LocationRoutes } from './location-routes';
 import { ServiceRoutes } from './service-routes';
@@ -17,10 +18,11 @@ class MainRoutes {
   private countryRoutes = new CountryRoutes().router;
   private cityRoutes = new CityRoutes().router;
   private marketPlaceRoutes = new MarketPlaceRoutes().router;
-
+  private CompanyDetailRoutes = new CompanyDetailRoutes().router;
   constructor() {
     this.config();
   }
+
   private config(): void {
     this.router.use('/location', this.locationRoutes);
     this.router.use('/service', this.serviceRoutes);
@@ -30,6 +32,7 @@ class MainRoutes {
     this.router.use('/country', this.countryRoutes);
     this.router.use('/city', this.cityRoutes);
     this.router.use('/marketplace', this.marketPlaceRoutes);
+    this.router.use('/company-detail', this.CompanyDetailRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;
