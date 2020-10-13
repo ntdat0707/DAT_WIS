@@ -5,7 +5,7 @@ class InvoiceDetail extends Model {
   public id: string;
   public invoiceId!: string;
   public serviceId!: string;
-  public unit?: number;
+  public unit?: string;
   public quantity!: number;
   public price!: number;
   public staffId?: number;
@@ -34,7 +34,7 @@ InvoiceDetail.init(
     },
     unit: {
       field: 'unit',
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: true
     },
     quantity: {

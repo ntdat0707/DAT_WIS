@@ -7,7 +7,6 @@ class PaymentModel extends Model {
   public invoiceId!: string;
   public type!: string;
   public amount!: number;
-  public readonly total: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;

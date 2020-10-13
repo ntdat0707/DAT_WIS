@@ -6,13 +6,14 @@ class InvoiceModel extends Model {
   public id: string;
   public code!: string;
   public locationId!: string;
-  public reference?: string;
+  public appointmentId?: string;
   public source: string;
   public note: string;
   public discount?: number;
   public tax!: number;
   public balance: number;
   public subTotal?: number;
+  public tips: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -35,9 +36,9 @@ InvoiceModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    reference: {
-      field: 'reference',
-      type: DataTypes.STRING,
+    appointmentId: {
+      field: 'appointment_id',
+      type: DataTypes.UUIDV4,
       allowNull: true
     },
     source: {
