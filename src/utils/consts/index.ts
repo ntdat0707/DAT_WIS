@@ -164,3 +164,9 @@ export enum EPaymentType {
   TRANFER = 'tranfer',
   GIFT_CARD = 'gift_card'
 }
+
+export enum EBalanceType {
+  PAID = 'paid',
+  PART_PAID = 'part_paid',
+  UNPAID = 'unpaid'
+}

@@ -1,3 +1,4 @@
+import { EBalanceType } from './../../../utils/consts/index';
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import { ESourceType } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
@@ -11,9 +12,9 @@ class InvoiceModel extends Model {
   public note: string;
   public discount?: number;
   public tax!: number;
-  public balance: number;
+  public balance!: number;
+  public status!: string;
   public subTotal?: number;
-  public tips: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -56,10 +57,15 @@ InvoiceModel.init(
       type: DataTypes.INTEGER,
       allowNull: true
     },
+    status: {
+      field: 'status',
+      type: DataTypes.ENUM(...Object.keys(EBalanceType)),
+      defaultValue: EBalanceType.UNPAID
+    },
     balance: {
       field: 'balance',
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     subTotal: {
       field: 'sub_total',

@@ -1,19 +1,24 @@
+import { EPaymentType, ESourceType } from './../../../utils/consts/index';
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class InvoiceDetailModel extends Model {
+class ReceiptModel extends Model {
   public id: string;
+  public code: string;
   public invoiceId!: string;
-  public serviceId!: string;
-  public unit?: string;
-  public quantity!: number;
-  public price!: number;
+  public customerId!: string;
+  public staffId!: string;
+  public amount: number;
+  public paymentId: string;
+  public type: string;
+  public locationId: string;
+  public note: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-InvoiceDetailModel.init(
+ReceiptModel.init(
   {
     id: {
       field: 'id',
@@ -26,30 +31,30 @@ InvoiceDetailModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    serviceId: {
-      field: 'service_id',
+    customerId: {
+      field: 'customer_id',
       type: DataTypes.UUIDV4,
-      allowNull: false
-    },
-    unit: {
-      field: 'unit',
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    quantity: {
-      field: 'quantity',
-      type: DataTypes.INTEGER,
-      defaultValue: 1
-    },
-    price: {
-      field: 'price',
-      type: DataTypes.INTEGER,
       allowNull: false
     },
     staffId: {
       field: 'staff_id',
       type: DataTypes.UUIDV4,
       allowNull: false
+    },
+    paymentType: {
+      field: 'payment_type',
+      type: DataTypes.ENUM(...Object.keys(EPaymentType)),
+      defaultValue: EPaymentType.CASH
+    },
+    type: {
+      field: 'type',
+      type: DataTypes.ENUM(...Object.keys(ESourceType)),
+      defaultValue: ESourceType.POS
+    },
+    amount: {
+      field: 'amount',
+      type: DataTypes.INTEGER,
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',
@@ -70,10 +75,10 @@ InvoiceDetailModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'invoice_detail',
+    tableName: 'payment',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { InvoiceDetailModel };
+export { ReceiptModel };
