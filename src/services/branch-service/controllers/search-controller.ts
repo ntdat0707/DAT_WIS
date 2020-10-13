@@ -535,7 +535,6 @@ export class SearchController {
           locationId = searchLocationItem.id;
           typeResult = 'location';
         }
-        console.log(typeResult);
         await this.createCustomerSearch(
           req,
           {
@@ -594,7 +593,6 @@ export class SearchController {
         latitude: req.query.latitude,
         longitude: req.query.longitude
       };
-      console.log(customerSearch);
       await CustomerSearchModel.create(customerSearch);
     } catch (error) {
       throw error;
@@ -811,15 +809,14 @@ export class SearchController {
 
   private recentSearchSuggested = async (searchOption: any) => {
     try {
-      console.log(searchOption);
       // type:
-      //    cateService
+      //    cateservice
       //    company
       //    service
       //    location
       const recentSearchData: any = await CustomerSearchModel.findAll({
         where: {
-           customerId: searchOption.customerId
+          customerId: searchOption.customerId
         },
         include: [
           {
@@ -863,45 +860,67 @@ export class SearchController {
           'service.id',
           'location.id'
         ],
-        attributes: [
-          [Sequelize.fn('DISTINCT', Sequelize.col('keywords')) ,'keywords'],
-          'type',
-          'latitude',
-          'longitude'
-        ]
+        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('keywords')), 'keywords'], 'type']
       });
-      console.log(JSON.stringify(recentSearchData, null, 2));
+
       const mapData: any = {
         ['service'](data: any) {
-          return {...data.dataValues};
+          const { name, description } = data.dataValues;
+          return {
+            title: name,
+            description
+          };
         },
         ['cateService'](data: any) {
-          return {...data.dataValues};
+          const { name } = data.dataValues;
+          return {
+            title: name
+          };
         },
         ['company'](data: any) {
-          return {...data.dataValues};
+          const { businessName, description } = data.companyDetail?.dataValues;
+          return {
+            name: businessName,
+            description
+          };
         },
         ['location'](data: any) {
-          return {...data.dataValues};
+          const { title, description, pathName, photo } = data.dataValues;
+          return {
+            title,
+            description,
+            pathName,
+            image: photo
+          };
         }
       };
 
+      const dataDefault: any = {
+        type: '',
+        title: '',
+        description: '',
+        image: '',
+        pathName: null,
+        cateService: undefined,
+        company: undefined,
+        service: undefined,
+        location: undefined
+      };
+
       const recentSearch: Array<{
-        type: string,
-        title?: string,
-        description?: string,
-        image?: string,
-        pathName?: string
+        type: string;
+        title?: string;
+        description?: string;
+        image?: string;
+        pathName?: string;
       }> = recentSearchData.map((searchData: any) => {
         const { type } = searchData;
         return {
           ...searchData.dataValues,
-          ...mapData[type](searchData[type]),
-          [type]: undefined
-        }
+          ...dataDefault,
+          ...mapData[type](searchData[type])
+        };
       });
-      console.log(recentSearch);
-      // console.log(JSON.stringify(recentSearch, null, 2));
       return recentSearch;
     } catch (error) {
       throw error;
