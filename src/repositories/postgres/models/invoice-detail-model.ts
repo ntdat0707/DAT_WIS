@@ -1,20 +1,19 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class InvoiceDetail extends Model {
+class InvoiceDetailModel extends Model {
   public id: string;
   public invoiceId!: string;
   public serviceId!: string;
-  public unit?: number;
+  public unit?: string;
   public quantity!: number;
   public price!: number;
-  public staffId?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-InvoiceDetail.init(
+InvoiceDetailModel.init(
   {
     id: {
       field: 'id',
@@ -34,7 +33,7 @@ InvoiceDetail.init(
     },
     unit: {
       field: 'unit',
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: true
     },
     quantity: {
@@ -77,4 +76,4 @@ InvoiceDetail.init(
   }
 );
 
-export { InvoiceDetail };
+export { InvoiceDetailModel };

@@ -1,18 +1,16 @@
-import { EPaymentType } from './../../../utils/consts/index';
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class PaymentModel extends Model {
+class InvoiceDetailStaffModel extends Model {
   public id: string;
-  public invoiceId!: string;
-  public type!: string;
-  public amount!: number;
+  public invoiceDetailId!: string;
+  public staffId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-PaymentModel.init(
+InvoiceDetailStaffModel.init(
   {
     id: {
       field: 'id',
@@ -20,20 +18,15 @@ PaymentModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    invoiceId: {
-      field: 'invoice_id',
+    invoiceDetailId: {
+      field: 'invoice_detail_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    type: {
-      field: 'type',
-      type: DataTypes.ENUM(...Object.keys(EPaymentType)),
-      defaultValue: EPaymentType.CASH
-    },
-    amount: {
-      field: 'amount',
-      type: DataTypes.INTEGER,
-      allowNull: true
+    staffId: {
+      field: 'staff_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
@@ -54,10 +47,10 @@ PaymentModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'payment',
+    tableName: 'invoice_detail_staff',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { PaymentModel };
+export { InvoiceDetailStaffModel };

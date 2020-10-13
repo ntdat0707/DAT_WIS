@@ -1,18 +1,24 @@
-import { EPaymentType } from './../../../utils/consts/index';
+import { EPaymentType, ESourceType } from './../../../utils/consts/index';
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class PaymentModel extends Model {
+class ReceiptModel extends Model {
   public id: string;
+  public code: string;
   public invoiceId!: string;
-  public type!: string;
-  public amount!: number;
+  public customerId!: string;
+  public staffId!: string;
+  public amount: number;
+  public paymentId: string;
+  public type: string;
+  public locationId: string;
+  public note: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-PaymentModel.init(
+ReceiptModel.init(
   {
     id: {
       field: 'id',
@@ -25,10 +31,25 @@ PaymentModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    type: {
-      field: 'type',
+    customerId: {
+      field: 'customer_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    staffId: {
+      field: 'staff_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    paymentType: {
+      field: 'payment_type',
       type: DataTypes.ENUM(...Object.keys(EPaymentType)),
       defaultValue: EPaymentType.CASH
+    },
+    type: {
+      field: 'type',
+      type: DataTypes.ENUM(...Object.keys(ESourceType)),
+      defaultValue: ESourceType.POS
     },
     amount: {
       field: 'amount',
@@ -60,4 +81,4 @@ PaymentModel.init(
   }
 );
 
-export { PaymentModel };
+export { ReceiptModel };
