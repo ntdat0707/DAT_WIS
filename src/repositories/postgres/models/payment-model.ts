@@ -4,7 +4,7 @@ import sequelize from '../configs/db-connector';
 
 class PaymentModel extends Model {
   public id: string;
-  public invoiceDetailId!: string;
+  public invoiceId!: string;
   public type!: string;
   public amount!: number;
   public readonly total: number;

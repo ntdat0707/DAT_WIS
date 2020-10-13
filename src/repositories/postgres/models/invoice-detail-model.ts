@@ -8,12 +8,7 @@ class InvoiceDetail extends Model {
   public unit?: number;
   public quantity!: number;
   public price!: number;
-  public discount?: number;
-  public tax!: number;
-  public balance: number;
   public staffId?: number;
-  public subTotal?: number;
-  public readonly total: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;

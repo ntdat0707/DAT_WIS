@@ -9,6 +9,10 @@ class InvoiceModel extends Model {
   public reference?: string;
   public source: string;
   public note: string;
+  public discount?: number;
+  public tax!: number;
+  public balance: number;
+  public subTotal?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
