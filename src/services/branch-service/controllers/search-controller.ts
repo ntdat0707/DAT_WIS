@@ -140,7 +140,6 @@ export class SearchController {
 
   public marketPlaceSearch = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // let locations: any[] = [];
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
         pageNum: req.query.pageNum,
@@ -511,13 +510,6 @@ export class SearchController {
           }
         }
       };
-
-      // if (!!locationIds.length) {
-      //   query.order = Sequelize.literal(`(${
-      //     locationIds.map((id: any) => `"id" = \'${id}\'`).join(', ')
-      //   }) DESC`);
-      // }
-
       if (search.customerId && search.keywords) {
         req.query = {
           ...req.query,
