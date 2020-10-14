@@ -6,8 +6,6 @@ import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { initCompanySchema, updateCompanyDetailSchema } from '../configs/validate-schemas/company';
 import { CompanyModel } from '../../../repositories/postgres/models';
-// import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
-import { v4 as uuidv4 } from 'uuid';
 import { CompanyDetailModel } from '../../../repositories/postgres/models/company-detail-model';
 export class CompanyController {
   /**
@@ -78,24 +76,16 @@ export class CompanyController {
       });
 
       if (!company) {
-        const newCompanyId = uuidv4();
         transaction = await sequelize.transaction();
-        const newCompanyData = {
-          id: newCompanyId,
-          ownerId: id
-        };
-        company = await CompanyModel.create(newCompanyData, { transaction });
-        const companyDetailData: any[] = [];
-        const companyDetailId = uuidv4();
-        companyDetailData.push({
-          id: companyDetailId,
-          companyId: newCompanyId,
+        company = await CompanyModel.create({ ownerId: id }, { transaction });
+        const companyDetailData = {
+          companyId: company.id,
           description: data.description,
           businessName: data.businessName,
           businessType: data.businessType,
           phone: data.phone
-        });
-        await CompanyDetailModel.bulkCreate(companyDetailData, { transaction });
+        };
+        await CompanyDetailModel.create(companyDetailData, { transaction });
         await transaction.commit();
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(company));

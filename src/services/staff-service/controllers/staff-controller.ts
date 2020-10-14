@@ -999,7 +999,13 @@ export class StaffController {
    *       - Staff
    *     security:
    *       - Bearer: []
-   *     name: complete-onboard
+   *     name: getStaffAvailableTimeSlots
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/StaffAvailableTimeSlots'
    *     responses:
    *       200:
    *         description: Success
