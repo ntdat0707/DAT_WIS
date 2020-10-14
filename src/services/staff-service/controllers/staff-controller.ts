@@ -69,19 +69,24 @@ export class StaffController {
       const staffId = req.params.staffId;
       const validateErrors = validate(staffId, staffIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const staff = await StaffModel.findOne({
+      const staff: any = await StaffModel.findOne({
         where: { id: staffId },
         include: [
           {
             model: LocationModel,
             as: 'workingLocations',
             through: { attributes: [] }
+          },
+          {
+            model: GroupStaffModel,
+            as: 'groupStaff',
+            required: true,
+            attributes: { exclude: ['updatedAt', 'createdAt', 'deletedAt'] }
           }
         ]
       });
       if (!staff)
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
-
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);
