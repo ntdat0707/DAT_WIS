@@ -149,3 +149,9 @@ export enum EContactType {
   OTHER = 'other',
   MOBILE = 'mobile'
 }
+
+export enum ESourceLoginType {
+  WEB = 'web',
+  IOS = 'ios',
+  ANDROID = 'android'
+}
