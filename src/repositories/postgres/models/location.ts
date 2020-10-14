@@ -20,6 +20,7 @@ class LocationModel extends Model {
   public description: string;
   public title?: string;
   public pathName?: string;
+  public placeId?: string;
   public isoMarketplace: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
