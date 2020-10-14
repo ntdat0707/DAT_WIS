@@ -47,9 +47,6 @@ CateServiceModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company
 StaffModel.belongsToMany(LocationModel, { through: LocationStaffModel, as: 'workingLocations', foreignKey: 'staffId' });
 LocationModel.belongsToMany(StaffModel, { through: LocationStaffModel, as: 'staffs', foreignKey: 'locationId' });
 
-// LocationModel.hasMany(StaffModel, { foreignKey: 'mainLocationId', sourceKey: 'id', as: 'staffs' });
-// StaffModel.belongsTo(StaffModel, { foreignKey: 'mainLocationId', as: 'location' });
-
 ServiceModel.belongsToMany(StaffModel, { through: ServiceStaffModel, as: 'staffs', foreignKey: 'serviceId' });
 StaffModel.belongsToMany(ServiceModel, { through: ServiceStaffModel, as: 'services', foreignKey: 'staffId' });
 
