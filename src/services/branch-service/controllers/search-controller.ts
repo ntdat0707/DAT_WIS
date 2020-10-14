@@ -38,7 +38,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
-import { parseDatabyType } from '../utils';
+import { parseDataByType } from '../utils';
 import {
   deleteRecentBookingSchema,
   deleteRecentViewSchema
@@ -394,7 +394,7 @@ export class SearchController {
         locationResults = await LocationModel.findAll(queryLocations);
       }
 
-      const keywordUnaccents = removeAccents(keywords).toLowerCase();
+      const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
 
       let searchCateServiceItem: any = {};
       let searchCompanyItem: any = {};
@@ -403,7 +403,7 @@ export class SearchController {
 
       locationResults = locationResults.map((location: any) => {
         location = location.dataValues;
-        if (location.name && removeAccents(location.name).toLowerCase().search(keywordUnaccents)) {
+        if (location.name && removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)) {
           searchLocationItem = location;
         }
 
@@ -411,7 +411,7 @@ export class SearchController {
           location.company = location.company.dataValues;
           if (
             location.company.businessName &&
-            removeAccents(location.company.businessName).toLowerCase().search(keywordUnaccents)
+            removeAccents(location.company.businessName).toLowerCase().search(keywordRemoveAccents)
           ) {
             searchCompanyItem = location.company;
           }
@@ -420,7 +420,7 @@ export class SearchController {
             location.services &&
             !_.isEmpty(location.services) &&
             location.services[0].name &&
-            removeAccents(location.services[0].name).toLowerCase().search(keywordUnaccents)
+            removeAccents(location.services[0].name).toLowerCase().search(keywordRemoveAccents)
           ) {
             searchServiceItem = location.services[0];
           }
@@ -428,7 +428,7 @@ export class SearchController {
           if (location.company.cateServices && Array.isArray(location.company.cateServices)) {
             location.company.cateServices.map((cateService: any) => {
               cateService = cateService.dataValues;
-              if (removeAccents(cateService.name).toLowerCase().search(keywordUnaccents)) {
+              if (removeAccents(cateService.name).toLowerCase().search(keywordRemoveAccents)) {
                 searchCateServiceItem = cateService;
               }
               return cateService;
@@ -439,7 +439,7 @@ export class SearchController {
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           }),
           {}
         );
@@ -510,6 +510,7 @@ export class SearchController {
           }
         }
       };
+
       if (search.customerId && search.keywords) {
         req.query = {
           ...req.query,
@@ -620,7 +621,7 @@ export class SearchController {
    *       schema:
    *          type: integer
    *     - in: query
-   *       name: la titude
+   *       name: latitude
    *       schema:
    *          type: number
    *     - in: query
@@ -673,10 +674,6 @@ export class SearchController {
    *       name: cityName
    *       schema:
    *          type: string
-   *     - in: query
-   *       name: customerId
-   *       schema:
-   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -685,7 +682,6 @@ export class SearchController {
    *       500:
    *         description: Internal server errors
    */
-
   public marketPlaceSuggested = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const trimSpace = (text: string) =>
@@ -696,7 +692,6 @@ export class SearchController {
 
       const search = {
         keywords: trimSpace(req.query.keyword ? req.query.keyword.toString() : ''),
-        customerId: req.query.customerId,
         cityName: req.query.cityName
       };
 
@@ -704,7 +699,6 @@ export class SearchController {
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
-
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
@@ -717,26 +711,10 @@ export class SearchController {
       const popularServices = await this.popularServicesSuggested(keywordsQuery);
       const suggestionByKeywords = await this.keywordsSuggested(keywordsQuery);
 
-      let customer = null;
-      if (search.customerId) {
-        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
-      }
-      let recentSearch = null;
-      let recentBooking = null;
-      let recentView = null;
-      if (customer) {
-        recentSearch = await this.searchRecentSuggested(search);
-        recentBooking = await this.recentBookingSuggested(search);
-        recentView = await this.recentViewSuggested(search);
-      }
-
       const results = {
         suggestionByKeywords,
         cateServices,
-        popularServices,
-        recentSearch,
-        recentView,
-        recentBooking
+        popularServices
       };
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
@@ -784,16 +762,57 @@ export class SearchController {
           type: QueryTypes.SELECT
         }
       );
-
       return popularServices;
     } catch (error) {
       throw error;
     }
   };
 
-  private searchRecentSuggested = async (searchOption: any) => {
+  /**
+   * @swagger
+   * /branch/location/market-place/suggested-recent:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: marketPlaceSuggestedRecent
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public marketPlaceSuggestedRecent = async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      let recentSearch: any = await CustomerSearchModel.findAll({
+      const customerId = res.locals.customerPayload.id;
+      const recentSearch = await this.recentSearchSuggested({ customerId });
+      const recentBooking = await this.recentBookingSuggested({ customerId });
+      const recentView = await this.recentViewSuggested({ customerId });
+
+      const results = {
+        recentSearch,
+        recentView,
+        recentBooking
+      };
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  private recentSearchSuggested = async (searchOption: any) => {
+    try {
+      // type:
+      //    cateservice
+      //    company
+      //    service
+      //    location
+      const recentSearchData: any = await CustomerSearchModel.findAll({
         where: {
           customerId: searchOption.customerId
         },
@@ -808,7 +827,7 @@ export class SearchController {
             model: CompanyModel,
             as: 'company',
             required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deteledAt'] },
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
             include: [
               {
                 model: CompanyDetailModel,
@@ -838,19 +857,68 @@ export class SearchController {
           'company->companyDetail.id',
           'service.id',
           'location.id'
-        ]
+        ],
+        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('keywords')), 'keywords'], 'type']
       });
-      recentSearch = {
-        ...recentSearch.dataValues,
-        cateService: recentSearch.cataService?.dataValues,
-        company: {
-          ...recentSearch.company?.dataValues,
-          ...recentSearch.company?.companyDetail?.dataValues,
-          companyDetails: undefined
+
+      const mapData: any = {
+        ['service'](data: any) {
+          const { name, description } = data.dataValues;
+          return {
+            title: name,
+            description
+          };
         },
-        service: recentSearch.service?.dataValues,
-        location: recentSearch.location?.dataValues
+        ['cateService'](data: any) {
+          const { name } = data.dataValues;
+          return {
+            title: name
+          };
+        },
+        ['company'](data: any) {
+          const { businessName, description } = data.companyDetail?.dataValues;
+          return {
+            name: businessName,
+            description
+          };
+        },
+        ['location'](data: any) {
+          const { title, description, pathName, photo } = data.dataValues;
+          return {
+            title,
+            description,
+            pathName,
+            image: photo
+          };
+        }
       };
+
+      const dataDefault: any = {
+        type: '',
+        title: '',
+        description: '',
+        image: '',
+        pathName: null,
+        cateService: undefined,
+        company: undefined,
+        service: undefined,
+        location: undefined
+      };
+
+      const recentSearch: {
+        type: string;
+        title?: string;
+        description?: string;
+        image?: string;
+        pathName?: string;
+      }[] = recentSearchData.map((searchData: any) => {
+        const { type } = searchData;
+        return {
+          ...searchData.dataValues,
+          ...dataDefault,
+          ...mapData[type](searchData[type])
+        };
+      });
       return recentSearch;
     } catch (error) {
       throw error;
@@ -859,15 +927,30 @@ export class SearchController {
 
   private keywordsSuggested = async (keywords: string) => {
     try {
-      const cateServices = await CateServiceModel.findAll({
-        where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
-        attributes: {
-          include: [[Sequelize.literal("'cateService'"), 'type']],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        limit: 3
-      });
-      const companies = (
+      const dataDefault: any = {
+        type: '',
+        title: '',
+        description: '',
+        image: '',
+        pathName: null
+      };
+      const cateServices: any = (
+        await CateServiceModel.findAll({
+          where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
+          attributes: {
+            include: [[Sequelize.literal("'cateService'"), 'type']],
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          limit: 3
+        })
+      ).map(({ id, type, name }: any) => ({
+        ...dataDefault,
+        id,
+        type,
+        title: name
+      }));
+
+      const companies: any = (
         await CompanyModel.findAll({
           attributes: {
             include: [[Sequelize.literal("'company'"), 'type']],
@@ -883,35 +966,54 @@ export class SearchController {
           ],
           where: Sequelize.literal(`unaccent("companyDetail"."business_name") ilike any(array[${keywords}])`)
         })
-      ).map((company: any) => ({
-        ...company.dataValues,
-        ...company.companyDetail?.dataValues,
-        companyDetail: undefined
+      ).map(({ id, type, companyDetail: { businessName, description } }: any) => ({
+        ...dataDefault,
+        id,
+        type,
+        name: businessName,
+        description
       }));
 
-      const services = await ServiceModel.findAll({
-        where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
-        attributes: {
-          include: [[Sequelize.literal("'service'"), 'type']],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        limit: 3
-      });
+      const services: any = (
+        await ServiceModel.findAll({
+          where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
+          attributes: {
+            include: [[Sequelize.literal("'service'"), 'type']],
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          limit: 3
+        })
+      ).map(({ id, type, name, description }: any) => ({
+        ...dataDefault,
+        id,
+        type,
+        title: name,
+        description
+      }));
 
-      const locations = await LocationModel.findAll({
-        where: {
-          [Op.or]: [
-            Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywords}])`),
-            Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywords}])`)
-          ]
-        },
-        attributes: {
-          include: [[Sequelize.literal("'location'"), 'type']],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        limit: 3
-      });
-
+      const locations: any = (
+        await LocationModel.findAll({
+          where: {
+            [Op.or]: [
+              Sequelize.literal(`unaccent("LocationModel"."name") ilike any(array[${keywords}])`),
+              Sequelize.literal(`unaccent("LocationModel"."address") ilike any(array[${keywords}])`)
+            ]
+          },
+          attributes: {
+            include: [[Sequelize.literal("'location'"), 'type']],
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          limit: 3
+        })
+      ).map(({ id, type, title, description, pathName, photo }: any) => ({
+        ...dataDefault,
+        id,
+        type,
+        title,
+        pathName,
+        description,
+        image: photo
+      }));
       return {
         cateServices,
         companies,
@@ -920,61 +1022,6 @@ export class SearchController {
       };
     } catch (error) {
       throw error;
-    }
-  };
-  /**
-   * @swagger
-   * /branch/location/market-place/suggested-recent:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     security:
-   *       - Bearer: []
-   *     name: marketPlaceSuggestedRecent
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-
-  public marketPlaceSuggestedRecent = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const search = {
-        customerId: res.locals.customerPayload.id
-      };
-
-      const validateErrorsSearch = validate(search, suggestedSchema);
-      if (validateErrorsSearch) {
-        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
-      }
-      let recentSearch = null;
-      let recentBooking = null;
-      let recentView = null;
-      let customer = null;
-      if (search.customerId) {
-        customer = await CustomerModel.findOne({ where: { id: search.customerId } });
-      }
-      if (customer) {
-        recentSearch = await this.searchRecentSuggested(search);
-        console.log('Pass recent Search::');
-        recentBooking = await this.recentBookingSuggested(search);
-        console.log('Pass recent booking::');
-        recentView = await this.recentViewSuggested(search);
-        console.log('Pass recent view::');
-      }
-
-      const results = {
-        recentSearch,
-        recentView,
-        recentBooking
-      };
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(results));
-    } catch (error) {
-      return next(error);
     }
   };
 
@@ -1019,12 +1066,6 @@ export class SearchController {
 
         recentBookingHistory.push(staff);
       }
-      //filter Duplication Element
-
-      // recentBookingHistory.filter((item: any, index: any) => {
-      //   return recentBookingHistory.indexOf(item === index);
-      // });
-
       return recentBookingHistory;
     } catch (error) {
       throw error;
@@ -1068,7 +1109,7 @@ export class SearchController {
         })
       ).map((locationView: any) => ({
         ...locationView.dataValues,
-        ...locationView.locationDetail.dataValues,
+        ...locationView.locationDetail?.dataValues,
         ...locationView.locationImages[0]?.dataValues,
         ['locationDetail']: undefined,
         ['locationImages']: undefined
@@ -1188,7 +1229,7 @@ export class SearchController {
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           }),
           {}
         );
@@ -1391,7 +1432,7 @@ export class SearchController {
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           }),
           {}
         );
@@ -1480,7 +1521,6 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
-      // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
       return next(error);
     }
   };

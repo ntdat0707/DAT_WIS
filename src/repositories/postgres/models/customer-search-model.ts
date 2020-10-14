@@ -53,7 +53,7 @@ CustomerSearchModel.init(
     companyId: {
       field: 'company_id',
       type: DataTypes.UUIDV4,
-      allowNull: true,
+      allowNull: true
     },
     locationId: {
       field: 'location_id',

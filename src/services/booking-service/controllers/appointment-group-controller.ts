@@ -27,7 +27,6 @@ import {
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
-//import { generate } from 'randomstring';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger

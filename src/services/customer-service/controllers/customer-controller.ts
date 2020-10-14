@@ -49,7 +49,16 @@ import { generateAppleToken } from '../../../utils/lib/generateAppleToken';
 import jwt from 'jsonwebtoken';
 import shortid from 'shortid';
 import _ from 'lodash';
+import { emailSchema, changePasswordSchema } from '../configs/validate-schemas/customer';
+import { v4 as uuidv4 } from 'uuid';
+import { redis, EKeys } from '../../../repositories/redis';
+import { ICustomerRecoveryPasswordTemplate } from '../../../utils/emailer/templates/customer-recovery-password';
+import * as ejs from 'ejs';
+import * as path from 'path';
+import { sendEmail } from '../../../utils/emailer';
 
+const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
+const frontEndUrl = process.env.MARKETPLACE_URL;
 export class CustomerController {
   /**
    * @swagger
@@ -1316,6 +1325,139 @@ export class CustomerController {
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
       const customer = await CustomerModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerRequestNewPassword:
+   *       required:
+   *           - email
+   *       properties:
+   *           email:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/request-new-password:
+   *   post:
+   *     tags:
+   *       - Customer
+   *     name: customer-request-new-password
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerRequestNewPassword'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public requestNewPassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const email = req.body.email;
+      const validateErrors = validate({ email: email }, emailSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      if (!customer) return next(new CustomError(customerErrorDetails.E_3001('Email not found'), HttpStatus.NOT_FOUND));
+      const uuidToken = uuidv4();
+      const dataSendMail: ICustomerRecoveryPasswordTemplate = {
+        customerEmail: email,
+        yourURL: `${frontEndUrl}/forgot-password?token=${uuidToken}`
+      };
+      await redis.setData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
+        key: 'EX',
+        value: recoveryPasswordUrlExpiresIn
+      });
+      const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/customer-recovery-password.ejs');
+      ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
+        if (!err) {
+          await sendEmail({
+            receivers: email,
+            subject: 'Change your account password',
+            type: 'html',
+            message: dataEjs
+          });
+        }
+      });
+
+      res.status(HttpStatus.OK).send(buildSuccessMessage({ msg: 'Please check your email' }));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   CustomerChangePassword:
+   *       required:
+   *           - token
+   *           - newPassword
+   *       properties:
+   *           token:
+   *               type: string
+   *           newPassword:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /customer/change-password:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     name: customer-change-password
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/CustomerChangePassword'
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+
+  public changePassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = {
+        token: req.body.token,
+        newPassword: req.body.newPassword
+      };
+      const validateErrors = validate(body, changePasswordSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const tokenStoraged = await redis.getData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${body.token}`);
+      if (!tokenStoraged)
+        return next(new CustomError(customerErrorDetails.E_3009('Invalid token'), HttpStatus.UNAUTHORIZED));
+      const data = JSON.parse(tokenStoraged);
+      const customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: data.email } });
+      if (!customer) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
+      const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
+      await CustomerModel.update(
+        { password: password },
+        {
+          where: {
+            email: data.email
+          }
+        }
+      );
+      await redis.deleteData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${body.token}`);
+      res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
