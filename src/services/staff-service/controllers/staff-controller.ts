@@ -1,7 +1,7 @@
 //
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op } from 'sequelize';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 import _ from 'lodash';
@@ -27,7 +27,8 @@ import {
   AppointmentModel,
   AppointmentDetailModel,
   CompanyModel,
-  LocationWorkingHourModel
+  LocationWorkingHourModel,
+  GroupStaffModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -135,7 +136,6 @@ export class StaffController {
       const filter = { workingLocationIds: req.query.workingLocationIds };
       const validateFilterErrors = validate(filter, filterStaffSchema);
       if (validateFilterErrors) return next(new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST));
-
       const query: FindOptions = { include: [] };
       if (
         filter.workingLocationIds &&
@@ -162,6 +162,12 @@ export class StaffController {
                 attributes: []
               },
               where: { id: filter.workingLocationIds }
+            },
+            {
+              model: GroupStaffModel,
+              as: 'groupStaff',
+              required: true,
+              where: { name: Sequelize.literal('unaccent("groupStaff"."name") ilike unaccent(\'%Bac si%\')') }
             }
           ]
         ];
@@ -212,6 +218,9 @@ export class StaffController {
    *       name: mainLocationId
    *       type: string
    *       required: true
+   *     - in: "formData"
+   *       name: groupStaffId
+   *       type: string
    *     - in: "formData"
    *       name: firstName
    *       type: string
@@ -271,6 +280,7 @@ export class StaffController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const profile: any = {
+        groupStaffId: req.body.groupStaffId,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
@@ -1417,6 +1427,122 @@ export class StaffController {
       res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return error;
+    }
+  };
+
+  /**
+   * @swagger
+   * /staff/get-group-staff:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: getGroupStaff
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: companyId
+   *       required: companyId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getGroupStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const companyId = res.locals.staffPayload.companyId;
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const query: FindOptions = {
+        where: { companyId: companyId }
+      };
+      const groupStaffs = await paginate(
+        GroupStaffModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(groupStaffs));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   *  @swagger
+   * /staff/get-staff-in-group:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: getStaffInGroup
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: groupStaffId
+   *       required: true
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getStaffInGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const groupStaffId = req.query.groupStaffId;
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const query: FindOptions = {
+        where: { groupStaffId: groupStaffId }
+      };
+      const staffs = await paginate(
+        StaffModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+    } catch (error) {
+      return next(error);
     }
   };
 }
