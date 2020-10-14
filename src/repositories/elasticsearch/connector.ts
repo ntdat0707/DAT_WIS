@@ -16,20 +16,23 @@ const elsConfig: ConfigOptions = {
 
 const elasticsearchClient = new elasticsearch.Client(elsConfig);
 
-elasticsearchClient.ping({
-  requestTimeout: 3000
-}, (error) => {
-  if (error) {
-    logger.error({
-      label: 'Elasticsearch',
-      message: `Elasticsearch connect to ${elsConfig.host} failed ${error}`
-    });
-  } else {
-    logger.info({
-      label: 'Elasticsearch',
-      message: `Elasticsearch connected to ${elsConfig.host}`
-    });
+elasticsearchClient.ping(
+  {
+    requestTimeout: 3000
+  },
+  (error) => {
+    if (error) {
+      logger.error({
+        label: 'Elasticsearch',
+        message: `Elasticsearch connect to ${elsConfig.host} failed ${error}`
+      });
+    } else {
+      logger.info({
+        label: 'Elasticsearch',
+        message: `Elasticsearch connected to ${elsConfig.host}`
+      });
+    }
   }
-});
+);
 
 export default elasticsearchClient;

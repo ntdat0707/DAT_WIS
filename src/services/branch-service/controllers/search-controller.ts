@@ -194,7 +194,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -702,11 +702,10 @@ export class SearchController {
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
-      console.log(search);
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -909,13 +908,13 @@ export class SearchController {
         location: undefined
       };
 
-      const recentSearch: Array<{
+      const recentSearch: {
         type: string;
         title?: string;
         description?: string;
         image?: string;
         pathName?: string;
-      }> = recentSearchData.map((searchData: any) => {
+      }[] = recentSearchData.map((searchData: any) => {
         const { type } = searchData;
         return {
           ...searchData.dataValues,
@@ -936,18 +935,18 @@ export class SearchController {
         title: '',
         description: '',
         image: '',
-        pathName: null,
+        pathName: null
       };
       const cateServices: any = (
         await CateServiceModel.findAll({
           where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
           attributes: {
-            include: [[Sequelize.literal('\'cateService\''), 'type']],
+            include: [[Sequelize.literal("'cateService'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           limit: 3
         })
-      ).map(({id, type, name}: any) => ({
+      ).map(({ id, type, name }: any) => ({
         ...dataDefault,
         id,
         type,
@@ -957,7 +956,7 @@ export class SearchController {
       const companies: any = (
         await CompanyModel.findAll({
           attributes: {
-            include: [[Sequelize.literal('\'company\''), 'type']],
+            include: [[Sequelize.literal("'company'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
@@ -970,7 +969,7 @@ export class SearchController {
           ],
           where: Sequelize.literal(`unaccent("companyDetail"."business_name") ilike any(array[${keywords}])`)
         })
-      ).map(({id, type, companyDetail: { businessName, description }}:any) => ({
+      ).map(({ id, type, companyDetail: { businessName, description } }: any) => ({
         ...dataDefault,
         id,
         type,
@@ -982,12 +981,12 @@ export class SearchController {
         await ServiceModel.findAll({
           where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
           attributes: {
-            include: [[Sequelize.literal('\'service\''), 'type']],
+            include: [[Sequelize.literal("'service'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           limit: 3
-       })
-      ).map(({id, type, name, description}: any) => ({
+        })
+      ).map(({ id, type, name, description }: any) => ({
         ...dataDefault,
         id,
         type,
@@ -1004,12 +1003,12 @@ export class SearchController {
             ]
           },
           attributes: {
-            include: [[Sequelize.literal('\'location\''), 'type']],
+            include: [[Sequelize.literal("'location'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           limit: 3
         })
-      ).map(({id, type, title, description, pathName, photo}: any) => ({
+      ).map(({ id, type, title, description, pathName, photo }: any) => ({
         ...dataDefault,
         id,
         type,
@@ -1678,13 +1677,16 @@ export class SearchController {
         index: 'marketplace_search',
         body: {
           query: {
-            query_string : {
-              query : `${search.keyword}~1`
+            query_string: {
+              query: `${search.keyword}~1`
             }
           }
         }
       });
-      const result = _.uniqBy(response.hits!.hits.map((data: any) => dot.object(data._source)), 'id');
+      const result = _.uniqBy(
+        response.hits!.hits.map((data: any) => dot.object(data._source)),
+        'id'
+      );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(result));
     } catch (error) {
       return next(error);
