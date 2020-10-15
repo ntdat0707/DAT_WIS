@@ -6,6 +6,7 @@ import sequelize from '../configs/db-connector';
 class InvoiceModel extends Model {
   public id: string;
   public code!: string;
+  public customerWisereId: string;
   public locationId!: string;
   public appointmentId?: string;
   public source: string;
@@ -31,6 +32,11 @@ InvoiceModel.init(
       field: 'code',
       type: DataTypes.STRING,
       allowNull: false
+    },
+    customerWisereId: {
+      field: 'customer_wisere_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
     },
     locationId: {
       field: 'location_id',
