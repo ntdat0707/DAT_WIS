@@ -6,7 +6,6 @@ import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createCompanyDetailSchema } from '../configs/validate-schemas/company';
 import { CompanyDetailModel } from '../../../repositories/postgres/models/company-detail-model';
-import { sequelize } from '../../../repositories/postgres/models';
 export class CompanyDetailController {
   /**
    * Dental , Spa , Beauty Salon, Nail Salon, Babershop, Massage.
@@ -63,9 +62,7 @@ export class CompanyDetailController {
    *         description:
    */
   public createCompanyDetail = async ({ body }: Request, res: Response, next: NextFunction) => {
-    let transaction = null;
     try {
-      //  const { id } = res.locals.staffPayload;
       const data: any = {
         ...body
       };
@@ -73,21 +70,15 @@ export class CompanyDetailController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      transaction = await sequelize.transaction();
-      const companyDetail = await CompanyDetailModel.create(
-        {
-          companyId: data.companyId,
-          businessType: data.businessType,
-          phone: data.phone,
-          description: data.description,
-          businessName: data.businessName
-        },
-        { transaction }
-      );
-      await transaction.commit();
+      const companyDetail = await CompanyDetailModel.create({
+        companyId: data.companyId,
+        businessType: data.businessType,
+        phone: data.phone,
+        description: data.description,
+        businessName: data.businessName
+      });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(companyDetail));
     } catch (error) {
-      if (transaction) await transaction.rollback();
       return next(error);
     }
   };
