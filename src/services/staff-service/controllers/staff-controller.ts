@@ -277,7 +277,6 @@ export class StaffController {
         gender: req.body.gender,
         phone: req.body.phone,
         email: req.body.email,
-        // mainLocationId: req.body.mainLocationId,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
         address: req.body.address,
@@ -310,6 +309,7 @@ export class StaffController {
       }
       if (req.file) profile.avatarPath = (req.file as any).location;
       const staff = await StaffModel.create(profile, { transaction });
+
       if (req.body.workingLocationIds) {
         const workingLocationData = (req.body.workingLocationIds as []).map((x) => ({
           locationId: x,
