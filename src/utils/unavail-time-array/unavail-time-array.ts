@@ -12,15 +12,15 @@ const getStaffUnavailTime = (item: any) => {
   const tempIds = [];
   const tempTime = [];
   const staffUnavailTimeArray: any[] = [];
-  for (let i = 0; i < item.rows.length; i++) {
-    tempIds.push(item.rows[i].id);
-    const tmp: any[][] = Array.from({ length: item.rows.length }, (_) => []);
-    for (let j = 0; j < item.rows[i].appointmentDetails.length; j++) {
-      let startTime = parseInt(item.rows[i].appointmentDetails[j].start_time.split(':').join(''), 10);
-      const duration = minutesToNum(item.rows[i].appointmentDetails[j].duration);
+  for (let i = 0; i < item.count; i++) {
+    tempIds.push(item.rows[0].staffs[i].id);
+    const tmp: any[][] = Array.from({ length: item.count }, (_) => []);
+    for (let j = 0; j < item.rows[0].staffs[i].appointmentDetails.length; j++) {
+      let startTime = parseInt(item.rows[0].staffs[i].appointmentDetails[j].start_time.split(':').join(''), 10);
+      const duration = minutesToNum(item.rows[0].staffs[i].appointmentDetails[j].duration);
       const endTime = startTime + duration;
       let temp;
-      tmp[i].push(item.rows[i].appointmentDetails[j].start_time);
+      tmp[i].push(item.rows[0].staffs[i].appointmentDetails[j].start_time);
       while (startTime < endTime) {
         startTime += 5;
         if (startTime % 100 === 60) {

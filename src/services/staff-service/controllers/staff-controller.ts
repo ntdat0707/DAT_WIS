@@ -1299,44 +1299,52 @@ export class StaffController {
       const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
 
-      const doctorsSchedule = await StaffModel.findAndCountAll({
-        attributes: ['id'],
+      const doctorsSchedule = await LocationModel.findAndCountAll({
+        attributes: [],
         include: [
           {
-            model: AppointmentDetailModel,
-            as: 'appointmentDetails',
+            model: StaffModel,
+            as: 'staffs',
             through: { attributes: [] },
-            attributes: ['duration', 'start_time', 'status'],
-            where: {
-              [Op.and]: [
-                sequelize.Sequelize.where(
-                  sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')),
-                  appointmentDay
-                ),
-                {
-                  [Op.not]: [{ status: { [Op.like]: 'cancel' } }]
+            attributes: ['id'],
+            include: [
+              {
+                model: AppointmentDetailModel,
+                as: 'appointmentDetails',
+                through: { attributes: [] },
+                attributes: ['duration', 'start_time', 'status'],
+                where: {
+                  [Op.and]: [
+                    sequelize.Sequelize.where(
+                      sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')),
+                      appointmentDay
+                    ),
+                    {
+                      [Op.not]: [{ status: { [Op.like]: 'cancel' } }]
+                    }
+                  ]
                 }
-              ]
-            }
+              }
+            ]
           }
         ],
         where: {
-          main_location_id: locationId
+          id: locationId
         }
       });
       const preDataFirst = JSON.stringify(doctorsSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
-      const len = preDataSecond.rows.length;
+      const len = preDataSecond.count;
       for (let i = 0; i < len; i++) {
-        preDataSecond.rows[i].appointmentDetails.forEach((e: any) => {
+        preDataSecond.rows[0].staffs[i].appointmentDetails.forEach((e: any) => {
           e.start_time = moment(e.start_time).format('HH:mm');
         });
       }
       const staffUnavailTime = getStaffUnavailTime(preDataSecond);
-      const doctors = await StaffModel.findAndCountAll({
-        attributes: ['id'],
+      const doctors = await LocationStaffModel.findAndCountAll({
+        attributes: ['staff_id'],
         where: {
-          main_location_id: locationId
+          location_id: locationId
         }
       });
       for (let i = 0; i < doctors.count; i++) {

@@ -966,7 +966,7 @@ export class SearchController {
               limit: 1
             }
           ],
-          attributes: ['id', 'name', 'photo', 'address', 'district', 'ward']
+          attributes: ['id', 'name', 'address', 'district', 'ward']
         })
       ).map((locationView: any) => ({
         ...locationView.dataValues,
