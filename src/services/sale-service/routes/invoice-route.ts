@@ -9,5 +9,6 @@ export class SaleRoutes {
   }
   private config(): void {
     this.router.post('/create-invoice', isAuthenticated, this.invoiceController.createInvoice);
+    this.router.post('/create-payment', isAuthenticated, this.invoiceController.createPayment);
   }
 }

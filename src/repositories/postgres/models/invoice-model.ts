@@ -50,12 +50,12 @@ InvoiceModel.init(
     discount: {
       field: 'discount',
       type: DataTypes.INTEGER,
-      allowNull: true
+      defaultValue: 0
     },
     tax: {
       field: 'tax',
       type: DataTypes.INTEGER,
-      allowNull: true
+      defaultValue: 0
     },
     status: {
       field: 'status',
