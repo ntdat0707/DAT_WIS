@@ -93,11 +93,11 @@ const filterStaffSchema = Joi.object({
 });
 
 export const createStaffsSchema = Joi.object({
-  mainLocationId: Joi.string()
+  locationId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .label('mainLocationId'),
+    .label('locationId'),
   staffDetails: Joi.array()
     .min(1)
     .required()
