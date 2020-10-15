@@ -1,4 +1,3 @@
-//
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { FindOptions, Op } from 'sequelize';
@@ -1324,7 +1323,9 @@ export class StaffController {
             ]
           }
         ],
-        where: { id: locationId }
+        where: {
+          id: locationId
+        }
       });
       const preDataFirst = JSON.stringify(doctorsSchedule);
       const preDataSecond = JSON.parse(preDataFirst);

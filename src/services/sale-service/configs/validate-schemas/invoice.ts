@@ -73,5 +73,4 @@ const appointmentId = Joi.string()
   })
   .required()
   .label('appointmentId');
-
 export { createInvoiceSchema, createPaymentSchema, appointmentId };
