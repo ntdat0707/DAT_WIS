@@ -337,7 +337,11 @@ export class AuthController {
       if (!staff) {
         loginData = {
           email: data.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            '( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -353,7 +357,11 @@ export class AuthController {
       if (!staff.isBusinessAccount) {
         loginData = {
           email: data.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            '( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -370,7 +378,11 @@ export class AuthController {
       if (!match) {
         loginData = {
           email: data.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            '( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -410,7 +422,11 @@ export class AuthController {
       });
       loginData = {
         email: data.email,
-        location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+        location:
+          (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+          ' - ' +
+          geoip.lookup(await v4()).country +
+          '( country code )',
         timestamp: new Date(),
         browser: data.browser,
         device: data.device,
@@ -708,7 +724,11 @@ export class AuthController {
           if (socialInfor.response.email !== req.body.email || socialInfor.response.expires_in === 0) {
             loginData = {
               email: req.body.email,
-              location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+              location:
+                (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+                ' - ' +
+                geoip.lookup(await v4()).country +
+                '( country code )',
               timestamp: new Date(),
               browser: req.body.browser,
               device: req.body.device,
@@ -726,7 +746,11 @@ export class AuthController {
           if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
             loginData = {
               email: req.body.email,
-              location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+              location:
+                (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+                ' - ' +
+                geoip.lookup(await v4()).country +
+                '( country code )',
               timestamp: new Date(),
               browser: req.body.browser,
               device: req.body.device,
@@ -745,7 +769,11 @@ export class AuthController {
         if (req.body.provider === ESocialType.GOOGLE) {
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              '( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -771,7 +799,11 @@ export class AuthController {
             if (staff.facebookId !== req.body.providerId) {
               loginData = {
                 email: req.body.email,
-                location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+                location:
+                  (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+                  ' - ' +
+                  geoip.lookup(await v4()).country +
+                  '( country code )',
                 timestamp: new Date(),
                 browser: req.body.browser,
                 device: req.body.device,
@@ -810,7 +842,11 @@ export class AuthController {
           });
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              '( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -834,7 +870,11 @@ export class AuthController {
             if (staff.googleId !== req.body.providerId) {
               loginData = {
                 email: req.body.email,
-                location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+                location:
+                  (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+                  ' - ' +
+                  geoip.lookup(await v4()).country +
+                  '( country code )',
                 timestamp: new Date(),
                 browser: req.body.browser,
                 device: req.body.device,
@@ -873,7 +913,11 @@ export class AuthController {
           });
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              '( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -895,7 +939,11 @@ export class AuthController {
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              '( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -950,7 +998,11 @@ export class AuthController {
           });
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              '( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -988,7 +1040,11 @@ export class AuthController {
         });
         loginData = {
           email: req.body.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            '( country code )',
           timestamp: new Date(),
           browser: req.body.browser,
           device: req.body.device,
@@ -1043,7 +1099,11 @@ export class AuthController {
           });
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              '( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -1081,7 +1141,11 @@ export class AuthController {
         });
         loginData = {
           email: req.body.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            '( country code )',
           timestamp: new Date(),
           browser: req.body.browser,
           device: req.body.device,

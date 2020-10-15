@@ -36,7 +36,8 @@ import {
   filterStaffSchema,
   createStaffsSchema,
   updateStaffSchema,
-  getStaffMultipleService
+  getStaffMultipleService,
+  deleteStaffSchema
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
@@ -209,7 +210,7 @@ export class StaffController {
    *       type: file
    *       description: The file to upload.
    *     - in: "formData"
-   *       name: mainLocationId
+   *       name: locationId
    *       type: string
    *       required: true
    *     - in: "formData"
@@ -275,20 +276,23 @@ export class StaffController {
         lastName: req.body.lastName,
         gender: req.body.gender,
         phone: req.body.phone,
-        mainLocationId: req.body.mainLocationId,
+        email: req.body.email,
+        // mainLocationId: req.body.mainLocationId,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
         address: req.body.address,
         color: req.body.color,
         id: uuidv4()
       };
-      if (!res.locals.staffPayload.workingLocationIds.includes(profile.mainLocationId))
+
+      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
         return next(
           new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${profile.mainLocationId}`),
+            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
             HttpStatus.FORBIDDEN
           )
         );
+
       if (req.body.workingLocationIds) {
         const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
         if (diff.length) {
@@ -703,6 +707,11 @@ export class StaffController {
    *       name: staffId
    *       schema:
    *          type: string
+   *     - in: query
+   *       name: locationId
+   *       require: true
+   *       schema:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -714,21 +723,39 @@ export class StaffController {
   public deleteStaff = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { workingLocationIds } = res.locals.staffPayload;
-      const staffId = req.params.staffId;
-      const validateErrors = validate(staffId, staffIdSchema);
+      const dataDelete = {
+        staffId: req.params.staffId,
+        locationId: req.query.locationId
+      };
+      const validateErrors = validate(dataDelete, deleteStaffSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const staff = await StaffModel.findOne({ where: { id: staffId } });
+      const staff = await StaffModel.findOne({ where: { id: dataDelete.staffId } });
       if (!staff)
-        return next(new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
-      if (!workingLocationIds.includes(staff.mainLocationId)) {
+        return next(
+          new CustomError(staffErrorDetails.E_4000(`staffId ${dataDelete.staffId} not found`), HttpStatus.NOT_FOUND)
+        );
+
+      const locationStaff = await LocationStaffModel.findOne({
+        where: { staffId: dataDelete.staffId, locationId: dataDelete.locationId }
+      });
+      if (!workingLocationIds.includes(locationStaff.locationId)) {
         return next(
           new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${staff.mainLocationId}`),
+            branchErrorDetails.E_1001(`You can not access to location ${locationStaff.locationId}`),
             HttpStatus.FORBIDDEN
           )
         );
       }
-      await StaffModel.destroy({ where: { id: staffId } });
+      if (!locationStaff) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${locationStaff.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      await StaffModel.destroy({ where: { id: locationStaff.staffId } });
+      await LocationStaffModel.destroy({ where: { staffId: locationStaff.staffId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
@@ -756,10 +783,10 @@ export class StaffController {
    * definitions:
    *   CreateStaffs:
    *       required:
-   *           - mainLocationId
+   *           - locationId
    *           - staffDetails
    *       properties:
-   *           mainLocationId:
+   *           locationId:
    *               type: string
    *           staffDetails:
    *               type: array
@@ -802,7 +829,7 @@ export class StaffController {
       const profiles = [];
       for (let i = 0; i < req.body.staffDetails.length; i++) {
         const profile = {
-          mainLocationId: req.body.mainLocationId,
+          locationId: req.body.locationId,
           firstName: req.body.staffDetails[i].firstName,
           lastName: req.body.staffDetails[i].lastName,
           email: req.body.staffDetails[i].email ? req.body.staffDetails[i].email : null,
@@ -810,17 +837,17 @@ export class StaffController {
         };
         profiles.push(profile);
       }
-      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.mainLocationId))
+      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
         return next(
           new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${req.body.mainLocationId}`),
+            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
             HttpStatus.FORBIDDEN
           )
         );
       transaction = await sequelize.transaction();
       const staffs = await StaffModel.bulkCreate(profiles, { transaction });
       const workingLocationData = (staffs as []).map((x: any) => ({
-        locationId: req.body.mainLocationId,
+        locationId: req.body.locationId,
         staffId: x.id
       }));
       await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
@@ -908,10 +935,7 @@ export class StaffController {
     try {
       const dataInput = { ...req.body };
       const validateErrors = validate(dataInput, getStaffMultipleService);
-      // const serviceIds = req.query.serviceIds;
-
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-
       const staffIds = await ServiceStaffModel.findAll({
         where: {
           serviceId: {
@@ -919,15 +943,22 @@ export class StaffController {
           }
         }
       }).then((services) => services.map((service) => service.staffId));
-      const staffs = await StaffModel.findAll({
-        where: {
-          mainLocationId: dataInput.locationId,
-          id: {
-            [Op.in]: staffIds
-          }
-        }
-      });
 
+      const staffs = await StaffModel.findAll({
+        include: [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            through: { attributes: [] },
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            where: { locationId: dataInput.locationId }
+          }
+        ],
+        where: {
+          id: { [Op.in]: staffIds }
+        },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
       if (!staffs) {
         return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
       }
@@ -1268,44 +1299,52 @@ export class StaffController {
       const timeSlot = timeSlots(workTime.startTime, workTime.endTime, 5);
       const appointmentDay = moment(workDay).format('YYYY-MM-DD').toString();
 
-      const doctorsSchedule = await StaffModel.findAndCountAll({
-        attributes: ['id'],
+      const doctorsSchedule = await LocationModel.findAndCountAll({
+        attributes: [],
         include: [
           {
-            model: AppointmentDetailModel,
-            as: 'appointmentDetails',
+            model: StaffModel,
+            as: 'staffs',
             through: { attributes: [] },
-            attributes: ['duration', 'start_time', 'status'],
-            where: {
-              [Op.and]: [
-                sequelize.Sequelize.where(
-                  sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')),
-                  appointmentDay
-                ),
-                {
-                  [Op.not]: [{ status: { [Op.like]: 'cancel' } }]
+            attributes: ['id'],
+            include: [
+              {
+                model: AppointmentDetailModel,
+                as: 'appointmentDetails',
+                through: { attributes: [] },
+                attributes: ['duration', 'start_time', 'status'],
+                where: {
+                  [Op.and]: [
+                    sequelize.Sequelize.where(
+                      sequelize.Sequelize.fn('DATE', sequelize.Sequelize.col('start_time')),
+                      appointmentDay
+                    ),
+                    {
+                      [Op.not]: [{ status: { [Op.like]: 'cancel' } }]
+                    }
+                  ]
                 }
-              ]
-            }
+              }
+            ]
           }
         ],
         where: {
-          main_location_id: locationId
+          id: locationId
         }
       });
       const preDataFirst = JSON.stringify(doctorsSchedule);
       const preDataSecond = JSON.parse(preDataFirst);
-      const len = preDataSecond.rows.length;
+      const len = preDataSecond.count;
       for (let i = 0; i < len; i++) {
-        preDataSecond.rows[i].appointmentDetails.forEach((e: any) => {
+        preDataSecond.rows[0].staffs[i].appointmentDetails.forEach((e: any) => {
           e.start_time = moment(e.start_time).format('HH:mm');
         });
       }
       const staffUnavailTime = getStaffUnavailTime(preDataSecond);
-      const doctors = await StaffModel.findAndCountAll({
-        attributes: ['id'],
+      const doctors = await LocationStaffModel.findAndCountAll({
+        attributes: ['staff_id'],
         where: {
-          main_location_id: locationId
+          location_id: locationId
         }
       });
       for (let i = 0; i < doctors.count; i++) {
@@ -1396,8 +1435,6 @@ export class StaffController {
     try {
       const dataInput = { ...req.body };
       const validateErrors = validate(dataInput, getStaffMultipleService);
-      // const serviceIds = req.query.serviceIds;
-
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
       const staffIds = await ServiceStaffModel.findAll({
@@ -1408,12 +1445,19 @@ export class StaffController {
         }
       }).then((services) => services.map((service) => service.staffId));
       const staffs = await StaffModel.findAll({
-        where: {
-          mainLocationId: dataInput.locationId,
-          id: {
-            [Op.in]: staffIds
+        include: [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            through: { attributes: [] },
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            where: { locationId: dataInput.locationId }
           }
-        }
+        ],
+        where: {
+          id: { [Op.in]: staffIds }
+        },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
 
       if (!staffs) {
