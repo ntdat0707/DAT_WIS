@@ -18,8 +18,6 @@ import { AppointmentGroupModel } from './appointment-group-model';
 import { LocationWorkingHourModel } from './location-working-hour-model';
 import { CompanyDetailModel } from './company-detail-model';
 import { LocationImageModel } from './location-image';
-import { CountryModel } from './country-model';
-import { CityModel } from './city-model';
 import { CustomerSearchModel } from './customer-search-model';
 import { PipelineModel } from './pipeline-model';
 import { PipelineStageModel } from './pipeline-stage-model';
@@ -126,12 +124,6 @@ AppointmentModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId'
 LocationModel.hasMany(LocationImageModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'locationImages' });
 LocationImageModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
-CountryModel.hasMany(CityModel, { foreignKey: 'countryId', sourceKey: 'id', as: 'cities' });
-CityModel.belongsTo(CountryModel, { foreignKey: 'countryId', as: 'country' });
-
-CityModel.hasMany(LocationModel, { foreignKey: 'cityId', sourceKey: 'id', as: 'locations' });
-LocationModel.belongsTo(CityModel, { foreignKey: 'cityId', as: 'cityy' });
-
 CustomerModel.hasMany(CustomerSearchModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'customerSearches' });
 CustomerSearchModel.belongsTo(CustomerModel, { foreignKey: 'customerId', as: 'customer' });
 
@@ -203,8 +195,6 @@ export {
   StaffModel,
   CompanyModel,
   CompanyDetailModel,
-  CountryModel,
-  CityModel,
   CustomerModel,
   LocationModel,
   ServiceModel,

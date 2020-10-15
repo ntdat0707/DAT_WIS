@@ -58,6 +58,5 @@ export class LocationRoutes {
       isAuthenticatedCustomer,
       this.searchController.deleteRecentBooking
     );
-    this.router.get('/market-place/suggest-city-country/:countryCode', this.searchController.suggestCountryAndCity);
   }
 }
