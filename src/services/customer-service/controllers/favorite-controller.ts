@@ -10,7 +10,7 @@ import { LocationModel } from '../../../repositories/postgres/models/location';
 import { Op } from 'sequelize';
 import { MarketPlaceValueModel } from '../../../repositories/postgres/models/marketplace-value-model';
 import { MarketPlaceFieldsModel } from '../../../repositories/postgres/models';
-import { parseDatabyType } from '../../../services/branch-service/utils/marketplace-field';
+import { parseDataByType } from '../../../services/branch-service/utils/marketplace-field';
 
 export class FavoriteController {
   /**
@@ -138,7 +138,7 @@ export class FavoriteController {
         const locationDetail = location.marketplaceValues?.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           }),
           {}
         );
@@ -213,7 +213,7 @@ export class FavoriteController {
         const locationDetail = location.marketplaceValues?.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           }),
           {}
         );

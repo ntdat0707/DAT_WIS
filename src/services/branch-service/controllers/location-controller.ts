@@ -31,7 +31,7 @@ import _ from 'lodash';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeRemoveAccent } from '../../../utils/text';
-import { dataDefaultbyType, parseDatabyType } from '../utils';
+import { dataDefaultByType, parseDataByType } from '../utils';
 
 export class LocationController {
   /**
@@ -263,7 +263,7 @@ export class LocationController {
           id: uuidv4(),
           locationId: location.id,
           fieldId: marketplaceField.id,
-          value: data[marketplaceField.name] || dataDefaultbyType[marketplaceField.type]
+          value: data[marketplaceField.name] || dataDefaultByType[marketplaceField.type]
         };
         await MarketPlaceValueModel.create(marketplaceValueData, { transaction });
       });
@@ -327,7 +327,7 @@ export class LocationController {
         (acc: any, { value, marketplaceField: { name, type } }: any) => {
           return {
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           };
         },
         {}
