@@ -15,7 +15,8 @@ import {
   CityModel,
   CompanyDetailModel,
   MarketPlaceFieldsModel,
-  MarketPlaceValueModel
+  MarketPlaceValueModel,
+  LocationImageModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -31,7 +32,7 @@ import _ from 'lodash';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeRemoveAccent } from '../../../utils/text';
-import { dataDefaultbyType, parseDatabyType } from '../utils';
+import { dataDefaultByType, parseDataByType } from '../utils';
 
 export class LocationController {
   /**
@@ -69,7 +70,6 @@ export class LocationController {
    *     - in: "formData"
    *       name: "photo"
    *       type: file
-   *       description: The file to upload.
    *     - in: "formData"
    *       name: "name"
    *       required: true
@@ -135,6 +135,9 @@ export class LocationController {
    *       type: string
    *       format: date-time
    *     - in: "formData"
+   *       name: "placeId"
+   *       type: string
+   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -171,7 +174,8 @@ export class LocationController {
         recoveryRooms: req.body.recoveryRooms,
         totalBookings: req.body.totalBookings,
         gender: req.body.gender,
-        openedAt: req.body.openedAt
+        openedAt: req.body.openedAt,
+        placeId: req.body.placeId
       };
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
@@ -179,9 +183,7 @@ export class LocationController {
       }
 
       data.companyId = res.locals.staffPayload.companyId;
-      if (req.file) {
-        data.photo = (req.file as any).location;
-      }
+
       let company: any = await CompanyModel.findOne({
         where: { id: data.companyId },
         include: [
@@ -245,10 +247,14 @@ export class LocationController {
 
       data = Object.assign(data, { pathName });
 
-      // if (data.photo) {
-      //   await LocationImageModel.bulkCreate(data.photo, { transaction: transaction });
-      // }
-      //const marketplaceValueData: any = [];
+      if (req.file) {
+        const dataImage = {
+          locationId: location.id,
+          path: (req.file as any).location,
+          isAvatar: true
+        };
+        await LocationImageModel.create(dataImage, { transaction });
+      }
 
       const marketplaceFields: any = (
         await MarketPlaceFieldsModel.findAll({
@@ -263,7 +269,7 @@ export class LocationController {
           id: uuidv4(),
           locationId: location.id,
           fieldId: marketplaceField.id,
-          value: data[marketplaceField.name] || dataDefaultbyType[marketplaceField.type]
+          value: data[marketplaceField.name] || dataDefaultByType[marketplaceField.type]
         };
         await MarketPlaceValueModel.create(marketplaceValueData, { transaction });
       });
@@ -327,7 +333,7 @@ export class LocationController {
         (acc: any, { value, marketplaceField: { name, type } }: any) => {
           return {
             ...acc,
-            [name]: parseDatabyType[type](value)
+            [name]: parseDataByType[type](value)
           };
         },
         {}

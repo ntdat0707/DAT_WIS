@@ -50,4 +50,8 @@ public
 
 .docker-volumes
 .env
+<<<<<<< HEAD
 /env
+=======
+env
+>>>>>>> feature/location-detail-1509

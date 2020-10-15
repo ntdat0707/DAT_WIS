@@ -49,7 +49,8 @@ const createLocationSchema = Joi.object({
   rating: Joi.number().label('rating'),
   recoveryRooms: Joi.number().label('recoveryRooms'),
   totalBookings: Joi.number().label('totalBookings'),
-  openedAt: Joi.string().isoDate()
+  openedAt: Joi.string().isoDate(),
+  placeId: Joi.string().label('placeId')
 });
 
 const locationIdSchema = Joi.string()

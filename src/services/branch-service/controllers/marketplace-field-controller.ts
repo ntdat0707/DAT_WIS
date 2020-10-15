@@ -6,7 +6,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createMarketplaceField, createMarketplaceValue } from '../configs/validate-schemas/marketplace';
 import { MarketPlaceFieldsModel, LocationModel, MarketPlaceValueModel } from '../../../repositories/postgres/models';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
-import { parseDatabyType, validateValuebyType } from '../utils';
+import { parseDataByType, validateValueByType } from '../utils';
 
 export class MarketPlaceFieldController {
   /**
@@ -141,8 +141,8 @@ export class MarketPlaceFieldController {
       const marketPlaceField = await MarketPlaceFieldsModel.findOne({ where: { id: data.fieldId } });
 
       const valueValidateErrors = validate(
-        parseDatabyType[marketPlaceField.type](data.value),
-        validateValuebyType(marketPlaceField)[marketPlaceField.type]
+        parseDataByType[marketPlaceField.type](data.value),
+        validateValueByType(marketPlaceField)[marketPlaceField.type]
       );
       if (valueValidateErrors) {
         return next(new CustomError(valueValidateErrors, HttpStatus.BAD_REQUEST));

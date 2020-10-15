@@ -45,7 +45,9 @@ import { IStaffRegisterAccountTemplate } from '../../../utils/emailer/templates/
 import * as ejs from 'ejs';
 import * as path from 'path';
 import { generatePWD } from '../../../utils/lib/generatePassword';
-
+import { v4 } from 'public-ip';
+import { LoginLogModel } from '../../../repositories/mongo/models/login-log-model';
+import geoip from 'geoip-lite';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
@@ -279,10 +281,19 @@ export class AuthController {
    *       required:
    *           - email
    *           - password
+   *           - source
    *       properties:
    *           email:
    *               type: string
    *           password:
+   *               type: string
+   *           source:
+   *               type: string
+   *           browser:
+   *               type: string
+   *           os:
+   *               type: string
+   *           device:
    *               type: string
    *
    */
@@ -312,20 +323,67 @@ export class AuthController {
     try {
       const data = {
         email: req.body.email,
-        password: req.body.password
+        password: req.body.password,
+        browser: req.body.browser,
+        source: req.body.source,
+        os: req.body.os,
+        device: req.body.device
       };
+      let loginData: any;
+      let loginLogModel: any;
       const validateErrors = validate(data, loginSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
-      if (!staff)
+      if (!staff) {
+        loginData = {
+          email: data.email,
+          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          timestamp: new Date(),
+          browser: data.browser,
+          device: data.device,
+          os: data.os,
+          status: false,
+          source: data.source,
+          ip: await v4()
+        };
+        loginLogModel = new LoginLogModel(loginData);
+        await loginLogModel.save();
         return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
+      }
       if (!staff.isBusinessAccount) {
+        loginData = {
+          email: data.email,
+          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          timestamp: new Date(),
+          browser: data.browser,
+          device: data.device,
+          os: data.os,
+          status: false,
+          source: data.source,
+          ip: await v4()
+        };
+        loginLogModel = new LoginLogModel(loginData);
+        await loginLogModel.save();
         return next(new CustomError(staffErrorDetails.E_4008(), HttpStatus.NOT_FOUND));
       }
       const match = await compare(data.password, staff.password);
-      if (!match)
+      if (!match) {
+        loginData = {
+          email: data.email,
+          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          timestamp: new Date(),
+          browser: data.browser,
+          device: data.device,
+          os: data.os,
+          status: false,
+          source: data.source,
+          ip: await v4()
+        };
+        loginLogModel = new LoginLogModel(loginData);
+        await loginLogModel.save();
+
         return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
-      //create tokens
+      }
 
       const accessTokenData: IAccessTokenData = {
         userId: staff.id,
@@ -350,6 +408,19 @@ export class AuthController {
           }
         ]
       });
+      loginData = {
+        email: data.email,
+        location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+        timestamp: new Date(),
+        browser: data.browser,
+        device: data.device,
+        os: data.os,
+        status: true,
+        source: data.source,
+        ip: await v4()
+      };
+      loginLogModel = new LoginLogModel(loginData);
+      await loginLogModel.save();
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
     } catch (error) {
       return next(error);
@@ -569,6 +640,7 @@ export class AuthController {
    *           - providerId
    *           - fullName
    *           - token
+   *           - source
    *       properties:
    *           provider:
    *               type: string
@@ -581,6 +653,14 @@ export class AuthController {
    *           avatarPath:
    *               type: string
    *           token:
+   *               type: string
+   *           source:
+   *               type: string
+   *           browser:
+   *               type: string
+   *           os:
+   *               type: string
+   *           device:
    *               type: string
    *
    */
@@ -618,23 +698,64 @@ export class AuthController {
       let profile: StaffModel;
       let newStaff: StaffModel;
       let socialInfor: any;
+      let loginData: any;
+      let loginLogModel: any;
       const validateErrors = validate(req.body, loginSocialSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       if (req.body.email) {
         if (req.body.provider === ESocialType.GOOGLE) {
           socialInfor = await validateGoogleToken(req.body.token);
           if (socialInfor.response.email !== req.body.email || socialInfor.response.expires_in === 0) {
+            loginData = {
+              email: req.body.email,
+              location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+              timestamp: new Date(),
+              browser: req.body.browser,
+              device: req.body.device,
+              os: req.body.os,
+              status: false,
+              source: req.body.source,
+              ip: await v4()
+            };
+            loginLogModel = new LoginLogModel(loginData);
+            await loginLogModel.save();
             return next(new CustomError(staffErrorDetails.E_4006('Incorrect google token'), HttpStatus.BAD_REQUEST));
           }
         } else if (req.body.provider === ESocialType.FACEBOOK) {
           socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
           if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
+            loginData = {
+              email: req.body.email,
+              location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+              timestamp: new Date(),
+              browser: req.body.browser,
+              device: req.body.device,
+              os: req.body.os,
+              status: false,
+              source: req.body.source,
+              ip: await v4()
+            };
+            loginLogModel = new LoginLogModel(loginData);
+            await loginLogModel.save();
             return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
           }
         }
         staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
       } else {
         if (req.body.provider === ESocialType.GOOGLE) {
+          loginData = {
+            email: req.body.email,
+            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            timestamp: new Date(),
+            browser: req.body.browser,
+            device: req.body.device,
+            os: req.body.os,
+            status: false,
+            source: req.body.source,
+            ip: await v4()
+          };
+          loginLogModel = new LoginLogModel(loginData);
+          await loginLogModel.save();
           return next(new CustomError(staffErrorDetails.E_4007('Missing email'), HttpStatus.BAD_REQUEST));
         }
       }
@@ -648,6 +769,19 @@ export class AuthController {
             await StaffModel.update(data, { where: { email: req.body.email } });
           } else {
             if (staff.facebookId !== req.body.providerId) {
+              loginData = {
+                email: req.body.email,
+                location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+                timestamp: new Date(),
+                browser: req.body.browser,
+                device: req.body.device,
+                os: req.body.os,
+                status: false,
+                source: req.body.source,
+                ip: await v4()
+              };
+              loginLogModel = new LoginLogModel(loginData);
+              await loginLogModel.save();
               return next(new CustomError(staffErrorDetails.E_4005('providerId incorrect'), HttpStatus.BAD_REQUEST));
             }
           }
@@ -674,6 +808,19 @@ export class AuthController {
               }
             ]
           });
+          loginData = {
+            email: req.body.email,
+            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            timestamp: new Date(),
+            browser: req.body.browser,
+            device: req.body.device,
+            os: req.body.os,
+            status: true,
+            source: req.body.source,
+            ip: await v4()
+          };
+          loginLogModel = new LoginLogModel(loginData);
+          await loginLogModel.save();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         if (req.body.provider === ESocialType.GOOGLE) {
@@ -685,6 +832,19 @@ export class AuthController {
             await StaffModel.update(data, { where: { email: req.body.email } });
           } else {
             if (staff.googleId !== req.body.providerId) {
+              loginData = {
+                email: req.body.email,
+                location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+                timestamp: new Date(),
+                browser: req.body.browser,
+                device: req.body.device,
+                os: req.body.os,
+                status: false,
+                source: req.body.source,
+                ip: await v4()
+              };
+              loginLogModel = new LoginLogModel(loginData);
+              await loginLogModel.save();
               return next(new CustomError(staffErrorDetails.E_4005('providerId incorrect'), HttpStatus.BAD_REQUEST));
             }
           }
@@ -711,6 +871,19 @@ export class AuthController {
               }
             ]
           });
+          loginData = {
+            email: req.body.email,
+            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            timestamp: new Date(),
+            browser: req.body.browser,
+            device: req.body.device,
+            os: req.body.os,
+            status: true,
+            source: req.body.source,
+            ip: await v4()
+          };
+          loginLogModel = new LoginLogModel(loginData);
+          await loginLogModel.save();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
       }
@@ -720,6 +893,19 @@ export class AuthController {
       if (req.body.provider === ESocialType.FACEBOOK) {
         socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
+          loginData = {
+            email: req.body.email,
+            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            timestamp: new Date(),
+            browser: req.body.browser,
+            device: req.body.device,
+            os: req.body.os,
+            status: false,
+            source: req.body.source,
+            ip: await v4()
+          };
+          loginLogModel = new LoginLogModel(loginData);
+          await loginLogModel.save();
           await transaction.rollback();
           return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
@@ -762,6 +948,19 @@ export class AuthController {
               }
             ]
           });
+          loginData = {
+            email: req.body.email,
+            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            timestamp: new Date(),
+            browser: req.body.browser,
+            device: req.body.device,
+            os: req.body.os,
+            status: true,
+            source: req.body.source,
+            ip: await v4()
+          };
+          loginLogModel = new LoginLogModel(loginData);
+          await loginLogModel.save();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         accessTokenData = {
@@ -787,6 +986,19 @@ export class AuthController {
             }
           ]
         });
+        loginData = {
+          email: req.body.email,
+          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          timestamp: new Date(),
+          browser: req.body.browser,
+          device: req.body.device,
+          os: req.body.os,
+          status: true,
+          source: req.body.source,
+          ip: await v4()
+        };
+        loginLogModel = new LoginLogModel(loginData);
+        await loginLogModel.save();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
       if (req.body.provider === ESocialType.GOOGLE) {
@@ -829,6 +1041,19 @@ export class AuthController {
               }
             ]
           });
+          loginData = {
+            email: req.body.email,
+            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            timestamp: new Date(),
+            browser: req.body.browser,
+            device: req.body.device,
+            os: req.body.os,
+            status: true,
+            source: req.body.source,
+            ip: await v4()
+          };
+          loginLogModel = new LoginLogModel(loginData);
+          await loginLogModel.save();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         accessTokenData = {
@@ -854,6 +1079,19 @@ export class AuthController {
             }
           ]
         });
+        loginData = {
+          email: req.body.email,
+          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          timestamp: new Date(),
+          browser: req.body.browser,
+          device: req.body.device,
+          os: req.body.os,
+          status: true,
+          source: req.body.source,
+          ip: await v4()
+        };
+        loginLogModel = new LoginLogModel(loginData);
+        await loginLogModel.save();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
     } catch (error) {

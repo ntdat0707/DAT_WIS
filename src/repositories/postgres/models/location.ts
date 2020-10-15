@@ -8,7 +8,6 @@ class LocationModel extends Model {
   public name!: string;
   public phone!: string;
   public email: string;
-  public photo: string;
   public status!: ELocationStatus;
   public city: string;
   public cityId: string;
@@ -21,6 +20,7 @@ class LocationModel extends Model {
   public description: string;
   public title?: string;
   public pathName?: string;
+  public placeId?: string;
   public isoMarketplace: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
@@ -53,10 +53,6 @@ LocationModel.init(
     },
     email: {
       field: 'email',
-      type: DataTypes.STRING
-    },
-    photo: {
-      field: 'photo',
       type: DataTypes.STRING
     },
     status: {
@@ -129,7 +125,11 @@ LocationModel.init(
       type: 'TIMESTAMP',
       defaultValue: null
     },
-
+    placeId: {
+      field: 'place_id',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',
