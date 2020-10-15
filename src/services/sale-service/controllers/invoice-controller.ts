@@ -171,7 +171,7 @@ export class InvoiceController {
     }
   };
 
-  public async createInvoice(data: any, transaction: any) {
+  private async createInvoice(data: any, transaction: any) {
     let invoiceCode = '';
     for (let i = 0; i < 10; i++) {
       const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -238,7 +238,7 @@ export class InvoiceController {
     await InvoiceDetailStaffModel.bulkCreate(invoiceDetailStaffs, { transaction });
   }
 
-  public async convertApptToSale(appointment: any, transaction: any) {
+  private async convertApptToSale(appointment: any, transaction: any) {
     let invoiceCode = '';
     for (let i = 0; i < 10; i++) {
       const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
