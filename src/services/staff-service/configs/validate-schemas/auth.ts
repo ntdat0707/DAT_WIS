@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { ESocialType } from '../../../../utils/consts';
+import { ESocialType, ESourceLoginType } from '../../../../utils/consts';
 
 const createBusinessAccountSchema = Joi.object({
   email: Joi.string().required().email().label('email'),
@@ -9,7 +9,14 @@ const createBusinessAccountSchema = Joi.object({
 });
 const loginSchema = Joi.object({
   email: Joi.string().required().email().label('email'),
-  password: Joi.string().required().min(8).label('password')
+  password: Joi.string().required().min(8).label('password'),
+  browser: Joi.string().allow('', null).label('browser'),
+  os: Joi.string().allow('', null).label('os'),
+  device: Joi.string().allow('', null).label('device'),
+  source: Joi.string()
+    .required()
+    .valid(...Object.keys(ESourceLoginType))
+    .label('source')
 });
 
 const refreshTokenSchema = Joi.string().required().label('refreshToken');
@@ -34,7 +41,14 @@ const loginSocialSchema = Joi.object({
   token: Joi.string().required().label('token'),
   email: Joi.string().email().allow('', null).label('email'),
   fullName: Joi.string().required().label('fullName'),
-  avatarPath: Joi.string().allow('', null).label('avatarPath')
+  avatarPath: Joi.string().allow('', null).label('avatarPath'),
+  browser: Joi.string().allow('', null).label('browser'),
+  os: Joi.string().allow('', null).label('os'),
+  device: Joi.string().allow('', null).label('device'),
+  source: Joi.string()
+    .required()
+    .valid(...Object.keys(ESourceLoginType))
+    .label('source')
 });
 
 export {

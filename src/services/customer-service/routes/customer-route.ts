@@ -30,7 +30,7 @@ export class CustomerRoutes {
       isAuthenticated,
       this.customerController.deleteCustomerWisere
     );
-    this.router.get('/get-customer-wiseres', isAuthenticated, this.customerController.getCustomerWiseres);
+    this.router.get('/get-customers-wisere', isAuthenticated, this.customerController.getCustomerWiseres);
     this.router.get(
       '/get-customer-wisere/:customerWisereId',
       isAuthenticated,
