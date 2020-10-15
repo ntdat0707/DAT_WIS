@@ -936,33 +936,29 @@ export class StaffController {
       const dataInput = { ...req.body };
       const validateErrors = validate(dataInput, getStaffMultipleService);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const staffIds = await ServiceStaffModel.findAll({
-        where: {
-          serviceId: {
-            [Op.in]: dataInput.serviceIds
-          }
-        }
-      }).then((services) => services.map((service) => service.staffId));
-
       const staffs = await StaffModel.findAll({
         include: [
           {
             model: LocationModel,
             as: 'workingLocations',
             through: { attributes: [] },
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-            where: { locationId: dataInput.locationId }
+            required: true,
+            attributes: [],
+            where: { id: dataInput.locationId }
+          },
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: true,
+            where: { id: { [Op.in]: dataInput.serviceIds } },
+            attributes: []
           }
         ],
-        where: {
-          id: { [Op.in]: staffIds }
-        },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
       if (!staffs) {
         return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
       }
-
       res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return error;
