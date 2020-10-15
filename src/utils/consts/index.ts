@@ -170,3 +170,9 @@ export enum EBalanceType {
   PART_PAID = 'part_paid',
   UNPAID = 'unpaid'
 }
+
+export enum ESourceLoginType {
+  WEB = 'web',
+  IOS = 'ios',
+  ANDROID = 'android'
+}

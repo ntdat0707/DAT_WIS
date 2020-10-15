@@ -7,7 +7,7 @@ class MainRoutes {
     this.config();
   }
   private config(): void {
-    this.router.use('/sale', this.saleRoutes);
+    this.router.use('/', this.saleRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;

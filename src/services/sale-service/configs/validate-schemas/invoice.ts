@@ -1,26 +1,57 @@
 import Joi from 'joi';
 import { EPaymentType } from '../../../../utils/consts/index';
+import { ESourceType } from '../../../../utils/consts';
+
 const createInvoiceSchema = Joi.object({
-  code: Joi.string().required().label('code'),
   locationId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
     .required()
-    .label('location_id'),
-
+    .label('locationId'),
   appointmentId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .label('appointment_id'),
-  source: Joi.string().label('source'),
-  note: Joi.string().label('note'),
-  discount: Joi.number().integer().label('discount'),
-  tax: Joi.number().integer().label('tax'),
-  balance: Joi.number().label('balance'),
-  status: Joi.string().label('status'),
-  subTotal: Joi.number().integer().label('subTotal')
+    .allow(null, '')
+    .label('appointmentId'),
+  source: Joi.string()
+    .valid(ESourceType.POS, ESourceType.WEBSITE, ESourceType.FACEBOOK, ESourceType.MARKETPLACE, ESourceType.OTHER)
+    .allow(null, '')
+    .label('source'),
+  note: Joi.string().allow(null, '').label('note'),
+  discount: Joi.number().integer().min(0).allow(null).label('discount'),
+  tax: Joi.number().integer().min(0).allow(null).label('tax'),
+  listInvoiceDetail: Joi.array()
+    .min(1)
+    .required()
+    .items(
+      Joi.object({
+        serviceId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .required()
+          .label('serviceId'),
+        unit: Joi.string().allow(null, '').label('unit'),
+        quantity: Joi.number().integer().min(1).required().label('quantity'),
+        listStaff: Joi.array()
+          .min(1)
+          .required()
+          .items(
+            Joi.object({
+              staffId: Joi.string()
+                .guid({
+                  version: ['uuidv4']
+                })
+                .required()
+                .label('staffId')
+            })
+          )
+          .label('listStaff')
+      })
+    )
+    .label('listInvoiceDetail')
 });
 
 const createPaymentSchema = Joi.object({
