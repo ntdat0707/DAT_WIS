@@ -1716,7 +1716,7 @@ export class AppointmentController extends BaseController {
           {
             model: LocationModel,
             as: 'location',
-            attributes: ['id', 'name', 'photo', 'address'],
+            attributes: ['id', 'name', 'address'],
             required: false
           }
         ],
@@ -1759,7 +1759,7 @@ export class AppointmentController extends BaseController {
           {
             model: LocationModel,
             as: 'location',
-            attributes: ['id', 'name', 'photo', 'address'],
+            attributes: ['id', 'name', 'address'],
             required: false
           }
         ],
