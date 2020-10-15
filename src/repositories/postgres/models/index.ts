@@ -209,6 +209,12 @@ PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 InvoiceModel.hasMany(InvoiceDetailModel, { foreignKey: 'invoiceId', sourceKey: 'id', as: 'invoiceDetails' });
 InvoiceDetailModel.belongsTo(InvoiceModel, { foreignKey: 'invoiceId', as: 'invoice' });
 
+CustomerWisereModel.hasMany(InvoiceModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'invoices' });
+InvoiceModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
+
+LocationModel.hasMany(InvoiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'invoices' });
+InvoiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
 export {
   sequelize,
   StaffModel,
