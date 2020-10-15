@@ -20,7 +20,8 @@ import {
   MarketPlaceFieldsModel,
   MarketPlaceValueModel,
   CityModel,
-  CountryModel
+  CountryModel,
+  LocationStaffModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -140,7 +141,6 @@ export class SearchController {
 
   public marketPlaceSearch = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // let locations: any[] = [];
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
         pageNum: req.query.pageNum,
@@ -1245,13 +1245,21 @@ export class SearchController {
           ['company']: undefined
         };
 
+        const staffIds: any = (
+          await LocationStaffModel.findAll({
+            raw: true,
+            where: { locationId: location.id },
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          })
+        ).map((staffIdElement: any) => staffIdElement.staffId);
+
         staffs = await StaffModel.findAll({
           raw: true,
-          where: { mainLocationId: location.id },
           attributes: ['id', 'firstName', 'avatarPath'],
           order: Sequelize.literal(
             'case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"'
-          )
+          ),
+          where: { id: staffIds }
         });
 
         const serviceIds: any = (
@@ -1448,9 +1456,17 @@ export class SearchController {
           ['company']: undefined
         };
 
+        const staffIds: any = (
+          await LocationStaffModel.findAll({
+            raw: true,
+            where: { locationId: location.id },
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          })
+        ).map((staffIdElement: any) => staffIdElement.staffId);
+
         staffs = await StaffModel.findAll({
           raw: true,
-          where: { mainLocationId: location.id },
+          where: { id: staffIds },
           attributes: ['id', 'firstName', 'avatarPath'],
           order: Sequelize.literal(
             'case when "avatar_path" IS NULL then 3 when "avatar_path" = \'\' then 2 else 1 end, "avatar_path"'
