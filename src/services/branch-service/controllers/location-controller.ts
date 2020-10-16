@@ -12,7 +12,6 @@ import {
   CompanyModel,
   LocationWorkingHourModel,
   StaffModel,
-  CityModel,
   CompanyDetailModel,
   MarketPlaceFieldsModel,
   MarketPlaceValueModel,
@@ -25,7 +24,7 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema
 } from '../configs/validate-schemas';
-import { FindOptions, Sequelize } from 'sequelize';
+import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -94,6 +93,9 @@ export class LocationController {
    *       name: "address"
    *       type: string
    *     - in: "formData"
+   *       name: "fullAddress"
+   *       type: string
+   *     - in: "formData"
    *       name: "latitude"
    *       type: number
    *     - in: "formData"
@@ -142,6 +144,11 @@ export class LocationController {
    *       type: array
    *       items:
    *           $ref: '#/definitions/WorkingTimeDetail'
+   *     - in: "formData"
+   *       name: "addressInfor"
+   *       type: array
+   *       items:
+   *           type: object
    *     responses:
    *       200:
    *         description:
@@ -213,24 +220,6 @@ export class LocationController {
       if (!existLocation) {
         updateStaff = true;
       }
-      let city = await CityModel.findOne({
-        where: {
-          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
-        },
-        attributes: ['id', 'name']
-      });
-      if (!city) {
-        // when can't find city then default city is 'Ho Chi Minh'
-        city = await CityModel.findOne({
-          where: {
-            name: Sequelize.literal('unaccent("CityModel"."name") ilike unaccent(\'%Ho Chi Minh%\')')
-          },
-          attributes: ['id', 'name']
-        });
-      }
-
-      const cityDetail: any = { cityId: city.id, city: city.name };
-      data = Object.assign(data, cityDetail);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
@@ -505,6 +494,11 @@ export class LocationController {
           {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
+            required: false
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
             required: false
           }
         ]

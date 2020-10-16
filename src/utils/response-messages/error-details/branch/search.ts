@@ -5,7 +5,7 @@ import { buildErrorDetail } from '../index';
 
 const searchErrorDetails = {
   /**
-   * Country is not exists
+   * City is not exists
    *
    * @param {string} [detail=null]
    * @returns {IErrorDetail}
