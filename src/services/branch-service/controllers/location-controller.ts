@@ -175,12 +175,10 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      let streetName = '';
       for (let i = 0; i < data.addressInfor.length; i++) {
         switch (data.addressInfor[i].types[0]) {
           case 'route':
-            data.address += ' ' + data.addressInfor[i].long_name;
-            streetName += data.addressInfor[i].long_name;
+            data.street = data.addressInfor[i].long_name;
             break;
           case 'administrative_area_level_2':
             data.district = data.addressInfor[i].long_name;
@@ -202,7 +200,7 @@ export class LocationController {
         }
       }
 
-      if (!streetName) {
+      if (!data.street) {
         return next(new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
@@ -386,6 +384,14 @@ export class LocationController {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
             required: false
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            where: {
+              isAvatar: true
+            }
           }
         ]
       });
@@ -444,6 +450,14 @@ export class LocationController {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
             required: false
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            where: {
+              isAvatar: true
+            }
           }
         ]
       };
@@ -838,7 +852,7 @@ export class LocationController {
         description: body.description,
         city: location.city,
         ward: location.ward,
-        address: location.address,
+        address: body.address,
         latitude: body.latitude,
         longitude: body.longitude,
         workingTimes: body.workingTimes,
@@ -850,9 +864,10 @@ export class LocationController {
         openedAt: body.openedAt,
         placeId: location.placeId,
         addressInfor: body.addressInfor,
-        fullAddress: location.ward,
+        fullAddress: body.fullAddress,
         country: location.country,
-        province: location.province
+        province: location.province,
+        street: location.street
       };
 
       if (body.placeId && body.placeId !== location.placeId) {
@@ -862,12 +877,10 @@ export class LocationController {
         if (!body.fullAddress) {
           return next(new CustomError(locationErrorDetails.E_1010(), HttpStatus.NOT_FOUND));
         }
-        let streetName = '';
         for (let i = 0; i < body.addressInfor.length; i++) {
           switch (body.addressInfor[i].types[0]) {
             case 'route':
-              data.address += ' ' + body.addressInfor[i].long_name;
-              streetName += body.addressInfor[i].long_name;
+              data.street = body.addressInfor[i].long_name;
               break;
             case 'administrative_area_level_2':
               data.district = body.addressInfor[i].long_name;
@@ -889,9 +902,10 @@ export class LocationController {
           }
         }
 
-        if (!streetName) {
+        if (!data.street) {
           return next(new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST));
         }
+        data.placeId = body.placeId;
       }
 
       // start transaction
@@ -938,17 +952,6 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
-      // const data: any = {
-      //   name: body.name ? body.name : location.name,
-      //   phone: body.phone ? body.phone : location.phone,
-      //   email: body.email,
-      //   city: body.city,
-      //   district: body.district,
-      //   ward: body.ward,
-      //   address: body.address,
-      //   latitude: body.latitude,
-      //   longitude: body.longitude
-      // };
 
       if (file) {
         data.photo = (file as any).location;
