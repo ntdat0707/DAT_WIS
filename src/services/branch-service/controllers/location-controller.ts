@@ -13,8 +13,6 @@ import {
   LocationWorkingHourModel,
   StaffModel,
   CompanyDetailModel,
-  MarketPlaceFieldsModel,
-  MarketPlaceValueModel,
   LocationImageModel
 } from '../../../repositories/postgres/models';
 
@@ -31,7 +29,6 @@ import _ from 'lodash';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeRemoveAccent } from '../../../utils/text';
-import { dataDefaultByType, parseDataByType } from '../utils';
 
 export class LocationController {
   /**
@@ -245,24 +242,6 @@ export class LocationController {
         await LocationImageModel.create(dataImage, { transaction });
       }
 
-      const marketplaceFields: any = (
-        await MarketPlaceFieldsModel.findAll({
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-        })
-      ).map((marketplaceField: any) => ({
-        ...marketplaceField.dataValues
-      }));
-
-      await marketplaceFields.forEach(async (marketplaceField: any) => {
-        const marketplaceValueData: any = {
-          id: uuidv4(),
-          locationId: location.id,
-          fieldId: marketplaceField.id,
-          value: data[marketplaceField.name] || dataDefaultByType[marketplaceField.type]
-        };
-        await MarketPlaceValueModel.create(marketplaceValueData, { transaction });
-      });
-
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -296,45 +275,7 @@ export class LocationController {
 
       await transaction.commit();
       //commit transaction
-      let newLocation: any = await LocationModel.findOne({
-        where: { id: location.id },
-        include: [
-          {
-            model: MarketPlaceValueModel,
-            as: 'marketplaceValues',
-            required: false,
-            attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] },
-            include: [
-              {
-                model: MarketPlaceFieldsModel,
-                as: 'marketplaceField',
-                required: false,
-                attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
-              }
-            ]
-          }
-        ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-        group: ['LocationModel.id', 'marketplaceValues.id', 'marketplaceValues->marketplaceField.id']
-      });
-
-      const locationDetail = newLocation.marketplaceValues?.reduce(
-        (acc: any, { value, marketplaceField: { name, type } }: any) => {
-          return {
-            ...acc,
-            [name]: parseDataByType[type](value)
-          };
-        },
-        {}
-      );
-
-      newLocation = {
-        ...newLocation.dataValues,
-        ...locationDetail,
-        marketplaceValues: undefined
-      };
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
       //rollback transaction
       if (transaction) {
