@@ -29,7 +29,7 @@ import { serviceErrorDetails } from '../../../utils/response-messages/error-deta
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
-import { deleteInvoiceSchema } from '../configs/validate-schemas/invoice';
+import { deleteInvoiceDetailSchema, deleteInvoiceSchema } from '../configs/validate-schemas/invoice';
 import HttpStatus from 'http-status-codes';
 export class InvoiceController {
   /**
@@ -484,6 +484,65 @@ export class InvoiceController {
       await InvoiceDetailStaffModel.destroy({ where: { invoiceDetailId: invoiceDetailsIds }, transaction });
       await transaction.commit();
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /sale/delete-invoice-detail/{invoiceDetailId}:
+   *   delete:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: deleteInvoiceDetail
+   *     parameters:
+   *       - in: path
+   *         name: invoiceDetailId
+   *         required: true
+   *         schema:
+   *            type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public deleteInvoiceDetail = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const { workingLocationIds } = res.locals.staffPayload;
+      const validateErrors = validate(req.params.invoiceDetailId, deleteInvoiceDetailSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      transaction = await sequelize.transaction();
+      const invoiceDetailsId: any = await InvoiceDetailModel.findOne({ where: { id: req.params.invoiceDetailId } });
+      if (!invoiceDetailsId) {
+        throw new CustomError(
+          invoiceErrorDetails.E_3301(`Invoice Detail Id ${req.params.invoiceDetailId} not found`),
+          HttpStatus.NOT_FOUND
+        );
+      }
+      const invoice = await InvoiceModel.findOne({ where: { id: invoiceDetailsId.invoiceId } });
+      if (!workingLocationIds.includes(invoice.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${invoice.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      await InvoiceDetailModel.destroy({ where: { invoiceId: invoiceDetailsId.id }, transaction });
+      await InvoiceDetailStaffModel.destroy({ where: { invoiceDetailId: invoiceDetailsId.id }, transaction });
+      await transaction.commit();
+      return res
+        .status(httpStatus.OK)
+        .send(buildSuccessMessage({ Mess: `Deleted Invoice Detail with InvoiceId: ${invoiceDetailsId.id}` }));
     } catch (error) {
       return next(error);
     }

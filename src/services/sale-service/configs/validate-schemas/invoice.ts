@@ -80,4 +80,11 @@ const deleteInvoiceSchema = Joi.string()
   })
   .required()
   .label('invoiceId');
-export { createInvoiceSchema, createPaymentSchema, appointmentId, deleteInvoiceSchema };
+
+const deleteInvoiceDetailSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('invoiceDetailId');
+export { createInvoiceSchema, createPaymentSchema, appointmentId, deleteInvoiceSchema, deleteInvoiceDetailSchema };
