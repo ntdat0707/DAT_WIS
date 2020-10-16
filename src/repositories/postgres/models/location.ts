@@ -13,11 +13,11 @@ class LocationModel extends Model {
   public city: string;
   public district: string;
   public ward: string;
+  public province: string;
   public address: string;
   public fullAddress: string;
   public latitude: number;
   public longitude: number;
-  public gender?: number;
   public description: string;
   public title?: string;
   public pathName?: string;
@@ -71,6 +71,11 @@ LocationModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
+    province: {
+      field: 'province',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     district: {
       field: 'district',
       type: DataTypes.STRING,
@@ -105,11 +110,6 @@ LocationModel.init(
       field: 'description',
       type: DataTypes.STRING,
       allowNull: true
-    },
-    gender: {
-      type: DataTypes.TINYINT,
-      field: 'gender',
-      defaultValue: 0
     },
     pathName: {
       field: 'path_name',
