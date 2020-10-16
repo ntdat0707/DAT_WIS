@@ -106,14 +106,6 @@ export class SearchController {
    *       schema:
    *          type: number
    *     - in: query
-   *       name: cityName
-   *       schema:
-   *          type: string
-   *     - in: query
-   *       name: countryCode
-   *       schema:
-   *          type: string
-   *     - in: query
    *       name: customerId
    *       schema:
    *          type: string
@@ -153,8 +145,6 @@ export class SearchController {
         customerId: req.query.customerId,
         latitude: req.query.latitude,
         longitude: req.query.longitude,
-        cityName: req.query.cityName,
-        countryCode: req.query.countryCode,
         order: req.query.order,
         searchBy: req.query.searchBy
       };
