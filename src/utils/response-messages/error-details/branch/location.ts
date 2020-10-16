@@ -71,6 +71,21 @@ const locationErrorDetails = {
   E_1007(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1007', 'location detail is null', detail);
     return e;
+  },
+
+  E_1008(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1008', 'street name required', detail);
+    return e;
+  },
+
+  E_1009(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1009', 'address infor required', detail);
+    return e;
+  },
+
+  E_1010(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1010', 'full address required', detail);
+    return e;
   }
 };
 

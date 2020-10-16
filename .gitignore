@@ -50,8 +50,4 @@ public
 
 .docker-volumes
 .env
-<<<<<<< HEAD
-/env
-=======
 env
->>>>>>> feature/my_appointment

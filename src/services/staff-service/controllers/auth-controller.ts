@@ -250,10 +250,9 @@ export class AuthController {
       await PipelineStageModel.bulkCreate(dataStage, { transaction });
       const mqttUserData: any = {
         isSupperUser: false,
-        salt: Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8),
         username: data.email
       };
-      mqttUserData.password = await hash(`${data.password}${mqttUserData.salt}`, PASSWORD_SALT_ROUNDS);
+      mqttUserData.password = data.password;
       const mqttUserModel = new MqttUserModel(mqttUserData);
       await mqttUserModel.save();
       //commit transaction
