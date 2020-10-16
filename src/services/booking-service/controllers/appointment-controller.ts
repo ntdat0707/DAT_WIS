@@ -647,10 +647,6 @@ export class AppointmentController extends BaseController {
           { status: data.status, cancelReason: req.body.cancelReason, isPrimary: false },
           { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
         );
-        await AppointmentDetailModel.update(
-          { status: data.status },
-          { where: { appointmentId: data.appointmentId }, transaction }
-        );
 
         if (appointment.appointmentGroupId && appointment.isPrimary) {
           const appointmentInGroup = await AppointmentModel.findOne({
@@ -667,10 +663,6 @@ export class AppointmentController extends BaseController {
         await AppointmentModel.update(
           { status: data.status },
           { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
-        );
-        await AppointmentDetailModel.update(
-          { status: data.status },
-          { where: { appointmentId: data.appointmentId }, transaction }
         );
       }
       const newAppointmentStatus = await AppointmentModel.findOne({
@@ -1724,7 +1716,7 @@ export class AppointmentController extends BaseController {
           {
             model: LocationModel,
             as: 'location',
-            attributes: ['id', 'name', 'photo', 'address'],
+            attributes: ['id', 'name', 'address'],
             required: false
           }
         ],
@@ -1767,7 +1759,7 @@ export class AppointmentController extends BaseController {
           {
             model: LocationModel,
             as: 'location',
-            attributes: ['id', 'name', 'photo', 'address'],
+            attributes: ['id', 'name', 'address'],
             required: false
           }
         ],
