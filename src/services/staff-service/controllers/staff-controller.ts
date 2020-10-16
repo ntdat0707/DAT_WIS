@@ -182,7 +182,7 @@ export class StaffController {
       }
 
       const staffs = await paginate(
-        StaffModel.scope('safe'),
+        StaffModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
@@ -686,7 +686,7 @@ export class StaffController {
         ];
       }
 
-      const staffs = await StaffModel.scope('safe').findAll(query);
+      const staffs = await StaffModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return next(error);
