@@ -73,4 +73,11 @@ const appointmentId = Joi.string()
   })
   .required()
   .label('appointmentId');
-export { createInvoiceSchema, createPaymentSchema, appointmentId };
+
+const deleteInvoiceSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('invoiceId');
+export { createInvoiceSchema, createPaymentSchema, appointmentId, deleteInvoiceSchema };

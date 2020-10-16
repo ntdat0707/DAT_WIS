@@ -29,7 +29,8 @@ import { serviceErrorDetails } from '../../../utils/response-messages/error-deta
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
-
+import { deleteInvoiceSchema } from '../configs/validate-schemas/invoice';
+import HttpStatus from 'http-status-codes';
 export class InvoiceController {
   /**
    * @swagger
@@ -423,6 +424,66 @@ export class InvoiceController {
         fullPath
       );
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoices));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /sale/delete-invoice/{invoiceId}:
+   *   delete:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: deleteInvoice
+   *     parameters:
+   *       - in: path
+   *         name: invoiceId
+   *         required: true
+   *         schema:
+   *            type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public deleteInvoice = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const { workingLocationIds } = res.locals.staffPayload;
+      const validateErrors = validate(req.params.invoiceId, deleteInvoiceSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const invoice = await InvoiceModel.findOne({ where: { id: req.params.invoiceId } });
+      if (!invoice) {
+        throw new CustomError(
+          invoiceErrorDetails.E_3300(`invoiceId ${req.params.invoiceId} not found`),
+          HttpStatus.NOT_FOUND
+        );
+      }
+      transaction = await sequelize.transaction();
+      if (!workingLocationIds.includes(invoice.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${invoice.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      const invoiceDetailsIds: any = (await InvoiceDetailModel.findAll({ where: { invoiceId: invoice.id } })).map(
+        (invoiceDetailId: any) => invoiceDetailId.id
+      );
+      await InvoiceModel.destroy({ where: { id: invoice.id }, transaction });
+      await InvoiceDetailModel.destroy({ where: { invoiceId: invoice.id }, transaction });
+      await InvoiceDetailStaffModel.destroy({ where: { invoiceDetailId: invoiceDetailsIds }, transaction });
+      await transaction.commit();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
     } catch (error) {
       return next(error);
     }

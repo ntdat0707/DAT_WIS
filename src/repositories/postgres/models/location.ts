@@ -9,8 +9,8 @@ class LocationModel extends Model {
   public phone!: string;
   public email: string;
   public status!: ELocationStatus;
-  public country: string;
-  public city: string;
+  //public country: string;
+  //public city: string;
   public district: string;
   public ward: string;
   public address: string;
@@ -61,16 +61,16 @@ LocationModel.init(
       type: DataTypes.ENUM(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE),
       defaultValue: ELocationStatus.ACTIVE
     },
-    country: {
-      field: 'country',
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    city: {
-      field: 'city',
-      type: DataTypes.STRING,
-      allowNull: true
-    },
+    // country: {
+    //   field: 'country',
+    //   type: DataTypes.STRING,
+    //   allowNull: true
+    // },
+    // city: {
+    //   field: 'city',
+    //   type: DataTypes.STRING,
+    //   allowNull: true
+    // },
     district: {
       field: 'district',
       type: DataTypes.STRING,
