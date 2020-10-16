@@ -11,11 +11,5 @@ export class SaleRoutes {
     this.router.post('/checkout', isAuthenticated, this.invoiceController.checkout);
     this.router.post('/create-payment', isAuthenticated, this.invoiceController.createPayment);
     this.router.get('/get-all-invoice', isAuthenticated, this.invoiceController.getAllInvoice);
-    this.router.delete('/delete-invoice/:invoiceId', isAuthenticated, this.invoiceController.deleteInvoice);
-    this.router.delete(
-      '/delete-invoice-detail/:invoiceDetailId',
-      isAuthenticated,
-      this.invoiceController.deleteInvoiceDetail
-    );
   }
 }
