@@ -45,6 +45,4 @@ const deleteRecentBookingSchema = Joi.object({
     .label('customerId')
 });
 
-const suggestCountryAndCity = Joi.string().label('countryCode');
-
-export { createRecentViewSchema, deleteRecentViewSchema, deleteRecentBookingSchema, suggestCountryAndCity };
+export { createRecentViewSchema, deleteRecentViewSchema, deleteRecentBookingSchema };

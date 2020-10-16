@@ -19,8 +19,6 @@ import {
   RecentBookingModel,
   MarketPlaceFieldsModel,
   MarketPlaceValueModel,
-  CityModel,
-  CountryModel,
   LocationStaffModel
 } from '../../../repositories/postgres/models';
 
@@ -33,20 +31,14 @@ import {
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import _ from 'lodash';
-import { EOrder, ESearchBy } from '../../../utils/consts';
+import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
 import { parseDataByType } from '../utils';
-import {
-  deleteRecentBookingSchema,
-  deleteRecentViewSchema
-  // suggestCountryAndCity
-} from '../configs/validate-schemas/recent-view';
-// import { cityErrorDetails } from '../../../utils/response-messages/error-details/branch/city';
-import Joi from 'joi';
+import { deleteRecentBookingSchema, deleteRecentViewSchema } from '../configs/validate-schemas/recent-view';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -167,25 +159,7 @@ export class SearchController {
         searchBy: req.query.searchBy
       };
 
-      const cityName = (await CityModel.findAll({ attributes: ['name'] })).map((city: any) => city.get('name'));
-      const countryCode = (await CountryModel.findAll({ attributes: ['country_code'] })).map((country: any) =>
-        country.get('country_code')
-      );
-
-      const newSearchSchema = searchSchema.append({
-        cityName: Joi.string()
-          .valid(...cityName)
-          .optional()
-          .allow(null, '')
-          .label('cityName'),
-        countryCode: Joi.string()
-          .valid(...countryCode)
-          .optional()
-          .allow(null, '')
-          .label('countryCode')
-      });
-
-      const validateErrorsSearch = validate(search, newSearchSchema);
+      const validateErrorsSearch = validate(search, searchSchema);
       if (validateErrorsSearch) {
         return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
       }
@@ -209,20 +183,6 @@ export class SearchController {
                 model: MarketPlaceFieldsModel,
                 as: 'marketplaceField',
                 required: false,
-                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
-              }
-            ]
-          },
-          {
-            model: CityModel,
-            as: 'cityy',
-            required: true,
-            attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
-            include: [
-              {
-                model: CountryModel,
-                as: 'country',
-                required: true,
                 attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
               }
             ]
@@ -287,112 +247,12 @@ export class SearchController {
           'services->LocationServiceModel.id',
           'company.id',
           'company->cateServices.id',
-          'company->companyDetail.id',
-          'cityy.id',
-          'cityy->country.id'
+          'company->companyDetail.id'
         ]
       };
 
-      if (!search.searchBy) {
-        queryLocations.where = {
-          ...queryLocations.where,
-          [Op.and]: [
-            {
-              [Op.or]: [
-                ...queryLocations.where[Op.and][0][Op.or],
-                Sequelize.literal(`unaccent("services"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
-                Sequelize.literal(
-                  `unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`
-                )
-              ]
-            }
-          ]
-        };
-      } else {
-        switch (search.searchBy) {
-          case ESearchBy.CITY:
-            {
-              queryLocations.where = {
-                ...queryLocations.where,
-                [Op.and]: [
-                  ...queryLocations.where[Op.and],
-                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
-                ]
-              };
-            }
-            break;
-          case ESearchBy.COMPANY:
-            {
-              queryLocations.where = {
-                ...queryLocations.where,
-                [Op.and]: [
-                  ...queryLocations.where[Op.and],
-                  {
-                    [Op.or]: [
-                      Sequelize.literal(`unaccent("company->cateServices"."name") ilike any(array[${keywordsQuery}])`),
-                      Sequelize.literal(
-                        `unaccent("company->companyDetail"."business_name") ilike any(array[${keywordsQuery}])`
-                      )
-                    ]
-                  }
-                ]
-              };
-            }
-            break;
-          case ESearchBy.CATE_SERVICE:
-            {
-              queryLocations.where = {
-                ...queryLocations.where,
-                [Op.and]: [
-                  ...queryLocations.where[Op.and],
-                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
-                ]
-              };
-            }
-            break;
-          case ESearchBy.SERVICE:
-            {
-              queryLocations.where = {
-                ...queryLocations.where,
-                [Op.and]: [
-                  ...queryLocations.where[Op.and],
-                  Sequelize.literal(`unaccent("cityy"."name") ilike any(array[${keywordsQuery}])`)
-                ]
-              };
-            }
-            break;
-        }
-      }
-
-      if (req.query.cityCode) {
-        queryLocations.where[Op.and].push(Sequelize.literal(`"cityy"."name" like '${search.cityName}'`));
-      } else if (req.query.countryCode) {
-        queryLocations.where[Op.and].push(
-          Sequelize.literal(`"cityy->country"."country_code" like '${search.countryCode}'`)
-        );
-      }
-
       if (req.query.order === EOrder.NEWEST) {
         queryLocations.order = [['"LocationModel"."openedAt"', 'DESC']];
-      }
-
-      let locationResults: any = await LocationModel.findAll(queryLocations);
-      if (req.query.cityCode && Array.isArray(locationResults) && !locationResults.length) {
-        const countryCode2 = await CountryModel.findOne({
-          include: [
-            {
-              model: CityModel,
-              as: 'city',
-              where: {
-                cityName: search.cityName
-              }
-            }
-          ]
-        }).then((country: any) => country.countryCode);
-        queryLocations.where[Op.and].pop();
-        queryLocations.where[Op.and].push(Sequelize.literal(`"cityy->country"."country_code" like '${countryCode2}'`));
-        locationResults = await LocationModel.findAll(queryLocations);
       }
 
       const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
@@ -401,7 +261,7 @@ export class SearchController {
       let searchCompanyItem: any = {};
       let searchServiceItem: any = {};
       let searchLocationItem: any = {};
-
+      let locationResults = await LocationModel.findAll(queryLocations);
       locationResults = locationResults.map((location: any) => {
         location = location.dataValues;
         if (location.name && removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)) {
@@ -1618,44 +1478,6 @@ export class SearchController {
         where: { id: dataInput.recentBookingId }
       });
       return res.status(HttpStatus.OK).send();
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * /branch/location/market-place/suggest-city-country/{countryCode}:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     parameters:
-   *     - in: path
-   *       name: countryCode
-   *       schema:
-   *          type: string
-   *     name: suggestCountryAndCity
-   *     responses:
-   *       200:
-   *         description: success
-   *       500:
-   *         description: Server internal errors
-   */
-
-  public suggestCountryAndCity = async (_req: Request, res: Response, next: NextFunction) => {
-    try {
-      const countries = await CountryModel.findAll({
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-        include: [
-          {
-            model: CityModel,
-            as: 'cities',
-            required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-          }
-        ]
-      });
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(countries));
     } catch (error) {
       return next(error);
     }

@@ -48,6 +48,7 @@ import { generatePWD } from '../../../utils/lib/generatePassword';
 import { v4 } from 'public-ip';
 import { LoginLogModel } from '../../../repositories/mongo/models/login-log-model';
 import geoip from 'geoip-lite';
+import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
@@ -247,6 +248,14 @@ export class AuthController {
       ];
 
       await PipelineStageModel.bulkCreate(dataStage, { transaction });
+      const mqttUserData: any = {
+        isSupperUser: false,
+        salt: Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8),
+        username: data.email
+      };
+      mqttUserData.password = await hash(`${data.password}${mqttUserData.salt}`, PASSWORD_SALT_ROUNDS);
+      const mqttUserModel = new MqttUserModel(mqttUserData);
+      await mqttUserModel.save();
       //commit transaction
       await transaction.commit();
       const dataSendMail: IStaffRegisterAccountTemplate = {
@@ -341,7 +350,7 @@ export class AuthController {
             (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
             ' - ' +
             geoip.lookup(await v4()).country +
-            '( country code )',
+            ' ( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -361,7 +370,7 @@ export class AuthController {
             (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
             ' - ' +
             geoip.lookup(await v4()).country +
-            '( country code )',
+            ' ( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -382,7 +391,7 @@ export class AuthController {
             (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
             ' - ' +
             geoip.lookup(await v4()).country +
-            '( country code )',
+            ' ( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -426,7 +435,7 @@ export class AuthController {
           (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
           ' - ' +
           geoip.lookup(await v4()).country +
-          '( country code )',
+          ' ( country code )',
         timestamp: new Date(),
         browser: data.browser,
         device: data.device,
@@ -728,7 +737,7 @@ export class AuthController {
                 (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
                 ' - ' +
                 geoip.lookup(await v4()).country +
-                '( country code )',
+                ' ( country code )',
               timestamp: new Date(),
               browser: req.body.browser,
               device: req.body.device,
@@ -750,7 +759,7 @@ export class AuthController {
                 (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
                 ' - ' +
                 geoip.lookup(await v4()).country +
-                '( country code )',
+                ' ( country code )',
               timestamp: new Date(),
               browser: req.body.browser,
               device: req.body.device,
@@ -773,7 +782,7 @@ export class AuthController {
               (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
               ' - ' +
               geoip.lookup(await v4()).country +
-              '( country code )',
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -803,7 +812,7 @@ export class AuthController {
                   (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
                   ' - ' +
                   geoip.lookup(await v4()).country +
-                  '( country code )',
+                  ' ( country code )',
                 timestamp: new Date(),
                 browser: req.body.browser,
                 device: req.body.device,
@@ -846,7 +855,7 @@ export class AuthController {
               (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
               ' - ' +
               geoip.lookup(await v4()).country +
-              '( country code )',
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -874,7 +883,7 @@ export class AuthController {
                   (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
                   ' - ' +
                   geoip.lookup(await v4()).country +
-                  '( country code )',
+                  ' ( country code )',
                 timestamp: new Date(),
                 browser: req.body.browser,
                 device: req.body.device,
@@ -917,7 +926,7 @@ export class AuthController {
               (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
               ' - ' +
               geoip.lookup(await v4()).country +
-              '( country code )',
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -943,7 +952,7 @@ export class AuthController {
               (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
               ' - ' +
               geoip.lookup(await v4()).country +
-              '( country code )',
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -1002,7 +1011,7 @@ export class AuthController {
               (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
               ' - ' +
               geoip.lookup(await v4()).country +
-              '( country code )',
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -1044,7 +1053,7 @@ export class AuthController {
             (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
             ' - ' +
             geoip.lookup(await v4()).country +
-            '( country code )',
+            ' ( country code )',
           timestamp: new Date(),
           browser: req.body.browser,
           device: req.body.device,
@@ -1103,7 +1112,7 @@ export class AuthController {
               (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
               ' - ' +
               geoip.lookup(await v4()).country +
-              '( country code )',
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -1145,7 +1154,7 @@ export class AuthController {
             (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
             ' - ' +
             geoip.lookup(await v4()).country +
-            '( country code )',
+            ' ( country code )',
           timestamp: new Date(),
           browser: req.body.browser,
           device: req.body.device,
