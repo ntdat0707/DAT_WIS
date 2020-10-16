@@ -9,8 +9,8 @@ class LocationModel extends Model {
   public phone!: string;
   public email: string;
   public status!: ELocationStatus;
-  //public country: string;
-  //public city: string;
+  public country: string;
+  public city: string;
   public district: string;
   public ward: string;
   public province: string;
