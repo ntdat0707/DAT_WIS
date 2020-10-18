@@ -102,11 +102,15 @@ pipelines:
   default:
     - <<: *lint
   branches:
-    develop:
-      - <<: *lint
-      - <<: *build-image
-      - <<: *deploy
-    master:
+    # develop:
+    #   - <<: *lint
+    #   - <<: *build-image
+    #   - <<: *deploy
+    # master:
+    #   - <<: *lint
+    #   - <<: *build-image
+    #   - <<: *deploy
+    development:
       - <<: *lint
       - <<: *build-image
       - <<: *deploy
