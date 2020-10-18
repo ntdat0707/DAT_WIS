@@ -86,11 +86,6 @@ StaffModel.init(
       defaultValue: false,
       field: 'is_business_account'
     },
-    // mainLocationId: {
-    //   field: 'main_location_id',
-    //   type: DataTypes.UUIDV4,
-    //   allowNull: true,
-    // },
     address: {
       field: 'address',
       type: DataTypes.STRING
