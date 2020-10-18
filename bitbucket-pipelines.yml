@@ -102,15 +102,11 @@ pipelines:
   default:
     - <<: *lint
   branches:
-    # develop:
-    #   - <<: *lint
-    #   - <<: *build-image
-    #   - <<: *deploy
-    # master:
-    #   - <<: *lint
-    #   - <<: *build-image
-    #   - <<: *deploy
-    feature/backend-ws-marketplace:
+    develop:
+      - <<: *lint
+      - <<: *build-image
+      - <<: *deploy
+    master:
       - <<: *lint
       - <<: *build-image
       - <<: *deploy
