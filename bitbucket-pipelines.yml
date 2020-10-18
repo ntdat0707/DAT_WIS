@@ -110,7 +110,7 @@ pipelines:
     #   - <<: *lint
     #   - <<: *build-image
     #   - <<: *deploy
-    development:
+    feature/backend-ws-marketplace:
       - <<: *lint
       - <<: *build-image
       - <<: *deploy
