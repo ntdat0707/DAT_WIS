@@ -31,5 +31,6 @@ export class StaffRoutes {
     this.router.post('/get-random-available-time', this.staffController.getRandomAvailableTimeSlots);
     this.router.get('/get-group-staff', isAuthenticated, this.staffController.getGroupStaff);
     this.router.get('/get-staff-in-group', isAuthenticated, this.staffController.getStaffInGroup);
+    this.router.get('/list-service/:staffId', this.staffController.getServicesByStaff);
   }
 }

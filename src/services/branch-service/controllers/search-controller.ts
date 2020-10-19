@@ -38,8 +38,12 @@ import { LocationServiceModel } from '../../../repositories/postgres/models/loca
 import { removeAccents } from '../../../utils/text';
 import { RecentViewModel } from '../../../repositories/postgres/models/recent-view-model';
 import { parseDataByType } from '../utils';
-import { deleteRecentBookingSchema, deleteRecentViewSchema } from '../configs/validate-schemas/recent-view';
-
+import {
+  deleteRecentBookingSchema,
+  deleteRecentViewSchema
+  // suggestCountryAndCity
+} from '../configs/validate-schemas/recent-view';
+import elasticsearchClient from '../../../repositories/elasticsearch';
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
     const X = {
@@ -77,7 +81,7 @@ export class SearchController {
    *     - in: query
    *       name: keyword
    *       schema:
-   *          type: integer
+   *          type: string
    *     - in: query
    *       name: pageNum
    *       required: true
@@ -1469,6 +1473,47 @@ export class SearchController {
         where: { id: dataInput.recentBookingId }
       });
       return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/search-new:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     name: searchNew
+   *     parameters:
+   *     - in: query
+   *       name: keyword
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public searchNew = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const search = {
+        keyword: req.query.keyword
+      };
+
+      const response = await elasticsearchClient.search({
+        index: 'marketplace_search',
+        body: {
+          query: {
+            query_string: {
+              query: `${search.keyword}~1`
+            }
+          }
+        }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(response));
     } catch (error) {
       return next(error);
     }

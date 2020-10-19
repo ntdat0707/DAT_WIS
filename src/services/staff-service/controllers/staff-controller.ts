@@ -28,7 +28,8 @@ import {
   AppointmentDetailModel,
   CompanyModel,
   LocationWorkingHourModel,
-  GroupStaffModel
+  GroupStaffModel,
+  CateServiceModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -38,7 +39,8 @@ import {
   createStaffsSchema,
   updateStaffSchema,
   getStaffMultipleService,
-  deleteStaffSchema
+  deleteStaffSchema,
+  getServicesOfStaff
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
@@ -292,7 +294,6 @@ export class StaffController {
         gender: req.body.gender,
         phone: req.body.phone,
         email: req.body.email,
-        // mainLocationId: req.body.mainLocationId,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
         address: req.body.address,
@@ -325,6 +326,7 @@ export class StaffController {
       }
       if (req.file) profile.avatarPath = (req.file as any).location;
       const staff = await StaffModel.create(profile, { transaction });
+
       if (req.body.workingLocationIds) {
         const workingLocationData = (req.body.workingLocationIds as []).map((x) => ({
           locationId: x,
@@ -879,6 +881,7 @@ export class StaffController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /staff/complete-onboard:
@@ -951,33 +954,29 @@ export class StaffController {
       const dataInput = { ...req.body };
       const validateErrors = validate(dataInput, getStaffMultipleService);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const staffIds = await ServiceStaffModel.findAll({
-        where: {
-          serviceId: {
-            [Op.in]: dataInput.serviceIds
-          }
-        }
-      }).then((services) => services.map((service) => service.staffId));
-
       const staffs = await StaffModel.findAll({
         include: [
           {
             model: LocationModel,
             as: 'workingLocations',
             through: { attributes: [] },
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-            where: { locationId: dataInput.locationId }
+            required: true,
+            attributes: [],
+            where: { id: dataInput.locationId }
+          },
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: true,
+            where: { id: { [Op.in]: dataInput.serviceIds } },
+            attributes: []
           }
         ],
-        where: {
-          id: { [Op.in]: staffIds }
-        },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
       if (!staffs) {
         return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
       }
-
       res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return error;
@@ -1529,7 +1528,8 @@ export class StaffController {
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = {
-        where: { companyId: companyId }
+        where: { companyId: companyId },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       };
       const groupStaffs = await paginate(
         GroupStaffModel,
@@ -1587,7 +1587,8 @@ export class StaffController {
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = {
-        where: { groupStaffId: groupStaffId }
+        where: { groupStaffId: groupStaffId },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       };
       const staffs = await paginate(
         StaffModel,
@@ -1596,6 +1597,70 @@ export class StaffController {
         fullPath
       );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   *  @swagger
+   * /staff/list-service/{staffId}:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     name: getServicesByStaff
+   *     parameters:
+   *     - in: path
+   *       name: staffId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: |
+   *           </br> xxx1: Something error
+   *           </br> xxx2: Internal server errors
+   */
+
+  public getServicesByStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.params.staffId, getServicesOfStaff);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const staff = await StaffModel.findOne({
+        where: { id: req.params.staffId }
+      });
+      if (!staff) {
+        return next(
+          new CustomError(staffErrorDetails.E_4000(`staff Id ${req.params.staffId} not found`), HttpStatus.NOT_FOUND)
+        );
+      }
+      let cateServices: any = [];
+      cateServices = await CateServiceModel.findAll({
+        include: [
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            include: [
+              {
+                model: StaffModel,
+                as: 'staffs',
+                required: true,
+                through: { attributes: [] },
+                attributes: [],
+                where: { id: req.params.staffId }
+              }
+            ]
+          }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
     } catch (error) {
       return next(error);
     }
