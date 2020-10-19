@@ -2,8 +2,9 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 
 import sequelize from '../configs/db-connector';
 class GroupStaffModel extends Model {
-  public groupStaffId: string;
+  public id: string;
   public name!: string;
+  public companyId: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -11,13 +12,18 @@ class GroupStaffModel extends Model {
 
 GroupStaffModel.init(
   {
-    groupStaffId: {
-      field: 'group_staff_id',
+    id: {
+      field: 'id',
       type: DataTypes.UUIDV4,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
     name: { type: DataTypes.STRING, allowNull: false },
+    companyId: {
+      field: 'company_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
     createdAt: {
       field: 'created_at',
       type: 'TIMESTAMP',

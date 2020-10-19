@@ -152,4 +152,18 @@ const deleteStaffSchema = Joi.object({
     .label('staffId')
 });
 
-export { staffIdSchema, filterStaffSchema, getStaffMultipleService, getStaffAvailableTimeSlots, deleteStaffSchema };
+const getServicesOfStaff = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('staffId');
+
+export {
+  staffIdSchema,
+  filterStaffSchema,
+  getStaffMultipleService,
+  getStaffAvailableTimeSlots,
+  deleteStaffSchema,
+  getServicesOfStaff
+};

@@ -12,7 +12,6 @@ class StaffModel extends Model {
   public passportNumber: string;
   public groupStaffId: string;
   public isBusinessAccount: boolean;
-  // public mainLocationId: string;
   public address: string;
   public color: string;
   public facebookId: string;
@@ -86,11 +85,6 @@ StaffModel.init(
       defaultValue: false,
       field: 'is_business_account'
     },
-    // mainLocationId: {
-    //   field: 'main_location_id',
-    //   type: DataTypes.UUIDV4,
-    //   allowNull: true,
-    // },
     address: {
       field: 'address',
       type: DataTypes.STRING

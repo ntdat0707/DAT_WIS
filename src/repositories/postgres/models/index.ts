@@ -29,6 +29,7 @@ import { MarketPlaceValueModel } from './marketplace-value-model';
 import { ContactModel } from './contact-model';
 import { FavoriteModel } from './favorite-model';
 import { PositionModel } from './position-model';
+import { GroupStaffModel } from './group-staff-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -190,6 +191,12 @@ PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
 PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
+GroupStaffModel.hasOne(StaffModel, { foreignKey: 'groupStaffId', sourceKey: 'id', as: 'staff' });
+StaffModel.belongsTo(GroupStaffModel, { foreignKey: 'groupStaffId', as: 'groupStaff' });
+
+CompanyModel.hasOne(GroupStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'company' });
+GroupStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'groupStaff' });
+
 export {
   sequelize,
   StaffModel,
@@ -216,5 +223,6 @@ export {
   ContactModel,
   MarketPlaceValueModel,
   MarketPlaceFieldsModel,
-  FavoriteModel
+  FavoriteModel,
+  GroupStaffModel
 };
