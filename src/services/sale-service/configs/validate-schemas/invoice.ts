@@ -9,11 +9,14 @@ const createInvoiceSchema = Joi.object({
     })
     .required()
     .label('locationId'),
+  appointmentId: Joi.string().guid({
+    version: ['uuidv4']
+  }),
   customerWisereId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .required()
+    .allow(null, '')
     .label('customerWisereId'),
   source: Joi.string()
     .valid(ESourceType.POS, ESourceType.WEBSITE, ESourceType.FACEBOOK, ESourceType.MARKETPLACE, ESourceType.OTHER)
@@ -22,6 +25,9 @@ const createInvoiceSchema = Joi.object({
   note: Joi.string().allow(null, '').label('note'),
   discount: Joi.number().integer().min(0).allow(null).label('discount'),
   tax: Joi.number().integer().min(0).allow(null).label('tax'),
+  totalQuantity: Joi.number().integer().min(1).required().label('totalQuantity'),
+  subtotal: Joi.number().integer().min(0).required().label('subtotal'),
+  totalAmount: Joi.number().integer().min(0).required().label('totalAmount'),
   listInvoiceDetail: Joi.array()
     .min(1)
     .required()
@@ -68,11 +74,4 @@ const createPaymentSchema = Joi.object({
   amount: Joi.number().integer().min(0).required().label('amount')
 });
 
-const appointmentId = Joi.string()
-  .guid({
-    version: ['uuidv4']
-  })
-  .required()
-  .label('appointmentId');
-
-export { createInvoiceSchema, createPaymentSchema, appointmentId };
+export { createInvoiceSchema, createPaymentSchema };

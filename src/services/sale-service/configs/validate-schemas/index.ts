@@ -1,3 +1,3 @@
-import { createInvoiceSchema, createPaymentSchema, appointmentId } from './invoice';
+import { createInvoiceSchema, createPaymentSchema } from './invoice';
 
-export { createInvoiceSchema, createPaymentSchema, appointmentId };
+export { createInvoiceSchema, createPaymentSchema };
