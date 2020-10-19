@@ -155,3 +155,8 @@ export enum ESourceLoginType {
   IOS = 'ios',
   ANDROID = 'android'
 }
+
+export enum EExtraTimeType {
+  PROCESSING = 'PROCESSING',
+  BLOCKED = 'BLOCKED'
+}
