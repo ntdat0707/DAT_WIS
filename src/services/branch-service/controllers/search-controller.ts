@@ -44,8 +44,6 @@ import {
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
 import elasticsearchClient from '../../../repositories/elasticsearch';
-import dot from 'dot-object';
-
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
     const X = {
@@ -1515,11 +1513,7 @@ export class SearchController {
           }
         }
       });
-      const result = _.uniqBy(
-        response.hits!.hits.map((data: any) => dot.object(data._source)),
-        'id'
-      );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(result));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(response));
     } catch (error) {
       return next(error);
     }
