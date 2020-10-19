@@ -29,5 +29,6 @@ export class StaffRoutes {
     this.router.post('/get-staffs-multiple-service', this.staffController.getStaffsServices);
     this.router.post('/get-staff-available-time', this.staffController.getStaffAvailableTimeSlots);
     this.router.post('/get-random-available-time', this.staffController.getRandomAvailableTimeSlots);
+    this.router.get('/list-service/:staffId', this.staffController.getServicesByStaff);
   }
 }

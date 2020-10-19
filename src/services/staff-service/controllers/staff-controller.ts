@@ -27,7 +27,8 @@ import {
   AppointmentModel,
   AppointmentDetailModel,
   CompanyModel,
-  LocationWorkingHourModel
+  LocationWorkingHourModel,
+  CateServiceModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -37,7 +38,8 @@ import {
   createStaffsSchema,
   updateStaffSchema,
   getStaffMultipleService,
-  deleteStaffSchema
+  deleteStaffSchema,
+  getServicesOfStaff
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
@@ -864,6 +866,7 @@ export class StaffController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /staff/complete-onboard:
@@ -1463,6 +1466,70 @@ export class StaffController {
       res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return error;
+    }
+  };
+
+  /**
+   * @swagger
+   * /staff/list-service/{staffId}:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     name: getServicesByStaff
+   *     parameters:
+   *     - in: pathId
+   *       name: staffId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: |
+   *           </br> xxx1: Something error
+   *           </br> xxx2: Internal server errors
+   */
+
+  public getServicesByStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.params.staffId, getServicesOfStaff);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const staff = await StaffModel.findOne({
+        where: { id: req.params.staffId }
+      });
+      if (!staff) {
+        return next(
+          new CustomError(staffErrorDetails.E_4000(`staff Id ${req.params.staffId} not found`), HttpStatus.NOT_FOUND)
+        );
+      }
+      let services: any = [];
+      services = await CateServiceModel.findAll({
+        include: [
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            include: [
+              {
+                model: StaffModel,
+                as: 'staffs',
+                required: true,
+                through: { attributes: [] },
+                attributes: [],
+                where: { id: req.params.staffId }
+              }
+            ]
+          }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
+    } catch (error) {
+      return next(error);
     }
   };
 }
