@@ -818,7 +818,7 @@ export class CustomerController {
         accessToken
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
-      const profile = await CustomerModel.scope('safe').findOne({
+      const profile = await CustomerModel.findOne({
         where: { email: data.email }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -869,7 +869,7 @@ export class CustomerController {
       if (accessTokenData instanceof CustomError) {
         return next(new CustomError(generalErrorDetails.E_0003()));
       } else {
-        const customer = await CustomerModel.scope('safe').findOne({
+        const customer = await CustomerModel.findOne({
           where: { id: accessTokenData.userId }
         });
         if (!customer) {
@@ -955,7 +955,7 @@ export class CustomerController {
             );
           }
         }
-        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+        customer = await CustomerModel.findOne({ raw: true, where: { email: req.body.email } });
       } else {
         if (req.body.provider === ESocialType.GOOGLE) {
           return next(new CustomError(customerErrorDetails.E_3007('Missing email'), HttpStatus.BAD_REQUEST));
@@ -987,7 +987,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.scope('safe').findOne({
+          profile = await CustomerModel.findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1017,7 +1017,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.scope('safe').findOne({
+          profile = await CustomerModel.findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1029,7 +1029,7 @@ export class CustomerController {
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
           return next(new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
-        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
+        customer = await CustomerModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!customer) {
           const password = await generatePWD(8);
           data = {
@@ -1054,7 +1054,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.scope('safe').findOne({
+          profile = await CustomerModel.findOne({
             where: { facebookId: newCustomer.facebookId }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1072,13 +1072,13 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.scope('safe').findOne({
+        profile = await CustomerModel.findOne({
           where: { facebookId: customer.facebookId }
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
       if (req.body.provider === ESocialType.GOOGLE) {
-        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
+        customer = await CustomerModel.findOne({ raw: true, where: { googleId: req.body.providerId } });
         if (!customer) {
           const password = await generatePWD(8);
           data = {
@@ -1103,7 +1103,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.scope('safe').findOne({
+          profile = await CustomerModel.findOne({
             where: { googleId: newCustomer.googleId }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1121,7 +1121,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.scope('safe').findOne({
+        profile = await CustomerModel.findOne({
           where: { googleId: customer.googleId }
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1218,7 +1218,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.scope('safe').findOne({
+        profile = await CustomerModel.findOne({
           where: { appleId: newCustomer.appleId }
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1236,7 +1236,7 @@ export class CustomerController {
         accessToken
       };
       refreshToken = await createRefreshToken(refreshTokenData);
-      profile = await CustomerModel.scope('safe').findOne({
+      profile = await CustomerModel.findOne({
         where: { appleId: customer.appleId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1368,7 +1368,7 @@ export class CustomerController {
       const email = req.body.email;
       const validateErrors = validate({ email: email }, emailSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      const customer = await CustomerModel.findOne({ raw: true, where: { email: req.body.email } });
       if (!customer) return next(new CustomError(customerErrorDetails.E_3001('Email not found'), HttpStatus.NOT_FOUND));
       const uuidToken = uuidv4();
       const dataSendMail: ICustomerRecoveryPasswordTemplate = {
@@ -1445,7 +1445,7 @@ export class CustomerController {
       if (!tokenStoraged)
         return next(new CustomError(customerErrorDetails.E_3009('Invalid token'), HttpStatus.UNAUTHORIZED));
       const data = JSON.parse(tokenStoraged);
-      const customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: data.email } });
+      const customer = await CustomerModel.findOne({ raw: true, where: { email: data.email } });
       if (!customer) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
       const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
       await CustomerModel.update(

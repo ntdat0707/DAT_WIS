@@ -9,14 +9,16 @@ class LocationModel extends Model {
   public phone!: string;
   public email: string;
   public status!: ELocationStatus;
+  public country: string;
   public city: string;
-  public cityId: string;
   public district: string;
   public ward: string;
+  public province: string;
+  public street: string;
   public address: string;
+  public fullAddress: string;
   public latitude: number;
   public longitude: number;
-  public gender?: number;
   public description: string;
   public title?: string;
   public pathName?: string;
@@ -60,14 +62,19 @@ LocationModel.init(
       type: DataTypes.ENUM(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE),
       defaultValue: ELocationStatus.ACTIVE
     },
+    country: {
+      field: 'country',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     city: {
       field: 'city',
       type: DataTypes.STRING,
       allowNull: true
     },
-    cityId: {
-      field: 'city_id',
-      type: DataTypes.UUIDV4,
+    province: {
+      field: 'province',
+      type: DataTypes.STRING,
       allowNull: true
     },
     district: {
@@ -80,8 +87,18 @@ LocationModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
+    street: {
+      field: 'street',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     address: {
       field: 'address',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    fullAddress: {
+      field: 'full_address',
       type: DataTypes.STRING,
       allowNull: true
     },
@@ -99,11 +116,6 @@ LocationModel.init(
       field: 'description',
       type: DataTypes.STRING,
       allowNull: true
-    },
-    gender: {
-      type: DataTypes.TINYINT,
-      field: 'gender',
-      defaultValue: 0
     },
     pathName: {
       field: 'path_name',

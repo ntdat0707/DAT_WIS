@@ -9,22 +9,21 @@ const staffIdSchema = Joi.string()
   .label('staffId');
 
 export const createStaffSchema = Joi.object({
-  groupStaffId: Joi.string().label('groupStaffId'),
+  // groupStaffId: Joi.string().required(),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('locationId'),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
   email: Joi.string().allow(null, '').label('email'),
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
-  birthDate: Joi.string().isoDate().required(),
+  birthDate: Joi.string().isoDate(),
   passportNumber: Joi.string().required(),
   address: Joi.string(),
   color: Joi.string(),
-  mainLocationId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .required()
-    .label('mainLocationId'),
   workingLocationIds: Joi.array()
     .min(1)
     .required()
@@ -94,12 +93,11 @@ const filterStaffSchema = Joi.object({
 });
 
 export const createStaffsSchema = Joi.object({
-  mainLocationId: Joi.string()
+  locationId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .required()
-    .label('mainLocationId'),
+    .label('locationId'),
   staffDetails: Joi.array()
     .min(1)
     .required()
@@ -135,9 +133,23 @@ const getStaffAvailableTimeSlots = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .required()
-    .label('mainLocationId'),
+    .required(),
   workDay: Joi.string().required().label('workDay')
 });
 
-export { staffIdSchema, filterStaffSchema, getStaffMultipleService, getStaffAvailableTimeSlots };
+const deleteStaffSchema = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  staffId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('staffId')
+});
+
+export { staffIdSchema, filterStaffSchema, getStaffMultipleService, getStaffAvailableTimeSlots, deleteStaffSchema };

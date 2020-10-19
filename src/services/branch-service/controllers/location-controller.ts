@@ -12,7 +12,6 @@ import {
   CompanyModel,
   LocationWorkingHourModel,
   StaffModel,
-  CityModel,
   CompanyDetailModel,
   MarketPlaceFieldsModel,
   MarketPlaceValueModel,
@@ -25,7 +24,7 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema
 } from '../configs/validate-schemas';
-import { FindOptions, Sequelize } from 'sequelize';
+import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -82,16 +81,10 @@ export class LocationController {
    *       name: "email"
    *       type: string
    *     - in: "formData"
-   *       name: "city"
-   *       type: string
-   *     - in: "formData"
-   *       name: "district"
-   *       type: string
-   *     - in: "formData"
-   *       name: "ward"
-   *       type: string
-   *     - in: "formData"
    *       name: "address"
+   *       type: string
+   *     - in: "formData"
+   *       name: "fullAddress"
    *       type: string
    *     - in: "formData"
    *       name: "latitude"
@@ -128,9 +121,6 @@ export class LocationController {
    *       name: "totalBookings"
    *       type: number
    *     - in: "formData"
-   *       name: "gender"
-   *       type: number
-   *     - in: "formData"
    *       name: "openedAt"
    *       type: string
    *       format: date-time
@@ -142,6 +132,11 @@ export class LocationController {
    *       type: array
    *       items:
    *           $ref: '#/definitions/WorkingTimeDetail'
+   *     - in: "formData"
+   *       name: "addressInfor"
+   *       type: array
+   *       items:
+   *           type: object
    *     responses:
    *       200:
    *         description:
@@ -159,11 +154,8 @@ export class LocationController {
         name: req.body.name,
         phone: req.body.phone,
         email: req.body.email,
-        district: req.body.district,
         title: req.body.title,
         description: req.body.description,
-        city: req.body.city,
-        ward: req.body.ward,
         address: req.body.address,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
@@ -173,15 +165,44 @@ export class LocationController {
         rating: req.body.rating,
         recoveryRooms: req.body.recoveryRooms,
         totalBookings: req.body.totalBookings,
-        gender: req.body.gender,
         openedAt: req.body.openedAt,
-        placeId: req.body.placeId
+        placeId: req.body.placeId,
+        addressInfor: req.body.addressInfor,
+        fullAddress: req.body.fullAddress
       };
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
+      for (let i = 0; i < data.addressInfor.length; i++) {
+        switch (data.addressInfor[i].types[0]) {
+          case 'route':
+            data.street = data.addressInfor[i].long_name;
+            break;
+          case 'administrative_area_level_2':
+            data.district = data.addressInfor[i].long_name;
+            break;
+          case 'administrative_area_level_1':
+            data.province = data.addressInfor[i].long_name;
+            break;
+          case 'country':
+            data.country = data.addressInfor[i].long_name;
+            break;
+          case 'locality':
+            data.city = data.addressInfor[i].long_name;
+        }
+        if (
+          data.addressInfor[i].types.includes('sublocality') ||
+          data.addressInfor[i].types.includes('sublocality_level_1')
+        ) {
+          data.ward = data.addressInfor[i].long_name;
+        }
+      }
+
+      if (!data.street) {
+        return next(new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST));
+      }
       data.companyId = res.locals.staffPayload.companyId;
 
       let company: any = await CompanyModel.findOne({
@@ -204,7 +225,7 @@ export class LocationController {
         };
       }
 
-      const existLocation = LocationModel.findOne({
+      const existLocation = await LocationModel.findOne({
         where: {
           companyId: company.id
         }
@@ -213,24 +234,6 @@ export class LocationController {
       if (!existLocation) {
         updateStaff = true;
       }
-      let city = await CityModel.findOne({
-        where: {
-          name: Sequelize.literal(`unaccent("CityModel"."name") ilike unaccent('%${data.city}%')`)
-        },
-        attributes: ['id', 'name']
-      });
-      if (!city) {
-        // when can't find city then default city is 'Ho Chi Minh'
-        city = await CityModel.findOne({
-          where: {
-            name: Sequelize.literal('unaccent("CityModel"."name") ilike unaccent(\'%Ho Chi Minh%\')')
-          },
-          attributes: ['id', 'name']
-        });
-      }
-
-      const cityDetail: any = { cityId: city.id, city: city.name };
-      data = Object.assign(data, cityDetail);
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
@@ -381,6 +384,14 @@ export class LocationController {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
             required: false
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            where: {
+              isAvatar: true
+            }
           }
         ]
       });
@@ -439,6 +450,14 @@ export class LocationController {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
             required: false
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            where: {
+              isAvatar: true
+            }
           }
         ]
       };
@@ -505,6 +524,11 @@ export class LocationController {
           {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
+            required: false
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
             required: false
           }
         ]
@@ -753,15 +777,6 @@ export class LocationController {
    *       name: "email"
    *       type: string
    *     - in: "formData"
-   *       name: "city"
-   *       type: string
-   *     - in: "formData"
-   *       name: "district"
-   *       type: string
-   *     - in: "formData"
-   *       name: "ward"
-   *       type: string
-   *     - in: "formData"
    *       name: "address"
    *       type: string
    *     - in: "formData"
@@ -779,6 +794,17 @@ export class LocationController {
    *       type: array
    *       items:
    *           $ref: '#/definitions/WorkingTimeDetail'
+   *     - in: "formData"
+   *       name: "addressInfor"
+   *       type: array
+   *       items:
+   *           type: object
+   *     - in: "formData"
+   *       name: "placeId"
+   *       type: string
+   *     - in: "formData"
+   *       name: "fullAddress"
+   *       type: string
    *     responses:
    *       200:
    *         description:
@@ -815,6 +841,71 @@ export class LocationController {
             HttpStatus.NOT_FOUND
           )
         );
+      }
+
+      const data: any = {
+        name: body.name,
+        phone: body.phone,
+        email: body.email,
+        district: location.district,
+        title: body.title,
+        description: body.description,
+        city: location.city,
+        ward: location.ward,
+        address: body.address,
+        latitude: body.latitude,
+        longitude: body.longitude,
+        workingTimes: body.workingTimes,
+        payment: body.payment,
+        parking: body.parking,
+        rating: body.rating,
+        recoveryRooms: body.recoveryRooms,
+        totalBookings: body.totalBookings,
+        openedAt: body.openedAt,
+        placeId: location.placeId,
+        addressInfor: body.addressInfor,
+        fullAddress: body.fullAddress,
+        country: location.country,
+        province: location.province,
+        street: location.street
+      };
+
+      if (body.placeId && body.placeId !== location.placeId) {
+        if (!body.addressInfor || body.addressInfor.length === 0) {
+          return next(new CustomError(locationErrorDetails.E_1009(), HttpStatus.NOT_FOUND));
+        }
+        if (!body.fullAddress) {
+          return next(new CustomError(locationErrorDetails.E_1010(), HttpStatus.NOT_FOUND));
+        }
+        for (let i = 0; i < body.addressInfor.length; i++) {
+          switch (body.addressInfor[i].types[0]) {
+            case 'route':
+              data.street = body.addressInfor[i].long_name;
+              break;
+            case 'administrative_area_level_2':
+              data.district = body.addressInfor[i].long_name;
+              break;
+            case 'administrative_area_level_1':
+              data.province = body.addressInfor[i].long_name;
+              break;
+            case 'country':
+              data.country = body.addressInfor[i].long_name;
+              break;
+            case 'locality':
+              data.city = body.addressInfor[i].long_name;
+          }
+          if (
+            body.addressInfor[i].types.includes('sublocality') ||
+            body.addressInfor[i].types.includes('sublocality_level_1')
+          ) {
+            data.ward = body.addressInfor[i].long_name;
+          }
+        }
+
+        if (!data.street) {
+          return next(new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST));
+        }
+        data.placeId = body.placeId;
       }
 
       // start transaction
@@ -861,17 +952,6 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
-      const data: any = {
-        name: body.name ? body.name : location.name,
-        phone: body.phone ? body.phone : location.phone,
-        email: body.email,
-        city: body.city,
-        district: body.district,
-        ward: body.ward,
-        address: body.address,
-        latitude: body.latitude,
-        longitude: body.longitude
-      };
 
       if (file) {
         data.photo = (file as any).location;
