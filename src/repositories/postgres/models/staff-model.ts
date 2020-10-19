@@ -150,5 +150,4 @@ StaffModel.init(
     paranoid: true
   }
 );
-
 export { StaffModel };

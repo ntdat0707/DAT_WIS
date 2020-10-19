@@ -418,7 +418,7 @@ export class AuthController {
         accessToken
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
-      const profile = await StaffModel.scope('safe').findOne({
+      const profile = await StaffModel.findOne({
         where: { email: data.email },
         include: [
           {
@@ -560,7 +560,7 @@ export class AuthController {
       const email = req.body.email;
       const validateErrors = validate({ email: email }, emailSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      const staff = await StaffModel.findOne({ raw: true, where: { email: req.body.email } });
       if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
       const uuidToken = uuidv4();
       const dataSendMail: IStaffRecoveryPasswordTemplate = {
@@ -637,7 +637,7 @@ export class AuthController {
       if (!tokenStoraged)
         return next(new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED));
       const data = JSON.parse(tokenStoraged);
-      const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: data.email } });
+      const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
       const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
       await StaffModel.update(
@@ -772,7 +772,7 @@ export class AuthController {
             return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
           }
         }
-        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+        staff = await StaffModel.findOne({ raw: true, where: { email: req.body.email } });
       } else {
         if (req.body.provider === ESocialType.GOOGLE) {
           loginData = {
@@ -838,7 +838,7 @@ export class AuthController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await StaffModel.scope('safe').findOne({
+          profile = await StaffModel.findOne({
             where: { email: req.body.email },
             include: [
               {
@@ -909,7 +909,7 @@ export class AuthController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await StaffModel.scope('safe').findOne({
+          profile = await StaffModel.findOne({
             where: { email: req.body.email },
             include: [
               {
@@ -965,7 +965,7 @@ export class AuthController {
           await transaction.rollback();
           return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
-        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
+        staff = await StaffModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
           const password = await generatePWD(8);
           data = {
@@ -994,7 +994,7 @@ export class AuthController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await StaffModel.scope('safe').findOne({
+          profile = await StaffModel.findOne({
             where: { facebookId: newStaff.facebookId },
             include: [
               {
@@ -1036,7 +1036,7 @@ export class AuthController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await StaffModel.scope('safe').findOne({
+        profile = await StaffModel.findOne({
           where: { facebookId: staff.facebookId },
           include: [
             {
@@ -1066,7 +1066,7 @@ export class AuthController {
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
       if (req.body.provider === ESocialType.GOOGLE) {
-        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
+        staff = await StaffModel.findOne({ raw: true, where: { googleId: req.body.providerId } });
         if (!staff) {
           const password = await generatePWD(8);
           data = {
@@ -1095,7 +1095,7 @@ export class AuthController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await StaffModel.scope('safe').findOne({
+          profile = await StaffModel.findOne({
             where: { googleId: newStaff.googleId },
             include: [
               {
@@ -1137,7 +1137,7 @@ export class AuthController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await StaffModel.scope('safe').findOne({
+        profile = await StaffModel.findOne({
           where: { googleId: staff.googleId },
           include: [
             {
@@ -1218,7 +1218,7 @@ export class AuthController {
       if (accessTokenData instanceof CustomError) {
         return next(new CustomError(generalErrorDetails.E_0003()));
       } else {
-        const staff = await StaffModel.scope('safe').findOne({
+        const staff = await StaffModel.findOne({
           where: { id: accessTokenData.userId },
           include: [
             {
