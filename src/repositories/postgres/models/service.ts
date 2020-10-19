@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-import { EServiceStatus } from '../../../utils/consts';
+import { EExtraTimeType, EServiceStatus } from '../../../utils/consts';
 
 class ServiceModel extends Model {
   public id: string;
@@ -14,6 +14,8 @@ class ServiceModel extends Model {
   public name: string;
   public isAllowedMarketplace!: boolean;
   public allowGender: number;
+  public extraTimeType: string;
+  public extraTimeDuration: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -77,6 +79,16 @@ ServiceModel.init(
     allowGender: {
       type: DataTypes.TINYINT,
       field: 'allow_gender',
+      allowNull: true
+    },
+    extraTimeType: {
+      field: 'extra_time_type',
+      type: DataTypes.ENUM(EExtraTimeType.BLOCKED, EExtraTimeType.PROCESSING),
+      allowNull: true
+    },
+    extraTimeDuration: {
+      field: 'extra_time_duration',
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     createdAt: {
