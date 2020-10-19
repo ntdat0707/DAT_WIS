@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EServiceStatus, EGender } from '../../../../utils/consts';
+import { EServiceStatus, EGender, EExtraTimeType } from '../../../../utils/consts';
 
 const createServiceSchema = Joi.object({
   cateServiceId: Joi.string()
@@ -37,7 +37,12 @@ const createServiceSchema = Joi.object({
     .integer()
     .required()
     .valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX)
-    .label('allowGender')
+    .label('allowGender'),
+  extraTimeType: Joi.string()
+    .valid(EExtraTimeType.BLOCKED, EExtraTimeType.PROCESSING)
+    .allow(null, '')
+    .label('extraTimeType'),
+  extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration')
 });
 
 const createCateServiceSchema = Joi.object({
@@ -166,7 +171,12 @@ const updateServiceSchema = Joi.object({
       version: ['uuidv4']
     })
   ),
-  allowGender: Joi.number().integer().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('allowGender')
+  allowGender: Joi.number().integer().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('allowGender'),
+  extraTimeType: Joi.string()
+    .valid(EExtraTimeType.BLOCKED, EExtraTimeType.PROCESSING)
+    .allow(null, '')
+    .label('extraTimeType'),
+  extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration')
 });
 export {
   createCateServiceSchema,
