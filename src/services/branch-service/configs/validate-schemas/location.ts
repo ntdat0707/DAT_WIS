@@ -5,10 +5,7 @@ const createLocationSchema = Joi.object({
   name: Joi.string().required().label('name'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   email: Joi.string().email().label('email'),
-  city: Joi.string().label('city'),
-  district: Joi.string().label('district'),
-  ward: Joi.string().label('ward'),
-  address: Joi.string().label('address'),
+  address: Joi.string().required().label('address'),
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
   workingTimes: Joi.array()
@@ -45,12 +42,13 @@ const createLocationSchema = Joi.object({
   title: Joi.string().label('title'),
   payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
   parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
-  gender: Joi.number().label('gender'),
   rating: Joi.number().label('rating'),
   recoveryRooms: Joi.number().label('recoveryRooms'),
   totalBookings: Joi.number().label('totalBookings'),
   openedAt: Joi.string().isoDate(),
-  placeId: Joi.string().label('placeId')
+  placeId: Joi.string().label('placeId'),
+  fullAddress: Joi.string().label('fullAddress'),
+  addressInfor: Joi.array().required().min(3).items(Joi.object().required()).label('addressInfor')
 });
 
 const locationIdSchema = Joi.string()
@@ -131,9 +129,6 @@ const updateLocationSchema = Joi.object({
   name: Joi.string().disallow('', null).label('name'),
   phone: Joi.string().regex(/^\d+$/).disallow('', null).label('phone'),
   email: Joi.string().email().label('email'),
-  city: Joi.string().label('city'),
-  district: Joi.string().label('district'),
-  ward: Joi.string().label('ward'),
   address: Joi.string().label('address'),
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
@@ -151,11 +146,7 @@ const updateLocationSchema = Joi.object({
 
   // payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
   // parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
-  status: Joi.string()
-    .required()
-    .label('status')
-    .valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE)
-    .label('status'),
+  status: Joi.string().required().valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE).label('status'),
   workingTimes: Joi.array()
     .length(7)
     .unique()
@@ -185,7 +176,10 @@ const updateLocationSchema = Joi.object({
           .label('range')
       })
     )
-    .label('workingTimes')
+    .label('workingTimes'),
+  placeId: Joi.string().label('placeId'),
+  fullAddress: Joi.string().label('fullAddress'),
+  addressInfor: Joi.array().items(Joi.object().required()).label('addressInfor')
 });
 
 const searchSchema = Joi.object({
