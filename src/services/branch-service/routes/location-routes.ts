@@ -58,5 +58,6 @@ export class LocationRoutes {
       isAuthenticatedCustomer,
       this.searchController.deleteRecentBooking
     );
+    this.router.get('/market-place/search-new', this.searchController.searchNew);
   }
 }
