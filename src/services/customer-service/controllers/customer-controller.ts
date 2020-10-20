@@ -56,6 +56,7 @@ import { ICustomerRecoveryPasswordTemplate } from '../../../utils/emailer/templa
 import * as ejs from 'ejs';
 import * as path from 'path';
 import { sendEmail } from '../../../utils/emailer';
+import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.MARKETPLACE_URL;
@@ -929,6 +930,7 @@ export class CustomerController {
    */
 
   public loginSocial = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       let customer: CustomerModel;
       let data: any;
@@ -939,8 +941,11 @@ export class CustomerController {
       let profile: CustomerModel;
       let newCustomer: CustomerModel;
       let socialInfor: any;
+      let mqttUserData: any;
+      let mqttUserModel: any;
       const validateErrors = validate(req.body, loginSocialSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      transaction = await sequelize.transaction();
       if (req.body.email) {
         if (req.body.provider === ESocialType.GOOGLE) {
           socialInfor = await validateGoogleToken(req.body.token);
@@ -1040,7 +1045,14 @@ export class CustomerController {
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
-          newCustomer = await CustomerModel.create(data);
+          newCustomer = await CustomerModel.create(data, { transaction });
+          mqttUserData = {
+            isSupperUser: false,
+            username: data.email
+          };
+          mqttUserData.password = data.password;
+          mqttUserModel = new MqttUserModel(mqttUserData);
+          await mqttUserModel.save();
           accessTokenData = {
             userId: newCustomer.id,
             userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
@@ -1089,7 +1101,14 @@ export class CustomerController {
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
-          newCustomer = await CustomerModel.create(data);
+          newCustomer = await CustomerModel.create(data, { transaction });
+          mqttUserData = {
+            isSupperUser: false,
+            username: data.email
+          };
+          mqttUserData.password = data.password;
+          mqttUserModel = new MqttUserModel(mqttUserData);
+          await mqttUserModel.save();
           accessTokenData = {
             userId: newCustomer.id,
             userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
@@ -1124,9 +1143,14 @@ export class CustomerController {
         profile = await CustomerModel.findOne({
           where: { googleId: customer.googleId }
         });
+        await transaction.commit();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
     } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
@@ -1171,6 +1195,7 @@ export class CustomerController {
    *         description: Internal server errors
    */
   public loginApple = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       let accessTokenData: IAccessTokenData;
       let accessToken: string;
@@ -1194,6 +1219,7 @@ export class CustomerController {
         }
       });
 
+      transaction = await sequelize.transaction();
       if (!customer) {
         const password = await generatePWD(8);
         const data: any = {
@@ -1204,7 +1230,14 @@ export class CustomerController {
           isBusinessAccount: false
         };
         data.password = await hash(password, PASSWORD_SALT_ROUNDS);
-        const newCustomer = await CustomerModel.create(data);
+        const newCustomer = await CustomerModel.create(data, { transaction });
+        const mqttUserData: any = {
+          isSupperUser: false,
+          username: data.email
+        };
+        mqttUserData.password = data.password;
+        const mqttUserModel = new MqttUserModel(mqttUserData);
+        await mqttUserModel.save();
         accessTokenData = {
           userId: newCustomer.id,
           userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
@@ -1300,6 +1333,7 @@ export class CustomerController {
    *         description:
    */
   public registerCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       const data: any = {
         firstName: req.body.firstName,
@@ -1323,9 +1357,24 @@ export class CustomerController {
         if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
-      const customer = await CustomerModel.create(data);
+      // start transaction
+      transaction = await sequelize.transaction();
+      const customer = await CustomerModel.create(data, { transaction });
+      const mqttUserData: any = {
+        isSupperUser: false,
+        username: data.email
+      };
+      mqttUserData.password = data.password;
+      const mqttUserModel = new MqttUserModel(mqttUserData);
+      await mqttUserModel.save();
+      //commit transaction
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
