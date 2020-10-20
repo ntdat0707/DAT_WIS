@@ -1,5 +1,6 @@
 import { Model } from 'sequelize';
-import { Client, SearchParams } from 'elasticsearch';
+import { Client, queryParams, SearchParams } from 'elasticsearch';
+import {Search} from 'aws-sdk/clients/kendra';
 
 type NonAbstract<T> = { [P in keyof T]: T[P] };
 type Constructor<T> = new () => T;
@@ -184,15 +185,17 @@ const paginateRawData = <T extends Model<T>>(
   }
 };
 
+
 const paginateElasicSearch = async <T extends Model<T>>(
   client: Client,
   searchParams: SearchParams,
   paginateOptions: IPaginateOptions,
   currentUrl: string
-): Promise<IPagination> => {
+): Promise<IPagination>  => {
   try {
     const from = paginateOptions.pageSize * (paginateOptions.pageNum - 1);
     const size = paginateOptions.pageSize * paginateOptions.pageNum;
+
 
     if (searchParams.body) {
       searchParams.body.from = from;
@@ -266,5 +269,6 @@ const paginateElasicSearch = async <T extends Model<T>>(
     throw error;
   }
 };
+
 
 export { paginate, paginateRawData, paginateElasicSearch, IPagination, IPaginateOptions };

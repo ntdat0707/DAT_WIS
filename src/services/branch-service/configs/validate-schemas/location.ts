@@ -193,8 +193,20 @@ const searchSchema = Joi.object({
     .label('searchBy'),
   order: Joi.string()
     .valid(EOrder.NEWEST, EOrder.NEWEST, EOrder.PRICE_LOWEST, EOrder.PRICE_HIGHEST)
+    .allow(null, '')
+    .label('order'),
+  addressInfor: Joi.array()
+    .items(
+      Joi.object({
+        types: Joi.array(),
+        long_name: Joi.string
+      })
+        .allow(null)
+        .allow('')
+    )
     .allow(null)
-    .label('order')
+    .allow('')
+    .label('addressInfor')
 });
 
 const suggestedSchema = Joi.object({

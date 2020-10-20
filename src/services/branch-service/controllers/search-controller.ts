@@ -29,7 +29,7 @@ import {
   getLocationMarketPlacebyId
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
-import { paginate } from '../../../utils/paginator';
+import { paginate, paginateElasicSearch } from '../../../utils/paginator';
 import _ from 'lodash';
 import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
@@ -43,6 +43,9 @@ import {
   deleteRecentViewSchema
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
+import elasticsearchClient from '../../../repositories/elasticsearch';
+import { SearchParams } from 'elasticsearch';
+
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
     const X = {
@@ -1476,45 +1479,283 @@ export class SearchController {
       return next(error);
     }
   };
+  /**
+   * @swagger
+   * definitions:
+   *   search:
+   *       required:
+   *           pageNum
+   *           pageSize
+   *       properties:
+   *           keyword:
+   *               type: string
+   *           pageNum:
+   *               type: integer
+   *           pageSize:
+   *               type: integer
+   *           searchBy:
+   *               type: string
+   *               enum: [ 'service', 'cate-service', 'company',  'city' ]
+   *           address:
+   *               type: string
+   *           fullAddress:
+   *               type: string
+   *           latitude:
+   *               type: number
+   *           longitude:
+   *               type: number
+   *           customerId:
+   *               type: string
+   *           addressInfor:
+   *               type: array
+   *               items:
+   *                    type: object
+   *           order:
+   *               type: string
+   *               enum: [ 'nearest', 'newest', 'price_lowest', 'price_highest' ]
+   */
 
-  // /**
-  //  * @swagger
-  //  * /branch/location/market-place/search-new:
-  //  *   get:
-  //  *     tags:
-  //  *       - Branch
-  //  *     name: searchNew
-  //  *     parameters:
-  //  *     - in: query
-  //  *       name: keyword
-  //  *       schema:
-  //  *          type: string
-  //  *     responses:
-  //  *       200:
-  //  *         description: success
-  //  *       500:
-  //  *         description: Server internal errors
-  //  */
+  /**
+   * @swagger
+   * /branch/location/market-place/search-new:
+   *   post:
+   *     tags:
+   *       - Branch
+   *     name: searchNew
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/search'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
 
-  // public searchNew = async (req: Request, res: Response, next: NextFunction) => {
-  //   try {
-  //     const search = {
-  //       keyword: req.query.keyword
-  //     };
+  public searchNew = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.body.pageNum,
+        pageSize: req.body.pageSize
+      };
 
-  //     const response = await elasticsearchClient.search({
-  //       index: 'marketplace_search',
-  //       body: {
-  //         query: {
-  //           query_string: {
-  //             query: `${search.keyword}~1`
-  //           }
-  //         }
-  //       }
-  //     });
-  //     return res.status(HttpStatus.OK).send(buildSuccessMessage(response));
-  //   } catch (error) {
-  //     return next(error);
-  //   }
-  // };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+
+      const trimSpace = (text: string) =>
+        text
+          .split(' ')
+          .filter((x: string) => x)
+          .join(' ');
+      const search: any = {
+        keywords: trimSpace(req.body.keyword ? req.body.keyword.toString() : ''),
+        customerId: req.body.customerId,
+        latitude: req.body.latitude,
+        longitude: req.body.longitude,
+        order: req.body.order,
+        searchBy: req.body.searchBy,
+        addressInfor: req.body.addressInfor
+      };
+      const validateErrorsSearch = validate(search, searchSchema);
+      if (validateErrorsSearch) {
+        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
+      }
+
+      const keywords: string = search.keywords;
+      if (search.addressInfor) {
+        search.addressInfor.forEach((info: any) => {
+          if (info.types && info.types.length > 0) {
+            switch (info.types[0]) {
+              case 'route':
+                search.street = info.long_name;
+                break;
+              case 'administrative_area_level_2':
+                search.district = info.long_name;
+                break;
+              case 'administrative_area_level_1':
+                search.province = info.long_name;
+                break;
+              case 'country':
+                search.country = info.long_name;
+                break;
+              case 'locality':
+                search.city = info.long_name;
+                break;
+            }
+            if (info.types.includes('sublocality') || info.types.includes('sublocality_level_1')) {
+              search.ward = info.long_name;
+            }
+          }
+        });
+      }
+      const searchParams: SearchParams = {
+        index: 'marketplace_search',
+        body: {
+          query: {
+            query_string: {
+              fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
+              query: `${keywords}~1`
+            }
+          }
+        }
+      };
+
+      const result = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+
+      let locationResults = result.data;
+      // order by open_at
+      // ...
+      const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
+      let searchCateServiceItem: any = {};
+      let searchCompanyItem: any = {};
+      let searchServiceItem: any = {};
+      let searchLocationItem: any = {};
+      locationResults = locationResults.map((location: any) => {
+        location = location._source;
+        if (location.name && removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)) {
+          searchLocationItem = location;
+        }
+
+        if (location.company) {
+          if (
+            location.company.businessName &&
+            removeAccents(location.company.businessName).toLowerCase().search(keywordRemoveAccents)
+          ) {
+            searchCompanyItem = location.company;
+          }
+
+          if (
+            location.services &&
+            !_.isEmpty(location.services) &&
+            location.services[0].name &&
+            removeAccents(location.services[0].name).toLowerCase().search(keywordRemoveAccents)
+          ) {
+            searchServiceItem = location.services[0];
+          }
+
+          if (location.company.cateServices && Array.isArray(location.company.cateServices)) {
+            location.company.cateServices.map((cateService: any) => {
+              if (removeAccents(cateService.name).toLowerCase().search(keywordRemoveAccents)) {
+                searchCateServiceItem = cateService;
+              }
+              return cateService;
+            });
+            location.company.cateServices = undefined;
+          }
+        }
+        const locationDetail = location.marketplaceValues
+          .filter((item: any) => item.id)
+          .reduce(
+            (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+              ...acc,
+              [name]: parseDataByType[type](value)
+            }),
+            {}
+          );
+        location = {
+          ...location,
+          ...locationDetail,
+          company: {
+            ...location.company,
+            ...location.company.companyDetail,
+            companyDetail: undefined
+          },
+          service: (location.services || [])[0],
+          marketplaceValues: undefined,
+          services: undefined,
+          locationDetail: undefined
+        };
+
+        return location;
+      });
+
+      if (search.latitude && search.longitude && !Number.isNaN(+search.latitude) && !Number.isNaN(+search.longitude)) {
+        const latitude: number = +search.latitude;
+        const longitude: number = +search.longitude;
+        locationResults = locationResults.map((location: any) => {
+          location.distance = this.calcCrow(latitude, longitude, location.latitude, location.longitude).toFixed(2);
+          location.unitOfLength = 'kilometers';
+          return location;
+        });
+
+        if (search.order === EOrder.NEAREST) {
+          locationResults = locationResults.sort((locationX: any, locationY: any) => {
+            return locationX.distance - locationY.distance;
+          });
+        }
+      }
+
+      if (search.order === EOrder.PRICE_LOWEST) {
+        locationResults = locationResults.sort((locationX: any, locationY: any) => {
+          if (!locationX.service) {
+            return 1;
+          }
+          if (!locationY.service) {
+            return -1;
+          }
+          return locationX.service.salePrice - locationY.service.salePrice;
+        });
+      }
+
+      if (search.order === EOrder.PRICE_HIGHEST) {
+        locationResults = locationResults.sort((locationX: any, locationY: any) => {
+          if (!locationX.service) {
+            return 1;
+          }
+          if (!locationY.service) {
+            return -1;
+          }
+          return locationY.service.salePrice - locationX.service.salePrice;
+        });
+      }
+
+      if (search.customerId && search.keywords) {
+        req.query = {
+          ...req.query,
+          ...search
+        };
+        let typeResult = null;
+        let cateServiceId = null;
+        let companyId = null;
+        let serviceId = null;
+        let locationId = null;
+        if (!_.isEmpty(searchCateServiceItem)) {
+          cateServiceId = searchCateServiceItem.id;
+          typeResult = 'cateService';
+        } else if (!_.isEmpty(searchCompanyItem)) {
+          companyId = searchCompanyItem.id;
+          typeResult = 'company';
+        } else if (!_.isEmpty(searchServiceItem)) {
+          serviceId = searchServiceItem.id;
+          typeResult = 'service';
+        } else if (!_.isEmpty(searchLocationItem)) {
+          locationId = searchLocationItem.id;
+          typeResult = 'location';
+        }
+        await this.createCustomerSearch(
+          req,
+          {
+            cateServiceId,
+            companyId,
+            serviceId,
+            locationId
+          },
+          typeResult
+        );
+      }
+      result.data = locationResults;
+
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(result));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
