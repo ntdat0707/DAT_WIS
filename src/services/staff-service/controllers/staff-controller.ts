@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op } from 'sequelize';
+import { FindOptions, Op, Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 import _ from 'lodash';
@@ -26,7 +26,9 @@ import {
   AppointmentModel,
   AppointmentDetailModel,
   CompanyModel,
-  LocationWorkingHourModel
+  LocationWorkingHourModel,
+  GroupStaffModel,
+  CateServiceModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -36,7 +38,8 @@ import {
   createStaffsSchema,
   updateStaffSchema,
   getStaffMultipleService,
-  deleteStaffSchema
+  deleteStaffSchema,
+  getServicesOfStaff
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 
@@ -68,19 +71,24 @@ export class StaffController {
       const staffId = req.params.staffId;
       const validateErrors = validate(staffId, staffIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const staff = await StaffModel.findOne({
+      const staff: any = await StaffModel.findOne({
         where: { id: staffId },
         include: [
           {
             model: LocationModel,
             as: 'workingLocations',
             through: { attributes: [] }
+          },
+          {
+            model: GroupStaffModel,
+            as: 'groupStaff',
+            required: true,
+            attributes: { exclude: ['updatedAt', 'createdAt', 'deletedAt'] }
           }
         ]
       });
       if (!staff)
         return next(new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
-
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);
@@ -135,7 +143,6 @@ export class StaffController {
       const filter = { workingLocationIds: req.query.workingLocationIds };
       const validateFilterErrors = validate(filter, filterStaffSchema);
       if (validateFilterErrors) return next(new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST));
-
       const query: FindOptions = { include: [] };
       if (
         filter.workingLocationIds &&
@@ -162,6 +169,12 @@ export class StaffController {
                 attributes: []
               },
               where: { id: filter.workingLocationIds }
+            },
+            {
+              model: GroupStaffModel,
+              as: 'groupStaff',
+              required: true,
+              where: { name: Sequelize.literal('unaccent("groupStaff"."name") ilike unaccent(\'%Bac si%\')') }
             }
           ]
         ];
@@ -181,7 +194,7 @@ export class StaffController {
       }
 
       const staffs = await paginate(
-        StaffModel.scope('safe'),
+        StaffModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
@@ -212,6 +225,9 @@ export class StaffController {
    *       name: locationId
    *       type: string
    *       required: true
+   *     - in: "formData"
+   *       name: groupStaffId
+   *       type: string
    *     - in: "formData"
    *       name: firstName
    *       type: string
@@ -271,12 +287,12 @@ export class StaffController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const profile: any = {
+        groupStaffId: req.body.groupStaffId,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
         phone: req.body.phone,
         email: req.body.email,
-        // mainLocationId: req.body.mainLocationId,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
         address: req.body.address,
@@ -309,6 +325,7 @@ export class StaffController {
       }
       if (req.file) profile.avatarPath = (req.file as any).location;
       const staff = await StaffModel.create(profile, { transaction });
+
       if (req.body.workingLocationIds) {
         const workingLocationData = (req.body.workingLocationIds as []).map((x) => ({
           locationId: x,
@@ -685,7 +702,7 @@ export class StaffController {
         ];
       }
 
-      const staffs = await StaffModel.scope('safe').findAll(query);
+      const staffs = await StaffModel.findAll(query);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return next(error);
@@ -863,6 +880,7 @@ export class StaffController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /staff/complete-onboard:
@@ -1462,6 +1480,188 @@ export class StaffController {
       res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return error;
+    }
+  };
+
+  /**
+   * @swagger
+   * /staff/get-group-staff:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: getGroupStaff
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: companyId
+   *       required: companyId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getGroupStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const companyId = res.locals.staffPayload.companyId;
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const query: FindOptions = {
+        where: { companyId: companyId },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      };
+      const groupStaffs = await paginate(
+        GroupStaffModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(groupStaffs));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   *  @swagger
+   * /staff/get-staff-in-group:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: getStaffInGroup
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: groupStaffId
+   *       required: true
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getStaffInGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const groupStaffId = req.query.groupStaffId;
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const query: FindOptions = {
+        where: { groupStaffId: groupStaffId },
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      };
+      const staffs = await paginate(
+        StaffModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   *  @swagger
+   * /staff/list-service/{staffId}:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     name: getServicesByStaff
+   *     parameters:
+   *     - in: path
+   *       name: staffId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: |
+   *           </br> xxx1: Something error
+   *           </br> xxx2: Internal server errors
+   */
+
+  public getServicesByStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.params.staffId, getServicesOfStaff);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const staff = await StaffModel.findOne({
+        where: { id: req.params.staffId }
+      });
+      if (!staff) {
+        return next(
+          new CustomError(staffErrorDetails.E_4000(`staff Id ${req.params.staffId} not found`), HttpStatus.NOT_FOUND)
+        );
+      }
+      let cateServices: any = [];
+      cateServices = await CateServiceModel.findAll({
+        include: [
+          {
+            model: ServiceModel,
+            as: 'services',
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            include: [
+              {
+                model: StaffModel,
+                as: 'staffs',
+                required: true,
+                through: { attributes: [] },
+                attributes: [],
+                where: { id: req.params.staffId }
+              }
+            ]
+          }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
+    } catch (error) {
+      return next(error);
     }
   };
 }

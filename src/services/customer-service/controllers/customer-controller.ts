@@ -56,6 +56,7 @@ import { ICustomerRecoveryPasswordTemplate } from '../../../utils/emailer/templa
 import * as ejs from 'ejs';
 import * as path from 'path';
 import { sendEmail } from '../../../utils/emailer';
+import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.MARKETPLACE_URL;
@@ -818,7 +819,7 @@ export class CustomerController {
         accessToken
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
-      const profile = await CustomerModel.scope('safe').findOne({
+      const profile = await CustomerModel.findOne({
         where: { email: data.email }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -869,7 +870,7 @@ export class CustomerController {
       if (accessTokenData instanceof CustomError) {
         return next(new CustomError(generalErrorDetails.E_0003()));
       } else {
-        const customer = await CustomerModel.scope('safe').findOne({
+        const customer = await CustomerModel.findOne({
           where: { id: accessTokenData.userId }
         });
         if (!customer) {
@@ -929,6 +930,7 @@ export class CustomerController {
    */
 
   public loginSocial = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       let customer: CustomerModel;
       let data: any;
@@ -939,8 +941,11 @@ export class CustomerController {
       let profile: CustomerModel;
       let newCustomer: CustomerModel;
       let socialInfor: any;
+      let mqttUserData: any;
+      let mqttUserModel: any;
       const validateErrors = validate(req.body, loginSocialSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      transaction = await sequelize.transaction();
       if (req.body.email) {
         if (req.body.provider === ESocialType.GOOGLE) {
           socialInfor = await validateGoogleToken(req.body.token);
@@ -955,7 +960,7 @@ export class CustomerController {
             );
           }
         }
-        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+        customer = await CustomerModel.findOne({ raw: true, where: { email: req.body.email } });
       } else {
         if (req.body.provider === ESocialType.GOOGLE) {
           return next(new CustomError(customerErrorDetails.E_3007('Missing email'), HttpStatus.BAD_REQUEST));
@@ -987,7 +992,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.scope('safe').findOne({
+          profile = await CustomerModel.findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1017,7 +1022,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.scope('safe').findOne({
+          profile = await CustomerModel.findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1029,7 +1034,7 @@ export class CustomerController {
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
           return next(new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
-        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
+        customer = await CustomerModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!customer) {
           const password = await generatePWD(8);
           data = {
@@ -1040,7 +1045,14 @@ export class CustomerController {
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
-          newCustomer = await CustomerModel.create(data);
+          newCustomer = await CustomerModel.create(data, { transaction });
+          mqttUserData = {
+            isSupperUser: false,
+            username: data.email
+          };
+          mqttUserData.password = data.password;
+          mqttUserModel = new MqttUserModel(mqttUserData);
+          await mqttUserModel.save();
           accessTokenData = {
             userId: newCustomer.id,
             userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
@@ -1054,7 +1066,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.scope('safe').findOne({
+          profile = await CustomerModel.findOne({
             where: { facebookId: newCustomer.facebookId }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1072,13 +1084,13 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.scope('safe').findOne({
+        profile = await CustomerModel.findOne({
           where: { facebookId: customer.facebookId }
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
       if (req.body.provider === ESocialType.GOOGLE) {
-        customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
+        customer = await CustomerModel.findOne({ raw: true, where: { googleId: req.body.providerId } });
         if (!customer) {
           const password = await generatePWD(8);
           data = {
@@ -1089,7 +1101,14 @@ export class CustomerController {
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
-          newCustomer = await CustomerModel.create(data);
+          newCustomer = await CustomerModel.create(data, { transaction });
+          mqttUserData = {
+            isSupperUser: false,
+            username: data.email
+          };
+          mqttUserData.password = data.password;
+          mqttUserModel = new MqttUserModel(mqttUserData);
+          await mqttUserModel.save();
           accessTokenData = {
             userId: newCustomer.id,
             userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
@@ -1103,7 +1122,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.scope('safe').findOne({
+          profile = await CustomerModel.findOne({
             where: { googleId: newCustomer.googleId }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1121,12 +1140,17 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.scope('safe').findOne({
+        profile = await CustomerModel.findOne({
           where: { googleId: customer.googleId }
         });
+        await transaction.commit();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
     } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
@@ -1171,6 +1195,7 @@ export class CustomerController {
    *         description: Internal server errors
    */
   public loginApple = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       let accessTokenData: IAccessTokenData;
       let accessToken: string;
@@ -1194,6 +1219,7 @@ export class CustomerController {
         }
       });
 
+      transaction = await sequelize.transaction();
       if (!customer) {
         const password = await generatePWD(8);
         const data: any = {
@@ -1204,7 +1230,14 @@ export class CustomerController {
           isBusinessAccount: false
         };
         data.password = await hash(password, PASSWORD_SALT_ROUNDS);
-        const newCustomer = await CustomerModel.create(data);
+        const newCustomer = await CustomerModel.create(data, { transaction });
+        const mqttUserData: any = {
+          isSupperUser: false,
+          username: data.email
+        };
+        mqttUserData.password = data.password;
+        const mqttUserModel = new MqttUserModel(mqttUserData);
+        await mqttUserModel.save();
         accessTokenData = {
           userId: newCustomer.id,
           userName: `${newCustomer.firstName} ${newCustomer.lastName}`,
@@ -1218,7 +1251,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.scope('safe').findOne({
+        profile = await CustomerModel.findOne({
           where: { appleId: newCustomer.appleId }
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1236,7 +1269,7 @@ export class CustomerController {
         accessToken
       };
       refreshToken = await createRefreshToken(refreshTokenData);
-      profile = await CustomerModel.scope('safe').findOne({
+      profile = await CustomerModel.findOne({
         where: { appleId: customer.appleId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1300,6 +1333,7 @@ export class CustomerController {
    *         description:
    */
   public registerCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
       const data: any = {
         firstName: req.body.firstName,
@@ -1323,9 +1357,24 @@ export class CustomerController {
         if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
       }
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
-      const customer = await CustomerModel.create(data);
+      // start transaction
+      transaction = await sequelize.transaction();
+      const customer = await CustomerModel.create(data, { transaction });
+      const mqttUserData: any = {
+        isSupperUser: false,
+        username: data.email
+      };
+      mqttUserData.password = data.password;
+      const mqttUserModel = new MqttUserModel(mqttUserData);
+      await mqttUserModel.save();
+      //commit transaction
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
     } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
@@ -1368,7 +1417,7 @@ export class CustomerController {
       const email = req.body.email;
       const validateErrors = validate({ email: email }, emailSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      const customer = await CustomerModel.findOne({ raw: true, where: { email: req.body.email } });
       if (!customer) return next(new CustomError(customerErrorDetails.E_3001('Email not found'), HttpStatus.NOT_FOUND));
       const uuidToken = uuidv4();
       const dataSendMail: ICustomerRecoveryPasswordTemplate = {
@@ -1445,7 +1494,7 @@ export class CustomerController {
       if (!tokenStoraged)
         return next(new CustomError(customerErrorDetails.E_3009('Invalid token'), HttpStatus.UNAUTHORIZED));
       const data = JSON.parse(tokenStoraged);
-      const customer = await CustomerModel.scope('safe').findOne({ raw: true, where: { email: data.email } });
+      const customer = await CustomerModel.findOne({ raw: true, where: { email: data.email } });
       if (!customer) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
       const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
       await CustomerModel.update(

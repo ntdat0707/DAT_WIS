@@ -16,6 +16,7 @@ class InvoiceModel extends Model {
   public balance!: number;
   public status!: string;
   public subTotal?: number;
+  public tpis?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -82,6 +83,11 @@ InvoiceModel.init(
       field: 'note',
       type: DataTypes.STRING,
       allowNull: true
+    },
+    tpis: {
+      field: 'tips',
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     },
     createdAt: {
       field: 'created_at',

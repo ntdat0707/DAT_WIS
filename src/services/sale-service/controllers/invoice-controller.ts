@@ -2,9 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { baseValidateSchemas, validate } from '../../../utils/validator';
-import { createInvoiceSchema, createPaymentSchema, appointmentId } from '../configs/validate-schemas';
+import { createInvoiceSchema, createPaymentSchema } from '../configs/validate-schemas';
 import {
-  AppointmentDetailModel,
   AppointmentModel,
   CustomerWisereModel,
   InvoiceDetailModel,
@@ -66,6 +65,12 @@ export class InvoiceController {
    *               type: string
    *           discount:
    *               type: number
+   *           totalQuantity:
+   *               type: number
+   *           subtotal:
+   *               type: number
+   *           totalAmount:
+   *               type: number
    *           tax:
    *               type: number
    *           listInvoiceDetail:
@@ -77,7 +82,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/checkout:
+   * /sale/create-invoice:
    *   post:
    *     tags:
    *       - Sale
@@ -99,23 +104,22 @@ export class InvoiceController {
    *         description:
    */
 
-  public checkout = async (req: Request, res: Response, next: NextFunction) => {
+  public createInvoice = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      transaction = await sequelize.transaction();
       const { workingLocationIds } = res.locals.staffPayload;
       let validateErrors: any;
-      if (!req.body.appointmentId) {
-        validateErrors = validate(req.body, createInvoiceSchema);
-        if (validateErrors) {
-          return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
-        }
-        if (!workingLocationIds.includes(req.body.locationId)) {
-          throw new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-            httpStatus.FORBIDDEN
-          );
-        }
+      validateErrors = validate(req.body, createInvoiceSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      if (!workingLocationIds.includes(req.body.locationId)) {
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+          httpStatus.FORBIDDEN
+        );
+      }
+      if (req.body.customerWisereId) {
         const customerWisere = await CustomerWisereModel.findOne({ where: { id: req.body.customerWisereId } });
         if (!customerWisere) {
           throw new CustomError(
@@ -123,42 +127,111 @@ export class InvoiceController {
             httpStatus.NOT_FOUND
           );
         }
-        await this.createInvoice(req.body, transaction);
-      } else {
-        validateErrors = validate(req.body.appointmentId, appointmentId);
-        if (validateErrors) {
-          return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
-        }
-        const appointment = await AppointmentModel.findOne({
-          where: { id: req.body.appointmentId, locationId: workingLocationIds },
-          include: [
-            {
-              model: AppointmentDetailModel,
-              as: 'appointmentDetails',
-              include: [
-                {
-                  model: ServiceModel,
-                  as: 'service',
-                  required: true
-                },
-                {
-                  model: StaffModel.scope('safe'),
-                  as: 'staffs'
-                }
-              ]
-            }
-          ]
-        });
+      }
+      if (req.body.appointmentId) {
+        const appointment = await AppointmentModel.findOne({ where: { id: req.body.appointmentId } });
         if (!appointment) {
-          return next(
-            new CustomError(
-              bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
-              httpStatus.NOT_FOUND
-            )
+          throw new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
+            httpStatus.NOT_FOUND
           );
         }
-        await this.convertApptToSale(appointment, transaction);
+        const checkAppointmentId = await InvoiceModel.findOne({ where: { appointmentId: req.body.appointmentId } });
+        if (checkAppointmentId) {
+          throw new CustomError(
+            invoiceErrorDetails.E_3304(`appointmentId ${req.body.appointmentId} existed in invoice`),
+            httpStatus.BAD_REQUEST
+          );
+        }
       }
+      let invoiceCode = '';
+      for (let i = 0; i < 10; i++) {
+        const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        invoiceCode = 'INV' + randomCode;
+        const existInvoiceCode = await InvoiceModel.findOne({ where: { code: invoiceCode } });
+        if (!existInvoiceCode) {
+          break;
+        }
+      }
+      let dataInvoice: any = {
+        id: uuidv4(),
+        code: invoiceCode,
+        appointmentId: req.body.appointmentId,
+        locationId: req.body.locationId,
+        customerWisereId: req.body.customerWisereId,
+        source: req.body.source,
+        note: req.body.note,
+        discount: req.body.discount,
+        tax: req.body.tax
+      };
+      let subTotal = 0;
+      let totalQuantity = 0;
+      const invoiceDetails = [];
+      const invoiceDetailStaffs = [];
+      for (let i = 0; i < req.body.listInvoiceDetail.length; i++) {
+        const service = await ServiceModel.findOne({ where: { id: req.body.listInvoiceDetail[i].serviceId } });
+        if (!service) {
+          throw new CustomError(
+            serviceErrorDetails.E_1203(`serviceId ${req.body.listInvoiceDetail[i].serviceId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        const dataInvoiceDetail = {
+          id: uuidv4(),
+          invoiceId: dataInvoice.id,
+          serviceId: req.body.listInvoiceDetail[i].serviceId,
+          unit: req.body.listInvoiceDetail[i].unit,
+          quantity: req.body.listInvoiceDetail[i].quantity,
+          price: service.salePrice
+        };
+        invoiceDetails.push(dataInvoiceDetail);
+        subTotal += dataInvoiceDetail.quantity * dataInvoiceDetail.price;
+        totalQuantity += dataInvoiceDetail.quantity;
+        for (let j = 0; j < req.body.listInvoiceDetail[i].listStaff.length; j++) {
+          const staff = await StaffModel.findOne({ where: { id: req.body.listInvoiceDetail[i].listStaff[j].staffId } });
+          if (!staff) {
+            throw new CustomError(
+              staffErrorDetails.E_4000(`staffId ${req.body.listInvoiceDetail[i].listStaff[j].staffId} not found`),
+              httpStatus.NOT_FOUND
+            );
+          }
+          const dataInvoiceDetailStaff = {
+            invoiceDetailId: dataInvoiceDetail.id,
+            staffId: req.body.listInvoiceDetail[i].listStaff[j].staffId
+          };
+          invoiceDetailStaffs.push(dataInvoiceDetailStaff);
+        }
+      }
+      const invoiceDiscount = subTotal * dataInvoice.discount;
+      const totalAmount = subTotal - invoiceDiscount + (invoiceDiscount * dataInvoice.tax) / 100;
+      if (req.body.totalQuantity !== totalQuantity) {
+        throw new CustomError(
+          invoiceErrorDetails.E_3301(`total quantity ${req.body.totalQuantity} is incorrect`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      if (req.body.subtotal !== subTotal) {
+        throw new CustomError(
+          invoiceErrorDetails.E_3302(`subTotal ${req.body.subtotal} is incorrect`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      if (req.body.totalAmount !== totalAmount) {
+        throw new CustomError(
+          invoiceErrorDetails.E_3303(`total amount ${req.body.totalAmount} is incorrect`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      dataInvoice = {
+        ...dataInvoice,
+        subTotal: subTotal,
+        status: EBalanceType.UNPAID,
+        balance: subTotal
+      };
+      transaction = await sequelize.transaction();
+      await InvoiceModel.create(dataInvoice, { transaction });
+      await InvoiceDetailModel.bulkCreate(invoiceDetails, { transaction });
+      await InvoiceDetailStaffModel.bulkCreate(invoiceDetailStaffs, { transaction });
       await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
@@ -169,121 +242,6 @@ export class InvoiceController {
       return next(error);
     }
   };
-
-  private async createInvoice(data: any, transaction: any) {
-    let invoiceCode = '';
-    for (let i = 0; i < 10; i++) {
-      const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      invoiceCode = 'INV' + randomCode;
-      const existInvoiceCode = await InvoiceModel.findOne({ where: { code: invoiceCode } });
-      if (!existInvoiceCode) {
-        break;
-      }
-    }
-    let dataInvoice: any = {
-      id: uuidv4(),
-      code: invoiceCode,
-      locationId: data.locationId,
-      customerWisereId: data.customerWisereId,
-      source: data.source,
-      note: data.note,
-      discount: data.discount,
-      tax: data.tax
-    };
-    let subTotal = 0;
-    const invoiceDetails = [];
-    const invoiceDetailStaffs = [];
-    for (let i = 0; i < data.listInvoiceDetail.length; i++) {
-      const service = await ServiceModel.findOne({ where: { id: data.listInvoiceDetail[i].serviceId } });
-      if (!service) {
-        throw new CustomError(
-          serviceErrorDetails.E_1203(`serviceId ${data.listInvoiceDetail[i].serviceId} not found`),
-          httpStatus.NOT_FOUND
-        );
-      }
-      const dataInvoiceDetail = {
-        id: uuidv4(),
-        invoiceId: dataInvoice.id,
-        serviceId: data.listInvoiceDetail[i].serviceId,
-        unit: data.listInvoiceDetail[i].unit,
-        quantity: data.listInvoiceDetail[i].quantity,
-        price: service.salePrice
-      };
-      invoiceDetails.push(dataInvoiceDetail);
-      subTotal += dataInvoiceDetail.quantity * dataInvoiceDetail.price;
-      for (let j = 0; j < data.listInvoiceDetail[i].listStaff.length; j++) {
-        const staff = await StaffModel.findOne({ where: { id: data.listInvoiceDetail[i].listStaff[j].staffId } });
-        if (!staff) {
-          throw new CustomError(
-            staffErrorDetails.E_4000(`staffId ${data.listInvoiceDetail[i].listStaff[j].staffId} not found`),
-            httpStatus.NOT_FOUND
-          );
-        }
-        const dataInvoiceDetailStaff = {
-          invoiceDetailId: dataInvoiceDetail.id,
-          staffId: data.listInvoiceDetail[i].listStaff[j].staffId
-        };
-        invoiceDetailStaffs.push(dataInvoiceDetailStaff);
-      }
-    }
-    dataInvoice = {
-      ...dataInvoice,
-      subTotal: subTotal,
-      status: EBalanceType.UNPAID,
-      balance: subTotal
-    };
-    await InvoiceModel.create(dataInvoice, { transaction });
-    await InvoiceDetailModel.bulkCreate(invoiceDetails, { transaction });
-    await InvoiceDetailStaffModel.bulkCreate(invoiceDetailStaffs, { transaction });
-  }
-
-  private async convertApptToSale(appointment: any, transaction: any) {
-    let invoiceCode = '';
-    for (let i = 0; i < 10; i++) {
-      const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      invoiceCode = 'SON' + randomCode;
-      const existInvoiceCode = await InvoiceModel.findOne({ where: { code: invoiceCode } });
-      if (!existInvoiceCode) {
-        break;
-      }
-    }
-    let dataInvoice: any = {
-      id: uuidv4(),
-      code: invoiceCode,
-      locationId: appointment.locationId,
-      appointmentId: appointment.id,
-      customerWisereId: appointment.customerWisereId
-    };
-    let subTotal = 0;
-    const invoiceDetails = [];
-    const invoiceDetailStaffs = [];
-    for (let i = 0; i < appointment.appointmentDetails.length; i++) {
-      const dataInvoiceDetail = {
-        id: uuidv4(),
-        invoiceId: dataInvoice.id,
-        serviceId: appointment.appointmentDetails[i].serviceId,
-        price: appointment.appointmentDetails[i].service.salePrice
-      };
-      invoiceDetails.push(dataInvoiceDetail);
-      subTotal += dataInvoiceDetail.price;
-      for (let j = 0; j < appointment.appointmentDetails[i].staffs.length; j++) {
-        const dataInvoiceDetailStaff = {
-          invoiceDetailId: dataInvoiceDetail.id,
-          staffId: appointment.appointmentDetails[i].staffs[j].id
-        };
-        invoiceDetailStaffs.push(dataInvoiceDetailStaff);
-      }
-    }
-    dataInvoice = {
-      ...dataInvoice,
-      subTotal: subTotal,
-      status: EBalanceType.UNPAID,
-      balance: subTotal
-    };
-    await InvoiceModel.create(dataInvoice, { transaction });
-    await InvoiceDetailModel.bulkCreate(invoiceDetails, { transaction });
-    await InvoiceDetailStaffModel.bulkCreate(invoiceDetailStaffs, { transaction });
-  }
 
   /**
    * @swagger
@@ -339,6 +297,14 @@ export class InvoiceController {
         throw new CustomError(
           invoiceErrorDetails.E_3300(`invoiceId ${data.invoiceId} not found`),
           httpStatus.NOT_FOUND
+        );
+      }
+      if (data.amount > invoice.balance) {
+        throw new CustomError(
+          invoiceErrorDetails.E_3305(
+            `amount ${data.amount} is greater than the balance ${invoice.balance} in the invoice`
+          ),
+          httpStatus.BAD_REQUEST
         );
       }
       transaction = await sequelize.transaction();

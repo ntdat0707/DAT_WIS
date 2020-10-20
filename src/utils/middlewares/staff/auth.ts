@@ -122,7 +122,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
       return res.status(HttpStatus.UNAUTHORIZED).send(buildErrorMessage(generalErrorDetails.E_0003()));
     } else {
-      const staff = await StaffModel.scope('safe').findOne({
+      const staff = await StaffModel.findOne({
         where: { id: accessTokenData.userId },
         include: [{ model: CompanyModel, as: 'hasCompany', required: false }]
       });
@@ -214,7 +214,7 @@ const authenticate = async (accessTokenBearer: string): Promise<IStaffAuthentica
       logger.error({ label: LOG_LABEL, message: JSON.stringify(generalErrorDetails.E_0003()) });
       return accessTokenData;
     } else {
-      const staff = await StaffModel.scope('safe').findOne({
+      const staff = await StaffModel.findOne({
         where: { id: accessTokenData.userId },
         include: [{ model: CompanyModel, as: 'hasCompany', required: false }]
       });

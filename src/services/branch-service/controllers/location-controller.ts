@@ -13,8 +13,6 @@ import {
   LocationWorkingHourModel,
   StaffModel,
   CompanyDetailModel,
-  MarketPlaceFieldsModel,
-  MarketPlaceValueModel,
   LocationImageModel
 } from '../../../repositories/postgres/models';
 
@@ -31,7 +29,6 @@ import _ from 'lodash';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeRemoveAccent } from '../../../utils/text';
-import { dataDefaultByType, parseDataByType } from '../utils';
 
 export class LocationController {
   /**
@@ -175,12 +172,10 @@ export class LocationController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      let streetName = '';
       for (let i = 0; i < data.addressInfor.length; i++) {
         switch (data.addressInfor[i].types[0]) {
           case 'route':
-            data.address += ' ' + data.addressInfor[i].long_name;
-            streetName += data.addressInfor[i].long_name;
+            data.street = data.addressInfor[i].long_name;
             break;
           case 'administrative_area_level_2':
             data.district = data.addressInfor[i].long_name;
@@ -202,7 +197,7 @@ export class LocationController {
         }
       }
 
-      if (!streetName) {
+      if (!data.street) {
         return next(new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST));
       }
       data.companyId = res.locals.staffPayload.companyId;
@@ -261,24 +256,6 @@ export class LocationController {
         await LocationImageModel.create(dataImage, { transaction });
       }
 
-      const marketplaceFields: any = (
-        await MarketPlaceFieldsModel.findAll({
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-        })
-      ).map((marketplaceField: any) => ({
-        ...marketplaceField.dataValues
-      }));
-
-      await marketplaceFields.forEach(async (marketplaceField: any) => {
-        const marketplaceValueData: any = {
-          id: uuidv4(),
-          locationId: location.id,
-          fieldId: marketplaceField.id,
-          value: data[marketplaceField.name] || dataDefaultByType[marketplaceField.type]
-        };
-        await MarketPlaceValueModel.create(marketplaceValueData, { transaction });
-      });
-
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
           return next(
@@ -312,45 +289,7 @@ export class LocationController {
 
       await transaction.commit();
       //commit transaction
-      let newLocation: any = await LocationModel.findOne({
-        where: { id: location.id },
-        include: [
-          {
-            model: MarketPlaceValueModel,
-            as: 'marketplaceValues',
-            required: false,
-            attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] },
-            include: [
-              {
-                model: MarketPlaceFieldsModel,
-                as: 'marketplaceField',
-                required: false,
-                attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
-              }
-            ]
-          }
-        ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-        group: ['LocationModel.id', 'marketplaceValues.id', 'marketplaceValues->marketplaceField.id']
-      });
-
-      const locationDetail = newLocation.marketplaceValues?.reduce(
-        (acc: any, { value, marketplaceField: { name, type } }: any) => {
-          return {
-            ...acc,
-            [name]: parseDataByType[type](value)
-          };
-        },
-        {}
-      );
-
-      newLocation = {
-        ...newLocation.dataValues,
-        ...locationDetail,
-        marketplaceValues: undefined
-      };
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(newLocation));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
       //rollback transaction
       if (transaction) {
@@ -386,6 +325,14 @@ export class LocationController {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
             required: false
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            where: {
+              isAvatar: true
+            }
           }
         ]
       });
@@ -444,6 +391,14 @@ export class LocationController {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
             required: false
+          },
+          {
+            model: LocationImageModel,
+            as: 'locationImages',
+            required: false,
+            where: {
+              isAvatar: true
+            }
           }
         ]
       };
@@ -838,7 +793,7 @@ export class LocationController {
         description: body.description,
         city: location.city,
         ward: location.ward,
-        address: location.address,
+        address: body.address,
         latitude: body.latitude,
         longitude: body.longitude,
         workingTimes: body.workingTimes,
@@ -850,9 +805,10 @@ export class LocationController {
         openedAt: body.openedAt,
         placeId: location.placeId,
         addressInfor: body.addressInfor,
-        fullAddress: location.ward,
+        fullAddress: body.fullAddress,
         country: location.country,
-        province: location.province
+        province: location.province,
+        street: location.street
       };
 
       if (body.placeId && body.placeId !== location.placeId) {
@@ -862,12 +818,10 @@ export class LocationController {
         if (!body.fullAddress) {
           return next(new CustomError(locationErrorDetails.E_1010(), HttpStatus.NOT_FOUND));
         }
-        let streetName = '';
         for (let i = 0; i < body.addressInfor.length; i++) {
           switch (body.addressInfor[i].types[0]) {
             case 'route':
-              data.address += ' ' + body.addressInfor[i].long_name;
-              streetName += body.addressInfor[i].long_name;
+              data.street = body.addressInfor[i].long_name;
               break;
             case 'administrative_area_level_2':
               data.district = body.addressInfor[i].long_name;
@@ -889,9 +843,10 @@ export class LocationController {
           }
         }
 
-        if (!streetName) {
+        if (!data.street) {
           return next(new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST));
         }
+        data.placeId = body.placeId;
       }
 
       // start transaction
@@ -938,17 +893,6 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
-      // const data: any = {
-      //   name: body.name ? body.name : location.name,
-      //   phone: body.phone ? body.phone : location.phone,
-      //   email: body.email,
-      //   city: body.city,
-      //   district: body.district,
-      //   ward: body.ward,
-      //   address: body.address,
-      //   latitude: body.latitude,
-      //   longitude: body.longitude
-      // };
 
       if (file) {
         data.photo = (file as any).location;

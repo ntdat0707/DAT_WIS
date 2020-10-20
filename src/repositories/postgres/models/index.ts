@@ -34,6 +34,7 @@ import { InvoiceDetailModel } from './invoice-detail-model';
 import { InvoiceDetailStaffModel } from './invoice-detail-staff-model';
 import { PaymentModel } from './payment-model';
 import { ReceiptModel } from './receipt-model';
+import { GroupStaffModel } from './group-staff-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -203,6 +204,11 @@ InvoiceModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as
 
 LocationModel.hasMany(InvoiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'invoices' });
 InvoiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+GroupStaffModel.hasOne(StaffModel, { foreignKey: 'groupStaffId', sourceKey: 'id', as: 'staff' });
+StaffModel.belongsTo(GroupStaffModel, { foreignKey: 'groupStaffId', as: 'groupStaff' });
+
+CompanyModel.hasOne(GroupStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'company' });
+GroupStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'groupStaff' });
 
 export {
   sequelize,
@@ -235,5 +241,6 @@ export {
   InvoiceDetailModel,
   InvoiceDetailStaffModel,
   PaymentModel,
-  ReceiptModel
+  ReceiptModel,
+  GroupStaffModel
 };

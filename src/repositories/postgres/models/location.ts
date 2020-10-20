@@ -14,6 +14,7 @@ class LocationModel extends Model {
   public district: string;
   public ward: string;
   public province: string;
+  public street: string;
   public address: string;
   public fullAddress: string;
   public latitude: number;
@@ -83,6 +84,11 @@ LocationModel.init(
     },
     ward: {
       field: 'ward',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    street: {
+      field: 'street',
       type: DataTypes.STRING,
       allowNull: true
     },

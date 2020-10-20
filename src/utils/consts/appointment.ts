@@ -173,7 +173,6 @@ interface IManagementLockAppointmentData {
     passportNumber: any;
     groupStaffId: any;
     isBusinessAccount: boolean;
-    mainLocationId: any;
     facebookId: any;
     appleId: any;
     googleId: any;
@@ -278,7 +277,6 @@ interface IManagementEditAppointmentDetailData {
     passportNumber: any;
     groupStaffId: any;
     isBusinessAccount: boolean;
-    mainLocationId: any;
     facebookId: any;
     appleId: any;
     googleId: any;
