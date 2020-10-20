@@ -1519,7 +1519,7 @@ export class StaffController {
    *       - Staff
    *     security:
    *       - Bearer: []
-   *     name: getGroupStaff
+   *     name: getGroupsStaff
    *     parameters:
    *     - in: query
    *       name: pageNum
@@ -1531,6 +1531,11 @@ export class StaffController {
    *       required: true
    *       schema:
    *          type: integer
+   *     - in: query
+   *       name: searchValue
+   *       required: false
+   *       schema:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
