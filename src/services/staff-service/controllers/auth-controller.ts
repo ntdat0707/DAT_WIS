@@ -48,6 +48,7 @@ import { generatePWD } from '../../../utils/lib/generatePassword';
 import { v4 } from 'public-ip';
 import { LoginLogModel } from '../../../repositories/mongo/models/login-log-model';
 import geoip from 'geoip-lite';
+import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
@@ -247,6 +248,13 @@ export class AuthController {
       ];
 
       await PipelineStageModel.bulkCreate(dataStage, { transaction });
+      const mqttUserData: any = {
+        isSupperUser: false,
+        username: data.email
+      };
+      mqttUserData.password = data.password;
+      const mqttUserModel = new MqttUserModel(mqttUserData);
+      await mqttUserModel.save();
       //commit transaction
       await transaction.commit();
       const dataSendMail: IStaffRegisterAccountTemplate = {
@@ -337,7 +345,11 @@ export class AuthController {
       if (!staff) {
         loginData = {
           email: data.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            ' ( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -353,7 +365,11 @@ export class AuthController {
       if (!staff.isBusinessAccount) {
         loginData = {
           email: data.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            ' ( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -370,7 +386,11 @@ export class AuthController {
       if (!match) {
         loginData = {
           email: data.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            ' ( country code )',
           timestamp: new Date(),
           browser: data.browser,
           device: data.device,
@@ -398,7 +418,7 @@ export class AuthController {
         accessToken
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
-      const profile = await StaffModel.scope('safe').findOne({
+      const profile = await StaffModel.findOne({
         where: { email: data.email },
         include: [
           {
@@ -410,7 +430,11 @@ export class AuthController {
       });
       loginData = {
         email: data.email,
-        location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+        location:
+          (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+          ' - ' +
+          geoip.lookup(await v4()).country +
+          ' ( country code )',
         timestamp: new Date(),
         browser: data.browser,
         device: data.device,
@@ -536,7 +560,7 @@ export class AuthController {
       const email = req.body.email;
       const validateErrors = validate({ email: email }, emailSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+      const staff = await StaffModel.findOne({ raw: true, where: { email: req.body.email } });
       if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
       const uuidToken = uuidv4();
       const dataSendMail: IStaffRecoveryPasswordTemplate = {
@@ -613,7 +637,7 @@ export class AuthController {
       if (!tokenStoraged)
         return next(new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED));
       const data = JSON.parse(tokenStoraged);
-      const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: data.email } });
+      const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
       const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
       await StaffModel.update(
@@ -708,7 +732,11 @@ export class AuthController {
           if (socialInfor.response.email !== req.body.email || socialInfor.response.expires_in === 0) {
             loginData = {
               email: req.body.email,
-              location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+              location:
+                (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+                ' - ' +
+                geoip.lookup(await v4()).country +
+                ' ( country code )',
               timestamp: new Date(),
               browser: req.body.browser,
               device: req.body.device,
@@ -726,7 +754,11 @@ export class AuthController {
           if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
             loginData = {
               email: req.body.email,
-              location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+              location:
+                (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+                ' - ' +
+                geoip.lookup(await v4()).country +
+                ' ( country code )',
               timestamp: new Date(),
               browser: req.body.browser,
               device: req.body.device,
@@ -740,12 +772,16 @@ export class AuthController {
             return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
           }
         }
-        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
+        staff = await StaffModel.findOne({ raw: true, where: { email: req.body.email } });
       } else {
         if (req.body.provider === ESocialType.GOOGLE) {
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -771,7 +807,11 @@ export class AuthController {
             if (staff.facebookId !== req.body.providerId) {
               loginData = {
                 email: req.body.email,
-                location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+                location:
+                  (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+                  ' - ' +
+                  geoip.lookup(await v4()).country +
+                  ' ( country code )',
                 timestamp: new Date(),
                 browser: req.body.browser,
                 device: req.body.device,
@@ -798,7 +838,7 @@ export class AuthController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await StaffModel.scope('safe').findOne({
+          profile = await StaffModel.findOne({
             where: { email: req.body.email },
             include: [
               {
@@ -810,7 +850,11 @@ export class AuthController {
           });
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -834,7 +878,11 @@ export class AuthController {
             if (staff.googleId !== req.body.providerId) {
               loginData = {
                 email: req.body.email,
-                location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+                location:
+                  (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+                  ' - ' +
+                  geoip.lookup(await v4()).country +
+                  ' ( country code )',
                 timestamp: new Date(),
                 browser: req.body.browser,
                 device: req.body.device,
@@ -861,7 +909,7 @@ export class AuthController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await StaffModel.scope('safe').findOne({
+          profile = await StaffModel.findOne({
             where: { email: req.body.email },
             include: [
               {
@@ -873,7 +921,11 @@ export class AuthController {
           });
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -895,7 +947,11 @@ export class AuthController {
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -909,7 +965,7 @@ export class AuthController {
           await transaction.rollback();
           return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
-        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { facebookId: req.body.providerId } });
+        staff = await StaffModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
           const password = await generatePWD(8);
           data = {
@@ -938,7 +994,7 @@ export class AuthController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await StaffModel.scope('safe').findOne({
+          profile = await StaffModel.findOne({
             where: { facebookId: newStaff.facebookId },
             include: [
               {
@@ -950,7 +1006,11 @@ export class AuthController {
           });
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -976,7 +1036,7 @@ export class AuthController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await StaffModel.scope('safe').findOne({
+        profile = await StaffModel.findOne({
           where: { facebookId: staff.facebookId },
           include: [
             {
@@ -988,7 +1048,11 @@ export class AuthController {
         });
         loginData = {
           email: req.body.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            ' ( country code )',
           timestamp: new Date(),
           browser: req.body.browser,
           device: req.body.device,
@@ -1002,7 +1066,7 @@ export class AuthController {
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
       if (req.body.provider === ESocialType.GOOGLE) {
-        staff = await StaffModel.scope('safe').findOne({ raw: true, where: { googleId: req.body.providerId } });
+        staff = await StaffModel.findOne({ raw: true, where: { googleId: req.body.providerId } });
         if (!staff) {
           const password = await generatePWD(8);
           data = {
@@ -1031,7 +1095,7 @@ export class AuthController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await StaffModel.scope('safe').findOne({
+          profile = await StaffModel.findOne({
             where: { googleId: newStaff.googleId },
             include: [
               {
@@ -1043,7 +1107,11 @@ export class AuthController {
           });
           loginData = {
             email: req.body.email,
-            location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+            location:
+              (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+              ' - ' +
+              geoip.lookup(await v4()).country +
+              ' ( country code )',
             timestamp: new Date(),
             browser: req.body.browser,
             device: req.body.device,
@@ -1069,7 +1137,7 @@ export class AuthController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await StaffModel.scope('safe').findOne({
+        profile = await StaffModel.findOne({
           where: { googleId: staff.googleId },
           include: [
             {
@@ -1081,7 +1149,11 @@ export class AuthController {
         });
         loginData = {
           email: req.body.email,
-          location: geoip.lookup(await v4()).city + ', ' + geoip.lookup(await v4()).country,
+          location:
+            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
+            ' - ' +
+            geoip.lookup(await v4()).country +
+            ' ( country code )',
           timestamp: new Date(),
           browser: req.body.browser,
           device: req.body.device,
@@ -1146,7 +1218,7 @@ export class AuthController {
       if (accessTokenData instanceof CustomError) {
         return next(new CustomError(generalErrorDetails.E_0003()));
       } else {
-        const staff = await StaffModel.scope('safe').findOne({
+        const staff = await StaffModel.findOne({
           where: { id: accessTokenData.userId },
           include: [
             {

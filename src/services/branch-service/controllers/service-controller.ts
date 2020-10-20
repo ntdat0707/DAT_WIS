@@ -103,6 +103,12 @@ export class ServiceController {
    *     - in: "formData"
    *       name: allowGender
    *       type: integer
+   *     - in: "formData"
+   *       name: extraTimeType
+   *       type: string
+   *     - in: "formData"
+   *       name: extraTimeDuration
+   *       type: integer
    *     responses:
    *       200:
    *         description:
@@ -153,7 +159,9 @@ export class ServiceController {
         name: body.name,
         serviceCode: serviceCode,
         isAllowedMarketplace: body.isAllowedMarketplace,
-        allowGender: body.allowGender
+        allowGender: body.allowGender,
+        extraTimeType: body.extraTimeType,
+        extraTimeDuration: body.extraTimeDuration
       };
 
       transaction = await sequelize.transaction();
@@ -749,6 +757,12 @@ export class ServiceController {
    *     - in: "formData"
    *       name: allowGender
    *       type: integer
+   *     - in: "formData"
+   *       name: extraTimeType
+   *       type: string
+   *     - in: "formData"
+   *       name: extraTimeDuration
+   *       type: integer
    *     responses:
    *       200:
    *         description:
@@ -841,7 +855,7 @@ export class ServiceController {
           if (!(addStaffIds as []).every((x) => staffIds.includes(x))) {
             return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
           }
-          const prepareServiceStaff = (body.staffIds as []).map((id) => ({
+          const prepareServiceStaff = (addStaffIds as []).map((id) => ({
             serviceId: service.id,
             staffId: id
           }));
@@ -882,7 +896,9 @@ export class ServiceController {
         serviceCode: body.serviceCode ? body.serviceCode : service.serviceCode,
         isAllowedMarketplace: body.isAllowedMarketplace,
         status: body.status,
-        allowGender: body.allowGender ? body.allowGender : service.allowGender
+        allowGender: body.allowGender ? body.allowGender : service.allowGender,
+        extraTimeType: body.extraTimeType ? body.extraTimeType : service.extraTimeType,
+        extraTimeDuration: body.extraTimeDuration ? body.extraTimeDuration : service.extraTimeDuration
       };
 
       if (body.deleteImages && body.deleteImages.length > 0) {
@@ -913,7 +929,7 @@ export class ServiceController {
         transaction
       });
       await transaction.commit();
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       if (transaction) {
         await transaction.rollback();
