@@ -89,7 +89,15 @@ const filterStaffSchema = Joi.object({
       Joi.string().guid({
         version: ['uuidv4']
       })
-    )
+    ),
+  groupStaffIds: Joi.array()
+    .min(1)
+    .items(
+      Joi.string().guid({
+        version: ['uuidv4']
+      })
+    ),
+  searchValue: Joi.string()
 });
 
 export const createStaffsSchema = Joi.object({
