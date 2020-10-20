@@ -19,6 +19,7 @@ class StaffModel extends Model {
   public appleId: string;
   public avatarPath: string;
   public onboardStep: number;
+  public staffCode: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -118,6 +119,11 @@ StaffModel.init(
       type: DataTypes.TINYINT,
       field: 'onboard_step',
       allowNull: true
+    },
+    staffCode: {
+      field: 'staff_code',
+      type: DataTypes.STRING(125),
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
