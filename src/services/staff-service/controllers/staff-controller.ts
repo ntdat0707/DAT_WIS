@@ -1,7 +1,7 @@
 //
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op, Sequelize } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 import _ from 'lodash';
@@ -79,12 +79,6 @@ export class StaffController {
             model: LocationModel,
             as: 'workingLocations',
             through: { attributes: [] }
-          },
-          {
-            model: GroupStaffModel,
-            as: 'groupStaff',
-            required: true,
-            attributes: { exclude: ['updatedAt', 'createdAt', 'deletedAt'] }
           }
         ]
       });
@@ -170,13 +164,13 @@ export class StaffController {
                 attributes: []
               },
               where: { id: filter.workingLocationIds }
-            },
-            {
-              model: GroupStaffModel,
-              as: 'groupStaff',
-              required: true,
-              where: { name: Sequelize.literal('unaccent("groupStaff"."name") ilike unaccent(\'%Bac si%\')') }
             }
+            // {
+            //   model: GroupStaffModel,
+            //   as: 'groupStaff',
+            //   required: true,
+            //   where: { name: Sequelize.literal('unaccent("groupStaff"."name") ilike unaccent(\'%Bac si%\')') }
+            // }
           ]
         ];
         //
