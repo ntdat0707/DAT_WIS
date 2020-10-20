@@ -43,7 +43,6 @@ import {
   deleteRecentViewSchema
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
-import elasticsearchClient from '../../../repositories/elasticsearch';
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
     const X = {
@@ -1478,44 +1477,44 @@ export class SearchController {
     }
   };
 
-  /**
-   * @swagger
-   * /branch/location/market-place/search-new:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: searchNew
-   *     parameters:
-   *     - in: query
-   *       name: keyword
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       500:
-   *         description: Server internal errors
-   */
+  // /**
+  //  * @swagger
+  //  * /branch/location/market-place/search-new:
+  //  *   get:
+  //  *     tags:
+  //  *       - Branch
+  //  *     name: searchNew
+  //  *     parameters:
+  //  *     - in: query
+  //  *       name: keyword
+  //  *       schema:
+  //  *          type: string
+  //  *     responses:
+  //  *       200:
+  //  *         description: success
+  //  *       500:
+  //  *         description: Server internal errors
+  //  */
 
-  public searchNew = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const search = {
-        keyword: req.query.keyword
-      };
+  // public searchNew = async (req: Request, res: Response, next: NextFunction) => {
+  //   try {
+  //     const search = {
+  //       keyword: req.query.keyword
+  //     };
 
-      const response = await elasticsearchClient.search({
-        index: 'marketplace_search',
-        body: {
-          query: {
-            query_string: {
-              query: `${search.keyword}~1`
-            }
-          }
-        }
-      });
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(response));
-    } catch (error) {
-      return next(error);
-    }
-  };
+  //     const response = await elasticsearchClient.search({
+  //       index: 'marketplace_search',
+  //       body: {
+  //         query: {
+  //           query_string: {
+  //             query: `${search.keyword}~1`
+  //           }
+  //         }
+  //       }
+  //     });
+  //     return res.status(HttpStatus.OK).send(buildSuccessMessage(response));
+  //   } catch (error) {
+  //     return next(error);
+  //   }
+  // };
 }

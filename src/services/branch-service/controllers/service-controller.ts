@@ -855,7 +855,7 @@ export class ServiceController {
           if (!(addStaffIds as []).every((x) => staffIds.includes(x))) {
             return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
           }
-          const prepareServiceStaff = (body.staffIds as []).map((id) => ({
+          const prepareServiceStaff = (addStaffIds as []).map((id) => ({
             serviceId: service.id,
             staffId: id
           }));
