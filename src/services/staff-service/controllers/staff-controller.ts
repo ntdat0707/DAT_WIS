@@ -212,7 +212,9 @@ export class StaffController {
       if (req.query.searchValue) {
         query.where = {
           [Op.or]: [
-            Sequelize.literal(`unaccent("StaffModel"."name") ilike unaccent('%${req.query.searchValue}%')`),
+            Sequelize.literal(
+              `unaccent(concat("StaffModel"."first_name", ' ', "StaffModel"."last_name")) ilike unaccent('%${req.query.searchValue}%')`
+            ),
             Sequelize.literal(`"StaffModel"."staff_code" ilike '%${req.query.searchValue}%'`),
             Sequelize.literal(`"StaffModel"."phone" like '%${req.query.searchValue}%'`),
             Sequelize.literal(`"StaffModel"."email" ilike '%${req.query.searchValue}%'`)
@@ -1517,7 +1519,7 @@ export class StaffController {
    *       - Staff
    *     security:
    *       - Bearer: []
-   *     name: getGroupStaff
+   *     name: getGroupsStaff
    *     parameters:
    *     - in: query
    *       name: pageNum
@@ -1529,6 +1531,11 @@ export class StaffController {
    *       required: true
    *       schema:
    *          type: integer
+   *     - in: query
+   *       name: searchValue
+   *       required: false
+   *       schema:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
