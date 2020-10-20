@@ -31,5 +31,6 @@ export class DealRoutes {
       this.dealController.updatePipelineStageOfDeal
     );
     this.router.post('/setting-pipeline', isAuthenticated, this.dealController.settingPipeline);
+    this.router.put('/update-status-deal/:dealId?', isAuthenticated, this.dealController.updateStatusDeal);
   }
 }
