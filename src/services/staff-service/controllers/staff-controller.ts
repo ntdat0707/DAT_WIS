@@ -1498,11 +1498,6 @@ export class StaffController {
    *       required: true
    *       schema:
    *          type: integer
-   *     - in: query
-   *       name: companyId
-   *       required: companyId
-   *       schema:
-   *          type: string
    *     responses:
    *       200:
    *         description: success
