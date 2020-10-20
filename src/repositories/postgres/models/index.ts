@@ -207,8 +207,8 @@ InvoiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location'
 GroupStaffModel.hasOne(StaffModel, { foreignKey: 'groupStaffId', sourceKey: 'id', as: 'staff' });
 StaffModel.belongsTo(GroupStaffModel, { foreignKey: 'groupStaffId', as: 'groupStaff' });
 
-CompanyModel.hasOne(GroupStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'company' });
-GroupStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'groupStaff' });
+CompanyModel.hasMany(GroupStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'groupStaffs' });
+GroupStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
 export {
   sequelize,
