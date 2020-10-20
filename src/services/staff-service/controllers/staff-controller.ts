@@ -39,10 +39,10 @@ import {
   createStaffsSchema,
   updateStaffSchema,
   getStaffMultipleService,
-  deleteStaffSchema,
-  getServicesOfStaff
+  deleteStaffSchema
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
+import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
 
 export class StaffController {
   /**
@@ -1516,6 +1516,8 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const groupStaff = await GroupStaffModel.findOne({ where: { companyId: companyId } });
+      if (!groupStaff) return next(new CustomError(staffErrorDetails.E_40011('Group staff has been not assign')));
       const query: FindOptions = {
         where: { companyId: companyId },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
@@ -1567,6 +1569,7 @@ export class StaffController {
    */
   public getStaffInGroup = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { companyId } = res.locals.staffPayload.companyId;
       const groupStaffId = req.query.groupStaffId;
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
@@ -1575,6 +1578,11 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const groupStaff = await GroupStaffModel.findOne({ where: { companyId: companyId } });
+      if (!groupStaff)
+        return next(
+          new CustomError(companyErrorDetails.E_4002('You can not access to this company'), HttpStatus.FORBIDDEN)
+        );
       const query: FindOptions = {
         where: { groupStaffId: groupStaffId },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
@@ -1615,7 +1623,7 @@ export class StaffController {
 
   public getServicesByStaff = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validateErrors = validate(req.params.staffId, getServicesOfStaff);
+      const validateErrors = validate(req.params.staffId, staffIdSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
