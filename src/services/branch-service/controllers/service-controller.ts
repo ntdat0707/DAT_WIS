@@ -602,7 +602,6 @@ export class ServiceController {
   public createServices = async (req: Request, res: Response, next: NextFunction) => {
     let transaction: Transaction;
     try {
-      transaction = await sequelize.transaction();
       const validateErrors = validate(req.body, createServicesSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
