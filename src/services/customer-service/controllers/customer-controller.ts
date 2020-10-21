@@ -1422,7 +1422,7 @@ export class CustomerController {
       const uuidToken = uuidv4();
       const dataSendMail: ICustomerRecoveryPasswordTemplate = {
         customerEmail: email,
-        yourURL: `${frontEndUrl}/forgot-password?token=${uuidToken}`
+        yourURL: `${frontEndUrl}/reset-password?token=${uuidToken}`
       };
       await redis.setData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${uuidToken}`, JSON.stringify({ email: email }), {
         key: 'EX',
