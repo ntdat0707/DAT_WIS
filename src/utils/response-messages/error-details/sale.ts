@@ -34,4 +34,11 @@ const receiptErrorDetails = {
     return e;
   }
 };
-export { invoiceErrorDetails, receiptErrorDetails };
+
+const discountErrorDetails = {
+  E_3500(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3500', 'Discount not found', detail);
+    return e;
+  }
+};
+export { invoiceErrorDetails, receiptErrorDetails, discountErrorDetails };

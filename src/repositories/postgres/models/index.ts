@@ -35,6 +35,10 @@ import { InvoiceDetailStaffModel } from './invoice-detail-staff-model';
 import { PaymentModel } from './payment-model';
 import { ReceiptModel } from './receipt-model';
 import { GroupStaffModel } from './group-staff-model';
+import { DiscountModel } from './discount-model';
+import { PaymentMethodModel } from './payment-method-model';
+import { ProviderModel } from './provider-model';
+import { TipsModel } from './tips-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -248,5 +252,9 @@ export {
   InvoiceDetailStaffModel,
   PaymentModel,
   ReceiptModel,
-  GroupStaffModel
+  GroupStaffModel,
+  DiscountModel,
+  PaymentMethodModel,
+  ProviderModel,
+  TipsModel
 };
