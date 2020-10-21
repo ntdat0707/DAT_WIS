@@ -1571,48 +1571,75 @@ export class SearchController {
 
       const keywords: string = search.keywords;
       if (search.addressInfor) {
+        const isTypesInclude = (info: any, ...types: string[]) =>
+          !!types &&
+          // tslint:disable-next-line:no-shadowed-variable
+          types.reduce((res: any, type: string) => res || info.types.include(type), false);
         search.addressInfor.forEach((info: any) => {
           if (info.types && info.types.length > 0) {
-            switch (info.types[0]) {
-              case 'route':
-                search.street = info.long_name;
-                break;
-              case 'administrative_area_level_2':
-                search.district = info.long_name;
-                break;
-              case 'administrative_area_level_1':
-                search.province = info.long_name;
-                break;
-              case 'country':
-                search.country = info.long_name;
-                break;
-              case 'locality':
-                search.city = info.long_name;
-                break;
-            }
-            if (info.types.includes('sublocality') || info.types.includes('sublocality_level_1')) {
+            if (isTypesInclude('route')) {
+              search.street = info.long_name;
+            } else if (isTypesInclude('administrative_area_level_2')) {
+              search.district = info.long_name;
+            } else if (isTypesInclude('administrative_area_level_1')) {
+              search.province = info.long_name;
+            } else if (isTypesInclude('country')) {
+              search.country = info.long_name;
+            } else if (isTypesInclude('locality')) {
+              search.city = info.long_name;
+            } else if (isTypesInclude('sublocality', 'sublocality_level_1')) {
               search.ward = info.long_name;
             }
           }
         });
       }
+
       const searchParams: SearchParams = {
         index: 'marketplace_search',
         body: {
           query: {
-            query_string: {
-              fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
-              query: `${keywords}~1`
-            }
+            must: [
+              {
+                query_string: {
+                  fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
+                  query: `${keywords}~1`
+                }
+              }
+            ]
           }
         }
       };
+      let countTypeAvailable = 1;
+      if (search.addressInfor) {
+        const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
+        locationType.forEach((type: string) => {
+          if (search[type]) {
+            countTypeAvailable++;
+            searchParams.body.query.must.push({
+              query_string: {
+                fields: [type],
+                query: `${search[type]}~1`
+              }
+            });
+          }
+        });
+      }
 
-      const result = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      if (search.order === EOrder.NEWEST) {
+        searchParams.body.sort = [{ openedAt: 'desc' }];
+      }
+
+      let result: any = null;
+      for (let i = 0; i < countTypeAvailable; i++) {
+        result = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+        if (result.totalPages === 0 && countTypeAvailable > 1) {
+          searchParams.body.query.must.pop();
+        } else {
+          break;
+        }
+      }
 
       let locationResults = result.data;
-      // order by open_at
-      // ...
       const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
       let searchCateServiceItem: any = {};
       let searchCompanyItem: any = {};
