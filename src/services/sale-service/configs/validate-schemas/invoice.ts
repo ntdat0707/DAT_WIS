@@ -81,4 +81,10 @@ const receiptIdSchema = Joi.string()
   .required()
   .label('receiptId');
 
-export { createInvoiceSchema, createPaymentSchema, receiptIdSchema };
+const customerWisereIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('customerWisereIdSchema');
+export { createInvoiceSchema, createPaymentSchema, receiptIdSchema, customerWisereIdSchema };
