@@ -1570,24 +1570,24 @@ export class SearchController {
       }
 
       const keywords: string = search.keywords;
-      console.log(search);
       if (search.addressInfor) {
-        const isTypesInclude = (info: any) => (...types: string[]) => !!types &&
+        const isTypesInclude = (info: any) => (...types: string[]) =>
+          !!types &&
           // tslint:disable-next-line:no-shadowed-variable
           types.reduce((res: any, type: string) => res || info.types.includes(type), false);
         search.addressInfor.forEach((info: any) => {
           if (info.types && info.types.length > 0) {
-            if (isTypesInclude(info)('route')) {
+            if (isTypesInclude(info)('route') && info.long_name) {
               search.street = info.long_name;
-            } else if (isTypesInclude(info)('administrative_area_level_2')) {
+            } else if (isTypesInclude(info)('administrative_area_level_2') && info.long_name) {
               search.district = info.long_name;
-            } else if (isTypesInclude(info)('administrative_area_level_1')) {
+            } else if (isTypesInclude(info)('administrative_area_level_1') && info.long_name) {
               search.province = info.long_name;
-            } else if (isTypesInclude(info)('country')) {
+            } else if (isTypesInclude(info)('country') && info.long_name) {
               search.country = info.long_name;
-            } else if (isTypesInclude(info)('locality')) {
+            } else if (isTypesInclude(info)('locality') && info.long_name) {
               search.city = info.long_name;
-            } else if (isTypesInclude(info)('sublocality', 'sublocality_level_1')) {
+            } else if (isTypesInclude(info)('sublocality', 'sublocality_level_1') && info.long_name) {
               search.ward = info.long_name;
             }
           }
@@ -1599,18 +1599,20 @@ export class SearchController {
         body: {
           query: {
             bool: {
-              must: [
-                {
-                  query_string: {
-                    fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
-                    query: `${keywords}~1`
-                  }
-                }
-              ]
+              must: []
             }
           }
         }
       };
+
+      if (keywords) {
+        searchParams.body.query.bool.must.push({
+          query_string: {
+            fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
+            query: `${keywords}~1`
+          }
+        });
+      }
 
       let countTypeAvailable = 1;
       if (search.addressInfor) {
