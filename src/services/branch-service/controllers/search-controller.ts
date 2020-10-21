@@ -1570,24 +1570,24 @@ export class SearchController {
       }
 
       const keywords: string = search.keywords;
+      console.log(search);
       if (search.addressInfor) {
-        const isTypesInclude = (info: any, ...types: string[]) =>
-          !!types &&
+        const isTypesInclude = (info: any) => (...types: string[]) => !!types &&
           // tslint:disable-next-line:no-shadowed-variable
-          types.reduce((res: any, type: string) => res || info.types.include(type), false);
+          types.reduce((res: any, type: string) => res || info.types.includes(type), false);
         search.addressInfor.forEach((info: any) => {
           if (info.types && info.types.length > 0) {
-            if (isTypesInclude('route')) {
+            if (isTypesInclude(info)('route')) {
               search.street = info.long_name;
-            } else if (isTypesInclude('administrative_area_level_2')) {
+            } else if (isTypesInclude(info)('administrative_area_level_2')) {
               search.district = info.long_name;
-            } else if (isTypesInclude('administrative_area_level_1')) {
+            } else if (isTypesInclude(info)('administrative_area_level_1')) {
               search.province = info.long_name;
-            } else if (isTypesInclude('country')) {
+            } else if (isTypesInclude(info)('country')) {
               search.country = info.long_name;
-            } else if (isTypesInclude('locality')) {
+            } else if (isTypesInclude(info)('locality')) {
               search.city = info.long_name;
-            } else if (isTypesInclude('sublocality', 'sublocality_level_1')) {
+            } else if (isTypesInclude(info)('sublocality', 'sublocality_level_1')) {
               search.ward = info.long_name;
             }
           }
@@ -1598,24 +1598,27 @@ export class SearchController {
         index: 'marketplace_search',
         body: {
           query: {
-            must: [
-              {
-                query_string: {
-                  fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
-                  query: `${keywords}~1`
+            bool: {
+              must: [
+                {
+                  query_string: {
+                    fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
+                    query: `${keywords}~1`
+                  }
                 }
-              }
-            ]
+              ]
+            }
           }
         }
       };
+
       let countTypeAvailable = 1;
       if (search.addressInfor) {
         const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
         locationType.forEach((type: string) => {
           if (search[type]) {
             countTypeAvailable++;
-            searchParams.body.query.must.push({
+            searchParams.body.query.bool.must.push({
               query_string: {
                 fields: [type],
                 query: `${search[type]}~1`
@@ -1624,7 +1627,8 @@ export class SearchController {
           }
         });
       }
-
+      console.log(JSON.stringify(searchParams, null, 2));
+      console.log(JSON.stringify(search, null, 2));
       if (search.order === EOrder.NEWEST) {
         searchParams.body.sort = [{ openedAt: 'desc' }];
       }
@@ -1632,8 +1636,8 @@ export class SearchController {
       let result: any = null;
       for (let i = 0; i < countTypeAvailable; i++) {
         result = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
-        if (result.totalPages === 0 && countTypeAvailable > 1) {
-          searchParams.body.query.must.pop();
+        if (result.meta.totalPages === 0 && countTypeAvailable > 1) {
+          searchParams.body.query.bool.must.pop();
         } else {
           break;
         }

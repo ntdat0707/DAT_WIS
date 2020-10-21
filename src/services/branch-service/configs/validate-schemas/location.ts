@@ -199,7 +199,7 @@ const searchSchema = Joi.object({
     .items(
       Joi.object({
         types: Joi.array(),
-        long_name: Joi.string
+        long_name: Joi.string()
       })
         .allow(null)
         .allow('')

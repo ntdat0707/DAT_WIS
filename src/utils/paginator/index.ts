@@ -202,9 +202,8 @@ const paginateElasicSearch = async <T extends Model<T>>(
     }
 
     let data: any = await client.search(searchParams);
-
     // Count meta totalPages
-    const totalRecords: number = data._shards.total;
+    const totalRecords: number = data.hits.total.value;
     const totalPages: number = Math.ceil(totalRecords / paginateOptions.pageSize);
     data = data.hits.hits;
 
