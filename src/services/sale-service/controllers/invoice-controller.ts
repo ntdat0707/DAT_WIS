@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { baseValidateSchemas, validate } from '../../../utils/validator';
-import { createInvoiceSchema, createPaymentSchema } from '../configs/validate-schemas';
+import { createInvoiceSchema, createPaymentSchema, receiptIdSchema } from '../configs/validate-schemas';
 import {
   AppointmentModel,
   CustomerWisereModel,
@@ -11,6 +11,7 @@ import {
   InvoiceModel,
   LocationModel,
   PaymentModel,
+  ReceiptModel,
   sequelize,
   ServiceModel,
   StaffModel
@@ -20,7 +21,8 @@ import {
   branchErrorDetails,
   customerErrorDetails,
   invoiceErrorDetails,
-  staffErrorDetails
+  staffErrorDetails,
+  receiptErrorDetails
 } from '../../../utils/response-messages/error-details/';
 import { EBalanceType } from './../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
@@ -317,6 +319,25 @@ export class InvoiceController {
         status = EBalanceType.PART_PAID;
       }
       invoice = await invoice.update({ balance: balance, status: status }, { transaction });
+      let receiptCode = '';
+      for (let i = 0; i < 10; i++) {
+        const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        receiptCode = 'REC' + randomCode;
+        const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
+        if (!existReceiptCode) {
+          break;
+        }
+      }
+      const dataReceipt = {
+        code: receiptCode,
+        customerId: invoice.customerWisereId,
+        staffId: res.locals.staffPayload.id,
+        amount: payment.amount,
+        paymentId: payment.id,
+        type: payment.type,
+        locationId: invoice.locationId
+      };
+      await ReceiptModel.create(dataReceipt, { transaction });
       await transaction.commit();
       return res.status(httpStatus.OK).send(buildSuccessMessage(payment));
     } catch (error) {
@@ -388,6 +409,111 @@ export class InvoiceController {
         fullPath
       );
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoices));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /sale/get-all-receipt:
+   *   get:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: getAllReceipt
+   *     parameters:
+   *       - in: query
+   *         name: pageNum
+   *         required: true
+   *         schema:
+   *            type: integer
+   *       - in: query
+   *         name: pageSize
+   *         required: true
+   *         schema:
+   *            type: integer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllReceipt = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const query: FindOptions = {
+        include: [
+          {
+            model: CustomerWisereModel,
+            as: 'customerWisere',
+            required: false
+          },
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
+          }
+        ]
+      };
+      const receipt = await paginate(
+        ReceiptModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(httpStatus.OK).send(buildSuccessMessage(receipt));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /sale/get-receipt/{receiptId}:
+   *   get:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: getReceipt
+   *     parameters:
+   *     - in: path
+   *       name: receiptId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getReceipt = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const receiptId = req.params.receiptId;
+      const validateErrors = validate(receiptId, receiptIdSchema);
+      if (validateErrors) {
+        if (validateErrors) {
+          return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        }
+      }
+      const receipt = await ReceiptModel.findOne({ where: { id: receiptId } });
+      if (!receipt) {
+        throw new CustomError(receiptErrorDetails.E_3400(`receiptId ${receiptId} not found`), httpStatus.NOT_FOUND);
+      }
+      return res.status(httpStatus.OK).send(buildSuccessMessage(receipt));
     } catch (error) {
       return next(error);
     }

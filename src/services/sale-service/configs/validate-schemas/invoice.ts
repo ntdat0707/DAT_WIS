@@ -74,4 +74,11 @@ const createPaymentSchema = Joi.object({
   amount: Joi.number().integer().min(0).required().label('amount')
 });
 
-export { createInvoiceSchema, createPaymentSchema };
+const receiptIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('receiptId');
+
+export { createInvoiceSchema, createPaymentSchema, receiptIdSchema };

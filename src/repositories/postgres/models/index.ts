@@ -210,6 +210,12 @@ StaffModel.belongsTo(GroupStaffModel, { foreignKey: 'groupStaffId', as: 'groupSt
 CompanyModel.hasMany(GroupStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'groupStaffs' });
 GroupStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
+CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerId', as: 'customerWisere' });
+
+LocationModel.hasMany(ReceiptModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
 export {
   sequelize,
   StaffModel,

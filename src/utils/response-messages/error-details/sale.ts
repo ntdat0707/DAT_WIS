@@ -28,4 +28,10 @@ const invoiceErrorDetails = {
   }
 };
 
-export { invoiceErrorDetails };
+const receiptErrorDetails = {
+  E_3400(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3400', 'Receipt not found', detail);
+    return e;
+  }
+};
+export { invoiceErrorDetails, receiptErrorDetails };
