@@ -1627,8 +1627,6 @@ export class SearchController {
           }
         });
       }
-      console.log(JSON.stringify(searchParams, null, 2));
-      console.log(JSON.stringify(search, null, 2));
       if (search.order === EOrder.NEWEST) {
         searchParams.body.sort = [{ openedAt: 'desc' }];
       }
