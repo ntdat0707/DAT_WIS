@@ -21,7 +21,8 @@ import {
   dealIdSchema,
   updateDealSchema,
   settingPipelineSchema,
-  movePipelineStageIdSchema
+  movePipelineStageIdSchema,
+  statusDealSchema
 } from '../configs/validate-schemas/deal';
 import {
   dealErrorDetails,
@@ -506,6 +507,10 @@ export class DealController {
    *         required: true
    *         schema:
    *            type: integer
+   *       - in: query
+   *         name: showStatus
+   *         schema:
+   *            type: string
    *     responses:
    *       200:
    *         description: success
@@ -521,7 +526,8 @@ export class DealController {
         staffId: res.locals.staffPayload.id,
         customerWisereId: req.query.customerWisereId,
         pipelineStageId: req.query.pipelineStageId,
-        pipelineId: req.query.pipelineId
+        pipelineId: req.query.pipelineId,
+        showStatus: req.query.showStatus
       };
       let validateErrors: any;
       validateErrors = validate(conditions, filterDeal);
@@ -560,6 +566,12 @@ export class DealController {
         query.where = {
           ...query.where,
           ...{ pipelineStageId: { [Op.eq]: conditions.pipelineStageId } }
+        };
+      }
+      if (!conditions.showStatus) {
+        query.where = {
+          ...query.where,
+          ...{ status: { [Op.eq]: StatusPipelineStage.OPEN } }
         };
       }
       const conditionPipelineId = conditions.pipelineId
@@ -1048,6 +1060,53 @@ export class DealController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/deal/update-status-deal/{dealId}:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: updateStatusDeal
+   *     parameters:
+   *     - in: "path"
+   *       name: "dealId"
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         properties:
+   *             status:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updateStatusDeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dealId = req.params.dealId;
+      const validateErrors = validate(req.body.status, statusDealSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      let deal = await DealModel.findOne({ where: { id: dealId } });
+      if (!deal) {
+        throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
+      }
+      const closingDate = Date.now();
+      deal = await deal.update({ status: req.body.status, closingDate: closingDate });
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
+    } catch (error) {
       return next(error);
     }
   };

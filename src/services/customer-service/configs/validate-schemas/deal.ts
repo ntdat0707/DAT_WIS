@@ -87,7 +87,8 @@ const filterDeal = Joi.object({
       version: ['uuidv4']
     })
     .allow(null, '')
-    .label('pipelineId')
+    .label('pipelineId'),
+  showStatus: Joi.string().valid('all').allow(null).label('showStatus')
 });
 
 const createDealSchema = Joi.object({
@@ -181,6 +182,11 @@ const movePipelineStageIdSchema = Joi.string()
   .allow(null, '')
   .label('movePipelineStageId');
 
+const statusDealSchema = Joi.string()
+  .valid(StatusPipelineStage.WON, StatusPipelineStage.LOST)
+  .required()
+  .label('status');
+
 export {
   createPipelineSchema,
   updatePipelineSchema,
@@ -192,5 +198,6 @@ export {
   dealIdSchema,
   updateDealSchema,
   settingPipelineSchema,
-  movePipelineStageIdSchema
+  movePipelineStageIdSchema,
+  statusDealSchema
 };

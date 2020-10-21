@@ -79,12 +79,6 @@ export class StaffController {
             model: LocationModel,
             as: 'workingLocations',
             through: { attributes: [] }
-          },
-          {
-            model: GroupStaffModel,
-            as: 'groupStaff',
-            required: true,
-            attributes: { exclude: ['updatedAt', 'createdAt', 'deletedAt'] }
           }
         ]
       });
@@ -123,6 +117,18 @@ export class StaffController {
    *          items:
    *             type: string
    *       description: array of UUID v4
+   *     - in: query
+   *       name: groupStaffIds
+   *       schema:
+   *          type: array
+   *          items:
+   *             type: string
+   *       description: array of UUID v4
+   *     - in: query
+   *       name: searchValue
+   *       required: false
+   *       schema:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -141,7 +147,7 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const filter = { workingLocationIds: req.query.workingLocationIds };
+      const filter = { workingLocationIds: req.query.workingLocationIds, groupStaffIds: req.query.groupStaffIds };
       const validateFilterErrors = validate(filter, filterStaffSchema);
       if (validateFilterErrors) return next(new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = { include: [] };
@@ -170,16 +176,9 @@ export class StaffController {
                 attributes: []
               },
               where: { id: filter.workingLocationIds }
-            },
-            {
-              model: GroupStaffModel,
-              as: 'groupStaff',
-              required: true,
-              where: { name: Sequelize.literal('unaccent("groupStaff"."name") ilike unaccent(\'%Bac si%\')') }
             }
           ]
         ];
-        //
       } else {
         query.include = [
           ...query.include,
@@ -193,7 +192,35 @@ export class StaffController {
           ]
         ];
       }
-
+      if (
+        filter.groupStaffIds &&
+        Array.isArray(filter.groupStaffIds) &&
+        filter.groupStaffIds.every((e: any) => typeof e === 'string')
+      ) {
+        query.include = [
+          ...query.include,
+          ...[
+            {
+              model: GroupStaffModel,
+              as: 'groupStaff',
+              required: false,
+              where: { id: filter.groupStaffIds }
+            }
+          ]
+        ];
+      }
+      if (req.query.searchValue) {
+        query.where = {
+          [Op.or]: [
+            Sequelize.literal(
+              `unaccent(concat("StaffModel"."first_name", ' ', "StaffModel"."last_name")) ilike unaccent('%${req.query.searchValue}%')`
+            ),
+            Sequelize.literal(`"StaffModel"."staff_code" ilike '%${req.query.searchValue}%'`),
+            Sequelize.literal(`"StaffModel"."phone" like '%${req.query.searchValue}%'`),
+            Sequelize.literal(`"StaffModel"."email" ilike '%${req.query.searchValue}%'`)
+          ]
+        };
+      }
       const staffs = await paginate(
         StaffModel,
         query,
@@ -1486,13 +1513,13 @@ export class StaffController {
 
   /**
    * @swagger
-   * /staff/get-group-staff:
+   * /staff/get-groups-staff:
    *   get:
    *     tags:
    *       - Staff
    *     security:
    *       - Bearer: []
-   *     name: getGroupStaff
+   *     name: getGroupsStaff
    *     parameters:
    *     - in: query
    *       name: pageNum
@@ -1505,8 +1532,8 @@ export class StaffController {
    *       schema:
    *          type: integer
    *     - in: query
-   *       name: companyId
-   *       required: companyId
+   *       name: searchValue
+   *       required: false
    *       schema:
    *          type: string
    *     responses:
@@ -1517,7 +1544,7 @@ export class StaffController {
    *       500:
    *         description: Internal server errors
    */
-  public getGroupStaff = async (req: Request, res: Response, next: NextFunction) => {
+  public getGroupStaffs = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
@@ -1531,6 +1558,17 @@ export class StaffController {
         where: { companyId: companyId },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       };
+
+      if (req.query.searchValue) {
+        query.where = {
+          ...query.where,
+          ...{
+            [Op.or]: [
+              Sequelize.literal(`unaccent("GroupStaffModel"."name") ilike unaccent('%${req.query.searchValue}%')`)
+            ]
+          }
+        };
+      }
       const groupStaffs = await paginate(
         GroupStaffModel,
         query,
