@@ -11,12 +11,30 @@ export class PaymentController {
   /**
    * @swagger
    * definitions:
+   *   PaymentMethods:
+   *       properties:
+   *           paymentMethodId:
+   *               type: string
+   *           amount:
+   *               type: integer
+   *           name:
+   *               type: string
+   *           accountNumber:
+   *               type: integer
+   *
+   */
+
+  /**
+   * @swagger
+   * definitions:
    *   paymentCreate:
    *       properties:
    *           invoiceId:
    *               type: string
-   *           type:
-   *               type: string
+   *           paymentMethods:
+   *               type: array
+   *           items:
+   *           $ref: '#/definitions/PaymentMethods'
    *           amount:
    *               type: integer
    *
@@ -46,12 +64,11 @@ export class PaymentController {
    *         description:
    */
   public createPayment = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction = null;
+    let transaction: any = null;
     try {
       const data = {
         invoiceId: req.body.invoiceId,
-        type: req.body.type,
-        amount: req.body.amount
+        paymentMethods: req.body.paymentMethods
       };
       const validateErrors = validate(data, createPaymentSchema);
       if (validateErrors) {
@@ -64,14 +81,16 @@ export class PaymentController {
           httpStatus.NOT_FOUND
         );
       }
-      if (data.amount > invoice.balance) {
-        throw new CustomError(
-          invoiceErrorDetails.E_3305(
-            `amount ${data.amount} is greater than the balance ${invoice.balance} in the invoice`
-          ),
-          httpStatus.BAD_REQUEST
-        );
-      }
+      transaction = await sequelize.transaction();
+
+      //   if (data.amount > invoice.balance) {
+      //     throw new CustomError(
+      //       invoiceErrorDetails.E_3305(
+      //         `amount ${data.amount} is greater than the balance ${invoice.balance} in the invoice`
+      //       ),
+      //       httpStatus.BAD_REQUEST
+      //     );
+      //   }
       transaction = await sequelize.transaction();
       const payment = await PaymentModel.create(data, { transaction });
       const balance = invoice.balance - payment.amount;

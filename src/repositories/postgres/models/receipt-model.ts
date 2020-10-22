@@ -1,4 +1,3 @@
-import { ESourceType } from './../../../utils/consts/index';
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
@@ -9,7 +8,7 @@ class ReceiptModel extends Model {
   public staffId!: string;
   public amount: number;
   public paymentId: string;
-  public type: string;
+  public paymentMethodId: string;
   public locationId: string;
   public description: string;
   public readonly createdAt!: Date;
@@ -45,10 +44,10 @@ ReceiptModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    type: {
-      field: 'type',
-      type: DataTypes.ENUM(...Object.keys(ESourceType)),
-      defaultValue: ESourceType.POS
+    paymentMethodId: {
+      field: 'payment_method_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     locationId: {
       field: 'location_id',

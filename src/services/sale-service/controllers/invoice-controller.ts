@@ -578,9 +578,10 @@ export class InvoiceController {
           );
         }
 
-        let listStaff: any = [];
+        const listStaff: any = [];
         for (let j = 0; j < req.body.listInvoiceDetail[i].listStaff.length; j++) {
           const staff = await StaffModel.findOne({
+            raw: true,
             where: { id: req.body.listInvoiceDetail[i].listStaff[j].staffId }
           });
           if (!staff) {
@@ -591,7 +592,7 @@ export class InvoiceController {
           }
           listStaff.push(staff);
         }
-        listStaff = listStaff.map((staff: any) => staff.id);
+        // listStaff = listStaff.map((staff: any) => staff.id);
         const dataInvoiceDetailLog = {
           serviceId: req.body.listInvoiceDetail[i].serviceId,
           unit: req.body.listInvoiceDetail[i].unit,

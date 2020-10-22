@@ -5,7 +5,7 @@ interface IInvoiceDetailLog extends mongoose.Document {
   unit: string;
   quantity: number;
   price: number;
-  listStaff: [string];
+  listStaff: [object];
   timestamp: Date;
 }
 
