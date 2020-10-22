@@ -23,7 +23,7 @@ const InvoiceSchema = new mongoose.Schema({
   invoiceId: { type: String, required: true },
   locationId: { type: String, required: true },
   appointmentId: { type: String, required: false },
-  customerWisereId: { type: String, required: false },
+  customerWisereId: { type: String, required: true },
   source: { type: String, required: false },
   note: { type: String, required: false },
   discountId: { type: String, required: false },

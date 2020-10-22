@@ -27,4 +27,5 @@ const createPaymentSchema = Joi.object({
       })
     )
 });
-export { createPaymentSchema };
+const createPaymentMethodSchema = Joi.string().required().label('name');
+export { createPaymentSchema, createPaymentMethodSchema };

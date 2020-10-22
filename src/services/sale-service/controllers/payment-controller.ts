@@ -2,17 +2,22 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
-import { createPaymentSchema } from '../configs/validate-schemas';
+import { createPaymentMethodSchema, createPaymentSchema } from '../configs/validate-schemas';
 import {
+  CompanyModel,
   InvoiceModel,
+  PaymentMethodModel,
   PaymentModel,
   ProviderModel,
   ReceiptModel,
-  sequelize
+  sequelize,
+  StaffModel
 } from '../../../repositories/postgres/models';
-import { invoiceErrorDetails } from '../../../utils/response-messages/error-details/';
+import { invoiceErrorDetails, staffErrorDetails } from '../../../utils/response-messages/error-details/';
 import { EBalanceType } from './../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
+import HttpStatus from 'http-status-codes';
+import { buildSuccessMessage } from '../../../utils/response-messages/responses';
 export class PaymentController {
   /**
    * @swagger
@@ -171,4 +176,73 @@ export class PaymentController {
       throw error;
     }
   }
+
+  /**
+   * @swagger
+   * /sale/payment/create-payment-method:
+   *   post:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: createPaymentMethod
+   *     consumes:
+   *     - multipart/form-data
+   *     parameters:
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: file
+   *     - in: "formData"
+   *       name: "name"
+   *       required: true
+   *       type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public createPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: any = null;
+    try {
+      const companyId = res.locals.staff.companyId;
+      let data: any = {
+        name: req.body.name
+      };
+      if (req.file) {
+        data = {
+          ...data,
+          icon: (req.file as any).location
+        };
+      }
+      const validateErrors = validate(data, createPaymentMethodSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      transaction = await sequelize.transaction();
+      const staff = await CompanyModel.findOne({
+        where: { id: companyId },
+        include: [
+          {
+            model: StaffModel,
+            as: 'owner',
+            required: true,
+            where: { isBusinessAccount: true }
+          }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+      if (!staff) {
+        return next(
+          new CustomError(staffErrorDetails.E_40012(`This account is not owner account`), httpStatus.NOT_FOUND)
+        );
+      }
+      const paymentMethod = await PaymentMethodModel.create(data, { transaction });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }

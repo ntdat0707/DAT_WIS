@@ -33,7 +33,7 @@ import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
 import { InvoiceLogModel } from '../../../repositories/mongo/models/invoice-log-model';
-import { customerWisereIdSchema } from '../configs/validate-schemas/invoice';
+import { createInvoiceLogSchema, customerWisereIdSchema } from '../configs/validate-schemas/invoice';
 export class InvoiceController {
   /**
    * @swagger
@@ -544,7 +544,7 @@ export class InvoiceController {
     try {
       const { workingLocationIds } = res.locals.staffPayload;
       let validateErrors: any;
-      validateErrors = validate(req.body, createInvoiceSchema);
+      validateErrors = validate(req.body, createInvoiceLogSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
@@ -617,7 +617,6 @@ export class InvoiceController {
           }
           listStaff.push(staff);
         }
-        // listStaff = listStaff.map((staff: any) => staff.id);
         const dataInvoiceDetailLog = {
           serviceId: req.body.listInvoiceDetail[i].serviceId,
           unit: req.body.listInvoiceDetail[i].unit,
@@ -629,7 +628,6 @@ export class InvoiceController {
         const invoiceDetailLog = new InvoiceDetailLogModel(dataInvoiceDetailLog);
         await invoiceDetailLog.save();
         invoiceDetails.push(dataInvoiceDetailLog);
-        //const invoiceDiscount = subTotal * dataInvoiceLog.discount;
       }
       dataInvoiceLog = {
         ...dataInvoiceLog,

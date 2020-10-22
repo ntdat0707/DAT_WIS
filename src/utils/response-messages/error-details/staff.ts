@@ -99,6 +99,10 @@ const staffErrorDetails = {
   E_40011(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_40011', 'Team staff has been not assign', detail);
     return e;
+  },
+  E_40012(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_40012', 'This account is not owner account', detail);
+    return e;
   }
 };
 
