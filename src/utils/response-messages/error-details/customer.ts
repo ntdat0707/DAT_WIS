@@ -10,7 +10,7 @@ const customerErrorDetails = {
   },
 
   E_3001(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3001', 'Customer not found', detail);
+    const e = buildErrorDetail('3001', 'Customer wisere not found', detail);
     return e;
   },
 
@@ -79,6 +79,15 @@ const customerErrorDetails = {
    */
   E_3009(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3009', 'Invalid token', detail);
+    return e;
+  },
+
+  E_3010(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3010', 'Current password invalid', detail);
+    return e;
+  },
+  E_3011(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3011', 'Passwords do not match', detail);
     return e;
   }
 };

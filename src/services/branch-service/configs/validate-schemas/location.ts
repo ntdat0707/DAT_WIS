@@ -193,8 +193,9 @@ const searchSchema = Joi.object({
     .label('searchBy'),
   order: Joi.string()
     .valid(EOrder.NEWEST, EOrder.NEWEST, EOrder.PRICE_LOWEST, EOrder.PRICE_HIGHEST)
-    .allow(null)
-    .label('order')
+    .allow(null, '')
+    .label('order'),
+  addressInfor: Joi.array().items(Joi.object().required()).allow(null, '').label('addressInfor')
 });
 
 const suggestedSchema = Joi.object({
