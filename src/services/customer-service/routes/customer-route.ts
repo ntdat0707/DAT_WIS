@@ -4,6 +4,8 @@ require('dotenv').config();
 
 import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
 import { uploadAsMiddleware } from '../../../utils/file-manager';
+import { isAuthenticated as isAuthenticatedCustomer } from '../../../utils/middlewares/customer/auth';
+
 export class CustomerRoutes {
   public router: express.Router = express.Router();
   private customerController = new CustomerController();
@@ -43,5 +45,12 @@ export class CustomerRoutes {
     this.router.post('/register-customer-marketplace', this.customerController.registerCustomer);
     this.router.post('/request-new-password', this.customerController.requestNewPassword);
     this.router.put('/change-password', this.customerController.changePassword);
+    this.router.put(
+      '/change-profile-customer',
+      isAuthenticatedCustomer,
+      uploadAsMiddleware('photo'),
+      this.customerController.changeProfileCustomer
+    );
+    this.router.get('/me', isAuthenticatedCustomer, this.customerController.getProfileCustomer);
   }
 }

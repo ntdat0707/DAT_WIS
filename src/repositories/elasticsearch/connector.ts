@@ -18,7 +18,7 @@ const elasticsearchClient = new elasticsearch.Client(elsConfig);
 
 elasticsearchClient.ping(
   {
-    requestTimeout: 3000
+    requestTimeout: 30000
   },
   (error) => {
     if (error) {

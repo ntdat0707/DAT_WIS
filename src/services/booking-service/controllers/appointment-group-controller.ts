@@ -27,6 +27,7 @@ import {
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
+import { IRequestOptions, request } from '../../../utils/request';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -130,7 +131,7 @@ export class AppointmentGroupController extends BaseController {
           if (verifyResult instanceof CustomError) return next(verifyResult);
         }
       }
-
+      const appointmentIds = [];
       const newAppointmentGroupId = uuidv4();
       //create appoinment
       const createAppointmentTasks = [];
@@ -152,6 +153,7 @@ export class AppointmentGroupController extends BaseController {
           }
         }
         const newAppointmentId = uuidv4();
+        appointmentIds.push(newAppointmentId);
         createAppointmentTasks.push({
           id: newAppointmentId,
           appointmentGroupId: newAppointmentGroupId,
@@ -192,6 +194,18 @@ export class AppointmentGroupController extends BaseController {
       await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
       await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
       await transaction.commit();
+      for (let i = 0; i < appointmentIds.length; i++) {
+        const options: IRequestOptions = {
+          url: 'http://localhost:3000/appointment/create-cron-job-auto-update-status',
+          method: 'post',
+          headers: {
+            accept: '*/*',
+            'Content-Type': 'application/json'
+          },
+          data: JSON.stringify({ appointmentId: appointmentIds[i] })
+        };
+        await request(options);
+      }
       // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
       //   where: { id: newAppointmentGroupId },
       //   include: [
@@ -508,6 +522,7 @@ export class AppointmentGroupController extends BaseController {
       //   );
       // }
       const updateAppointmentId = [];
+      const appointmentIds = [];
       let countPrimary = 0;
       if (data.updateAppointments && data.updateAppointments.length > 0) {
         for (let i = 0; i < data.updateAppointments.length; i++) {
@@ -627,6 +642,7 @@ export class AppointmentGroupController extends BaseController {
             }
           }
           const newAppointmentId = uuidv4();
+          appointmentIds.push(newAppointmentId);
           createAppointmentTasks.push({
             id: newAppointmentId,
             appointmentGroupId: data.appointmentGroupId,
@@ -719,6 +735,7 @@ export class AppointmentGroupController extends BaseController {
         let index = 0;
         for (const apptData of data.updateAppointments) {
           const newAppointmentId = uuidv4();
+          appointmentIds.push(newAppointmentId);
           createAppointmentTasks.push({
             id: newAppointmentId,
             appointmentGroupId: data.appointmentGroupId,
@@ -793,6 +810,18 @@ export class AppointmentGroupController extends BaseController {
         }
       }
       await transaction.commit();
+      for (let i = 0; i < appointmentIds.length; i++) {
+        const options: IRequestOptions = {
+          url: 'http://localhost:3000/appointment/create-cron-job-auto-update-status',
+          method: 'post',
+          headers: {
+            accept: '*/*',
+            'Content-Type': 'application/json'
+          },
+          data: JSON.stringify({ appointmentId: appointmentIds[i] })
+        };
+        await request(options);
+      }
       // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
       //   where: { id: data.appointmentGroupId },
       //   include: [
