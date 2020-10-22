@@ -26,5 +26,6 @@ const createPaymentSchema = Joi.object({
           .label('provider')
       })
     )
+    .label('paymentMethods')
 });
 export { createPaymentSchema };

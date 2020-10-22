@@ -34,6 +34,7 @@ import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
 import { InvoiceLogModel } from '../../../repositories/mongo/models/invoice-log-model';
 import { customerWisereIdSchema } from '../configs/validate-schemas/invoice';
+import { PaymentController } from './payment-controller';
 export class InvoiceController {
   /**
    * @swagger
@@ -44,10 +45,13 @@ export class InvoiceController {
    *               type: string
    *           amount:
    *               type: integer
-   *           name:
-   *               type: string
-   *           accountNumber:
-   *               type: integer
+   *           provider:
+   *               type: object
+   *               properties:
+   *                   name:
+   *                       type: string
+   *                   accountNumber:
+   *                       type: integer
    *
    */
   /**
@@ -204,6 +208,7 @@ export class InvoiceController {
       };
       let subTotal = 0;
       let totalQuantity = 0;
+      let checkBalance = 0;
       const invoiceDetails = [];
       const invoiceDetailStaffs = [];
       for (let i = 0; i < req.body.listInvoiceDetail.length; i++) {
@@ -243,7 +248,7 @@ export class InvoiceController {
       let invoiceDiscount = 0;
       if (discount) {
         if (discount.type === EDiscountType.CASH) {
-          invoiceDiscount = subTotal - discount.amount;
+          invoiceDiscount = discount.amount;
         } else {
           invoiceDiscount = subTotal * (discount.amount / 100);
         }
@@ -283,10 +288,28 @@ export class InvoiceController {
       await InvoiceDetailModel.bulkCreate(invoiceDetails, { transaction });
       await InvoiceDetailStaffModel.bulkCreate(invoiceDetailStaffs, { transaction });
       if (req.body.listPayment) {
-        // create payment
+        const data = {
+          invoiceId: dataInvoice.id,
+          customerId: dataInvoice.customerWisereId,
+          staffId: res.locals.staffPayload.id,
+          locationId: dataInvoice.locationId,
+          total: totalAmount,
+          balance: totalAmount,
+          paymentMethods: req.body.listPayment
+        };
+        const paymentController = new PaymentController();
+        checkBalance = await paymentController.createPaymentReceipt(data, transaction);
+      } else {
+        checkBalance = dataInvoice.balance;
+      }
+      if (checkBalance !== req.body.balance) {
+        throw new CustomError(
+          invoiceErrorDetails.E_3306(`Balance ${req.body.balance} is incorrect`),
+          httpStatus.BAD_REQUEST
+        );
       }
       await transaction.commit();
-      return res.status(httpStatus.OK).send();
+      return res.status(httpStatus.OK).send({});
     } catch (error) {
       //rollback transaction
       if (transaction) {

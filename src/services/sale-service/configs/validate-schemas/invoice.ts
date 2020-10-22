@@ -80,8 +80,12 @@ const createInvoiceSchema = Joi.object({
           .required()
           .label('paymentMethodId'),
         amount: Joi.number().integer().required().label('amount'),
-        name: Joi.string().allow(null, '').label('name'),
-        accountNumber: Joi.number().integer().allow(null).label('accountNumber')
+        provider: Joi.object({
+          name: Joi.string().required().label('name'),
+          accountNumber: Joi.number().integer().required().label('accountNumber')
+        })
+          .allow(null)
+          .label('provider')
       })
     )
     .label('listPayment')
