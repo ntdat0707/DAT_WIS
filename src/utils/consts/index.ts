@@ -181,3 +181,8 @@ export enum EExtraTimeType {
   PROCESSING = 'PROCESSING',
   BLOCKED = 'BLOCKED'
 }
+
+export enum EDiscountType {
+  CASH = 'cash',
+  PERCENT = 'percent'
+}

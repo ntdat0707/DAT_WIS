@@ -1,17 +1,16 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class PaymentModel extends Model {
+class TipsModel extends Model {
   public id: string;
   public invoiceId!: string;
-  public paymentMethodId!: string;
+  public staffId!: string;
   public amount!: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
-
-PaymentModel.init(
+TipsModel.init(
   {
     id: {
       field: 'id',
@@ -24,15 +23,15 @@ PaymentModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    paymentMethodId: {
-      field: 'payment_method_id',
+    staffId: {
+      field: 'staff_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
     amount: {
       field: 'amount',
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
@@ -53,10 +52,10 @@ PaymentModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'payment',
+    tableName: 'tips',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { PaymentModel };
+export { TipsModel };

@@ -1,17 +1,16 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class PaymentModel extends Model {
+class ProviderModel extends Model {
   public id: string;
-  public invoiceId!: string;
-  public paymentMethodId!: string;
-  public amount!: number;
+  public paymentId!: string;
+  public name!: string;
+  public accountNumber!: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
-
-PaymentModel.init(
+ProviderModel.init(
   {
     id: {
       field: 'id',
@@ -19,20 +18,20 @@ PaymentModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    invoiceId: {
-      field: 'invoice_id',
+    paymentId: {
+      field: 'payment_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    paymentMethodId: {
-      field: 'payment_method_id',
-      type: DataTypes.UUIDV4,
+    name: {
+      field: 'name',
+      type: DataTypes.STRING,
       allowNull: false
     },
-    amount: {
-      field: 'amount',
+    accountNumber: {
+      field: 'account_number',
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
@@ -53,10 +52,10 @@ PaymentModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'payment',
+    tableName: 'provider',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { PaymentModel };
+export { ProviderModel };

@@ -6,6 +6,7 @@ import { createInvoiceSchema, createPaymentSchema, receiptIdSchema } from '../co
 import {
   AppointmentModel,
   CustomerWisereModel,
+  DiscountModel,
   InvoiceDetailModel,
   InvoiceDetailStaffModel,
   InvoiceModel,
@@ -22,9 +23,10 @@ import {
   customerErrorDetails,
   invoiceErrorDetails,
   staffErrorDetails,
-  receiptErrorDetails
+  receiptErrorDetails,
+  discountErrorDetails
 } from '../../../utils/response-messages/error-details/';
-import { EBalanceType } from './../../../utils/consts/index';
+import { EBalanceType, EDiscountType } from './../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { buildSuccessMessage } from '../../../utils/response-messages';
@@ -68,11 +70,11 @@ export class InvoiceController {
    *               type: string
    *           note:
    *               type: string
-   *           discount:
-   *               type: number
+   *           discountId:
+   *               type: string
    *           totalQuantity:
    *               type: number
-   *           subtotal:
+   *           subTotal:
    *               type: number
    *           totalAmount:
    *               type: number
@@ -149,6 +151,16 @@ export class InvoiceController {
           );
         }
       }
+      let discount: DiscountModel;
+      if (req.body.discountId) {
+        discount = await DiscountModel.findOne({ where: { id: req.body.discountId } });
+        if (!discount) {
+          throw new CustomError(
+            discountErrorDetails.E_3500(`discountId ${req.body.discountId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+      }
       let invoiceCode = '';
       for (let i = 0; i < 10; i++) {
         const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -166,7 +178,7 @@ export class InvoiceController {
         customerWisereId: req.body.customerWisereId,
         source: req.body.source,
         note: req.body.note,
-        discount: req.body.discount,
+        discountId: req.body.discountId,
         tax: req.body.tax
       };
       let subTotal = 0;
@@ -207,17 +219,28 @@ export class InvoiceController {
           invoiceDetailStaffs.push(dataInvoiceDetailStaff);
         }
       }
-      const invoiceDiscount = subTotal * dataInvoice.discount;
-      const totalAmount = subTotal - invoiceDiscount + (invoiceDiscount * dataInvoice.tax) / 100;
+      let invoiceDiscount = 0;
+      if (discount) {
+        if (discount.type === EDiscountType.CASH) {
+          invoiceDiscount = subTotal - discount.amount;
+        } else {
+          invoiceDiscount = subTotal * (discount.amount / 100);
+        }
+      }
+      let tax = 0;
+      if (dataInvoice.tax) {
+        tax = ((subTotal - invoiceDiscount) * dataInvoice.tax) / 100;
+      }
+      const totalAmount = subTotal - invoiceDiscount + tax;
       if (req.body.totalQuantity !== totalQuantity) {
         throw new CustomError(
           invoiceErrorDetails.E_3301(`total quantity ${req.body.totalQuantity} is incorrect`),
           httpStatus.BAD_REQUEST
         );
       }
-      if (req.body.subtotal !== subTotal) {
+      if (req.body.subTotal !== subTotal) {
         throw new CustomError(
-          invoiceErrorDetails.E_3302(`subTotal ${req.body.subtotal} is incorrect`),
+          invoiceErrorDetails.E_3302(`subTotal ${req.body.subTotal} is incorrect`),
           httpStatus.BAD_REQUEST
         );
       }
@@ -230,8 +253,9 @@ export class InvoiceController {
       dataInvoice = {
         ...dataInvoice,
         subTotal: subTotal,
+        total: totalAmount,
         status: EBalanceType.UNPAID,
-        balance: subTotal
+        balance: totalAmount
       };
       transaction = await sequelize.transaction();
       await InvoiceModel.create(dataInvoice, { transaction });
@@ -337,7 +361,7 @@ export class InvoiceController {
         staffId: res.locals.staffPayload.id,
         amount: payment.amount,
         paymentId: payment.id,
-        type: payment.type,
+        // type: payment.type,
         locationId: invoice.locationId
       };
       await ReceiptModel.create(dataReceipt, { transaction });

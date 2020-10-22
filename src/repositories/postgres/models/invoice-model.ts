@@ -11,12 +11,13 @@ class InvoiceModel extends Model {
   public appointmentId?: string;
   public source: string;
   public note: string;
-  public discount?: number;
+  public discountId?: string;
   public tax!: number;
   public balance!: number;
   public status!: string;
   public subTotal?: number;
   public tpis?: number;
+  public total: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -54,10 +55,10 @@ InvoiceModel.init(
       type: DataTypes.ENUM(...Object.keys(ESourceType)),
       defaultValue: ESourceType.POS
     },
-    discount: {
-      field: 'discount',
-      type: DataTypes.INTEGER,
-      defaultValue: 0
+    discountId: {
+      field: 'discount_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
     },
     tax: {
       field: 'tax',
@@ -84,10 +85,9 @@ InvoiceModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
-    tpis: {
-      field: 'tips',
-      type: DataTypes.INTEGER,
-      defaultValue: 0
+    total: {
+      field: 'total',
+      type: DataTypes.INTEGER
     },
     createdAt: {
       field: 'created_at',
