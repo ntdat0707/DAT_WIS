@@ -388,6 +388,12 @@ export class ServiceController {
    *       schema:
    *          type: string
    *     - in: query
+   *       name: cateServiceId
+   *       required: false
+   *       schema:
+   *          type: string
+
+   *     - in: query
    *       name: locationIds
    *       type: array
    *       items:
@@ -466,6 +472,15 @@ export class ServiceController {
           query_string: {
             fields: ['serviceStaff.staffId'],
             query: `${req.query.staffId}`
+          }
+        });
+      }
+
+      if (req.query.cateServiceId) {
+        searchParams.body.query.bool.must.push({
+          query_string: {
+            fields: ['cateService.id'],
+            query: `${req.query.cateServiceId}`
           }
         });
       }
