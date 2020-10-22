@@ -470,10 +470,12 @@ export class ServiceController {
         });
       }
 
-      console.log(JSON.stringify(searchParams, null, 2));
-
       const services = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
-
+      services.data = services.data.map((item: any) => ({
+        ...item._source,
+        serviceStaff: undefined,
+        locationServices: undefined
+      }));
       return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
     } catch (error) {
       return next(error);
