@@ -29,7 +29,7 @@ import { MarketPlaceValueModel } from './marketplace-value-model';
 import { ContactModel } from './contact-model';
 import { FavoriteModel } from './favorite-model';
 import { PositionModel } from './position-model';
-import { GroupStaffModel } from './group-staff-model';
+import { TeamStaffModel } from './group-staff-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -191,11 +191,11 @@ PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
 PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
-GroupStaffModel.hasOne(StaffModel, { foreignKey: 'groupStaffId', sourceKey: 'id', as: 'staff' });
-StaffModel.belongsTo(GroupStaffModel, { foreignKey: 'groupStaffId', as: 'groupStaff' });
+TeamStaffModel.hasOne(StaffModel, { foreignKey: 'teamStaffId', sourceKey: 'id', as: 'staff' });
+StaffModel.belongsTo(TeamStaffModel, { foreignKey: 'teamStaffId', as: 'teamStaff' });
 
-CompanyModel.hasMany(GroupStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'groupStaffs' });
-GroupStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+CompanyModel.hasMany(TeamStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'teamStaffs' });
+TeamStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
 export {
   sequelize,
@@ -224,5 +224,5 @@ export {
   MarketPlaceValueModel,
   MarketPlaceFieldsModel,
   FavoriteModel,
-  GroupStaffModel
+  TeamStaffModel
 };

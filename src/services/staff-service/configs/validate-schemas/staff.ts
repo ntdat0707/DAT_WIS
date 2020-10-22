@@ -46,11 +46,17 @@ export const createStaffSchema = Joi.object({
 });
 export const updateStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
+  staffId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('staffId'),
   isAllowedMarketPlace: Joi.boolean().required().label('isAllowedMarketPlace'),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
-  birthDate: Joi.string().isoDate().required(),
+  birthDate: Joi.string().isoDate(),
   passportNumber: Joi.string().required(),
   address: Joi.string(),
   color: Joi.string(),
@@ -72,7 +78,12 @@ export const updateStaffSchema = Joi.object({
         version: ['uuidv4']
       })
     )
-    .label('serviceIds')
+    .label('serviceIds'),
+  teamStaffId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('teamStaffId')
 });
 
 const filterStaffSchema = Joi.object({
@@ -90,7 +101,7 @@ const filterStaffSchema = Joi.object({
         version: ['uuidv4']
       })
     ),
-  groupStaffIds: Joi.array()
+  teamStaffIds: Joi.array()
     .min(1)
     .items(
       Joi.string().guid({
