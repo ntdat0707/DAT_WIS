@@ -31,7 +31,7 @@ const createInvoiceSchema = Joi.object({
     .label('discountId'),
   tax: Joi.number().integer().min(0).allow(null).label('tax'),
   totalQuantity: Joi.number().integer().min(1).required().label('totalQuantity'),
-  subtotal: Joi.number().integer().min(0).required().label('subtotal'),
+  subTotal: Joi.number().integer().min(0).required().label('subTotal'),
   totalAmount: Joi.number().integer().min(0).required().label('totalAmount'),
   listInvoiceDetail: Joi.array()
     .min(1)

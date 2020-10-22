@@ -71,7 +71,7 @@ export class InvoiceController {
    *               type: string
    *           totalQuantity:
    *               type: number
-   *           subtotal:
+   *           subTotal:
    *               type: number
    *           totalAmount:
    *               type: number
@@ -235,9 +235,9 @@ export class InvoiceController {
           httpStatus.BAD_REQUEST
         );
       }
-      if (req.body.subtotal !== subTotal) {
+      if (req.body.subTotal !== subTotal) {
         throw new CustomError(
-          invoiceErrorDetails.E_3302(`subTotal ${req.body.subtotal} is incorrect`),
+          invoiceErrorDetails.E_3302(`subTotal ${req.body.subTotal} is incorrect`),
           httpStatus.BAD_REQUEST
         );
       }
