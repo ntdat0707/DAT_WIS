@@ -421,43 +421,47 @@ export class ServiceController {
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
 
-      let locationIds: string[];
+      let locationIds: string;
       if (req.query.locationIds && typeof req.query.locationIds !== 'string' && req.query.locationIds.length > 0) {
-        locationIds = (req.query.locationIds as []).map((locationId: string) => `'${locationId}'`);
+        locationIds = (req.query.locationIds as []).join(' OR ');
       } else {
-        locationIds = workingLocationIds.map((locationId: string) => `'${locationId}'`);
+        locationIds = workingLocationIds.join(' OR ');
       }
 
       const searchParams: SearchParams = {
-        index: 'get_service',
+        index: 'get_services',
         body: {
           query: {
             bool: {
-              filter: {
-                terms: {
-                  'locationServices.locationId': locationIds
-                }
-              }
+              must: [
+                locationIds
+                  ? {
+                      query_string: {
+                        fields: ['locationServices.locationId'],
+                        query: locationIds
+                      }
+                    }
+                  : {
+                      match_all: {}
+                    }
+              ]
             }
           }
         }
       };
 
       if (req.query.searchValue) {
-        searchParams.body.query.bool.must = [
+        searchParams.body.query.bool.must.push(
           {
             query_string: {
               fields: ['name', 'serviceCode'],
-              query: `${req.query.searchValue}~1`
+              query: `${(req.query.searchValue as string).replace(/  +/g, ' ').trim()}`
             }
           }
-        ];
+        );
       }
 
       if (req.query.staffId) {
-        if (!searchParams.body.query.bool.must) {
-          searchParams.body.query.bool.must = [];
-        }
         searchParams.body.query.bool.must.push({
           query_string: {
             fields: ['serviceStaff.staffId'],
@@ -465,6 +469,8 @@ export class ServiceController {
           }
         });
       }
+
+      console.log(JSON.stringify(searchParams, null, 2));
 
       const services = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
 
