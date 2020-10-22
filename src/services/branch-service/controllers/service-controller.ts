@@ -32,7 +32,7 @@ import { paginateElasicSearch } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
-import {SearchParams} from 'elasticsearch';
+import { SearchParams } from 'elasticsearch';
 import elasticsearchClient from '../../../repositories/elasticsearch';
 
 export class ServiceController {
@@ -466,12 +466,7 @@ export class ServiceController {
         });
       }
 
-      const services = await paginateElasicSearch(
-        elasticsearchClient,
-        searchParams,
-        paginateOptions,
-        fullPath
-      );
+      const services = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
     } catch (error) {
