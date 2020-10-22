@@ -88,7 +88,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/invoice/create-invoice:
+   * /sale/create-invoice:
    *   post:
    *     tags:
    *       - Sale
@@ -273,7 +273,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/invoice/get-all-invoice:
+   * /sale/get-all-invoice:
    *   get:
    *     tags:
    *       - Sale
@@ -338,7 +338,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/invoice/get-all-receipt:
+   * /sale/get-all-receipt:
    *   get:
    *     tags:
    *       - Sale
@@ -403,7 +403,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/invoice/get-receipt/{receiptId}:
+   * /sale/get-receipt/{receiptId}:
    *   get:
    *     tags:
    *       - Sale
@@ -494,7 +494,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/invoice/create-invoice-log:
+   * /sale/create-invoice-log:
    *   post:
    *     tags:
    *       - Sale
@@ -622,7 +622,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/invoice/get-list-invoice-log/{customerWisereId}:
+   * /sale/get-list-invoice-log/{customerWisereId}:
    *   get:
    *     tags:
    *       - Sale
