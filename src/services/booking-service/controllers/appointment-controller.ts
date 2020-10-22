@@ -47,6 +47,7 @@ import {
 import { BaseController } from './base-controller';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import httpStatus from 'http-status';
+import { IRequestOptions, request } from '../../../utils/request';
 export class AppointmentController extends BaseController {
   /**
    * @swagger
@@ -385,6 +386,16 @@ export class AppointmentController extends BaseController {
       }
       //commit transaction
       await transaction.commit();
+      const options: IRequestOptions = {
+        url: 'http://localhost:3000/appointment/create-cron-job-auto-update-status',
+        method: 'post',
+        headers: {
+          accept: '*/*',
+          'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({ appointmentId: appointmentId })
+      };
+      await request(options);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       //rollback transaction
