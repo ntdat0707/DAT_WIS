@@ -1622,15 +1622,6 @@ export class SearchController {
         }
       };
 
-      if (keywords) {
-        searchParams.body.query.bool.must.push({
-          query_string: {
-            fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
-            query: `${keywords}~1`
-          }
-        });
-      }
-
       let countTypeAvailable = 1;
       if (search.addressInfor) {
         const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
