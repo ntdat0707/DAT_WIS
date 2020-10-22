@@ -392,7 +392,6 @@ export class ServiceController {
    *       required: false
    *       schema:
    *          type: string
-
    *     - in: query
    *       name: locationIds
    *       type: array
@@ -457,14 +456,12 @@ export class ServiceController {
       };
 
       if (req.query.searchValue) {
-        searchParams.body.query.bool.must.push(
-          {
-            query_string: {
-              fields: ['name', 'serviceCode'],
-              query: `${(req.query.searchValue as string).replace(/  +/g, ' ').trim()}`
-            }
+        searchParams.body.query.bool.must.push({
+          query_string: {
+            fields: ['name', 'serviceCode'],
+            query: `${(req.query.searchValue as string).replace(/  +/g, ' ').trim()}`
           }
-        );
+        });
       }
 
       if (req.query.staffId) {
