@@ -19,9 +19,9 @@ enum EEnvironments {
 }
 
 enum EGender {
-  FEMALE = 0,
-  MALE = 1,
-  UNISEX = 2
+  UNISEX = 0,
+  FEMALE = 1,
+  MALE = 2
 }
 
 enum EPayment {
