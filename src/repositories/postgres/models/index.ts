@@ -29,7 +29,7 @@ import { MarketPlaceValueModel } from './marketplace-value-model';
 import { ContactModel } from './contact-model';
 import { FavoriteModel } from './favorite-model';
 import { PositionModel } from './position-model';
-import { TeamStaffModel } from './group-staff-model';
+import { TeamStaffModel } from './team-staff-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
