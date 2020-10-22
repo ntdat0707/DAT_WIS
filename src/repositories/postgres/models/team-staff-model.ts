@@ -1,7 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 
 import sequelize from '../configs/db-connector';
-class GroupStaffModel extends Model {
+class TeamStaffModel extends Model {
   public id: string;
   public name!: string;
   public companyId: string;
@@ -10,7 +10,7 @@ class GroupStaffModel extends Model {
   public readonly deletedAt: Date;
 }
 
-GroupStaffModel.init(
+TeamStaffModel.init(
   {
     id: {
       field: 'id',
@@ -43,8 +43,8 @@ GroupStaffModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'group_staff'
+    tableName: 'team_staff'
   }
 );
 
-export { GroupStaffModel };
+export { TeamStaffModel };

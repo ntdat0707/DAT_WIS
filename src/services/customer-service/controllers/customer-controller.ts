@@ -49,7 +49,12 @@ import { generateAppleToken } from '../../../utils/lib/generateAppleToken';
 import jwt from 'jsonwebtoken';
 import shortid from 'shortid';
 import _ from 'lodash';
-import { emailSchema, changePasswordSchema } from '../configs/validate-schemas/customer';
+import {
+  emailSchema,
+  changePasswordSchema,
+  changeProfileCustomerSchema,
+  changePasswordCustomerSchema
+} from '../configs/validate-schemas/customer';
 import { v4 as uuidv4 } from 'uuid';
 import { redis, EKeys } from '../../../repositories/redis';
 import { ICustomerRecoveryPasswordTemplate } from '../../../utils/emailer/templates/customer-recovery-password';
@@ -1507,6 +1512,154 @@ export class CustomerController {
       );
       await redis.deleteData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${body.token}`);
       res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/change-profile-customer:
+   *   put:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: changeProfileCustomer
+   *     consumes:
+   *     - multipart/form-data
+   *     parameters:
+   *     - in: "formData"
+   *       name: "photo"
+   *       type: file
+   *       description: The file to upload.
+   *     - in: "formData"
+   *       name: firstName
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: lastName
+   *       type: string
+   *       required: true
+   *     - in: "formData"
+   *       name: gender
+   *       type: integer
+   *       enum: [0, 1, 2]
+   *     - in: "formData"
+   *       name: phone
+   *       type: string
+   *     - in: "formData"
+   *       name: birthDate
+   *       type: string
+   *     - in: "formData"
+   *       name: currentPassword
+   *       type: string
+   *     - in: "formData"
+   *       name: newPassword
+   *       type: string
+   *     - in: "formData"
+   *       name: confirmPassword
+   *       type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public changeProfileCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data: any = {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        phone: req.body.phone,
+        gender: req.body.gender,
+        birthDate: req.body.birthDate
+      };
+      let validateErrors = validate(data, changeProfileCustomerSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+
+      if (data.phone) {
+        const existPhone = await CustomerModel.findOne({
+          where: {
+            phone: data.phone,
+            id: { [Op.not]: res.locals.customerPayload.id }
+          }
+        });
+        if (existPhone) {
+          return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+        }
+      }
+
+      if (req.file) {
+        data.avatarPath = (req.file as any).location;
+      }
+
+      const existCustomer = await CustomerModel.findOne({
+        where: {
+          id: res.locals.customerPayload.id
+        }
+      });
+
+      if (req.body.currentPassword || req.body.newPassword || req.body.confirmPassword) {
+        const dataChangePassword = {
+          currentPassword: req.body.currentPassword,
+          newPassword: req.body.newPassword,
+          confirmPassword: req.body.confirmPassword
+        };
+        validateErrors = validate(dataChangePassword, changePasswordCustomerSchema);
+        if (validateErrors) {
+          return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        }
+
+        const match = await compare(dataChangePassword.currentPassword, existCustomer.password);
+        if (!match) {
+          return next(new CustomError(customerErrorDetails.E_3010(), HttpStatus.BAD_REQUEST));
+        }
+
+        if (dataChangePassword.newPassword !== dataChangePassword.confirmPassword) {
+          return next(new CustomError(customerErrorDetails.E_3011(), HttpStatus.BAD_REQUEST));
+        }
+
+        data.password = await hash(dataChangePassword.newPassword, PASSWORD_SALT_ROUNDS);
+      }
+
+      await existCustomer.update(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(existCustomer));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/me:
+   *   get:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: getCustomer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getProfileCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = res.locals.customerPayload.id;
+      const profile = await CustomerModel.findOne({
+        where: {
+          id: customerId
+        }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(profile));
     } catch (error) {
       return next(error);
     }

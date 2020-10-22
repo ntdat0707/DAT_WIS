@@ -27,11 +27,13 @@ import { ServiceStaffModel } from '../../../repositories/postgres/models/service
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-import { FindOptions, Transaction, QueryTypes } from 'sequelize';
-import { paginateRawData } from '../../../utils/paginator';
+import { FindOptions, Transaction } from 'sequelize';
+import { paginateElasicSearch } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
+import { SearchParams } from 'elasticsearch';
+import elasticsearchClient from '../../../repositories/elasticsearch';
 
 export class ServiceController {
   /**
@@ -386,6 +388,11 @@ export class ServiceController {
    *       schema:
    *          type: string
    *     - in: query
+   *       name: cateServiceId
+   *       required: false
+   *       schema:
+   *          type: string
+   *     - in: query
    *       name: locationIds
    *       type: array
    *       items:
@@ -421,38 +428,65 @@ export class ServiceController {
 
       let locationIds: string;
       if (req.query.locationIds && typeof req.query.locationIds !== 'string' && req.query.locationIds.length > 0) {
-        locationIds = (req.query.locationIds as []).map((locationId: string) => `'${locationId}'`).join(',');
+        locationIds = (req.query.locationIds as []).join(' OR ');
       } else {
-        locationIds = workingLocationIds.map((locationId: string) => `'${locationId}'`).join(',');
+        locationIds = workingLocationIds.join(' OR ');
       }
 
-      let query = '';
-      query += `select distinct service.id as id, service.status as status, service.created_at as "createdAt", service.updated_at as "updatedAt", service.deleted_at as "deletedAt", service.description, service.sale_price as "salePrice", service.duration, service.name, service.color, service.service_code as "serviceCode", service.unit_price as "unitPrice", service.allow_gender as "allowGender", service.name_en as "nameEn", service.cate_service_id as "cateSericeId"
-                FROM service
-                INNER JOIN location_services ON service.id = location_services.service_id
-                INNER JOIN cate_service ON cate_service.id = service.cate_service_id
-                LEFT JOIN service_staff on service.id = service_staff.service_id
-                LEFT JOIN service_image ON service_image.service_id = service.id
-                WHERE location_services.location_id in (${locationIds})
-                and service.deleted_at is null and location_services.deleted_at is null 
-                and cate_service.deleted_at is null and service_staff.deleted_at is null
-                and service_image.deleted_at is null
-                `;
+      const searchParams: SearchParams = {
+        index: 'get_services',
+        body: {
+          query: {
+            bool: {
+              must: [
+                locationIds
+                  ? {
+                      query_string: {
+                        fields: ['locationServices.locationId'],
+                        query: locationIds
+                      }
+                    }
+                  : {
+                      match_all: {}
+                    }
+              ]
+            }
+          }
+        }
+      };
 
       if (req.query.searchValue) {
-        query += `and (unaccent(service.name) ilike unaccent('%${req.query.searchValue}%')) or service.service_code like '%${req.query.searchValue}%' `;
+        searchParams.body.query.bool.must.push({
+          query_string: {
+            fields: ['name', 'serviceCode'],
+            query: `${(req.query.searchValue as string).replace(/  +/g, ' ').trim()}`
+          }
+        });
       }
 
       if (req.query.staffId) {
-        query += `and service_staff.staff_id = '${req.query.staffId}'`;
+        searchParams.body.query.bool.must.push({
+          query_string: {
+            fields: ['serviceStaff.staffId'],
+            query: `${req.query.staffId}`
+          }
+        });
       }
 
-      const services = await sequelize.query(query, {
-        type: QueryTypes.SELECT
-      });
+      if (req.query.cateServiceId) {
+        searchParams.body.query.bool.must.push({
+          query_string: {
+            fields: ['cateService.id'],
+            query: `${req.query.cateServiceId}`
+          }
+        });
+      }
 
-      const result = paginateRawData(services, paginateOptions, fullPath);
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(result));
+      const services = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      services.data = services.data.map((item: any) => ({
+        ...item._source
+      }));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
     } catch (error) {
       return next(error);
     }

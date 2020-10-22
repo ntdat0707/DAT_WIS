@@ -201,6 +201,11 @@ const paginateElasicSearch = async <T extends Model<T>>(
       searchParams.body = { from, size };
     }
 
+    if (searchParams.body.sort) {
+      searchParams.body.sort.push('_score');
+    } else {
+      searchParams.body.sort = ['_score'];
+    }
     let data: any = await client.search(searchParams);
     // Count meta totalPages
     const totalRecords: number = data.hits.total.value;

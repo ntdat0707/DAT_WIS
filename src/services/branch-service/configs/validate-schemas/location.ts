@@ -195,18 +195,7 @@ const searchSchema = Joi.object({
     .valid(EOrder.NEWEST, EOrder.NEWEST, EOrder.PRICE_LOWEST, EOrder.PRICE_HIGHEST)
     .allow(null, '')
     .label('order'),
-  addressInfor: Joi.array()
-    .items(
-      Joi.object({
-        types: Joi.array(),
-        long_name: Joi.string()
-      })
-        .allow(null)
-        .allow('')
-    )
-    .allow(null)
-    .allow('')
-    .label('addressInfor')
+  addressInfor: Joi.array().items(Joi.object().required()).allow(null, '').label('addressInfor')
 });
 
 const suggestedSchema = Joi.object({

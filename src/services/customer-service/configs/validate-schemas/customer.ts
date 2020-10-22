@@ -145,6 +145,20 @@ const changePasswordSchema = Joi.object({
   newPassword: Joi.string().required().min(8).label('newPassword')
 });
 
+const changePasswordCustomerSchema = Joi.object({
+  currentPassword: Joi.string().required().label('currentPassword'),
+  newPassword: Joi.string().required().min(8).label('newPassword'),
+  confirmPassword: Joi.string().required().label('confirmPassword')
+});
+
+const changeProfileCustomerSchema = Joi.object({
+  firstName: Joi.string().required().label('firstName'),
+  lastName: Joi.string().required().label('lastName'),
+  phone: Joi.string().regex(/^\d+$/).allow(null, '').label('phone'),
+  gender: Joi.number().integer().allow(null).valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
+  birthDate: Joi.string().allow(null).isoDate().label('birthDate')
+});
+
 export {
   createCustomerWisereSchema,
   customerWireseIdSchema,
@@ -153,5 +167,7 @@ export {
   updateCustomerWisereSchema,
   registerCustomerSchema,
   emailSchema,
-  changePasswordSchema
+  changePasswordSchema,
+  changePasswordCustomerSchema,
+  changeProfileCustomerSchema
 };

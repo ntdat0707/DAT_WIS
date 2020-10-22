@@ -10,6 +10,8 @@ import { paginate } from '../../../utils/paginator';
 
 import { createCateServiceSchema, updateCateServiceSchema, cateServiceIdSchema } from '../configs/validate-schemas';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
+import { ServiceModel } from '../../../repositories/postgres/models';
+import { FindOptions } from 'sequelize/types';
 
 export class CateServiceController {
   /**
@@ -273,7 +275,7 @@ export class CateServiceController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const query = {
+      const query: FindOptions = {
         where: {
           companyId: companyId
         }
@@ -337,6 +339,85 @@ export class CateServiceController {
         );
       await CateServiceModel.destroy({ where: { id: cateServiceId } });
       return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/cate-service/{cateServiceId}/get-all-service:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getServicesByCateService
+   *     parameters:
+   *     - in: path
+   *       name: cateServiceId
+   *       required: true
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       404:
+   *         description: service cate gory not found
+   *       500:
+   *         description: internal error
+   */
+  public getServicesByCateService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const companyId = res.locals.staffPayload.companyId;
+      let validateErrors = validate(req.params.cateServiceId, cateServiceIdSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const existCateService = await CateServiceModel.findOne({
+        where: {
+          companyId: companyId,
+          id: req.params.cateServiceId
+        }
+      });
+
+      if (!existCateService) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1205(`Can not find cateService ${req.params.cateServiceId} in company ${companyId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      const query: FindOptions = {
+        where: {
+          cateServiceId: req.params.cateServiceId
+        }
+      };
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const services = await paginate(
+        ServiceModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
     } catch (error) {
       return next(error);
     }
