@@ -1586,7 +1586,7 @@ export class CustomerController {
         const existPhone = await CustomerModel.findOne({
           where: {
             phone: data.phone,
-            id: { [Op.ne]: res.locals.customerPayload.id }
+            id: { [Op.not]: res.locals.customerPayload.id }
           }
         });
         if (existPhone) {
