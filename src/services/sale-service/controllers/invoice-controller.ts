@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { baseValidateSchemas, validate } from '../../../utils/validator';
-import { createInvoiceSchema, createPaymentSchema, receiptIdSchema } from '../configs/validate-schemas';
+import { createInvoiceSchema, receiptIdSchema } from '../configs/validate-schemas';
 import {
   AppointmentModel,
   CustomerWisereModel,
@@ -11,7 +11,6 @@ import {
   InvoiceDetailStaffModel,
   InvoiceModel,
   LocationModel,
-  PaymentModel,
   ReceiptModel,
   sequelize,
   ServiceModel,
@@ -89,7 +88,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/create-invoice:
+   * /sale/invoice/create-invoice:
    *   post:
    *     tags:
    *       - Sale
@@ -274,111 +273,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * definitions:
-   *   paymentCreate:
-   *       properties:
-   *           invoiceId:
-   *               type: string
-   *           type:
-   *               type: string
-   *           amount:
-   *               type: integer
-   *
-   */
-
-  /**
-   * @swagger
-   * /sale/create-payment:
-   *   post:
-   *     tags:
-   *       - Sale
-   *     security:
-   *       - Bearer: []
-   *     name: createPayment
-   *     parameters:
-   *     - in: "body"
-   *       name: "body"
-   *       required: true
-   *       schema:
-   *         $ref: '#/definitions/paymentCreate'
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public createPayment = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction = null;
-    try {
-      const data = {
-        invoiceId: req.body.invoiceId,
-        type: req.body.type,
-        amount: req.body.amount
-      };
-      const validateErrors = validate(data, createPaymentSchema);
-      if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
-      }
-      let invoice = await InvoiceModel.findOne({ where: { id: data.invoiceId } });
-      if (!invoice) {
-        throw new CustomError(
-          invoiceErrorDetails.E_3300(`invoiceId ${data.invoiceId} not found`),
-          httpStatus.NOT_FOUND
-        );
-      }
-      if (data.amount > invoice.balance) {
-        throw new CustomError(
-          invoiceErrorDetails.E_3305(
-            `amount ${data.amount} is greater than the balance ${invoice.balance} in the invoice`
-          ),
-          httpStatus.BAD_REQUEST
-        );
-      }
-      transaction = await sequelize.transaction();
-      const payment = await PaymentModel.create(data, { transaction });
-      const balance = invoice.balance - payment.amount;
-      let status: string;
-      if (balance === 0) {
-        status = EBalanceType.PAID;
-      } else if (balance > 0 && balance < invoice.subTotal) {
-        status = EBalanceType.PART_PAID;
-      }
-      invoice = await invoice.update({ balance: balance, status: status }, { transaction });
-      let receiptCode = '';
-      for (let i = 0; i < 10; i++) {
-        const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        receiptCode = 'REC' + randomCode;
-        const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
-        if (!existReceiptCode) {
-          break;
-        }
-      }
-      const dataReceipt = {
-        code: receiptCode,
-        customerId: invoice.customerWisereId,
-        staffId: res.locals.staffPayload.id,
-        amount: payment.amount,
-        paymentId: payment.id,
-        // type: payment.type,
-        locationId: invoice.locationId
-      };
-      await ReceiptModel.create(dataReceipt, { transaction });
-      await transaction.commit();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(payment));
-    } catch (error) {
-      //rollback transaction
-      if (transaction) {
-        await transaction.rollback();
-      }
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * /sale/get-all-invoice:
+   * /sale/invoice/get-all-invoice:
    *   get:
    *     tags:
    *       - Sale
@@ -443,7 +338,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/get-all-receipt:
+   * /sale/invoice/get-all-receipt:
    *   get:
    *     tags:
    *       - Sale
@@ -508,7 +403,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/get-receipt/{receiptId}:
+   * /sale/invoice/get-receipt/{receiptId}:
    *   get:
    *     tags:
    *       - Sale
@@ -584,7 +479,7 @@ export class InvoiceController {
    *               type: string
    *           totalQuantity:
    *               type: number
-   *           subtotal:
+   *           subTotal:
    *               type: number
    *           totalAmount:
    *               type: number
@@ -599,7 +494,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/create-invoice-log:
+   * /sale/invoice/create-invoice-log:
    *   post:
    *     tags:
    *       - Sale
@@ -666,10 +561,10 @@ export class InvoiceController {
         customerWisereId: req.body.customerWisereId,
         source: req.body.source,
         note: req.body.note,
-        discount: req.body.discount,
+        discountId: req.body.discountId,
         tax: req.body.tax,
         timestamp: new Date(),
-        subTotal: req.body.subtotal,
+        subTotal: req.body.subTotal,
         totalAmount: req.body.totalAmount,
         totalQuantity: req.body.totalQuantity
       };
@@ -714,7 +609,7 @@ export class InvoiceController {
         ...dataInvoiceLog,
         invoiceDetail: invoiceDetails,
         status: EBalanceType.UNPAID,
-        balance: req.body.subtotal
+        balance: req.body.subTotal
       };
       const invoiceLog = new InvoiceLogModel(dataInvoiceLog);
       await invoiceLog.save();
@@ -727,7 +622,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/get-list-invoice-log/{customerWisereId}:
+   * /sale/invoice/get-list-invoice-log/{customerWisereId}:
    *   get:
    *     tags:
    *       - Sale

@@ -1,5 +1,4 @@
 import Joi from 'joi';
-import { EPaymentType } from '../../../../utils/consts/index';
 import { ESourceType } from '../../../../utils/consts';
 
 const createInvoiceSchema = Joi.object({
@@ -65,20 +64,6 @@ const createInvoiceSchema = Joi.object({
     .label('listInvoiceDetail')
 });
 
-const createPaymentSchema = Joi.object({
-  invoiceId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .required()
-    .label('invoiceId'),
-  type: Joi.string()
-    .valid(EPaymentType.CARD, EPaymentType.CASH, EPaymentType.GIFT_CARD, EPaymentType.TRANFER)
-    .required()
-    .label('type'),
-  amount: Joi.number().integer().min(0).required().label('amount')
-});
-
 const receiptIdSchema = Joi.string()
   .guid({
     version: ['uuidv4']
@@ -92,4 +77,4 @@ const customerWisereIdSchema = Joi.string()
   })
   .required()
   .label('customerWisereIdSchema');
-export { createInvoiceSchema, createPaymentSchema, receiptIdSchema, customerWisereIdSchema };
+export { createInvoiceSchema, receiptIdSchema, customerWisereIdSchema };
