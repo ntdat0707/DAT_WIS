@@ -95,6 +95,10 @@ const staffErrorDetails = {
   E_40010(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_40010', 'Exist appointment in feature. You can not remove service', detail);
     return e;
+  },
+  E_40011(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_40011', 'Team staff has been not assign', detail);
+    return e;
   }
 };
 

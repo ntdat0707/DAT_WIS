@@ -171,7 +171,7 @@ interface IManagementLockAppointmentData {
     birthDate: any;
     isAllowedMarketPlace: boolean;
     passportNumber: any;
-    groupStaffId: any;
+    teamStaffId: any;
     isBusinessAccount: boolean;
     facebookId: any;
     appleId: any;
@@ -275,7 +275,7 @@ interface IManagementEditAppointmentDetailData {
     birthDate: any;
     isAllowedMarketPlace: boolean;
     passportNumber: any;
-    groupStaffId: any;
+    teamStaffId: any;
     isBusinessAccount: boolean;
     facebookId: any;
     appleId: any;

@@ -28,7 +28,7 @@ import {
   AppointmentDetailModel,
   CompanyModel,
   LocationWorkingHourModel,
-  GroupStaffModel,
+  TeamStaffModel,
   CateServiceModel
 } from '../../../repositories/postgres/models';
 
@@ -39,10 +39,10 @@ import {
   createStaffsSchema,
   updateStaffSchema,
   getStaffMultipleService,
-  deleteStaffSchema,
-  getServicesOfStaff
+  deleteStaffSchema
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
+import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
 
 export class StaffController {
   /**
@@ -79,6 +79,12 @@ export class StaffController {
             model: LocationModel,
             as: 'workingLocations',
             through: { attributes: [] }
+          },
+          {
+            model: TeamStaffModel,
+            as: 'teamStaff',
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
         ]
       });
@@ -118,7 +124,7 @@ export class StaffController {
    *             type: string
    *       description: array of UUID v4
    *     - in: query
-   *       name: groupStaffIds
+   *       name: teamStaffIds
    *       schema:
    *          type: array
    *          items:
@@ -147,7 +153,7 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const filter = { workingLocationIds: req.query.workingLocationIds, groupStaffIds: req.query.groupStaffIds };
+      const filter = { workingLocationIds: req.query.workingLocationIds, teamStaffIds: req.query.teamStaffIds };
       const validateFilterErrors = validate(filter, filterStaffSchema);
       if (validateFilterErrors) return next(new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = { include: [] };
@@ -193,18 +199,18 @@ export class StaffController {
         ];
       }
       if (
-        filter.groupStaffIds &&
-        Array.isArray(filter.groupStaffIds) &&
-        filter.groupStaffIds.every((e: any) => typeof e === 'string')
+        filter.teamStaffIds &&
+        Array.isArray(filter.teamStaffIds) &&
+        filter.teamStaffIds.every((e: any) => typeof e === 'string')
       ) {
         query.include = [
           ...query.include,
           ...[
             {
-              model: GroupStaffModel,
-              as: 'groupStaff',
+              model: TeamStaffModel,
+              as: 'teamStaff',
               required: false,
-              where: { id: filter.groupStaffIds }
+              where: { id: filter.teamStaffIds }
             }
           ]
         ];
@@ -254,7 +260,7 @@ export class StaffController {
    *       type: string
    *       required: true
    *     - in: "formData"
-   *       name: groupStaffId
+   *       name: teamStaffId
    *       type: string
    *     - in: "formData"
    *       name: firstName
@@ -315,7 +321,7 @@ export class StaffController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const profile: any = {
-        groupStaffId: req.body.groupStaffId,
+        teamStaffId: req.body.teamStaffId,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
@@ -402,12 +408,15 @@ export class StaffController {
    *     - in: "formData"
    *       name: firstName
    *       type: string
+   *       required: true
    *     - in: "formData"
    *       name: lastName
    *       type: string
+   *       required: true
    *     - in: "formData"
    *       name: gender
    *       type: integer
+   *       required: true
    *     - in: "formData"
    *       name: birthDate
    *       type: string
@@ -417,8 +426,12 @@ export class StaffController {
    *     - in: "formData"
    *       name: passportNumber
    *       type: string
+   *       required: true
    *     - in: "formData"
    *       name: color
+   *       type: string
+   *     - in: "formData"
+   *       name: teamStaffId
    *       type: string
    *     - in: "formData"
    *       name: workingLocationIds
@@ -448,7 +461,7 @@ export class StaffController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      const profile: any = {
+      let profile: any = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
@@ -469,6 +482,17 @@ export class StaffController {
             HttpStatus.FORBIDDEN
           );
         }
+      }
+
+      if (req.body.teamStaffId) {
+        const teamStaffId = await TeamStaffModel.findOne({ where: { id: req.body.teamStaffId } });
+        if (!teamStaffId) {
+          return next(new CustomError(staffErrorDetails.E_40011('Team staff has been not assign')));
+        }
+        profile = {
+          ...profile,
+          teamStaffId: teamStaffId.id
+        };
       }
       let staff = await StaffModel.findOne({
         where: {
@@ -525,6 +549,7 @@ export class StaffController {
           });
         }
       }
+
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
@@ -1513,13 +1538,13 @@ export class StaffController {
 
   /**
    * @swagger
-   * /staff/get-groups-staff:
+   * /staff/get-teams-staff:
    *   get:
    *     tags:
    *       - Staff
    *     security:
    *       - Bearer: []
-   *     name: getGroupsStaff
+   *     name: getTeamsStaff
    *     parameters:
    *     - in: query
    *       name: pageNum
@@ -1544,7 +1569,7 @@ export class StaffController {
    *       500:
    *         description: Internal server errors
    */
-  public getGroupStaffs = async (req: Request, res: Response, next: NextFunction) => {
+  public getTeamsStaffs = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
@@ -1554,6 +1579,8 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const teamStaff = await TeamStaffModel.findOne({ where: { companyId: companyId } });
+      if (!teamStaff) return next(new CustomError(staffErrorDetails.E_40011('Team staff has been not assign')));
       const query: FindOptions = {
         where: { companyId: companyId },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
@@ -1564,18 +1591,18 @@ export class StaffController {
           ...query.where,
           ...{
             [Op.or]: [
-              Sequelize.literal(`unaccent("GroupStaffModel"."name") ilike unaccent('%${req.query.searchValue}%')`)
+              Sequelize.literal(`unaccent("TeamStaffModel"."name") ilike unaccent('%${req.query.searchValue}%')`)
             ]
           }
         };
       }
-      const groupStaffs = await paginate(
-        GroupStaffModel,
+      const teamStaffs = await paginate(
+        TeamStaffModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(groupStaffs));
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(teamStaffs));
     } catch (error) {
       return next(error);
     }
@@ -1583,13 +1610,13 @@ export class StaffController {
 
   /**
    *  @swagger
-   * /staff/get-staff-in-group:
+   * /staff/get-staff-in-team:
    *   get:
    *     tags:
    *       - Staff
    *     security:
    *       - Bearer: []
-   *     name: getStaffInGroup
+   *     name: getStaffInTeam
    *     parameters:
    *     - in: query
    *       name: pageNum
@@ -1602,7 +1629,7 @@ export class StaffController {
    *       schema:
    *          type: integer
    *     - in: query
-   *       name: groupStaffId
+   *       name: teamStaffId
    *       required: true
    *       schema:
    *          type: string
@@ -1614,9 +1641,10 @@ export class StaffController {
    *       500:
    *         description: Internal server errors
    */
-  public getStaffInGroup = async (req: Request, res: Response, next: NextFunction) => {
+  public getStaffInTeam = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const groupStaffId = req.query.groupStaffId;
+      const companyId = res.locals.staffPayload.companyId;
+      const teamStaffId = req.query.teamStaffId;
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
         pageNum: req.query.pageNum,
@@ -1624,8 +1652,13 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      const teamStaff = await TeamStaffModel.findOne({ where: { companyId } });
+      if (!teamStaff)
+        return next(
+          new CustomError(companyErrorDetails.E_4002('You can not access to this company'), HttpStatus.FORBIDDEN)
+        );
       const query: FindOptions = {
-        where: { groupStaffId: groupStaffId },
+        where: { teamStaffId: teamStaffId },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       };
       const staffs = await paginate(
@@ -1664,7 +1697,7 @@ export class StaffController {
 
   public getServicesByStaff = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validateErrors = validate(req.params.staffId, getServicesOfStaff);
+      const validateErrors = validate(req.params.staffId, staffIdSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
