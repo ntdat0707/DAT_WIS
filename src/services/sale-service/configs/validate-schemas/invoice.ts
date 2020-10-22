@@ -2,6 +2,12 @@ import Joi from 'joi';
 import { ESourceType } from '../../../../utils/consts';
 
 const createInvoiceSchema = Joi.object({
+  invoiceId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('invoiceId'),
   locationId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -32,6 +38,7 @@ const createInvoiceSchema = Joi.object({
   totalQuantity: Joi.number().integer().min(1).required().label('totalQuantity'),
   subTotal: Joi.number().integer().min(0).required().label('subTotal'),
   totalAmount: Joi.number().integer().min(0).required().label('totalAmount'),
+  balance: Joi.number().integer().min(0).required().label('balance'),
   listInvoiceDetail: Joi.array()
     .min(1)
     .required()
@@ -61,7 +68,23 @@ const createInvoiceSchema = Joi.object({
           .label('listStaff')
       })
     )
-    .label('listInvoiceDetail')
+    .label('listInvoiceDetail'),
+  listPayment: Joi.array()
+    .allow(null)
+    .items(
+      Joi.object({
+        paymentMethodId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .required()
+          .label('paymentMethodId'),
+        amount: Joi.number().integer().required().label('amount'),
+        name: Joi.string().allow(null, '').label('name'),
+        accountNumber: Joi.number().integer().allow(null).label('accountNumber')
+      })
+    )
+    .label('listPayment')
 });
 
 const receiptIdSchema = Joi.string()

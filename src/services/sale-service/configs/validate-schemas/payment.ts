@@ -1,5 +1,4 @@
 import Joi from 'joi';
-import { EPaymentType } from '../../../../utils/consts/index';
 const createPaymentSchema = Joi.object({
   invoiceId: Joi.string()
     .guid({
@@ -7,10 +6,25 @@ const createPaymentSchema = Joi.object({
     })
     .required()
     .label('invoiceId'),
-  type: Joi.string()
-    .valid(EPaymentType.CARD, EPaymentType.CASH, EPaymentType.GIFT_CARD, EPaymentType.TRANFER)
+  paymentMethods: Joi.array()
+    .min(0)
     .required()
-    .label('type'),
-  amount: Joi.number().integer().min(0).required().label('amount')
+    .items(
+      Joi.object({
+        paymentMethodId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .required()
+          .label('paymentMethodId'),
+        amount: Joi.number().integer().required().label('amount'),
+        provider: Joi.object({
+          name: Joi.string().required().label('name'),
+          accountNumber: Joi.number().integer().required().label('accountNumber')
+        })
+          .allow(null)
+          .label('provider')
+      })
+    )
 });
 export { createPaymentSchema };

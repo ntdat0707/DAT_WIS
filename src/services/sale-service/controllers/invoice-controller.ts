@@ -38,6 +38,21 @@ export class InvoiceController {
   /**
    * @swagger
    * definitions:
+   *   listPayment:
+   *       properties:
+   *           paymentMethodId:
+   *               type: string
+   *           amount:
+   *               type: integer
+   *           name:
+   *               type: string
+   *           accountNumber:
+   *               type: integer
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
    *   listInvoiceDetail:
    *       properties:
    *           serviceId:
@@ -59,6 +74,8 @@ export class InvoiceController {
    * definitions:
    *   invoiceCreate:
    *       properties:
+   *           invoiceId:
+   *               type: string
    *           locationId:
    *               type: string
    *           appointmentId:
@@ -71,19 +88,24 @@ export class InvoiceController {
    *               type: string
    *           discountId:
    *               type: string
+   *           tax:
+   *               type: number
    *           totalQuantity:
    *               type: number
    *           subTotal:
    *               type: number
    *           totalAmount:
    *               type: number
-   *           tax:
+   *           balance:
    *               type: number
    *           listInvoiceDetail:
    *               type: array
    *               items:
    *                   $ref: '#/definitions/listInvoiceDetail'
-   *
+   *           listPayment:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/listPayment'
    */
 
   /**
@@ -170,7 +192,7 @@ export class InvoiceController {
         }
       }
       let dataInvoice: any = {
-        id: uuidv4(),
+        id: req.body.invoiceId,
         code: invoiceCode,
         appointmentId: req.body.appointmentId,
         locationId: req.body.locationId,
@@ -260,6 +282,9 @@ export class InvoiceController {
       await InvoiceModel.create(dataInvoice, { transaction });
       await InvoiceDetailModel.bulkCreate(invoiceDetails, { transaction });
       await InvoiceDetailStaffModel.bulkCreate(invoiceDetailStaffs, { transaction });
+      if (req.body.listPayment) {
+        // create payment
+      }
       await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {

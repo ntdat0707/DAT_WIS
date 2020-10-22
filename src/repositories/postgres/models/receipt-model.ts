@@ -7,7 +7,7 @@ class ReceiptModel extends Model {
   public customerId!: string;
   public staffId!: string;
   public amount: number;
-  public paymentId: string;
+  public paymentId!: string;
   public paymentMethodId: string;
   public locationId: string;
   public description: string;
