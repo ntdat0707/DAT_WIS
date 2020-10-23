@@ -2,7 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
-import { createPaymentMethodSchema, createPaymentSchema } from '../configs/validate-schemas';
+import {
+  createPaymentMethodSchema,
+  createPaymentSchema,
+  deletePaymentMethodSchema,
+  updatePaymentMethodSchema
+} from '../configs/validate-schemas';
 import {
   CompanyModel,
   InvoiceModel,
@@ -13,11 +18,12 @@ import {
   sequelize,
   StaffModel
 } from '../../../repositories/postgres/models';
-import { invoiceErrorDetails, staffErrorDetails } from '../../../utils/response-messages/error-details/';
+import { invoiceErrorDetails } from '../../../utils/response-messages/error-details/';
 import { EBalanceType } from './../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
 import HttpStatus from 'http-status-codes';
 import { buildSuccessMessage } from '../../../utils/response-messages/responses';
+import { paymentErrorDetails } from '../../../utils/response-messages/error-details/sale';
 export class PaymentController {
   /**
    * @swagger
@@ -103,7 +109,6 @@ export class PaymentController {
       await transaction.commit();
       return res.status(httpStatus.OK).send({});
     } catch (error) {
-      //rollback transaction
       if (transaction) {
         await transaction.rollback();
       }
@@ -179,6 +184,19 @@ export class PaymentController {
 
   /**
    * @swagger
+   * definitions:
+   *   paymentMethodCreate:
+   *       properties:
+   *           paymentType:
+   *               type: string
+   *               enum: ['cash', 'card', 'wallet', 'other']
+   *           companyId:
+   *               type: string
+   *
+   */
+
+  /**
+   * @swagger
    * /sale/payment/create-payment-method:
    *   post:
    *     tags:
@@ -186,16 +204,12 @@ export class PaymentController {
    *     security:
    *       - Bearer: []
    *     name: createPaymentMethod
-   *     consumes:
-   *     - multipart/form-data
    *     parameters:
-   *     - in: "formData"
-   *       name: "photo"
-   *       type: file
-   *     - in: "formData"
-   *       name: "name"
+   *     - in: "body"
+   *       name: "body"
    *       required: true
-   *       type: string
+   *       schema:
+   *         $ref: '#/definitions/paymentCreate'
    *     responses:
    *       200:
    *         description: success
@@ -205,23 +219,59 @@ export class PaymentController {
    *         description:
    */
   public createPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction: any = null;
     try {
-      const companyId = res.locals.staff.companyId;
-      let data: any = {
-        name: req.body.name
+      const data: any = {
+        paymentType: req.body.paymentType,
+        companyId: res.locals.staffPayload.companyId
       };
-      if (req.file) {
-        data = {
-          ...data,
-          icon: (req.file as any).location
-        };
-      }
       const validateErrors = validate(data, createPaymentMethodSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      transaction = await sequelize.transaction();
+      const staff = await CompanyModel.findOne({
+        where: { id: data.companyId },
+        include: [
+          {
+            model: StaffModel,
+            as: 'owner',
+            required: true,
+            where: { isBusinessAccount: true }
+          }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+      if (!staff) {
+        return next(
+          new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
+        );
+      }
+      const paymentMethod = await PaymentMethodModel.create(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /sale/payment/get-list-payment-method:
+   *   get:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: getListPaymentMethod
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getListPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const companyId = res.locals.staffPayload.companyId;
       const staff = await CompanyModel.findOne({
         where: { id: companyId },
         include: [
@@ -236,10 +286,156 @@ export class PaymentController {
       });
       if (!staff) {
         return next(
-          new CustomError(staffErrorDetails.E_40012(`This account is not owner account`), httpStatus.NOT_FOUND)
+          new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
         );
       }
-      const paymentMethod = await PaymentMethodModel.create(data, { transaction });
+      const paymentMethod = await PaymentMethodModel.findAll({
+        where: { companyId: companyId }
+      });
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   paymentMethodUpdate:
+   *       properties:
+   *           paymentId:
+   *               type: string
+   *           paymentType:
+   *               type: string
+   *               enum: ['cash', 'card', 'wallet', 'other']
+   *           companyId:
+   *               type: string
+   *
+   */
+
+  /**
+   * @swagger
+   * /sale/payment/update-payment-method:
+   *   put:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: updatePaymentMethod
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/paymentMethodUpdate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updatePaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: any = null;
+    try {
+      const data: any = {
+        paymentMethodId: req.body.paymentMethodId,
+        paymentType: req.body.paymentType,
+        companyId: res.locals.staffPayload.companyId
+      };
+      const validateErrors = validate(data, updatePaymentMethodSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      transaction = await sequelize.transaction();
+      const staff = await CompanyModel.findOne({
+        where: { id: data.companyId },
+        include: [
+          {
+            model: StaffModel,
+            as: 'owner',
+            required: true,
+            where: { isBusinessAccount: true }
+          }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+      if (!staff) {
+        return next(
+          new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
+        );
+      }
+      const paymentMethod = await PaymentMethodModel.update(data, { where: { id: data.paymentMethodId }, transaction });
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /sale/payment/delete-payment-method/{paymentMethodId}:
+   *   delete:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: deletePaymentMethod
+   *     parameters:
+   *     - in: path
+   *       name: paymentMethodId
+   *       required: true
+   *       type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public deletePaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
+    try {
+      const companyId = res.locals.staffPayload.companyId;
+      const staff = await CompanyModel.findOne({
+        where: { id: companyId },
+        include: [
+          {
+            model: StaffModel,
+            as: 'owner',
+            required: true,
+            where: { isBusinessAccount: true }
+          }
+        ],
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      });
+      if (!staff) {
+        return next(
+          new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
+        );
+      }
+      const paymentMethodId = req.params.paymentMethodId;
+      const validateErrors = validate(paymentMethodId, deletePaymentMethodSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+      }
+      const paymentMethod = await PaymentMethodModel.findOne({
+        where: { id: paymentMethodId }
+      });
+      if (!paymentMethod) {
+        return next(
+          new CustomError(paymentErrorDetails.E_3601(`This payment method is not exist`), httpStatus.NOT_FOUND)
+        );
+      }
+      transaction = await sequelize.transaction();
+      await PaymentMethodModel.destroy({
+        where: { id: paymentMethodId },
+        transaction
+      });
+      await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
     } catch (error) {
       return next(error);

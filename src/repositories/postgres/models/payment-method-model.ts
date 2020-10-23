@@ -1,11 +1,11 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+import { EPaymentMethodType } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
 class PaymentMethodModel extends Model {
   public id: string;
-  public name!: string;
   public companyId!: string;
-  public icon!: string;
+  public paymentType: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -28,10 +28,10 @@ PaymentMethodModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    icon: {
-      field: 'icon',
-      type: DataTypes.STRING,
-      allowNull: false
+    paymentType: {
+      field: 'payment_type',
+      type: DataTypes.ENUM(...Object.keys(EPaymentMethodType)),
+      defaultValue: EPaymentMethodType.CASH
     },
     createdAt: {
       field: 'created_at',

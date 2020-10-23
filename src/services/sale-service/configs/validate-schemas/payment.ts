@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { EPaymentMethodType } from '../../../../utils/consts';
 const createPaymentSchema = Joi.object({
   invoiceId: Joi.string()
     .guid({
@@ -27,5 +28,43 @@ const createPaymentSchema = Joi.object({
       })
     )
 });
-const createPaymentMethodSchema = Joi.string().required().label('name');
-export { createPaymentSchema, createPaymentMethodSchema };
+
+const createPaymentMethodSchema = Joi.object({
+  paymentType: Joi.string()
+    .required()
+    .valid(EPaymentMethodType.CASH, EPaymentMethodType.CARD, EPaymentMethodType.WALLET, EPaymentMethodType.OTHER)
+    .label('name'),
+  companyId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('companyId')
+});
+
+const updatePaymentMethodSchema = Joi.object({
+  paymentMethodId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('paymentMethodId'),
+  paymentType: Joi.string()
+    .required()
+    .valid(EPaymentMethodType.CASH, EPaymentMethodType.CARD, EPaymentMethodType.WALLET, EPaymentMethodType.OTHER)
+    .label('name'),
+  companyId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('companyId')
+});
+
+const deletePaymentMethodSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('paymentMethodId');
+export { createPaymentSchema, createPaymentMethodSchema, updatePaymentMethodSchema, deletePaymentMethodSchema };

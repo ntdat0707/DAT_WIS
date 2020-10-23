@@ -123,7 +123,7 @@ StaffModel.init(
     staffCode: {
       field: 'staff_code',
       type: DataTypes.STRING(125),
-      allowNull: false
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',

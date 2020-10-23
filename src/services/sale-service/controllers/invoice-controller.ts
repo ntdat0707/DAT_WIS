@@ -626,8 +626,7 @@ export class InvoiceController {
           timestamp: new Date()
         };
         const invoiceDetailLog = new InvoiceDetailLogModel(dataInvoiceDetailLog);
-        await invoiceDetailLog.save();
-        invoiceDetails.push(dataInvoiceDetailLog);
+        invoiceDetails.push(invoiceDetailLog);
       }
       dataInvoiceLog = {
         ...dataInvoiceLog,
@@ -639,7 +638,6 @@ export class InvoiceController {
       await invoiceLog.save();
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoiceLog));
     } catch (error) {
-      //rollback transaction
       return next(error);
     }
   };

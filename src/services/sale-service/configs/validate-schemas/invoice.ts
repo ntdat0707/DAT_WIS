@@ -102,12 +102,6 @@ const customerWisereIdSchema = Joi.string()
   .label('customerWisereIdSchema');
 
 const createInvoiceLogSchema = Joi.object({
-  invoiceId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .required()
-    .label('invoiceId'),
   locationId: Joi.string()
     .guid({
       version: ['uuidv4']

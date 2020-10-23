@@ -186,3 +186,10 @@ export enum EDiscountType {
   CASH = 'cash',
   PERCENT = 'percent'
 }
+
+export enum EPaymentMethodType {
+  CASH = 'cash',
+  CARD = 'card',
+  WALLET = 'wallet',
+  OTHER = 'other'
+}

@@ -41,4 +41,16 @@ const discountErrorDetails = {
     return e;
   }
 };
-export { invoiceErrorDetails, receiptErrorDetails, discountErrorDetails };
+
+const paymentErrorDetails = {
+  E_3600(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3600', 'This account is not owner account', detail);
+    return e;
+  },
+  E_3601(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3601', 'This payment method is not exist', detail);
+    return e;
+  }
+};
+
+export { invoiceErrorDetails, receiptErrorDetails, discountErrorDetails, paymentErrorDetails };
