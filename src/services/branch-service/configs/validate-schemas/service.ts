@@ -17,7 +17,7 @@ const createServiceSchema = Joi.object({
     .min(1)
     .required(),
   description: Joi.string().allow(null, ''),
-  salePrice: Joi.number().allow(null, ''),
+  salePrice: Joi.number().allow(null),
   color: Joi.string().required().label('color'),
   duration: Joi.number().required(),
   staffIds: Joi.array().items(
@@ -174,7 +174,7 @@ const updateServiceSchema = Joi.object({
   allowGender: Joi.number().integer().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('allowGender'),
   extraTimeType: Joi.string()
     .valid(EExtraTimeType.BLOCKED, EExtraTimeType.PROCESSING)
-    .allow(null, '')
+    .allow(null)
     .label('extraTimeType'),
   extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration')
 });
