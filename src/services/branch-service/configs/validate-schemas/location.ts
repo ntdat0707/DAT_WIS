@@ -188,7 +188,7 @@ const searchSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .allow(null)
+    .allow(null, '')
     .label('customerId'),
   latitude: Joi.number().allow(null).label('latitude'),
   longitude: Joi.number().allow(null).label('longitude'),
