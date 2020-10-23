@@ -11,6 +11,10 @@ const companyErrorDetails = {
   E_4001(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('4001', 'Company Detail not found', detail);
     return e;
+  },
+  E_4002(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('4002', 'Company can not access', detail);
+    return e;
   }
 };
 

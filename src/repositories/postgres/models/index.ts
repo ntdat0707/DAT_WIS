@@ -34,11 +34,11 @@ import { InvoiceDetailModel } from './invoice-detail-model';
 import { InvoiceDetailStaffModel } from './invoice-detail-staff-model';
 import { PaymentModel } from './payment-model';
 import { ReceiptModel } from './receipt-model';
-import { GroupStaffModel } from './group-staff-model';
 import { DiscountModel } from './discount-model';
 import { PaymentMethodModel } from './payment-method-model';
 import { ProviderModel } from './provider-model';
 import { TipsModel } from './tips-model';
+import { TeamStaffModel } from './team-staff-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -208,11 +208,12 @@ InvoiceModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as
 
 LocationModel.hasMany(InvoiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'invoices' });
 InvoiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
-GroupStaffModel.hasOne(StaffModel, { foreignKey: 'groupStaffId', sourceKey: 'id', as: 'staff' });
-StaffModel.belongsTo(GroupStaffModel, { foreignKey: 'groupStaffId', as: 'groupStaff' });
 
-CompanyModel.hasMany(GroupStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'groupStaffs' });
-GroupStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+TeamStaffModel.hasOne(StaffModel, { foreignKey: 'teamStaffId', sourceKey: 'id', as: 'staff' });
+StaffModel.belongsTo(TeamStaffModel, { foreignKey: 'teamStaffId', as: 'teamStaff' });
+
+CompanyModel.hasMany(TeamStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'teamStaffs' });
+TeamStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
 CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'receipts' });
 ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerId', as: 'customerWisere' });
@@ -252,7 +253,7 @@ export {
   InvoiceDetailStaffModel,
   PaymentModel,
   ReceiptModel,
-  GroupStaffModel,
+  TeamStaffModel,
   DiscountModel,
   PaymentMethodModel,
   ProviderModel,

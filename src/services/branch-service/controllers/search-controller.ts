@@ -1569,24 +1569,23 @@ export class SearchController {
       }
 
       const keywords: string = search.keywords;
+
       if (search.addressInfor) {
         const isTypesInclude = (info: any) => (...types: string[]) =>
-          !!types &&
-          // tslint:disable-next-line:no-shadowed-variable
-          types.reduce((res: any, type: string) => res || info.types.includes(type), false);
+          !!types && types.reduce((isInclude: any, type: string) => !!isInclude || info.types.includes(type), false);
         search.addressInfor.forEach((info: any) => {
           if (info.types && info.types.length > 0) {
-            if (isTypesInclude(info)('route') && info.long_name) {
+            if (isTypesInclude(info)('route')) {
               search.street = info.long_name;
-            } else if (isTypesInclude(info)('administrative_area_level_2') && info.long_name) {
+            } else if (isTypesInclude(info)('administrative_area_level_2')) {
               search.district = info.long_name;
-            } else if (isTypesInclude(info)('administrative_area_level_1') && info.long_name) {
+            } else if (isTypesInclude(info)('administrative_area_level_1')) {
               search.province = info.long_name;
-            } else if (isTypesInclude(info)('country') && info.long_name) {
+            } else if (isTypesInclude(info)('country')) {
               search.country = info.long_name;
-            } else if (isTypesInclude(info)('locality') && info.long_name) {
+            } else if (isTypesInclude(info)('locality')) {
               search.city = info.long_name;
-            } else if (isTypesInclude(info)('sublocality', 'sublocality_level_1') && info.long_name) {
+            } else if (isTypesInclude(info)('sublocality', 'sublocality_level_1')) {
               search.ward = info.long_name;
             }
           }
@@ -1598,20 +1597,27 @@ export class SearchController {
         body: {
           query: {
             bool: {
-              must: []
+              must: [
+                !keywords
+                  ? {
+                      match_all: {}
+                    }
+                  : {
+                      query_string: {
+                        fields: [
+                          'name',
+                          'company.companyDetail.businessName',
+                          'company.cateServices.name',
+                          'services.name'
+                        ],
+                        query: `${keywords}~1`
+                      }
+                    }
+              ]
             }
           }
         }
       };
-
-      if (keywords) {
-        searchParams.body.query.bool.must.push({
-          query_string: {
-            fields: ['name', 'company.companyDetail.businessName', 'company.cateServices.name', 'services.name'],
-            query: `${keywords}~1`
-          }
-        });
-      }
 
       let countTypeAvailable = 1;
       if (search.addressInfor) {
@@ -1638,6 +1644,7 @@ export class SearchController {
         if (result.meta.totalPages === 0 && countTypeAvailable > 1) {
           searchParams.body.query.bool.must.pop();
         } else {
+          // console.log(JSON.stringify(searchParams, null, 2));
           break;
         }
       }

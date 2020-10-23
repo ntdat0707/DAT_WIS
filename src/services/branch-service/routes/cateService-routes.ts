@@ -14,5 +14,10 @@ export class CateServiceRoutes {
     this.router.get('/get/:cateServiceId?', isAuthenticated, this.cateServiceController.getCateService);
     this.router.get('/get-cate-services', isAuthenticated, this.cateServiceController.getCateServices);
     this.router.delete('/delete/:cateServiceId?', isAuthenticated, this.cateServiceController.deleteCateService);
+    this.router.get(
+      '/:cateServiceId/get-all-service',
+      isAuthenticated,
+      this.cateServiceController.getServicesByCateService
+    );
   }
 }
