@@ -177,6 +177,7 @@ export class PaymentController {
       }
       await ReceiptModel.bulkCreate(receipts, { transaction });
       await InvoiceModel.update({ balance: balance, status: status }, { where: { id: data.invoiceId }, transaction });
+      return balance;
     } catch (error) {
       throw error;
     }
