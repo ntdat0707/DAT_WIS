@@ -139,7 +139,7 @@ const updateLocationSchema = Joi.object({
         .guid({
           version: ['uuidv4']
         })
-        .allow(null, '')
+        .allow(null)
     )
     .label('deleteImages')
     .allow(null),
@@ -184,23 +184,33 @@ const updateLocationSchema = Joi.object({
 
 const searchSchema = Joi.object({
   keywords: Joi.string().allow(null, '').label('keywords'),
-  customerId: Joi.string().uuid().allow(null, '').label('customerId'),
-  latitude: Joi.number().allow(null, '').label('latitude'),
-  longitude: Joi.number().allow(null, '').label('longitude'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .allow(null)
+    .label('customerId'),
+  latitude: Joi.number().allow(null).label('latitude'),
+  longitude: Joi.number().allow(null).label('longitude'),
   searchBy: Joi.string()
     .valid(...Object.values(ESearchBy))
     .allow(null, '')
     .label('searchBy'),
   order: Joi.string()
     .valid(EOrder.NEWEST, EOrder.NEWEST, EOrder.PRICE_LOWEST, EOrder.PRICE_HIGHEST)
-    .allow(null, '')
+    .allow(null)
     .label('order'),
   addressInfor: Joi.array().items(Joi.object().required()).allow(null, '').label('addressInfor')
 });
 
 const suggestedSchema = Joi.object({
   keywords: Joi.string().allow(null, '').label('keywords'),
-  customerId: Joi.string().uuid().allow(null, '').label('customerId'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .allow(null)
+    .label('customerId'),
   cityName: Joi.string().allow(null, '').label('cityName')
 });
 

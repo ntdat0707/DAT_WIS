@@ -10,7 +10,7 @@ const createFavoriteSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .allow(null, '')
+    .allow(null)
     .label('locationId')
 });
 
