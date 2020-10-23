@@ -18,11 +18,6 @@ PaymentMethodModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    name: {
-      field: 'name',
-      type: DataTypes.STRING,
-      allowNull: false
-    },
     companyId: {
       field: 'company_id',
       type: DataTypes.UUIDV4,

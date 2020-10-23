@@ -1537,7 +1537,7 @@ export class StaffController {
 
   /**
    * @swagger
-   * /staff/get-teams-staff:
+   * /staff/get-teams-company:
    *   get:
    *     tags:
    *       - Staff

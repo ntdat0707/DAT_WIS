@@ -190,8 +190,6 @@ export class PaymentController {
    *           paymentType:
    *               type: string
    *               enum: ['cash', 'card', 'wallet', 'other']
-   *           companyId:
-   *               type: string
    *
    */
 
@@ -209,7 +207,7 @@ export class PaymentController {
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/paymentCreate'
+   *         $ref: '#/definitions/paymentMethodCreate'
    *     responses:
    *       200:
    *         description: success
@@ -303,13 +301,12 @@ export class PaymentController {
    * definitions:
    *   paymentMethodUpdate:
    *       properties:
-   *           paymentId:
+   *           paymentMethodId:
    *               type: string
+   *               required: true
    *           paymentType:
    *               type: string
    *               enum: ['cash', 'card', 'wallet', 'other']
-   *           companyId:
-   *               type: string
    *
    */
 
@@ -366,8 +363,9 @@ export class PaymentController {
           new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
         );
       }
-      const paymentMethod = await PaymentMethodModel.update(data, { where: { id: data.paymentMethodId }, transaction });
+      await PaymentMethodModel.update(data, { where: { id: data.paymentMethodId }, transaction });
       await transaction.commit();
+      const paymentMethod = await PaymentModel.findOne({ where: { id: data.paymentMethodId } });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
     } catch (error) {
       return next(error);
@@ -436,7 +434,7 @@ export class PaymentController {
         transaction
       });
       await transaction.commit();
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }

@@ -1,5 +1,4 @@
 import * as express from 'express';
-import { uploadAsMiddleware } from '../../../utils/file-manager/actions';
 import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
 import { PaymentController } from '../controllers/payment-controller';
 export class PaymentRoutes {
@@ -10,18 +9,8 @@ export class PaymentRoutes {
   }
   private config(): void {
     this.router.post('/create-payment', isAuthenticated, this.paymentController.createPayment);
-    this.router.post(
-      '/create-payment-method',
-      isAuthenticated,
-      uploadAsMiddleware('photo'),
-      this.paymentController.createPaymentMethod
-    );
-    this.router.put(
-      '/update-payment-method',
-      isAuthenticated,
-      uploadAsMiddleware('photo'),
-      this.paymentController.updatePaymentMethod
-    );
+    this.router.post('/create-payment-method', isAuthenticated, this.paymentController.createPaymentMethod);
+    this.router.put('/update-payment-method', isAuthenticated, this.paymentController.updatePaymentMethod);
     this.router.get('/get-list-payment-method', isAuthenticated, this.paymentController.getListPaymentMethod);
     this.router.delete(
       '/delete-payment-method/:paymentMethodId',
