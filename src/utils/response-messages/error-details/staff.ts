@@ -92,12 +92,12 @@ const staffErrorDetails = {
     const e = buildErrorDetail('E_4009', 'Exist appointment in feature. You can not remove working location', detail);
     return e;
   },
-  E_40010(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('E_40010', 'Exist appointment in feature. You can not remove service', detail);
+  E_4010(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4010', 'Exist appointment in feature. You can not remove service', detail);
     return e;
   },
-  E_40011(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('E_40011', 'Team staff has been not assign', detail);
+  E_4011(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4011', 'Team staff has been not assign', detail);
     return e;
   }
 };

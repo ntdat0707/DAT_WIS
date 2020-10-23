@@ -487,7 +487,7 @@ export class StaffController {
       if (req.body.teamStaffId) {
         const teamStaffId = await TeamStaffModel.findOne({ where: { id: req.body.teamStaffId } });
         if (!teamStaffId) {
-          return next(new CustomError(staffErrorDetails.E_40011('Team staff has been not assign')));
+          return next(new CustomError(staffErrorDetails.E_4011('Team staff has been not assign')));
         }
         profile = {
           ...profile,
@@ -633,7 +633,7 @@ export class StaffController {
 
     // Check service appointment will used in appointment feature.
     if (_.difference(serviceIdsLocked, serviceIdsPayload).length) {
-      throw new CustomError(staffErrorDetails.E_40010(), HttpStatus.FORBIDDEN);
+      throw new CustomError(staffErrorDetails.E_4010(), HttpStatus.FORBIDDEN);
     }
 
     const serviceIdsRemoved = _.difference(currentServiceIdsOfStaff, serviceIdsPayload);
@@ -1538,7 +1538,7 @@ export class StaffController {
 
   /**
    * @swagger
-   * /staff/get-teams-staff:
+   * /staff/get-teams-company:
    *   get:
    *     tags:
    *       - Staff
@@ -1569,7 +1569,7 @@ export class StaffController {
    *       500:
    *         description: Internal server errors
    */
-  public getTeamsStaffs = async (req: Request, res: Response, next: NextFunction) => {
+  public getTeamsCompany = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
@@ -1579,8 +1579,6 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const teamStaff = await TeamStaffModel.findOne({ where: { companyId: companyId } });
-      if (!teamStaff) return next(new CustomError(staffErrorDetails.E_40011('Team staff has been not assign')));
       const query: FindOptions = {
         where: { companyId: companyId },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
