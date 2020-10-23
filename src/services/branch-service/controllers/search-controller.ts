@@ -767,14 +767,16 @@ export class SearchController {
         description?: string;
         image?: string;
         pathName?: string;
-      }[] = recentSearchData.map((searchData: any) => {
-        const { type } = searchData;
-        return {
-          ...searchData.dataValues,
-          ...dataDefault,
-          ...mapData[type](searchData[type])
-        };
-      });
+      }[] = recentSearchData
+        .filter((searchData: any) => !!searchData.type)
+        .map((searchData: any) => {
+          const { type } = searchData;
+          return {
+            ...searchData.dataValues,
+            ...dataDefault,
+            ...mapData[type](searchData[type])
+          };
+        });
       return recentSearch;
     } catch (error) {
       throw error;
