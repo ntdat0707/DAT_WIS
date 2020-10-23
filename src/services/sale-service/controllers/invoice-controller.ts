@@ -280,7 +280,6 @@ export class InvoiceController {
         ...dataInvoice,
         subTotal: subTotal,
         total: totalAmount,
-        status: EBalanceType.UNPAID,
         balance: totalAmount
       };
       transaction = await sequelize.transaction();
@@ -309,6 +308,7 @@ export class InvoiceController {
         );
       }
       await transaction.commit();
+      InvoiceLogModel.deleteOne({ invoiceId: dataInvoice.id });
       return res.status(httpStatus.OK).send({});
     } catch (error) {
       //rollback transaction
@@ -437,13 +437,13 @@ export class InvoiceController {
           }
         ]
       };
-      const receipt = await paginate(
+      const receipts = await paginate(
         ReceiptModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
-      return res.status(httpStatus.OK).send(buildSuccessMessage(receipt));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(receipts));
     } catch (error) {
       return next(error);
     }

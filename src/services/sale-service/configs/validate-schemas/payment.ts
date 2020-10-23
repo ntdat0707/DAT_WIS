@@ -7,7 +7,7 @@ const createPaymentSchema = Joi.object({
     .required()
     .label('invoiceId'),
   paymentMethods: Joi.array()
-    .min(0)
+    .min(1)
     .required()
     .items(
       Joi.object({
@@ -17,7 +17,7 @@ const createPaymentSchema = Joi.object({
           })
           .required()
           .label('paymentMethodId'),
-        amount: Joi.number().integer().required().label('amount'),
+        amount: Joi.number().integer().min(0).required().label('amount'),
         provider: Joi.object({
           name: Joi.string().required().label('name'),
           accountNumber: Joi.number().integer().required().label('accountNumber')
