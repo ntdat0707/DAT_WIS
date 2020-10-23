@@ -17,7 +17,9 @@ export const parseDataByType: any = {
       return false;
     }
     return null;
-  }
+  },
+  undefined: (): null => null,
+  '': (): null => null
 };
 
 export const dataDefaultByType: any = {
