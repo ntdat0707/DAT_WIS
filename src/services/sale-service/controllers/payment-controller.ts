@@ -283,15 +283,15 @@ export class PaymentController {
    *       - Bearer: []
    *     name: updatePaymentMethod
    *     parameters:
+   *     - in: path
+   *       name : paymentMethodId
+   *       required: true
+   *       type: string
    *     - in: "body"
    *       name: "body"
    *       required: true
    *       schema:
    *         $ref: '#/definitions/paymentMethodUpdate'
-   *     - in: path
-   *       name : paymentMethodId
-   *       required: true
-   *       type: string
    *     responses:
    *       200:
    *         description: success
