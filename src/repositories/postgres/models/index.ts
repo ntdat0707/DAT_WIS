@@ -29,6 +29,15 @@ import { MarketPlaceValueModel } from './marketplace-value-model';
 import { ContactModel } from './contact-model';
 import { FavoriteModel } from './favorite-model';
 import { PositionModel } from './position-model';
+import { InvoiceModel } from './invoice-model';
+import { InvoiceDetailModel } from './invoice-detail-model';
+import { InvoiceDetailStaffModel } from './invoice-detail-staff-model';
+import { PaymentModel } from './payment-model';
+import { ReceiptModel } from './receipt-model';
+import { DiscountModel } from './discount-model';
+import { PaymentMethodModel } from './payment-method-model';
+import { ProviderModel } from './provider-model';
+import { TipsModel } from './tips-model';
 import { TeamStaffModel } from './team-staff-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
@@ -191,11 +200,38 @@ PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
 PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
+InvoiceModel.hasMany(InvoiceDetailModel, { foreignKey: 'invoiceId', sourceKey: 'id', as: 'invoiceDetails' });
+InvoiceDetailModel.belongsTo(InvoiceModel, { foreignKey: 'invoiceId', as: 'invoice' });
+
+CustomerWisereModel.hasMany(InvoiceModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'invoices' });
+InvoiceModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
+
+LocationModel.hasMany(InvoiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'invoices' });
+InvoiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
 TeamStaffModel.hasOne(StaffModel, { foreignKey: 'teamStaffId', sourceKey: 'id', as: 'staff' });
 StaffModel.belongsTo(TeamStaffModel, { foreignKey: 'teamStaffId', as: 'teamStaff' });
 
 CompanyModel.hasMany(TeamStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'teamStaffs' });
 TeamStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
+
+CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerId', as: 'customerWisere' });
+
+LocationModel.hasMany(ReceiptModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
+
+PaymentModel.hasMany(ReceiptModel, { foreignKey: 'paymentId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(PaymentModel, { foreignKey: 'paymentId', as: 'payment' });
+
+StaffModel.hasMany(ReceiptModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
+
+PaymentMethodModel.hasMany(PaymentModel, { foreignKey: 'paymentMethodId', sourceKey: 'id', as: 'payments' });
+PaymentModel.belongsTo(PaymentMethodModel, { foreignKey: 'paymentMethodId', as: 'paymentMethod' });
+
+ProviderModel.hasMany(PaymentModel, { foreignKey: 'providerId', sourceKey: 'id', as: 'payments' });
+PaymentModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider' });
 
 export {
   sequelize,
@@ -224,5 +260,14 @@ export {
   MarketPlaceValueModel,
   MarketPlaceFieldsModel,
   FavoriteModel,
-  TeamStaffModel
+  InvoiceModel,
+  InvoiceDetailModel,
+  InvoiceDetailStaffModel,
+  PaymentModel,
+  ReceiptModel,
+  TeamStaffModel,
+  DiscountModel,
+  PaymentMethodModel,
+  ProviderModel,
+  TipsModel
 };

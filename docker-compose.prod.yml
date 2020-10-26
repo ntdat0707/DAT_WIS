@@ -113,6 +113,19 @@ services:
     networks:
       - network
 
+    sale-service:
+    env_file: .env
+    container_name: ${SVC_SALE_HOST}
+    image: registry.digitalocean.com/wisere/wisere
+    restart: always
+    ports:
+      - "127.0.0.1:${SVC_SALE_PORT}:${SVC_SALE_PORT}"
+    environment:
+      NODE_ENV: "staging"
+      NODE_NAME: "${SVC_SALE_HOST}"
+    networks:
+      - network    
+
 networks:
   network:
     driver: bridge

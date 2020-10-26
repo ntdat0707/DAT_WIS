@@ -150,6 +150,27 @@ export enum EContactType {
   MOBILE = 'mobile'
 }
 
+export enum ESourceType {
+  POS = 'pos',
+  WEBSITE = 'website',
+  FACEBOOK = 'facebook',
+  MARKETPLACE = 'marketplace',
+  OTHER = 'other'
+}
+
+export enum EPaymentType {
+  CASH = 'cash',
+  CARD = 'card',
+  TRANFER = 'tranfer',
+  GIFT_CARD = 'gift_card'
+}
+
+export enum EBalanceType {
+  PAID = 'paid',
+  PART_PAID = 'part_paid',
+  UNPAID = 'unpaid'
+}
+
 export enum ESourceLoginType {
   WEB = 'web',
   IOS = 'ios',
@@ -159,4 +180,16 @@ export enum ESourceLoginType {
 export enum EExtraTimeType {
   PROCESSING = 'PROCESSING',
   BLOCKED = 'BLOCKED'
+}
+
+export enum EDiscountType {
+  CASH = 'cash',
+  PERCENT = 'percent'
+}
+
+export enum EPaymentMethodType {
+  CASH = 'cash',
+  CARD = 'card',
+  WALLET = 'wallet',
+  OTHER = 'other'
 }

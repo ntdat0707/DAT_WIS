@@ -544,6 +544,7 @@ export class DealController {
       }
       const query: FindOptions = {
         where: { createdBy: conditions.staffId },
+        order: [['updatedAt', 'DESC']],
         include: [
           {
             model: CustomerWisereModel,

@@ -367,7 +367,6 @@ export class SearchController {
           }
         }
       };
-
       if (search.customerId && search.keywords) {
         req.query = {
           ...req.query,
