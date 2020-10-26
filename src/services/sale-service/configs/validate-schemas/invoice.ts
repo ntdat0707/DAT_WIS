@@ -18,13 +18,13 @@ const createInvoiceSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .allow(null, '')
+    .allow(null)
     .label('appointmentId'),
   customerWisereId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .allow(null, '')
+    .allow(null)
     .label('customerWisereId'),
   source: Joi.string()
     .valid(ESourceType.POS, ESourceType.WEBSITE, ESourceType.FACEBOOK, ESourceType.MARKETPLACE, ESourceType.OTHER)
@@ -35,7 +35,7 @@ const createInvoiceSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .allow(null, '')
+    .allow(null)
     .label('discountId'),
   tax: Joi.number().integer().min(0).allow(null).label('tax'),
   totalQuantity: Joi.number().integer().min(1).required().label('totalQuantity'),
@@ -82,7 +82,7 @@ const createInvoiceSchema = Joi.object({
           })
           .required()
           .label('paymentMethodId'),
-        amount: Joi.number().integer().min(0).required().label('amount'),
+        amount: Joi.number().integer().min(1).required().label('amount'),
         provider: Joi.object({
           name: Joi.string().required().label('name'),
           accountNumber: Joi.number().integer().required().label('accountNumber')
@@ -122,7 +122,7 @@ const createInvoiceLogSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .allow(null, '')
+    .allow(null)
     .label('customerWisereId'),
   source: Joi.string()
     .valid(ESourceType.POS, ESourceType.WEBSITE, ESourceType.FACEBOOK, ESourceType.MARKETPLACE, ESourceType.OTHER)
@@ -133,7 +133,7 @@ const createInvoiceLogSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .allow(null, '')
+    .allow(null)
     .label('discountId'),
   tax: Joi.number().integer().min(0).allow(null).label('tax'),
   totalQuantity: Joi.number().integer().min(1).required().label('totalQuantity'),
@@ -180,7 +180,7 @@ const createInvoiceLogSchema = Joi.object({
           })
           .required()
           .label('paymentMethodId'),
-        amount: Joi.number().integer().required().label('amount'),
+        amount: Joi.number().integer().min(1).required().label('amount'),
         name: Joi.string().allow(null, '').label('name'),
         accountNumber: Joi.number().integer().allow(null).label('accountNumber')
       })

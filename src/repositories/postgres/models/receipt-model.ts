@@ -8,7 +8,6 @@ class ReceiptModel extends Model {
   public staffId!: string;
   public amount: number;
   public paymentId!: string;
-  public paymentMethodId: string;
   public locationId: string;
   public description: string;
   public readonly createdAt!: Date;
@@ -41,11 +40,6 @@ ReceiptModel.init(
     },
     paymentId: {
       field: 'payment_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
-    },
-    paymentMethodId: {
-      field: 'payment_method_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
