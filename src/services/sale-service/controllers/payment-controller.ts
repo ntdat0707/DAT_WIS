@@ -21,7 +21,7 @@ import { EBalanceType } from './../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
 import HttpStatus from 'http-status-codes';
 import { buildSuccessMessage } from '../../../utils/response-messages/responses';
-import { paymentErrorDetails } from '../../../utils/response-messages/error-details/sale';
+import { paymentErrorDetails, paymentMethodErrorDetails } from '../../../utils/response-messages/error-details/sale';
 export class PaymentController {
   /**
    * @swagger
@@ -267,9 +267,6 @@ export class PaymentController {
    * definitions:
    *   paymentMethodUpdate:
    *       properties:
-   *           paymentMethodId:
-   *               type: string
-   *               required: true
    *           paymentType:
    *               type: string
    *               enum: ['cash', 'card', 'wallet', 'other']
@@ -278,7 +275,7 @@ export class PaymentController {
 
   /**
    * @swagger
-   * /sale/payment/update-payment-method:
+   * /sale/payment/update-payment-method/{paymentMethodId}:
    *   put:
    *     tags:
    *       - Sale
@@ -291,6 +288,10 @@ export class PaymentController {
    *       required: true
    *       schema:
    *         $ref: '#/definitions/paymentMethodUpdate'
+   *     - in: path
+   *       name : paymentMethodId
+   *       required: true
+   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -300,20 +301,23 @@ export class PaymentController {
    *         description:
    */
   public updatePaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction: any = null;
     try {
       const data: any = {
-        paymentMethodId: req.body.paymentMethodId,
-        paymentType: req.body.paymentType,
-        companyId: res.locals.staffPayload.companyId
+        paymentMethodId: req.params.paymentMethodId,
+        paymentType: req.body.paymentType
       };
       const validateErrors = validate(data, updatePaymentMethodSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      transaction = await sequelize.transaction();
-      await PaymentMethodModel.update(data, { where: { id: data.paymentMethodId }, transaction });
-      await transaction.commit();
+      const paymentMethod = await PaymentMethodModel.findOne({ where: { id: data.paymentMethodId } });
+      if (!paymentMethod) {
+        throw new CustomError(
+          paymentMethodErrorDetails.E_3700(`Payment method with id ${data.paymentMethod} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
+      await PaymentMethodModel.update(data, { where: { id: data.paymentMethodId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
@@ -343,7 +347,6 @@ export class PaymentController {
    *         description:
    */
   public deletePaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction = null;
     try {
       const paymentMethodId = req.params.paymentMethodId;
       const validateErrors = validate(paymentMethodId, deletePaymentMethodSchema);
@@ -358,12 +361,9 @@ export class PaymentController {
           new CustomError(paymentErrorDetails.E_3601(`This payment method is not exist`), httpStatus.NOT_FOUND)
         );
       }
-      transaction = await sequelize.transaction();
       await PaymentMethodModel.destroy({
-        where: { id: paymentMethodId },
-        transaction
+        where: { id: paymentMethodId }
       });
-      await transaction.commit();
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);

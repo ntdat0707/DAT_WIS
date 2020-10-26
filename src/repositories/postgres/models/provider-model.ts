@@ -3,7 +3,6 @@ import sequelize from '../configs/db-connector';
 
 class ProviderModel extends Model {
   public id: string;
-  public paymentId!: string;
   public name!: string;
   public accountNumber!: number;
   public readonly createdAt!: Date;
@@ -17,11 +16,6 @@ ProviderModel.init(
       type: DataTypes.UUIDV4,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
-    },
-    paymentId: {
-      field: 'payment_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
     },
     name: {
       field: 'name',

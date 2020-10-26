@@ -53,13 +53,7 @@ const updatePaymentMethodSchema = Joi.object({
   paymentType: Joi.string()
     .required()
     .valid(EPaymentMethodType.CASH, EPaymentMethodType.CARD, EPaymentMethodType.WALLET, EPaymentMethodType.OTHER)
-    .label('name'),
-  companyId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .required()
-    .label('companyId')
+    .label('name')
 });
 
 const deletePaymentMethodSchema = Joi.string()

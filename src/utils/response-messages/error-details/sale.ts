@@ -57,4 +57,17 @@ const paymentErrorDetails = {
   }
 };
 
-export { invoiceErrorDetails, receiptErrorDetails, discountErrorDetails, paymentErrorDetails };
+const paymentMethodErrorDetails = {
+  E_3700(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3700', 'Payment method not found', detail);
+    return e;
+  }
+};
+
+export {
+  invoiceErrorDetails,
+  receiptErrorDetails,
+  discountErrorDetails,
+  paymentErrorDetails,
+  paymentMethodErrorDetails
+};
