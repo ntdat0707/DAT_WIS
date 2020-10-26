@@ -149,7 +149,19 @@ export class ServiceController {
           return next(new CustomError(branchErrorDetails.E_1204(), HttpStatus.BAD_REQUEST));
         }
       } else {
-        serviceCode = shortId.generate();
+        while (true) {
+          const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+          const randomCode = random.toUpperCase();
+          serviceCode = randomCode;
+          const existAppCode = await ServiceModel.findOne({
+            where: {
+              serviceCode: serviceCode
+            }
+          });
+          if (!existAppCode) {
+            break;
+          }
+        }
       }
 
       const data: any = {

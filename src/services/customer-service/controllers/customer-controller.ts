@@ -47,7 +47,6 @@ import {
 } from '../../../utils/validator/validate-social-token';
 import { generateAppleToken } from '../../../utils/lib/generateAppleToken';
 import jwt from 'jsonwebtoken';
-import shortid from 'shortid';
 import _ from 'lodash';
 import {
   emailSchema,
@@ -223,7 +222,19 @@ export class CustomerController {
             new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND)
           );
       }
-      data.code = shortid.generate();
+      while (true) {
+        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
+        const randomCode = random.toUpperCase();
+        data.code = randomCode;
+        const existAppCode = await CustomerWisereModel.findOne({
+          where: {
+            code: data.code
+          }
+        });
+        if (!existAppCode) {
+          break;
+        }
+      }
       if (req.file) {
         data.avatarPath = (req.file as any).location;
       }
