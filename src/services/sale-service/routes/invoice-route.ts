@@ -16,7 +16,7 @@ export class SaleRoutes {
     this.router.get(
       '/get-list-invoice-log/:customerWisereId',
       isAuthenticated,
-      this.invoiceController.getListInvoiceLog
+      this.invoiceController.getListInvoicesLog
     );
   }
 }
