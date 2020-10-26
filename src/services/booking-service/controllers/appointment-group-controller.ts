@@ -27,6 +27,7 @@ import {
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
+import { IRequestOptions, request } from '../../../utils/request';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -193,18 +194,22 @@ export class AppointmentGroupController extends BaseController {
       await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
       await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
       await transaction.commit();
-      // for (let i = 0; i < appointmentIds.length; i++) {
-      //   const options: IRequestOptions = {
-      //     url: 'http://localhost:3000/appointment/create-cron-job-auto-update-status',
-      //     method: 'post',
-      //     headers: {
-      //       accept: '*/*',
-      //       'Content-Type': 'application/json'
-      //     },
-      //     data: JSON.stringify({ appointmentId: appointmentIds[i] })
-      //   };
-      //   await request(options);
-      // }
+      const isPortReachable = require('is-port-reachable');
+      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      if (isLiveHost) {
+        for (let i = 0; i < appointmentIds.length; i++) {
+          const options: IRequestOptions = {
+            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            method: 'post',
+            headers: {
+              accept: '*/*',
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ appointmentId: appointmentIds[i] })
+          };
+          await request(options);
+        }
+      }
       // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
       //   where: { id: newAppointmentGroupId },
       //   include: [
@@ -809,18 +814,22 @@ export class AppointmentGroupController extends BaseController {
         }
       }
       await transaction.commit();
-      // for (let i = 0; i < appointmentIds.length; i++) {
-      //   const options: IRequestOptions = {
-      //     url: 'http://localhost:3000/appointment/create-cron-job-auto-update-status',
-      //     method: 'post',
-      //     headers: {
-      //       accept: '*/*',
-      //       'Content-Type': 'application/json'
-      //     },
-      //     data: JSON.stringify({ appointmentId: appointmentIds[i] })
-      //   };
-      //   await request(options);
-      // }
+      const isPortReachable = require('is-port-reachable');
+      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      if (isLiveHost) {
+        for (let i = 0; i < appointmentIds.length; i++) {
+          const options: IRequestOptions = {
+            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            method: 'post',
+            headers: {
+              accept: '*/*',
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ appointmentId: appointmentIds[i] })
+          };
+          await request(options);
+        }
+      }
       // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
       //   where: { id: data.appointmentGroupId },
       //   include: [

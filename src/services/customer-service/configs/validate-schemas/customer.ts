@@ -57,7 +57,7 @@ const updateCustomerWisereSchema = Joi.object({
   gender: Joi.number().integer().disallow(null, '').valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   phone: Joi.string().regex(/^\d+$/).disallow(null, '').label('phone'),
   email: Joi.string().allow(null, '').email().label('email'),
-  birthDate: Joi.string().allow(null, '').isoDate().label('birthDate'),
+  birthDate: Joi.string().allow(null).isoDate().label('birthDate'),
   passportNumber: Joi.string().allow(null, '').label('passportNumber'),
   address: Joi.string().allow(null, '').label('address'),
   color: Joi.string().regex(/^#[0-9A-F]{6}$/i),
