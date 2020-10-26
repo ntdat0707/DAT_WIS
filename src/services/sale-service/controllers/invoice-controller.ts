@@ -710,8 +710,7 @@ export class InvoiceController {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
       const invoice = InvoiceLogModel.findOne({
-        staffId: res.locals.staffPayload.id,
-        customerWisereId: req.params.customerWisereId
+        staffId: res.locals.staffPayload.id
       });
       if (!invoice) {
         return next(
