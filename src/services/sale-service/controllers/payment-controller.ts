@@ -316,7 +316,7 @@ export class PaymentController {
           httpStatus.NOT_FOUND
         );
       }
-      await PaymentMethodModel.update(data, { where: { id: data.paymentMethodId } });
+      await paymentMethod.update({ paymentType: data.paymentType });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
