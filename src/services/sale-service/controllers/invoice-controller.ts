@@ -703,13 +703,24 @@ export class InvoiceController {
    *       500:
    *         description:
    */
-  public getListInvoiceLog = async (req: Request, res: Response, next: NextFunction) => {
+  public getInvoiceLog = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validateErrors = validate(req.params.customerWisereId, customerWisereIdSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const invoice = InvoiceLogModel.find({ staffId: res.locals.staffPayload.id });
+      const invoice = InvoiceLogModel.findOne({
+        staffId: res.locals.staffPayload.id,
+        customerWisereId: req.params.customerWisereId
+      });
+      if (!invoice) {
+        return next(
+          new CustomError(
+            invoiceErrorDetails.E_3307(`Invoice log customer ${req.params.customerWisereId} not found`),
+            httpStatus.NOT_FOUND
+          )
+        );
+      }
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
     } catch (error) {
       return next(error);

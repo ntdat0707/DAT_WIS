@@ -29,6 +29,10 @@ const invoiceErrorDetails = {
   E_3306(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3306', 'Balance of invoice is incorrect', detail);
     return e;
+  },
+  E_3307(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3306', 'Invoice log not found', detail);
+    return e;
   }
 };
 

@@ -219,8 +219,7 @@ export class PaymentController {
   public createPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data: any = {
-        paymentType: req.body.paymentType,
-        companyId: res.locals.staffPayload.companyId
+        paymentType: req.body.paymentType
       };
       const validateErrors = validate(data, createPaymentMethodSchema);
       if (validateErrors) {
