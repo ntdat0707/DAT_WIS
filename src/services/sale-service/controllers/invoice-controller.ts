@@ -607,6 +607,7 @@ export class InvoiceController {
         appointmentId: req.body.appointmentId,
         locationId: req.body.locationId,
         customerWisereId: req.body.customerWisereId,
+        staffId: res.locals.staffPayload.id,
         source: req.body.source,
         note: req.body.note,
         discountId: req.body.discountId,
@@ -692,11 +693,7 @@ export class InvoiceController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const invoice = InvoiceLogModel.findOne({ customerWisereId: req.params.customerWisereId });
-      if (!invoice) {
-        const invoiceEmty: any = [];
-        return res.status(httpStatus.OK).send(buildSuccessMessage({ invoiceEmty }));
-      }
+      const invoice = InvoiceLogModel.find({ staffId: res.locals.staffPayload.id });
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
     } catch (error) {
       return next(error);

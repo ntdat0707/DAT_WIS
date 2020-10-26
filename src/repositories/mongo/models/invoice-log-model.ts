@@ -13,6 +13,7 @@ interface IInvoiceLog extends mongoose.Document {
   subTotal: number;
   totalAmount: number;
   tax: number;
+  staffId: string;
   invoiceDetail: [IInvoiceDetailLog];
   status: string;
   balance: number;
@@ -31,6 +32,7 @@ const InvoiceSchema = new mongoose.Schema({
   subTotal: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
   tax: { type: Number, required: false },
+  staffId: { type: String, required: true },
   invoiceDetail: { type: Array, required: true },
   status: { type: String, required: false },
   balance: { type: Number, required: false },

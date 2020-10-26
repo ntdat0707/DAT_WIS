@@ -9,14 +9,12 @@ import {
   updatePaymentMethodSchema
 } from '../configs/validate-schemas';
 import {
-  CompanyModel,
   InvoiceModel,
   PaymentMethodModel,
   PaymentModel,
   ProviderModel,
   ReceiptModel,
-  sequelize,
-  StaffModel
+  sequelize
 } from '../../../repositories/postgres/models';
 import { invoiceErrorDetails } from '../../../utils/response-messages/error-details/';
 import { EBalanceType } from './../../../utils/consts/index';
@@ -227,23 +225,6 @@ export class PaymentController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const staff = await CompanyModel.findOne({
-        where: { id: data.companyId },
-        include: [
-          {
-            model: StaffModel,
-            as: 'owner',
-            required: true,
-            where: { isBusinessAccount: true }
-          }
-        ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      });
-      if (!staff) {
-        return next(
-          new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
-        );
-      }
       const paymentMethod = await PaymentMethodModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
     } catch (error) {
@@ -271,23 +252,6 @@ export class PaymentController {
   public getListPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
-      const staff = await CompanyModel.findOne({
-        where: { id: companyId },
-        include: [
-          {
-            model: StaffModel,
-            as: 'owner',
-            required: true,
-            where: { isBusinessAccount: true }
-          }
-        ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      });
-      if (!staff) {
-        return next(
-          new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
-        );
-      }
       const paymentMethod = await PaymentMethodModel.findAll({
         where: { companyId: companyId }
       });
@@ -347,27 +311,9 @@ export class PaymentController {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
       transaction = await sequelize.transaction();
-      const staff = await CompanyModel.findOne({
-        where: { id: data.companyId },
-        include: [
-          {
-            model: StaffModel,
-            as: 'owner',
-            required: true,
-            where: { isBusinessAccount: true }
-          }
-        ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      });
-      if (!staff) {
-        return next(
-          new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
-        );
-      }
       await PaymentMethodModel.update(data, { where: { id: data.paymentMethodId }, transaction });
       await transaction.commit();
-      const paymentMethod = await PaymentModel.findOne({ where: { id: data.paymentMethodId } });
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
@@ -398,24 +344,6 @@ export class PaymentController {
   public deletePaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      const companyId = res.locals.staffPayload.companyId;
-      const staff = await CompanyModel.findOne({
-        where: { id: companyId },
-        include: [
-          {
-            model: StaffModel,
-            as: 'owner',
-            required: true,
-            where: { isBusinessAccount: true }
-          }
-        ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      });
-      if (!staff) {
-        return next(
-          new CustomError(paymentErrorDetails.E_3600(`This account is not owner account`), httpStatus.NOT_FOUND)
-        );
-      }
       const paymentMethodId = req.params.paymentMethodId;
       const validateErrors = validate(paymentMethodId, deletePaymentMethodSchema);
       if (validateErrors) {
