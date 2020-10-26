@@ -1577,6 +1577,7 @@ export class SearchController {
           !!types && types.reduce((isInclude: any, type: string) => !!isInclude || info.types.includes(type), false);
         search.addressInfor.forEach((info: any) => {
           if (info.types && info.types.length > 0) {
+            info.long_name = removeAccents(info.long_name);
             if (isTypesInclude(info)('route')) {
               search.street = info.long_name;
             } else if (isTypesInclude(info)('administrative_area_level_2')) {
