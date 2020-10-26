@@ -30,7 +30,6 @@ import {
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate, paginateElasicSearch } from '../../../utils/paginator';
-import _ from 'lodash';
 import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { v4 as uuidv4 } from 'uuid';
@@ -43,6 +42,7 @@ import {
   deleteRecentViewSchema
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
+import _ from 'lodash';
 import elasticsearchClient from '../../../repositories/elasticsearch';
 import { SearchParams } from 'elasticsearch';
 
@@ -901,7 +901,7 @@ export class SearchController {
         recentBookings = [];
         return recentBookings;
       }
-      const recentBookingHistory: any = [];
+      const newStaff: any = [];
       for (let i = 0; i < recentBookings.length; i++) {
         let staff: any = await StaffModel.findOne({
           where: { id: recentBookings[i].staffId },
@@ -912,7 +912,7 @@ export class SearchController {
               as: 'workingLocations',
               through: { attributes: [] },
               where: { id: recentBookings[i].locationId },
-              attributes: ['name']
+              attributes: ['name', 'path_name', 'full_address']
             }
           ]
         });
@@ -922,9 +922,27 @@ export class SearchController {
           ...staff.workingLocations[0].dataValues,
           ['workingLocations']: undefined
         };
-
-        recentBookingHistory.push(staff);
+        newStaff.push(staff);
       }
+      const recentBookingHistory = newStaff.map(
+        ({
+          id: id,
+          firstName: staffName,
+          avatarPath: avatarPath,
+          workingLocations: workingLocations,
+          name: locationName,
+          path_name: locationPath,
+          full_address: fullAddress
+        }: any) => ({
+          id,
+          staffName,
+          avatarPath,
+          workingLocations,
+          locationName,
+          locationPath,
+          fullAddress
+        })
+      );
       return recentBookingHistory;
     } catch (error) {
       throw error;
@@ -952,7 +970,7 @@ export class SearchController {
       for (let i = 0; i < recentViews.length; i++) {
         locationIds.push(recentViews[i].locationId);
       }
-      const locationViews: any = (
+      const rawLocationViews: any = (
         await LocationModel.findAll({
           where: { id: { [Op.in]: locationIds } },
           include: [
@@ -964,7 +982,7 @@ export class SearchController {
               limit: 1
             }
           ],
-          attributes: ['id', 'name', 'address', 'district', 'ward']
+          attributes: ['id', 'name', 'address', 'district', 'ward', 'path_name', 'full_address']
         })
       ).map((locationView: any) => ({
         ...locationView.dataValues,
@@ -973,6 +991,25 @@ export class SearchController {
         ['locationDetail']: undefined,
         ['locationImages']: undefined
       }));
+      const locationViews = rawLocationViews.map(
+        ({
+          id: id,
+          name: locationName,
+          address: address,
+          district: district,
+          ward: ward,
+          path_name: locationPath,
+          full_address: fullAddress
+        }: any) => ({
+          id,
+          locationName,
+          address,
+          district,
+          ward,
+          locationPath,
+          fullAddress
+        })
+      );
       return locationViews;
     } catch (error) {
       throw error;
