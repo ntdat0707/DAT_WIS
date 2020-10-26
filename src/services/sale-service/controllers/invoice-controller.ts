@@ -11,6 +11,8 @@ import {
   InvoiceDetailStaffModel,
   InvoiceModel,
   LocationModel,
+  PaymentMethodModel,
+  PaymentModel,
   ReceiptModel,
   sequelize,
   ServiceModel,
@@ -309,7 +311,7 @@ export class InvoiceController {
       }
       await transaction.commit();
       InvoiceLogModel.deleteOne({ invoiceId: dataInvoice.id });
-      return res.status(httpStatus.OK).send({});
+      return res.status(httpStatus.OK).send();
     } catch (error) {
       //rollback transaction
       if (transaction) {
@@ -479,7 +481,21 @@ export class InvoiceController {
           return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
         }
       }
-      const receipt = await ReceiptModel.findOne({ where: { id: receiptId } });
+      const receipt = await ReceiptModel.findOne({
+        where: { id: receiptId },
+        include: [
+          {
+            model: PaymentModel,
+            as: 'payment',
+            include: [
+              {
+                model: PaymentMethodModel,
+                as: 'paymentMethod'
+              }
+            ]
+          }
+        ]
+      });
       if (!receipt) {
         throw new CustomError(receiptErrorDetails.E_3400(`receiptId ${receiptId} not found`), httpStatus.NOT_FOUND);
       }

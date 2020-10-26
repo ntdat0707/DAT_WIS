@@ -107,7 +107,7 @@ export class PaymentController {
       };
       await this.createPaymentReceipt(data, transaction);
       await transaction.commit();
-      return res.status(httpStatus.OK).send({});
+      return res.status(httpStatus.OK).send();
     } catch (error) {
       if (transaction) {
         await transaction.rollback();
@@ -124,21 +124,23 @@ export class PaymentController {
       let balance = data.balance;
       let status: string;
       for (let i = 0; i < data.paymentMethods.length; i++) {
-        const dataPayment = {
-          id: uuidv4(),
-          invoiceId: data.invoiceId,
-          paymentMethodId: data.paymentMethods[i].paymentMethodId,
-          amount: data.paymentMethods[i].amount
-        };
-        payments.push(dataPayment);
+        let dataProvider: any;
         if (data.paymentMethods[i].provider) {
-          const dataProvider = {
-            paymentId: dataPayment.id,
+          dataProvider = {
+            id: uuidv4(),
             name: data.paymentMethods[i].provider.name,
             accountNumber: data.paymentMethods[i].provider.accountNumber
           };
           providers.push(dataProvider);
         }
+        const dataPayment = {
+          id: uuidv4(),
+          invoiceId: data.invoiceId,
+          paymentMethodId: data.paymentMethods[i].paymentMethodId,
+          amount: data.paymentMethods[i].amount,
+          providerId: dataProvider ? dataProvider.id : null
+        };
+        payments.push(dataPayment);
         let receiptCode = '';
         for (let j = 0; j < 10; j++) {
           const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -154,7 +156,6 @@ export class PaymentController {
           staffId: data.staffId,
           amount: data.paymentMethods[i].amount,
           paymentId: dataPayment.id,
-          paymentMethodId: data.paymentMethods[i].paymentMethodId,
           locationId: data.locationId
         };
         receipts.push(dataReceipt);
@@ -171,10 +172,10 @@ export class PaymentController {
       } else if (balance > 0 && balance < data.total) {
         status = EBalanceType.PART_PAID;
       }
-      await PaymentModel.bulkCreate(payments, { transaction });
       if (providers.length > 0) {
         await ProviderModel.bulkCreate(providers, { transaction });
       }
+      await PaymentModel.bulkCreate(payments, { transaction });
       await ReceiptModel.bulkCreate(receipts, { transaction });
       await InvoiceModel.update({ balance: balance, status: status }, { where: { id: data.invoiceId }, transaction });
       return balance;

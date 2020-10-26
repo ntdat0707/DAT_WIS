@@ -6,6 +6,7 @@ class PaymentModel extends Model {
   public invoiceId!: string;
   public paymentMethodId!: string;
   public amount!: number;
+  public providerId: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -32,6 +33,11 @@ PaymentModel.init(
     amount: {
       field: 'amount',
       type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    providerId: {
+      field: 'provider_id',
+      type: DataTypes.UUIDV4,
       allowNull: true
     },
     createdAt: {
