@@ -13,6 +13,7 @@ import {
   LocationModel,
   PaymentMethodModel,
   PaymentModel,
+  ProviderModel,
   ReceiptModel,
   sequelize,
   ServiceModel,
@@ -490,9 +491,30 @@ export class InvoiceController {
             include: [
               {
                 model: PaymentMethodModel,
-                as: 'paymentMethod'
+                as: 'paymentMethod',
+                required: true
+              },
+              {
+                model: ProviderModel,
+                as: 'provider',
+                required: false
               }
             ]
+          },
+          {
+            model: StaffModel,
+            as: 'staff',
+            required: true
+          },
+          {
+            model: CustomerWisereModel,
+            as: 'customerWisere',
+            required: false
+          },
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
           }
         ]
       });

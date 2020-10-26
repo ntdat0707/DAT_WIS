@@ -224,8 +224,14 @@ ReceiptModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location'
 PaymentModel.hasMany(ReceiptModel, { foreignKey: 'paymentId', sourceKey: 'id', as: 'receipts' });
 ReceiptModel.belongsTo(PaymentModel, { foreignKey: 'paymentId', as: 'payment' });
 
+StaffModel.hasMany(ReceiptModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
+
 PaymentMethodModel.hasMany(PaymentModel, { foreignKey: 'paymentMethodId', sourceKey: 'id', as: 'payments' });
 PaymentModel.belongsTo(PaymentMethodModel, { foreignKey: 'paymentMethodId', as: 'paymentMethod' });
+
+ProviderModel.hasMany(PaymentModel, { foreignKey: 'providerId', sourceKey: 'id', as: 'payments' });
+PaymentModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider' });
 
 export {
   sequelize,
