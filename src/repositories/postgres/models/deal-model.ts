@@ -17,6 +17,7 @@ class DealModel extends Model {
   public closingDate: Date;
   public probability: number;
   public createdBy: string;
+  public appointmentId: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -91,6 +92,11 @@ DealModel.init(
     },
     createdBy: {
       field: 'created_by',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    appointmentId: {
+      field: 'appointment_id',
       type: DataTypes.UUIDV4,
       allowNull: true
     },

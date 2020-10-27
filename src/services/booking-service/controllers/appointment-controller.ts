@@ -1661,23 +1661,22 @@ export class AppointmentController extends BaseController {
     const dataDeal: any = new DealModel();
     const appointment = listAppointmentDetail[0].appointment;
     const title =
+      'Appt on ' +
       appointment.date.getDate() +
-      '/' +
       (appointment.date.getMonth() + 1) +
-      '_' +
-      appointment.customerWisere.lastName +
-      '_' +
+      '•' +
       appointment.customerWisere.phone;
     dataDeal.setDataValue('dealTitle', title);
     dataDeal.setDataValue('source', appointment.bookingSource);
     dataDeal.setDataValue('customerWisereId', appointment.customerWisere.id);
-    dataDeal.setDataValue('note', appointment.appointmentCode);
+    dataDeal.setDataValue('appointmentId', appointment.id);
     dataDeal.setDataValue('expectedCloseDate', appointment.date);
     let amount = 0;
     listAppointmentDetail.forEach((appointmentDetail: any) => {
       amount += appointmentDetail.service.salePrice;
     });
     dataDeal.setDataValue('amount', amount);
+    dataDeal.setDataValue('currency', 'VND');
     const pipeline: any = await PipelineModel.findOne({
       where: { companyId: companyId, name: 'Appointment' },
       include: [
