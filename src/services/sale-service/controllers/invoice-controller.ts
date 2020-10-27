@@ -190,7 +190,7 @@ export class InvoiceController {
         }
       }
       let invoiceCode = '';
-      for (let i = 0; i < 10; i++) {
+      while (true) {
         const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         invoiceCode = 'INV' + randomCode;
         const existInvoiceCode = await InvoiceModel.findOne({ where: { code: invoiceCode } });
