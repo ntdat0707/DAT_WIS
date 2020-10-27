@@ -194,7 +194,7 @@ LocationModel.belongsToMany(CustomerModel, {
   foreignKey: 'locationId'
 });
 
-StaffModel.hasMany(PositionModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'position' });
+StaffModel.hasMany(PositionModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'positions' });
 PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 
 StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
@@ -269,5 +269,6 @@ export {
   DiscountModel,
   PaymentMethodModel,
   ProviderModel,
-  TipsModel
+  TipsModel,
+  PositionModel
 };

@@ -35,9 +35,9 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
-import { InvoiceLogModel } from '../../../repositories/mongo/models/invoice-log-model';
 import { PaymentController } from './payment-controller';
 import { createInvoiceLogSchema, getListInvoicesLog } from '../configs/validate-schemas/invoice';
+import { InvoiceLogModel } from '../../../repositories/mongo/models';
 export class InvoiceController {
   /**
    * @swagger
@@ -190,7 +190,7 @@ export class InvoiceController {
         }
       }
       let invoiceCode = '';
-      for (let i = 0; i < 10; i++) {
+      while (true) {
         const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         invoiceCode = 'INV' + randomCode;
         const existInvoiceCode = await InvoiceModel.findOne({ where: { code: invoiceCode } });
@@ -310,8 +310,8 @@ export class InvoiceController {
           httpStatus.BAD_REQUEST
         );
       }
+      await InvoiceLogModel.deleteOne({ invoiceId: dataInvoice.id }).exec();
       await transaction.commit();
-      InvoiceLogModel.deleteOne({ invoiceId: dataInvoice.id });
       return res.status(httpStatus.OK).send();
     } catch (error) {
       //rollback transaction

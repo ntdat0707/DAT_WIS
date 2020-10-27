@@ -46,9 +46,9 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import { generatePWD } from '../../../utils/lib/generatePassword';
 import { v4 } from 'public-ip';
-import { LoginLogModel } from '../../../repositories/mongo/models/login-log-model';
+import { LoginLogModel } from '../../../repositories/mongo/models';
 import geoip from 'geoip-lite';
-import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
+import { MqttUserModel } from '../../../repositories/mongo/models';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
