@@ -170,5 +170,34 @@ const deleteStaffSchema = Joi.object({
     .required()
     .label('staffId')
 });
-
-export { staffIdSchema, filterStaffSchema, getStaffMultipleService, getStaffAvailableTimeSlots, deleteStaffSchema };
+const settingPositionStaffSchema = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  listPostionStaff: Joi.array()
+    .required()
+    .length(2)
+    .items(
+      Joi.object({
+        staffId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .required()
+          .label('staffId'),
+        index: Joi.number().integer().min(0).label('index')
+      })
+    )
+    .label('listPostionStaff')
+});
+export {
+  staffIdSchema,
+  filterStaffSchema,
+  getStaffMultipleService,
+  getStaffAvailableTimeSlots,
+  deleteStaffSchema,
+  settingPositionStaffSchema
+};
