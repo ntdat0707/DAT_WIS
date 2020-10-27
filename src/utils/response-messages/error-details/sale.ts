@@ -31,11 +31,14 @@ const invoiceErrorDetails = {
     return e;
   },
   E_3307(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3306', 'Invoice log not found', detail);
+    const e = buildErrorDetail('3307', 'Invoice log not found', detail);
+    return e;
+  },
+  E_3308(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3308', 'Bad request', detail);
     return e;
   }
 };
-
 const receiptErrorDetails = {
   E_3400(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3400', 'Receipt not found', detail);
