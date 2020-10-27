@@ -997,6 +997,7 @@ export class SearchController {
           address: address,
           district: district,
           ward: ward,
+          path: locationImage,
           path_name: locationPath,
           full_address: fullAddress
         }: any) => ({
@@ -1005,6 +1006,7 @@ export class SearchController {
           address,
           district,
           ward,
+          locationImage,
           locationPath,
           fullAddress
         })
