@@ -136,6 +136,11 @@ export class StaffController {
    *       required: false
    *       schema:
    *          type: string
+   *     - in: query
+   *       name: isServiceProvider
+   *       required: false
+   *       schema:
+   *          type: boolean
    *     responses:
    *       200:
    *         description: success
@@ -154,13 +159,27 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const filter = { workingLocationIds: req.query.workingLocationIds, teamStaffIds: req.query.teamStaffIds };
+      const filter = {
+        workingLocationIds: req.query.workingLocationIds,
+        teamStaffIds: req.query.teamStaffIds,
+        isServiceProvider: req.query.isServiceProvider
+      };
       const validateFilterErrors = validate(filter, filterStaffSchema);
       if (validateFilterErrors) return next(new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = {
         include: [],
+        where: {},
         order: [[{ model: PositionModel, as: 'positions' }, 'index', 'ASC']]
       };
+
+      if (filter.isServiceProvider !== null && filter.isServiceProvider !== undefined) {
+        query.where = {
+          ...query.where,
+          ...{
+            isServiceProvider: filter.isServiceProvider
+          }
+        };
+      }
       if (
         filter.workingLocationIds &&
         Array.isArray(filter.workingLocationIds) &&
@@ -310,6 +329,10 @@ export class StaffController {
    *       name: color
    *       type: string
    *     - in: "formData"
+   *       name: isServiceProvider
+   *       type: boolean
+   *       required: true
+   *     - in: "formData"
    *       name: workingLocationIds
    *       type: array
    *       required: true
@@ -349,6 +372,7 @@ export class StaffController {
         passportNumber: req.body.passportNumber,
         address: req.body.address,
         color: req.body.color,
+        isServiceProvider: req.body.isServiceProvider,
         id: uuidv4()
       };
 
@@ -392,6 +416,7 @@ export class StaffController {
         }));
         await ServiceStaffModel.bulkCreate(serviceStaffData, { transaction });
       }
+
       const getMaxIndex: number = await PositionModel.max('index', {
         where: {
           ownerId: res.locals.staffPayload.id
@@ -465,6 +490,14 @@ export class StaffController {
    *       name: teamStaffId
    *       type: string
    *     - in: "formData"
+   *       name: isServiceProvider
+   *       type: boolean
+   *       required: true
+   *     - in: "formData"
+   *       name: isAllowedMarketPlace
+   *       type: boolean
+   *       required: true
+   *     - in: "formData"
    *       name: workingLocationIds
    *       type: array
    *       items:
@@ -501,7 +534,8 @@ export class StaffController {
         address: req.body.address,
         phone: req.body.phone,
         color: req.body.color,
-        isAllowedMarketPlace: req.body.isAllowedMarketPlace
+        isAllowedMarketPlace: req.body.isAllowedMarketPlace,
+        isServiceProvider: req.body.isServiceProvider
       };
       if (req.file) profile.avatarPath = (req.file as any).location;
 
