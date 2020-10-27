@@ -184,7 +184,7 @@ export class AppointmentController extends BaseController {
         dataInput.locationId
       );
       let appointmentCode = '';
-      for (let i = 0; i < 10; i++) {
+      while (true) {
         const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
         const randomCode = random.toUpperCase();
         appointmentCode = randomCode;
@@ -962,7 +962,7 @@ export class AppointmentController extends BaseController {
               data.locationId
             );
             let appointmentCode = '';
-            for (let j = 0; j < 10; j++) {
+            while (true) {
               const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
               const randomCode = random.toUpperCase();
               appointmentCode = randomCode;
