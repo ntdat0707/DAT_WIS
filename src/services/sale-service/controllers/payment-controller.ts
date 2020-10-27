@@ -218,7 +218,7 @@ export class PaymentController {
    */
   public createPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      let data: any = {
+      const data: any = {
         companyId: res.locals.staffPayload.companyId,
         paymentType: req.body.paymentType
       };
@@ -226,20 +226,6 @@ export class PaymentController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      switch (data.paymentType) {
-        case 'cash':
-          data = { ...data, paymentTypeNumber: 1 };
-          break;
-        case 'card':
-          data = { ...data, paymentTypeNumber: 2 };
-          break;
-        case 'wallet':
-          data = { ...data, paymentTypeNumber: 3 };
-          break;
-        case 'other':
-          data = { ...data, paymentTypeNumber: 4 };
-          break;
-      } // 1:cash, 2:card, 3:waller, 4:other
       const paymentMethod = await PaymentMethodModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
     } catch (error) {
