@@ -716,14 +716,14 @@ export class InvoiceController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const invoice = await InvoiceLogModel.find({
+      const invoices = await InvoiceLogModel.find({
         staffId: res.locals.staffPayload.id,
         locationId: req.params.locationId
       }).exec();
-      if (!invoice) {
+      if (!invoices) {
         return next(new CustomError(invoiceErrorDetails.E_3300(`Invoice log not found`), httpStatus.NOT_FOUND));
       }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(invoices));
     } catch (error) {
       return next(error);
     }
