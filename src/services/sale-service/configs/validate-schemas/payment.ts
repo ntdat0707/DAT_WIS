@@ -34,7 +34,8 @@ const createPaymentMethodSchema = Joi.object({
   paymentType: Joi.string()
     .required()
     .valid(EPaymentMethodType.CASH, EPaymentMethodType.CARD, EPaymentMethodType.WALLET, EPaymentMethodType.OTHER)
-    .label('name')
+    .label('name'),
+  companyId: Joi.string().required().label('companyId')
 });
 
 const updatePaymentMethodSchema = Joi.object({

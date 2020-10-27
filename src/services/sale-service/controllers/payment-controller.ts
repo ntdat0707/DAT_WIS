@@ -219,6 +219,7 @@ export class PaymentController {
   public createPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data: any = {
+        companyId: res.locals.companyId,
         paymentType: req.body.paymentType
       };
       const validateErrors = validate(data, createPaymentMethodSchema);
@@ -312,7 +313,7 @@ export class PaymentController {
       const paymentMethod = await PaymentMethodModel.findOne({ where: { id: data.paymentMethodId } });
       if (!paymentMethod) {
         throw new CustomError(
-          paymentMethodErrorDetails.E_3700(`Payment method with id ${data.paymentMethod} not found`),
+          paymentMethodErrorDetails.E_3700(`Payment method with id ${data.paymentMethodId} not found`),
           httpStatus.NOT_FOUND
         );
       }
