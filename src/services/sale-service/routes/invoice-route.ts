@@ -13,10 +13,6 @@ export class SaleRoutes {
     this.router.get('/get-all-receipt', isAuthenticated, this.invoiceController.getAllReceipt);
     this.router.get('/get-receipt/:receiptId', isAuthenticated, this.invoiceController.getReceipt);
     this.router.post('/create-invoice-log', isAuthenticated, this.invoiceController.createInvoiceLog);
-    this.router.get(
-      '/get-list-invoice-log/:customerWisereId',
-      isAuthenticated,
-      this.invoiceController.getListInvoicesLog
-    );
+    this.router.get('/get-list-invoice-log/:staffId', isAuthenticated, this.invoiceController.getListInvoicesLog);
   }
 }
