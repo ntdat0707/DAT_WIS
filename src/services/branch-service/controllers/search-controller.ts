@@ -754,7 +754,10 @@ export class SearchController {
         title: '',
         description: '',
         image: '',
-        pathName: null,
+        pathName: null
+      };
+
+      const hideField: any = {
         cateService: undefined,
         company: undefined,
         service: undefined,
@@ -772,8 +775,9 @@ export class SearchController {
         .map((searchData: any) => {
           const { type } = searchData;
           return {
-            ...searchData.dataValues,
             ...dataDefault,
+            ...searchData.dataValues,
+            ...hideField,
             ...mapData[type](searchData[type])
           };
         });
@@ -1590,11 +1594,7 @@ export class SearchController {
         return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
 
-      const trimSpace = (text: string) =>
-        text
-          .split(' ')
-          .filter((x: string) => x)
-          .join(' ');
+      const trimSpace = (text: string) => text.replace(/\s\s+/g, ' ').trim();
       const search: any = {
         keywords: trimSpace(req.body.keyword ? req.body.keyword.toString() : ''),
         customerId: req.body.customerId,
@@ -1686,48 +1686,47 @@ export class SearchController {
         if (result.meta.totalPages === 0 && countTypeAvailable > 1) {
           searchParams.body.query.bool.must.pop();
         } else {
-          // console.log(JSON.stringify(searchParams, null, 2));
           break;
         }
       }
 
       let locationResults = result.data;
       const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
-      let searchCateServiceItem: any = {};
-      let searchCompanyItem: any = {};
-      let searchServiceItem: any = {};
-      let searchLocationItem: any = {};
+      let searchCateServiceItem: any = null;
+      let searchCompanyItem: any = null;
+      let searchServiceItem: any = null;
+      let searchLocationItem: any = null;
       locationResults = locationResults.map((location: any) => {
         location = location._source;
-        if (location.name && removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)) {
+        if (
+          !searchLocationItem &&
+          location.name &&
+          removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)
+        ) {
           searchLocationItem = location;
         }
 
         if (location.company) {
           if (
+            !searchCompanyItem &&
             location.company.businessName &&
             removeAccents(location.company.businessName).toLowerCase().search(keywordRemoveAccents)
           ) {
             searchCompanyItem = location.company;
           }
 
-          if (
-            location.services &&
-            !_.isEmpty(location.services) &&
-            location.services[0].name &&
-            removeAccents(location.services[0].name).toLowerCase().search(keywordRemoveAccents)
-          ) {
-            searchServiceItem = location.services[0];
+          if (!searchServiceItem && location.services && !_.isEmpty(location.services)) {
+            searchServiceItem =
+              location.services.find((service: any) =>
+                removeAccents(service.name).toLowerCase().search(keywordRemoveAccents)
+              ) || null;
           }
 
-          if (location.company.cateServices && Array.isArray(location.company.cateServices)) {
-            location.company.cateServices.map((cateService: any) => {
-              if (removeAccents(cateService.name).toLowerCase().search(keywordRemoveAccents)) {
-                searchCateServiceItem = cateService;
-              }
-              return cateService;
-            });
-            location.company.cateServices = undefined;
+          if (!searchCateServiceItem && location.company.cateServices && Array.isArray(location.company.cateServices)) {
+            searchCateServiceItem =
+              location.company.cateServices.find((cateService: any) =>
+                removeAccents(cateService.name).toLowerCase().search(keywordRemoveAccents)
+              ) || null;
           }
         }
         const locationDetail = location.marketplaceValues
@@ -1806,16 +1805,16 @@ export class SearchController {
         let companyId = null;
         let serviceId = null;
         let locationId = null;
-        if (!_.isEmpty(searchCateServiceItem)) {
+        if (searchCateServiceItem) {
           cateServiceId = searchCateServiceItem.id;
           typeResult = 'cateService';
-        } else if (!_.isEmpty(searchCompanyItem)) {
+        } else if (searchCompanyItem) {
           companyId = searchCompanyItem.id;
           typeResult = 'company';
-        } else if (!_.isEmpty(searchServiceItem)) {
+        } else if (searchServiceItem) {
           serviceId = searchServiceItem.id;
           typeResult = 'service';
-        } else if (!_.isEmpty(searchLocationItem)) {
+        } else if (searchLocationItem) {
           locationId = searchLocationItem.id;
           typeResult = 'location';
         }
