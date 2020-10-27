@@ -6,6 +6,7 @@ class PaymentMethodModel extends Model {
   public id: string;
   public companyId!: string;
   public paymentType: string;
+  public paymentTypeNumber: number; //1:cash, 2:card, 3:waller, 4:other
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -27,6 +28,11 @@ PaymentMethodModel.init(
       field: 'payment_type',
       type: DataTypes.ENUM(...Object.keys(EPaymentMethodType)),
       defaultValue: EPaymentMethodType.CASH
+    },
+    paymentTypeNumber: {
+      field: 'payment_type_number',
+      type: DataTypes.INTEGER,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
