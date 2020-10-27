@@ -35,9 +35,9 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
-import { InvoiceLogModel } from '../../../repositories/mongo/models/invoice-log-model';
 import { PaymentController } from './payment-controller';
-import { createInvoiceLogSchema, customerWisereIdSchema } from '../configs/validate-schemas/invoice';
+import { createInvoiceLogSchema } from '../configs/validate-schemas/invoice';
+import { InvoiceLogModel } from '../../../repositories/mongo/models';
 export class InvoiceController {
   /**
    * @swagger
@@ -310,8 +310,8 @@ export class InvoiceController {
           httpStatus.BAD_REQUEST
         );
       }
+      await InvoiceLogModel.deleteOne({ invoiceId: dataInvoice.id }).exec();
       await transaction.commit();
-      InvoiceLogModel.deleteOne({ invoiceId: dataInvoice.id });
       return res.status(httpStatus.OK).send();
     } catch (error) {
       //rollback transaction
@@ -706,17 +706,13 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/get-list-invoice-log/{staffId}:
+   * /sale/get-list-invoice-log:
    *   get:
    *     tags:
    *       - Sale
    *     security:
    *       - Bearer: []
    *     name: getListInvoiceLog
-   *     parameters:
-   *     - in: path
-   *       name: staffId
-   *       required: true
    *     responses:
    *       200:
    *         description: success
@@ -727,22 +723,10 @@ export class InvoiceController {
    */
   public getListInvoicesLog = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validateErrors = validate(req.params.customerWisereId, customerWisereIdSchema);
-      if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
-      }
-      const invoice = InvoiceLogModel.find({
+      const invoices = await InvoiceLogModel.find({
         staffId: res.locals.staffPayload.id
-      });
-      if (!invoice) {
-        return next(
-          new CustomError(
-            invoiceErrorDetails.E_3307(`Invoice log customer ${req.params.customerWisereId} not found`),
-            httpStatus.NOT_FOUND
-          )
-        );
-      }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
+      }).exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(invoices));
     } catch (error) {
       return next(error);
     }
