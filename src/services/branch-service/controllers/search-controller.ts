@@ -714,10 +714,8 @@ export class SearchController {
           'service.id',
           'location.id'
         ],
-        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('keywords')), 'keywords'], 'type'],
-        logging: true
+        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('keywords')), 'keywords'], 'type']
       });
-      console.log(recentSearchData);
 
       const mapData: any = {
         ['service'](data: any) {
@@ -776,14 +774,6 @@ export class SearchController {
         .filter((searchData: any) => !!searchData.type)
         .map((searchData: any) => {
           const { type } = searchData;
-          console.log(searchData.dataValues);
-          console.log(type);
-          console.log({
-            ...dataDefault,
-            ...searchData.dataValues,
-            ...hideField,
-            ...mapData[type](searchData[type])
-          });
           return {
             ...dataDefault,
             ...searchData.dataValues,
@@ -1708,7 +1698,11 @@ export class SearchController {
       let searchLocationItem: any = null;
       locationResults = locationResults.map((location: any) => {
         location = location._source;
-        if (!searchLocationItem && location.name && removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)) {
+        if (
+          !searchLocationItem &&
+          location.name &&
+          removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)
+        ) {
           searchLocationItem = location;
         }
 
@@ -1721,27 +1715,18 @@ export class SearchController {
             searchCompanyItem = location.company;
           }
 
-          if (
-            !searchServiceItem &&
-            location.services &&
-            !_.isEmpty(location.services)
-          ) {
-            searchServiceItem = location.services.find(
-              (service:any) =>
+          if (!searchServiceItem && location.services && !_.isEmpty(location.services)) {
+            searchServiceItem =
+              location.services.find((service: any) =>
                 removeAccents(service.name).toLowerCase().search(keywordRemoveAccents)
-            ) || null;
+              ) || null;
           }
 
-          if (!searchCateServiceItem &&
-              location.company.cateServices &&
-              Array.isArray(location.company.cateServices)
-          ) {
-            searchCateServiceItem = location.company.cateServices.find(
-              (cateService: any) =>
-                removeAccents(cateService.name)
-                  .toLowerCase()
-                  .search(keywordRemoveAccents)
-            ) || null;
+          if (!searchCateServiceItem && location.company.cateServices && Array.isArray(location.company.cateServices)) {
+            searchCateServiceItem =
+              location.company.cateServices.find((cateService: any) =>
+                removeAccents(cateService.name).toLowerCase().search(keywordRemoveAccents)
+              ) || null;
           }
         }
         const locationDetail = location.marketplaceValues
@@ -1761,7 +1746,9 @@ export class SearchController {
             ...location.company.companyDetail,
             companyDetail: undefined
           },
-          service: (location.services || [])[0], marketplaceValues: undefined, services: undefined,
+          service: (location.services || [])[0],
+          marketplaceValues: undefined,
+          services: undefined,
           locationDetail: undefined
         };
 
