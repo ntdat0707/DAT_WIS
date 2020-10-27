@@ -20,6 +20,7 @@ class StaffModel extends Model {
   public avatarPath: string;
   public onboardStep: number;
   public staffCode: string;
+  public isServiceProvider: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -124,6 +125,11 @@ StaffModel.init(
       field: 'staff_code',
       type: DataTypes.STRING(125),
       allowNull: true
+    },
+    isServiceProvider: {
+      type: DataTypes.BOOLEAN,
+      field: 'is_service_provider',
+      defaultValue: false
     },
     createdAt: {
       field: 'created_at',

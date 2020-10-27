@@ -35,6 +35,7 @@ export const createStaffSchema = Joi.object({
         .required()
     )
     .label('workingLocationIds'),
+  isServiceProvider: Joi.boolean().required().label('isServiceProvider'),
   serviceIds: Joi.array()
     .min(1)
     .items(
@@ -61,6 +62,7 @@ export const updateStaffSchema = Joi.object({
   address: Joi.string(),
   color: Joi.string(),
   phone: Joi.string().regex(/^\d+$/).disallow('', null).label('phone'),
+  isServiceProvider: Joi.boolean().required().label('isServiceProvider'),
   workingLocationIds: Joi.array()
     .min(1)
     .required()
@@ -108,7 +110,8 @@ const filterStaffSchema = Joi.object({
         version: ['uuidv4']
       })
     ),
-  searchValue: Joi.string()
+  searchValue: Joi.string(),
+  isServiceProvider: Joi.boolean().label('isServiceProvider')
 });
 
 export const createStaffsSchema = Joi.object({
