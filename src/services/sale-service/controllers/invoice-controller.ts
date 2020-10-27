@@ -706,7 +706,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/get-list-invoice-log/{customerWisereId}:
+   * /sale/get-list-invoice-log/{staffId}:
    *   get:
    *     tags:
    *       - Sale
@@ -715,7 +715,7 @@ export class InvoiceController {
    *     name: getListInvoiceLog
    *     parameters:
    *     - in: path
-   *       name: customerWisereId
+   *       name: staffId
    *       required: true
    *     responses:
    *       200:
