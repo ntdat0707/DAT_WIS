@@ -23,7 +23,8 @@ import {
   CompanyModel,
   LocationModel,
   PipelineModel,
-  PipelineStageModel
+  PipelineStageModel,
+  PaymentMethodModel
 } from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
@@ -119,6 +120,34 @@ export class AuthController {
       data.onboardStep = 0;
       await StaffModel.create({ ...data, ...{ isBusinessAccount: true, id: staffId } }, { transaction });
       await CompanyModel.create({ id: companyId, ownerId: staffId }, { transaction });
+
+      //create paymentMethod
+      const paymentMethods = [];
+      for (let i = 1; i < 5; i++) {
+        let typeInfor: any = {};
+        switch (i) {
+          case 1:
+            typeInfor = { paymentType: 'card', paymentTypeNumber: 1 };
+            break;
+          case 2:
+            typeInfor = { paymentType: 'cash', paymentTypeNumber: 2 };
+            break;
+          case 3:
+            typeInfor = { paymentType: 'wallet', paymentTypeNumber: 3 };
+            break;
+          case 4:
+            typeInfor = { paymentType: 'other', paymentTypeNumber: 4 };
+            break;
+        } // 1:cash, 2:card, 3:waller, 4:other
+        const paymentMethodData = {
+          id: uuidv4(),
+          companyId: companyId,
+          paymentType: typeInfor.paymentType,
+          paymentTypeNumber: typeInfor.paymentTypeNumber
+        };
+        paymentMethods.push(paymentMethodData);
+      }
+      await PaymentMethodModel.bulkCreate(paymentMethods, { transaction });
 
       const pipelineId1 = uuidv4();
       const pipelineId2 = uuidv4();
