@@ -150,7 +150,7 @@ export class PaymentController {
         }
         const dataReceipt = {
           code: receiptCode,
-          customerId: data.customerId,
+          customerWisereId: data.customerId,
           staffId: data.staffId,
           amount: data.paymentMethods[i].amount,
           paymentId: dataPayment.id,

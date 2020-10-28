@@ -62,7 +62,7 @@ export const updateStaffSchema = Joi.object({
   address: Joi.string(),
   color: Joi.string(),
   phone: Joi.string().regex(/^\d+$/).disallow('', null).label('phone'),
-  isServiceProvider: Joi.boolean().required().label('isServiceProvider'),
+  isServiceProvider: Joi.boolean().label('isServiceProvider'),
   workingLocationIds: Joi.array()
     .min(1)
     .required()
