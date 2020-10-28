@@ -43,7 +43,6 @@ import {
   settingPositionStaffSchema
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
-import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
 
 export class StaffController {
   /**
@@ -1732,7 +1731,6 @@ export class StaffController {
    */
   public getStaffInTeam = async (req: Request, res: Response, next: NextFunction) => {
     try {
-     
       const teamStaffId = req.query.teamStaffId;
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
@@ -1742,18 +1740,20 @@ export class StaffController {
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       const query: FindOptions = {
-        include:[],
+        include: [],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       };
       query.include = [
         ...query.include,
-        ...[{
-          model:TeamStaffModel,
-          as:'teamStaff',
-          required:true,
-          where: { id: teamStaffId,companyId:res.locals.staffPayload.companyId }
-        }]
-      ]
+        ...[
+          {
+            model: TeamStaffModel,
+            as: 'teamStaff',
+            required: true,
+            where: { id: teamStaffId, companyId: res.locals.staffPayload.companyId }
+          }
+        ]
+      ];
       const staffs = await paginate(
         StaffModel,
         query,
