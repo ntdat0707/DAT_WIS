@@ -145,7 +145,7 @@ export class AppointmentController extends BaseController {
         customerWisereId: req.body.customerWisereId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
-        bookingSource: req.body.bookingSource,
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED,
         appointmentGroupId: req.body.appointmentGroupId,
         relatedAppointmentId: req.body.relatedAppointmentId
       };
@@ -874,7 +874,7 @@ export class AppointmentController extends BaseController {
         createNewAppointments: req.body.createNewAppointments,
         customerWisereId: req.body.customerWisereId,
         date: req.body.date,
-        bookingSource: req.body.bookingSource
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
       };
 
       const validateErrors = validate(data, updateAppointmentSchema);
