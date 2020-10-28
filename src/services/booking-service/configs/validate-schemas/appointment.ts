@@ -322,6 +322,7 @@ const createAppointmentGroupSchema = Joi.object({
     })
     .required()
     .label('locationId'),
+  bookingSource: Joi.string().valid(AppointmentBookingSource.SCHEDULED, AppointmentBookingSource.WALK_IN),
   appointments: Joi.array().min(1).max(50).items(createAppointmentInGroupSchema).label('appointments')
 });
 const appointmentGroupIdSchema = Joi.string()
@@ -343,6 +344,7 @@ const updateAppointmentInGroupSchema = Joi.object({
       version: ['uuidv4']
     })
     .label('customerWisereId'),
+  bookingSource: Joi.string().valid(AppointmentBookingSource.SCHEDULED, AppointmentBookingSource.WALK_IN),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
   isPrimary: Joi.bool().required().label('isPrimary')
 });
