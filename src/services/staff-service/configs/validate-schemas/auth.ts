@@ -47,7 +47,7 @@ const loginSocialSchema = Joi.object({
   device: Joi.string().allow('', null).label('device'),
   source: Joi.string()
     .required()
-    .valid(...Object.values(ESourceLoginType))
+    .valid(...Object.keys(ESourceLoginType))
     .label('source')
 });
 

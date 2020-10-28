@@ -7,7 +7,7 @@ const createCustomerWisereSchema = Joi.object({
   gender: Joi.number()
     .integer()
     .allow(null)
-    .valid(...Object.values(EGender))
+    .valid(...Object.keys(EGender))
     .label('gender'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   email: Joi.string().allow(null).email().label('email'),
@@ -19,7 +19,7 @@ const createCustomerWisereSchema = Joi.object({
     .valid(...Object.keys(ESource))
     .label('source'),
   label: Joi.string()
-    .valid(...Object.values(ELabel))
+    .valid(...Object.keys(ELabel))
     .label('label'),
   note: Joi.string().label('note'),
   job: Joi.string().label('job'),
