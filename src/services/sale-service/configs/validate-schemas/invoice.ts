@@ -6,7 +6,6 @@ const createInvoiceSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .required()
     .label('invoiceId'),
   locationId: Joi.string()
     .guid({

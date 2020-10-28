@@ -199,7 +199,7 @@ export class InvoiceController {
         }
       }
       let dataInvoice: any = {
-        id: req.body.invoiceId,
+        id: req.body.invoiceId ? req.body.invoiceId : uuidv4(),
         code: invoiceCode,
         appointmentId: req.body.appointmentId,
         locationId: req.body.locationId,

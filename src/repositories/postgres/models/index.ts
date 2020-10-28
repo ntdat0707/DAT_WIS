@@ -215,8 +215,8 @@ StaffModel.belongsTo(TeamStaffModel, { foreignKey: 'teamStaffId', as: 'teamStaff
 CompanyModel.hasMany(TeamStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'teamStaffs' });
 TeamStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
-CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'receipts' });
-ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerId', as: 'customerWisere' });
+CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
 LocationModel.hasMany(ReceiptModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'receipts' });
 ReceiptModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
