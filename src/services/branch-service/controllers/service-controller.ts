@@ -96,7 +96,6 @@ export class ServiceController {
    *     - in: "formData"
    *       name: isAllowedMarketplace
    *       type: boolean
-   *       required: true
    *     - in: "formData"
    *       name: resourceIds
    *       type: array
@@ -788,7 +787,6 @@ export class ServiceController {
    *     - in: "formData"
    *       name: isAllowedMarketplace
    *       type: boolean
-   *       required: true
    *     - in: "formData"
    *       name: status
    *       type: string
