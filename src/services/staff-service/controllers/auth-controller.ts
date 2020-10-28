@@ -127,10 +127,10 @@ export class AuthController {
         let typeInfor: any = {};
         switch (i) {
           case 1:
-            typeInfor = { paymentType: 'card', paymentTypeNumber: 1 };
+            typeInfor = { paymentType: 'cash', paymentTypeNumber: 1 };
             break;
           case 2:
-            typeInfor = { paymentType: 'cash', paymentTypeNumber: 2 };
+            typeInfor = { paymentType: 'card', paymentTypeNumber: 2 };
             break;
           case 3:
             typeInfor = { paymentType: 'wallet', paymentTypeNumber: 3 };
