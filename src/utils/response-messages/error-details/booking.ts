@@ -132,6 +132,16 @@ const bookingErrorDetails = {
   E_2012(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('2012', 'Appointment detail status invalid', detail);
     return e;
+  },
+  /**
+   * Appointment not allow status
+   *
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_2013(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2013', 'Appointment status completed or canceled', detail);
+    return e;
   }
 };
 
