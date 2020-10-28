@@ -151,7 +151,7 @@ export enum EContactType {
   MOBILE = 'mobile'
 }
 
-export enum ESourceType {
+export enum EInvoiceSourceType {
   POS = 'pos',
   WEBSITE = 'website',
   FACEBOOK = 'facebook',

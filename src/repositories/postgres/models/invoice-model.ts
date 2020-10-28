@@ -1,6 +1,6 @@
 import { EBalanceType } from './../../../utils/consts/index';
 import { Model, DataTypes, Sequelize } from 'sequelize';
-import { ESourceType } from '../../../utils/consts';
+import { EInvoiceSourceType } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
 class InvoiceModel extends Model {
@@ -52,8 +52,8 @@ InvoiceModel.init(
     },
     source: {
       field: 'source',
-      type: DataTypes.ENUM(...Object.keys(ESourceType)),
-      defaultValue: ESourceType.POS
+      type: DataTypes.ENUM(...Object.keys(EInvoiceSourceType)),
+      defaultValue: EInvoiceSourceType.POS
     },
     discountId: {
       field: 'discount_id',
