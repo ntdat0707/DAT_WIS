@@ -80,10 +80,13 @@ export class AppointmentController extends BaseController {
    *   CreateAppointment:
    *       required:
    *           - locationId
+   *           - bookingSource
    *           - date
    *           - appointmentDetails
    *       properties:
    *           locationId:
+   *               type: string
+   *           bookingSource:
    *               type: string
    *           customerWisereId:
    *               type: string
@@ -142,7 +145,7 @@ export class AppointmentController extends BaseController {
         customerWisereId: req.body.customerWisereId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
-        bookingSource: AppointmentBookingSource.STAFF,
+        bookingSource: req.body.bookingSource,
         appointmentGroupId: req.body.appointmentGroupId,
         relatedAppointmentId: req.body.relatedAppointmentId
       };
@@ -589,7 +592,7 @@ export class AppointmentController extends BaseController {
    *       - Booking
    *     security:
    *       - Bearer: []
-   *     name: getAllAppointmentDetails
+   *     name: updateAppointmentStatus
    *     parameters:
    *     - in: "body"
    *       name: "body"
@@ -628,14 +631,7 @@ export class AppointmentController extends BaseController {
           )
         );
       }
-      if (!workingLocationIds.includes(appointment.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${appointment.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
+
       const isValidStatus =
         AppointmentStatusRules[appointment.status as EAppointmentStatus][data.status as EAppointmentStatus];
       if (!isValidStatus) {
@@ -811,6 +807,8 @@ export class AppointmentController extends BaseController {
    *               type: string
    *           locationId:
    *               type: string
+   *           bookingSource:
+   *               type: string
    *           date:
    *               type: string
    *               format: date-time
@@ -875,7 +873,8 @@ export class AppointmentController extends BaseController {
         deleteAppointmentDetails: req.body.deleteAppointmentDetails,
         createNewAppointments: req.body.createNewAppointments,
         customerWisereId: req.body.customerWisereId,
-        date: req.body.date
+        date: req.body.date,
+        bookingSource: req.body.bookingSource
       };
 
       const validateErrors = validate(data, updateAppointmentSchema);
@@ -983,7 +982,7 @@ export class AppointmentController extends BaseController {
               customerWisereId: data.createNewAppointments[i].customerWisereId
                 ? data.createNewAppointments[i].customerWisereId
                 : null,
-              bookingSource: AppointmentBookingSource.STAFF,
+              bookingSource: req.body.bookingSource,
               appointmentGroupId: appointmentGroupId,
               isPrimary: false,
               date: data.date,

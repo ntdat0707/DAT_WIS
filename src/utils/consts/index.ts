@@ -116,8 +116,9 @@ export enum BusinessType {
 }
 
 export enum AppointmentBookingSource {
-  STAFF = 'STAFF',
-  MARKETPLACE = 'MARKETPLACE'
+  SCHEDULED = 'SCHEDULED',
+  MARKETPLACE = 'MARKETPLACE',
+  WALK_IN = 'WALK_IN'
 }
 
 export enum StatusPipelineStage {

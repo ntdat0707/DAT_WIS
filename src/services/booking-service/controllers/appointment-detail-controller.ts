@@ -4,7 +4,7 @@ require('dotenv').config();
 
 import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { bookingErrorDetails } from '../../../utils/response-messages/error-details';
+import { bookingErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   sequelize,
@@ -22,10 +22,12 @@ import {
 import {
   createAppointmentDetailFullSchema,
   updateAppointmentDetailSchema,
-  appointmentDetailIdSchema
+  appointmentDetailIdSchema,
+  updateAppointmentStatusDetailSchema
 } from '../configs/validate-schemas';
 import { BaseController } from './base-controller';
 import { FindOptions } from 'sequelize';
+import { EAppointmentStatus, AppointmentStatusRules } from '../../../utils/consts';
 
 export class AppointmentDetailController extends BaseController {
   /**
@@ -445,6 +447,101 @@ export class AppointmentDetailController extends BaseController {
         );
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetail));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   UpdateAppointmentDetailStatus:
+   *       required:
+   *           - appointmentDetailId
+   *           - status
+   *       properties:
+   *           appointmentDetailId:
+   *               type: string
+   *           status:
+   *               type: string
+   *               enum: [new, confirmed, arrived, in_service, completed, cancel]
+   *
+   */
+  /**
+   * @swagger
+   * /booking/appointment-detail/update-status:
+   *   put:
+   *     tags:
+   *       - Booking
+   *     security:
+   *       - Bearer: []
+   *     name: updateAppointmentDetailStatus
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *         $ref: '#/definitions/UpdateAppointmentDetailStatus'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requets - input invalid format, header is invalid
+   *       403:
+   *         description: FORBIDDEN
+   *       404:
+   *         description: Appointment not found
+   *       500:
+   *         description: Internal server errors
+   */
+  public updateAppointmentDetailStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = { appointmentDetailId: req.body.appointmentDetailId, status: req.body.status };
+      const validateErrors = validate(data, updateAppointmentStatusDetailSchema);
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      const appointmentDetail: any = await AppointmentDetailModel.findOne({
+        where: { id: data.appointmentDetailId },
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true
+          }
+        ]
+      });
+      if (!appointmentDetail) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2004(`Not found appointment detail ${data.appointmentDetailId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      if (!workingLocationIds.includes(appointmentDetail.appointment.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${appointmentDetail.appointment.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
+      const isValidStatus =
+        AppointmentStatusRules[appointmentDetail.status as EAppointmentStatus][data.status as EAppointmentStatus];
+      if (!isValidStatus) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2012(
+              `Can not update appointment detail status from ${appointmentDetail.status} to ${data.status}`
+            ),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      await AppointmentDetailModel.update({ status: data.status }, { where: { id: data.appointmentDetailId } });
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
