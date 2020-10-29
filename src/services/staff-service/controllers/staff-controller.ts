@@ -245,7 +245,7 @@ export class StaffController {
             {
               model: TeamStaffModel,
               as: 'teamStaff',
-              required: false,
+              required: true,
               where: { id: filter.teamStaffIds }
             }
           ]
@@ -421,7 +421,6 @@ export class StaffController {
           ownerId: res.locals.staffPayload.id
         }
       });
-
       const position = {
         ownerId: res.locals.staffPayload.id,
         staffId: profile.id,
