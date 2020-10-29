@@ -6,7 +6,6 @@ import shortId from 'shortid';
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-
 import {
   createServiceSchema,
   serviceIdSchema,
@@ -34,6 +33,7 @@ import { LocationServiceModel } from '../../../repositories/postgres/models/loca
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { SearchParams } from 'elasticsearch';
 import { elasticsearchClient } from '../../../repositories/elasticsearch';
+// import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ServiceController {
@@ -283,10 +283,11 @@ export class ServiceController {
         delete serviceMapping.staffs;
         return serviceMapping;
       });
-
-      await elasticsearchClient.create({
+      //require('array.prototype.flatmap').shim();
+      // const esData = serviceData.flatMap((doc:any) => [{ index: { _index: 'get_services' } }, doc]);
+      await elasticsearchClient.index({
         id: data.id,
-        index: 'get-services',
+        index: 'get_services',
         body: serviceData,
         type: '_doc'
       });
@@ -348,7 +349,7 @@ export class ServiceController {
 
       await elasticsearchClient.delete({
         id: serviceId,
-        index: 'get-services',
+        index: 'get_services',
         type: '_doc'
       });
 
@@ -1085,7 +1086,7 @@ export class ServiceController {
 
       await elasticsearchClient.update({
         id: params.serviceId,
-        index: 'get-services',
+        index: 'get_services',
         body: {
           doc: serviceData,
           doc_as_upsert: true

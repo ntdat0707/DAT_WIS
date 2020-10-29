@@ -1,6 +1,7 @@
 import { logger } from '../../utils/logger';
 import elasticsearch, { ConfigOptions } from 'elasticsearch';
 import dotenv from 'dotenv';
+import { Client } from '@elastic/elasticsearch';
 
 const { parsed: env } = dotenv.config();
 
@@ -35,4 +36,9 @@ elasticsearchClient.ping(
   }
 );
 
-export { elasticsearchClient };
+const esClient = new Client({
+  node: 'http://128.199.79.238:9201',
+  ssl: { rejectUnauthorized: false }
+});
+
+export { elasticsearchClient, esClient };
