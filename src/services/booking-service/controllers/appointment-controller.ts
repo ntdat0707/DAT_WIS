@@ -217,6 +217,10 @@ export class AppointmentController extends BaseController {
         date: dataInput.date
       };
 
+      if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+        appointmentData.status = EAppointmentStatus.CONFIRMED;
+      }
+
       if (dataInput.appointmentGroupId) {
         const appointmentGroup = await AppointmentGroupModel.findOne({
           where: {
@@ -678,7 +682,7 @@ export class AppointmentController extends BaseController {
         }
         const deal = await DealModel.findOne({ where: { appointmentId: data.appointmentId } });
         if (deal) {
-          await deal.update({ status: StatusPipelineStage.LOST }, { transaction });
+          await deal.update({ status: EStatusPipelineStage.LOST }, { transaction });
         }
       } else {
         await AppointmentModel.update(
@@ -722,8 +726,8 @@ export class AppointmentController extends BaseController {
             data.status === EAppointmentStatus.IN_SERVICE ||
             data.status === EAppointmentStatus.COMPLETED
           ) {
-            if (deal.status === StatusPipelineStage.OPEN) {
-              await deal.update({ status: StatusPipelineStage.WON }, { transaction });
+            if (deal.status === EStatusPipelineStage.OPEN) {
+              await deal.update({ status: EStatusPipelineStage.WON }, { transaction });
             }
           }
         }
@@ -1049,6 +1053,11 @@ export class AppointmentController extends BaseController {
               date: data.date,
               appointmentCode: appointmentCode
             };
+
+            if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              newAppointmentData.status = EAppointmentStatus.CONFIRMED;
+            }
+
             await AppointmentModel.create(newAppointmentData, { transaction });
             const appointmentDetailData: any[] = [];
             const appointmentDetailStaffData = [];
@@ -1083,6 +1092,13 @@ export class AppointmentController extends BaseController {
         customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId,
         appointmentGroupId: appointmentGroupId
       };
+
+      if (
+        appointment.status === EAppointmentStatus.NEW &&
+        req.body.bookingSource === EAppointmentBookingSource.WALK_IN
+      ) {
+        appointmentData.status = EAppointmentStatus.CONFIRMED;
+      }
       await AppointmentModel.update(appointmentData, { where: { id: data.appointmentId }, transaction });
 
       if (data.createNewAppointmentDetails && data.createNewAppointmentDetails.length > 0) {
