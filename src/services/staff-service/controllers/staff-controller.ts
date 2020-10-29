@@ -27,7 +27,7 @@ import {
   AppointmentDetailModel,
   CompanyModel,
   LocationWorkingHourModel,
-  TeamStaffModel,
+  TeamModel,
   CateServiceModel,
   PositionModel
 } from '../../../repositories/postgres/models';
@@ -81,7 +81,7 @@ export class StaffController {
             through: { attributes: [] }
           },
           {
-            model: TeamStaffModel,
+            model: TeamModel,
             as: 'teamStaff',
             required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
@@ -243,7 +243,7 @@ export class StaffController {
           ...query.include,
           ...[
             {
-              model: TeamStaffModel,
+              model: TeamModel,
               as: 'teamStaff',
               required: true,
               where: { id: filter.teamStaffIds }
@@ -568,7 +568,7 @@ export class StaffController {
       }
 
       if (req.body.teamStaffId) {
-        const teamStaffId = await TeamStaffModel.findOne({ where: { id: req.body.teamStaffId } });
+        const teamStaffId = await TeamModel.findOne({ where: { id: req.body.teamStaffId } });
         if (!teamStaffId) {
           return next(new CustomError(staffErrorDetails.E_4011('Team staff has been not assign')));
         }
@@ -1697,89 +1697,17 @@ export class StaffController {
         query.where = {
           ...query.where,
           ...{
-            [Op.or]: [
-              Sequelize.literal(`unaccent("TeamStaffModel"."name") ilike unaccent('%${req.query.searchValue}%')`)
-            ]
+            [Op.or]: [Sequelize.literal(`unaccent("TeamModel"."name") ilike unaccent('%${req.query.searchValue}%')`)]
           }
         };
       }
       const teamStaffs = await paginate(
-        TeamStaffModel,
+        TeamModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(teamStaffs));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   *  @swagger
-   * /staff/get-staff-in-team:
-   *   get:
-   *     tags:
-   *       - Staff
-   *     security:
-   *       - Bearer: []
-   *     name: getStaffInTeam
-   *     parameters:
-   *     - in: query
-   *       name: pageNum
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: teamStaffId
-   *       required: true
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public getStaffInTeam = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const teamStaffId = req.query.teamStaffId;
-      const fullPath = req.headers['x-base-url'] + req.originalUrl;
-      const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
-      };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const query: FindOptions = {
-        include: [],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      };
-      query.include = [
-        ...query.include,
-        ...[
-          {
-            model: TeamStaffModel,
-            as: 'teamStaff',
-            required: true,
-            where: { id: teamStaffId, companyId: res.locals.staffPayload.companyId }
-          }
-        ]
-      ];
-      const staffs = await paginate(
-        StaffModel,
-        query,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
-        fullPath
-      );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
       return next(error);
     }
