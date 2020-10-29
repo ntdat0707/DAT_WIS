@@ -294,13 +294,18 @@ export class AppointmentController extends BaseController {
           }
         });
         const appointmentDetailId = uuidv4();
+        let statusAppDetail = EAppointmentStatus.NEW;
+        if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+          statusAppDetail = EAppointmentStatus.CONFIRMED;
+        }
         appointmentDetailData.push({
           id: appointmentDetailId,
           appointmentId,
           serviceId: appointmentDetails[i].serviceId,
           resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
           startTime: appointmentDetails[i].startTime,
-          duration: appointmentDetails[i].duration
+          duration: appointmentDetails[i].duration,
+          status: statusAppDetail
         });
         for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
           appointmentDetailStaffData.push({
@@ -1063,13 +1068,18 @@ export class AppointmentController extends BaseController {
             const appointmentDetailStaffData = [];
             for (let index = 0; index < appointmentDetails.length; index++) {
               const appointmentDetailId = uuidv4();
+              let statusAppDetail = EAppointmentStatus.NEW;
+              if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+                statusAppDetail = EAppointmentStatus.CONFIRMED;
+              }
               appointmentDetailData.push({
                 id: appointmentDetailId,
                 appointmentId,
                 serviceId: appointmentDetails[index].serviceId,
                 resourceId: appointmentDetails[index].resourceId ? appointmentDetails[index].resourceId : null,
                 startTime: appointmentDetails[index].startTime,
-                duration: appointmentDetails[index].duration
+                duration: appointmentDetails[index].duration,
+                status: statusAppDetail
               });
               for (let j = 0; j < appointmentDetails[index].staffIds.length; j++) {
                 appointmentDetailStaffData.push({
@@ -1110,13 +1120,18 @@ export class AppointmentController extends BaseController {
         const appointmentDetailStaffData = [];
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
+          let statusAppDetail = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusAppDetail = EAppointmentStatus.CONFIRMED;
+          }
           appointmentDetailData.push({
             id: appointmentDetailId,
             appointmentId: data.appointmentId,
             serviceId: appointmentDetails[i].serviceId,
             resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
             startTime: appointmentDetails[i].startTime,
-            duration: appointmentDetails[i].duration
+            duration: appointmentDetails[i].duration,
+            status: statusAppDetail
           });
           for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
             appointmentDetailStaffData.push({
@@ -1132,6 +1147,7 @@ export class AppointmentController extends BaseController {
         await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       }
       if (data.updateAppointmentDetails && data.updateAppointmentDetails.length > 0) {
+        const appDetailStatus = [];
         for (let i = 0; i < data.updateAppointmentDetails.length; i++) {
           const appointmentDetail = await AppointmentDetailModel.findOne({
             where: {
@@ -1150,6 +1166,7 @@ export class AppointmentController extends BaseController {
               )
             );
           }
+          appDetailStatus.push(appointmentDetail.status);
           await AppointmentDetailModel.destroy({
             where: { id: data.updateAppointmentDetails[i].appointmentDetailId },
             transaction
@@ -1164,13 +1181,21 @@ export class AppointmentController extends BaseController {
         const appointmentDetails = await this.verifyAppointmentDetails(data.updateAppointmentDetails, data.locationId);
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
+          let statusAppDetail = appDetailStatus[i];
+          if (
+            appDetailStatus[i] === EAppointmentStatus.NEW &&
+            req.body.bookingSource === EAppointmentBookingSource.WALK_IN
+          ) {
+            statusAppDetail = EAppointmentStatus.CONFIRMED;
+          }
           appointmentDetailData.push({
             id: appointmentDetailId,
             appointmentId: data.appointmentId,
             serviceId: appointmentDetails[i].serviceId,
             resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
             startTime: appointmentDetails[i].startTime,
-            duration: appointmentDetails[i].duration
+            duration: appointmentDetails[i].duration,
+            status: statusAppDetail
           });
           for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
             appointmentDetailStaffData.push({
