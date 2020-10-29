@@ -10,11 +10,6 @@ const staffIdSchema = Joi.string()
 
 export const createStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
-  locationId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .label('locationId'),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
   email: Joi.string().allow(null, '').label('email'),

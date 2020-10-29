@@ -292,10 +292,6 @@ export class StaffController {
    *       type: file
    *       description: The file to upload.
    *     - in: "formData"
-   *       name: locationId
-   *       type: string
-   *       required: true
-   *     - in: "formData"
    *       name: teamStaffId
    *       type: string
    *     - in: "formData"
@@ -375,14 +371,6 @@ export class StaffController {
         id: uuidv4()
       };
 
-      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-
       if (req.body.workingLocationIds) {
         const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
         if (diff.length) {
@@ -407,6 +395,51 @@ export class StaffController {
           staffId: profile.id
         }));
         await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
+
+        for (let i = 0; i < req.body.workingLocationIds.length; i++) {
+          const getMaxIndex: number = await PositionModel.max('index', {
+            where: {
+              ownerId: res.locals.staffPayload.id,
+              locationId: req.body.workingLocationIds[i]
+            }
+          });
+
+          if (getMaxIndex) {
+            const position = {
+              ownerId: res.locals.staffPayload.id,
+              staffId: profile.id,
+              index: getMaxIndex + 1,
+              locationId: req.body.workingLocationIds[i]
+            };
+            await PositionModel.create(position, { transaction });
+          } else {
+            const staffs = await StaffModel.findAll({
+              include: [
+                {
+                  model: LocationModel,
+                  as: 'workingLocations',
+                  required: true,
+                  where: { id: req.body.workingLocationIds[i] }
+                }
+              ]
+            });
+
+            const dataPosition = staffs.map((x, index) => ({
+              ownerId: res.locals.staffPayload.id,
+              staffId: x.id,
+              index: index,
+              locationId: req.body.workingLocationIds[i]
+            }));
+
+            dataPosition.push({
+              ownerId: res.locals.staffPayload.id,
+              staffId: profile.id,
+              index: staffs.length,
+              locationId: req.body.workingLocationIds[i]
+            });
+            await PositionModel.bulkCreate(dataPosition, { transaction });
+          }
+        }
       }
       if (req.body.serviceIds) {
         const serviceStaffData = (req.body.serviceIds as []).map((x) => ({
@@ -416,18 +449,6 @@ export class StaffController {
         await ServiceStaffModel.bulkCreate(serviceStaffData, { transaction });
       }
 
-      const getMaxIndex: number = await PositionModel.max('index', {
-        where: {
-          ownerId: res.locals.staffPayload.id
-        }
-      });
-      const position = {
-        ownerId: res.locals.staffPayload.id,
-        staffId: profile.id,
-        index: getMaxIndex + 1,
-        locationId: req.body.locationId
-      };
-      await PositionModel.create(position, { transaction });
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
@@ -1741,7 +1762,6 @@ export class StaffController {
         include: [],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       };
-
       query.include = [
         ...query.include,
         ...[
@@ -1753,7 +1773,6 @@ export class StaffController {
           }
         ]
       ];
-
       const staffs = await paginate(
         StaffModel,
         query,

@@ -4,7 +4,11 @@ import { EGender, ESocialType, ESource, ELabel, EContactType } from '../../../..
 const createCustomerWisereSchema = Joi.object({
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
-  gender: Joi.number().integer().allow(null).valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
+  gender: Joi.number()
+    .integer()
+    .allow(null)
+    .valid(...Object.keys(EGender))
+    .label('gender'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   email: Joi.string().allow(null).email().label('email'),
   birthDate: Joi.string().isoDate().label('birthDate'),
@@ -12,10 +16,10 @@ const createCustomerWisereSchema = Joi.object({
   address: Joi.string().label('address'),
   color: Joi.string().regex(/^#[0-9A-F]{6}$/i),
   source: Joi.string()
-    .valid(ESource.FACEBOOK, ESource.MARKETPLACE, ESource.OTHER, ESource.SHOPEE, ESource.WISERE, ESource.ZALO)
+    .valid(...Object.keys(ESource))
     .label('source'),
   label: Joi.string()
-    .valid(ELabel.COLD_LEAD, ELabel.CUSTOMER, ELabel.HOT_LEAD, ELabel.NONE, ELabel.WARM_LEAD)
+    .valid(...Object.keys(ELabel))
     .label('label'),
   note: Joi.string().label('note'),
   job: Joi.string().label('job'),

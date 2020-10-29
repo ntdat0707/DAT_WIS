@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op, Sequelize } from 'sequelize';
+import { FindOptions, Op, Sequelize, Transaction } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 require('dotenv').config();
@@ -13,7 +13,12 @@ import {
   bookingErrorDetails
 } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { EAppointmentStatus, AppointmentStatusRules, AppointmentBookingSource } from '../../../utils/consts';
+import {
+  EAppointmentStatus,
+  AppointmentStatusRules,
+  AppointmentBookingSource,
+  StatusPipelineStage
+} from '../../../utils/consts';
 import {
   sequelize,
   StaffModel,
@@ -863,7 +868,7 @@ export class AppointmentController extends BaseController {
    *         description: Internal server errors
    */
   public updateAppointment = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction;
+    let transaction: Transaction;
     try {
       const data = {
         locationId: req.body.locationId,
@@ -889,6 +894,15 @@ export class AppointmentController extends BaseController {
           new CustomError(
             bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
             HttpStatus.NOT_FOUND
+          )
+        );
+      }
+
+      if (appointment.status === EAppointmentStatus.COMPLETED || appointment.status === EAppointmentStatus.CANCEL) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2013(`Appointment ${data.appointmentId} ${appointment.status}`),
+            HttpStatus.BAD_REQUEST
           )
         );
       }
@@ -982,7 +996,7 @@ export class AppointmentController extends BaseController {
               customerWisereId: data.createNewAppointments[i].customerWisereId
                 ? data.createNewAppointments[i].customerWisereId
                 : null,
-              bookingSource: req.body.bookingSource,
+              bookingSource: data.bookingSource,
               appointmentGroupId: appointmentGroupId,
               isPrimary: false,
               date: data.date,
@@ -1134,13 +1148,23 @@ export class AppointmentController extends BaseController {
           });
         }
       }
+      let appointmentCondition = {};
+      if (appointmentGroupId) {
+        appointmentCondition = {
+          appointmentGroupId: appointmentGroupId
+        };
+      } else {
+        appointmentCondition = {
+          id: data.appointmentId
+        };
+      }
       const query: FindOptions = {
         include: [
           {
             model: AppointmentModel,
             as: 'appointment',
             required: true,
-            where: { id: data.appointmentId },
+            where: appointmentCondition,
             include: [
               {
                 model: LocationModel,
@@ -1180,6 +1204,9 @@ export class AppointmentController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      if (data.customerWisereId) {
+        await this.convertApptToDeal(listAppointmentDetail, companyId, res.locals.staffPayload.id, transaction);
+      }
       await transaction.commit();
       //commit transaction
       const isPortReachable = require('is-port-reachable');
@@ -1657,39 +1684,75 @@ export class AppointmentController extends BaseController {
   };
 
   public async convertApptToDeal(listAppointmentDetail: any, companyId: any, staffId: any, transaction: any) {
-    const dataDeal: any = new DealModel();
-    const appointment = listAppointmentDetail[0].appointment;
-    const title =
-      'Appt on ' +
-      appointment.date.getDate() +
-      (appointment.date.getMonth() + 1) +
-      '•' +
-      appointment.customerWisere.phone;
-    dataDeal.setDataValue('dealTitle', title);
-    dataDeal.setDataValue('source', appointment.bookingSource);
-    dataDeal.setDataValue('customerWisereId', appointment.customerWisere.id);
-    dataDeal.setDataValue('appointmentId', appointment.id);
-    dataDeal.setDataValue('expectedCloseDate', appointment.date);
-    let amount = 0;
-    listAppointmentDetail.forEach((appointmentDetail: any) => {
-      amount += appointmentDetail.service.salePrice;
+    let appointmentHost: any;
+    for (let i = 0; i < listAppointmentDetail.length; i++) {
+      if (listAppointmentDetail[i].appointment.isPrimary) {
+        appointmentHost = listAppointmentDetail[i].appointment;
+      }
+    }
+    const existDeal = await DealModel.findOne({
+      where: {
+        appointmentId: appointmentHost.id,
+        status: StatusPipelineStage.OPEN
+      }
     });
-    dataDeal.setDataValue('amount', amount);
-    dataDeal.setDataValue('currency', 'VND');
-    const pipeline: any = await PipelineModel.findOne({
-      where: { companyId: companyId, name: 'Appointment' },
-      include: [
-        {
-          model: PipelineStageModel,
-          as: 'pipelineStages',
-          where: { order: '1' }
-        }
-      ]
-    });
-    if (pipeline) {
-      dataDeal.setDataValue('pipelineStageId', pipeline.pipelineStages[0].id);
-      dataDeal.setDataValue('createdBy', staffId);
-      await DealModel.create(dataDeal.dataValues, transaction);
+
+    if (existDeal) {
+      const title =
+        'Appt on ' +
+        appointmentHost.date.getDate() +
+        (appointmentHost.date.getMonth() + 1) +
+        ' • ' +
+        appointmentHost.customerWisere.phone;
+      existDeal.appointmentId = appointmentHost.id;
+      existDeal.source = appointmentHost.bookingSource;
+      existDeal.customerWisereId = appointmentHost.customerWisereId;
+      existDeal.dealTitle = title;
+      existDeal.expectedCloseDate = appointmentHost.date;
+      let amount = 0;
+      listAppointmentDetail.forEach((appointmentDetail: any) => {
+        amount += appointmentDetail.service.salePrice;
+      });
+      existDeal.amount = amount;
+      existDeal.currency = 'VND';
+      existDeal.createdBy = staffId;
+      existDeal.ownerId = staffId;
+      await existDeal.save(transaction);
+    } else {
+      const newDeal: any = {
+        appointmentId: appointmentHost.id,
+        source: appointmentHost.bookingSource,
+        customerWisereId: appointmentHost.customerWisereId,
+        dealTitle:
+          'Appt on ' +
+          appointmentHost.date.getDate() +
+          (appointmentHost.date.getMonth() + 1) +
+          ' • ' +
+          appointmentHost.customerWisere.phone,
+        expectedCloseDate: appointmentHost.date,
+        currency: 'VND',
+        createdBy: staffId,
+        ownerId: staffId
+      };
+      let amount = 0;
+      listAppointmentDetail.forEach((appointmentDetail: any) => {
+        amount += appointmentDetail.service.salePrice;
+      });
+      newDeal.amount = amount;
+      const pipeline: any = await PipelineModel.findOne({
+        where: { companyId: companyId, name: 'Appointment' },
+        include: [
+          {
+            model: PipelineStageModel,
+            as: 'pipelineStages',
+            where: { order: 1 }
+          }
+        ]
+      });
+      if (pipeline) {
+        newDeal.pipelineStageId = pipeline.pipelineStages[0].id;
+        await DealModel.create(newDeal, transaction);
+      }
     }
   }
 
