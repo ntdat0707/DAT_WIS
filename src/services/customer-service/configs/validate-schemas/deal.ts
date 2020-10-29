@@ -103,7 +103,7 @@ const createDealSchema = Joi.object({
   currency: Joi.string().required().label('currency'),
   probability: Joi.number().max(500).allow(null).label('probability'),
   source: Joi.string().allow(null, '').label('source'),
-  expectedCloseDate: Joi.string().isoDate().allow(null).label('expectedCloseDate'),
+  expectedCloseDate: Joi.string().isoDate().required().label('expectedCloseDate'),
   note: Joi.string().allow(null, '').label('note'),
   pipelineStageId: Joi.string()
     .guid({
@@ -138,7 +138,7 @@ const updateDealSchema = Joi.object({
   currency: Joi.string().required().label('currency'),
   probability: Joi.number().max(500).allow(null).label('probability'),
   source: Joi.string().allow(null, '').label('source'),
-  expectedCloseDate: Joi.string().isoDate().allow(null).label('expectedCloseDate'),
+  expectedCloseDate: Joi.string().isoDate().required().label('expectedCloseDate'),
   note: Joi.string().allow(null, '').label('note'),
   pipelineStageId: Joi.string()
     .guid({
@@ -183,7 +183,7 @@ const movePipelineStageIdSchema = Joi.string()
   .label('movePipelineStageId');
 
 const statusDealSchema = Joi.string()
-  .valid(StatusPipelineStage.WON, StatusPipelineStage.LOST)
+  .valid(StatusPipelineStage.OPEN, StatusPipelineStage.WON, StatusPipelineStage.LOST)
   .required()
   .label('status');
 
