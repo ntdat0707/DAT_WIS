@@ -32,7 +32,7 @@ PaymentMethodModel.init(
     paymentTypeNumber: {
       field: 'payment_type_number',
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',

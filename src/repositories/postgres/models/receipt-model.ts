@@ -4,7 +4,7 @@ import sequelize from '../configs/db-connector';
 class ReceiptModel extends Model {
   public id: string;
   public code: string;
-  public customerId!: string;
+  public customerWisereId!: string;
   public staffId!: string;
   public amount: number;
   public paymentId!: string;
@@ -28,8 +28,8 @@ ReceiptModel.init(
       type: DataTypes.STRING,
       allowNull: false
     },
-    customerId: {
-      field: 'customer_id',
+    customerWisereId: {
+      field: 'customer_wisere_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },

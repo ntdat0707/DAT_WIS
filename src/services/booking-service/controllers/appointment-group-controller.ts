@@ -28,6 +28,7 @@ import {
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
 import { IRequestOptions, request } from '../../../utils/request';
+import { AppointmentBookingSource } from '../../../utils/consts';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -54,9 +55,12 @@ export class AppointmentGroupController extends BaseController {
    *       required:
    *           - locationId
    *           - date
+   *           - bookingSource
    *           - appointments
    *       properties:
    *           locationId:
+   *               type: string
+   *           bookingSource:
    *               type: string
    *           date:
    *               type: string
@@ -100,7 +104,8 @@ export class AppointmentGroupController extends BaseController {
       const data = {
         locationId: req.body.locationId,
         date: req.body.date,
-        appointments: req.body.appointments
+        appointments: req.body.appointments,
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, createAppointmentGroupSchema);
       if (validateErrors) {
@@ -161,7 +166,8 @@ export class AppointmentGroupController extends BaseController {
           date: data.date,
           customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
           isPrimary: apptData.isPrimary === true ? true : false,
-          appointmentCode: appointmentCode
+          appointmentCode: appointmentCode,
+          bookingSource: data.bookingSource
         });
 
         //appointment detail data
@@ -455,6 +461,8 @@ export class AppointmentGroupController extends BaseController {
    *       properties:
    *           locationId:
    *               type: string
+   *           bookingSource:
+   *               type: string
    *           date:
    *               type: string
    *               format: date-time
@@ -510,7 +518,8 @@ export class AppointmentGroupController extends BaseController {
         date: req.body.date,
         createNewAppointments: req.body.createNewAppointments,
         updateAppointments: req.body.updateAppointments,
-        deleteAppointments: req.body.deleteAppointments
+        deleteAppointments: req.body.deleteAppointments,
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, updateAppointmentGroupSchema);
       if (validateErrors) {
@@ -654,7 +663,8 @@ export class AppointmentGroupController extends BaseController {
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
-            appointmentCode: appointmentCode
+            appointmentCode: appointmentCode,
+            bookingSource: data.bookingSource
           });
 
           //appointment detail data
@@ -747,7 +757,8 @@ export class AppointmentGroupController extends BaseController {
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
-            appointmentCode: arrApptCode[index]
+            appointmentCode: arrApptCode[index],
+            bookingSource: data.bookingSource
           });
           index++;
 

@@ -1,12 +1,11 @@
 import Joi from 'joi';
-import { ESourceType } from '../../../../utils/consts';
+import { EInvoiceSourceType } from '../../../../utils/consts';
 
 const createInvoiceSchema = Joi.object({
   invoiceId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .required()
     .label('invoiceId'),
   locationId: Joi.string()
     .guid({
@@ -27,7 +26,13 @@ const createInvoiceSchema = Joi.object({
     .allow(null)
     .label('customerWisereId'),
   source: Joi.string()
-    .valid(ESourceType.POS, ESourceType.WEBSITE, ESourceType.FACEBOOK, ESourceType.MARKETPLACE, ESourceType.OTHER)
+    .valid(
+      EInvoiceSourceType.POS,
+      EInvoiceSourceType.WEBSITE,
+      EInvoiceSourceType.FACEBOOK,
+      EInvoiceSourceType.MARKETPLACE,
+      EInvoiceSourceType.OTHER
+    )
     .allow(null, '')
     .label('source'),
   note: Joi.string().allow(null, '').label('note'),
@@ -130,7 +135,13 @@ const createInvoiceLogSchema = Joi.object({
           .allow(null)
           .label('customerWisereId'),
         source: Joi.string()
-          .valid(ESourceType.POS, ESourceType.WEBSITE, ESourceType.FACEBOOK, ESourceType.MARKETPLACE, ESourceType.OTHER)
+          .valid(
+            EInvoiceSourceType.POS,
+            EInvoiceSourceType.WEBSITE,
+            EInvoiceSourceType.FACEBOOK,
+            EInvoiceSourceType.MARKETPLACE,
+            EInvoiceSourceType.OTHER
+          )
           .allow(null, '')
           .label('source'),
         note: Joi.string().allow(null, '').label('note'),

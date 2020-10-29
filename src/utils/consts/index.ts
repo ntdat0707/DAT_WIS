@@ -116,8 +116,9 @@ export enum BusinessType {
 }
 
 export enum AppointmentBookingSource {
-  STAFF = 'STAFF',
-  MARKETPLACE = 'MARKETPLACE'
+  SCHEDULED = 'SCHEDULED',
+  MARKETPLACE = 'MARKETPLACE',
+  WALK_IN = 'WALK_IN'
 }
 
 export enum StatusPipelineStage {
@@ -150,7 +151,7 @@ export enum EContactType {
   MOBILE = 'mobile'
 }
 
-export enum ESourceType {
+export enum EInvoiceSourceType {
   POS = 'pos',
   WEBSITE = 'website',
   FACEBOOK = 'facebook',

@@ -40,9 +40,7 @@ const createAppointmentSchema = Joi.object({
     })
     .label('customerWisereId'),
   date: Joi.string().isoDate().required(),
-  bookingSource: Joi.string()
-    .valid(...Object.keys(AppointmentBookingSource))
-    .required(),
+  bookingSource: Joi.string().valid(AppointmentBookingSource.SCHEDULED, AppointmentBookingSource.WALK_IN).required(),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
   appointmentGroupId: Joi.string()
     .guid({
@@ -64,9 +62,7 @@ const customerCreateAppointmentSchema = Joi.object({
     .required()
     .label('locationId'),
   date: Joi.string().isoDate().required(),
-  bookingSource: Joi.string()
-    .valid(...Object.keys(AppointmentBookingSource))
-    .required(),
+  bookingSource: Joi.string().valid(AppointmentBookingSource.MARKETPLACE).required(),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
   appointmentGroupId: Joi.string()
     .guid({
@@ -326,6 +322,7 @@ const createAppointmentGroupSchema = Joi.object({
     })
     .required()
     .label('locationId'),
+  bookingSource: Joi.string().valid(AppointmentBookingSource.SCHEDULED, AppointmentBookingSource.WALK_IN),
   appointments: Joi.array().min(1).max(50).items(createAppointmentInGroupSchema).label('appointments')
 });
 const appointmentGroupIdSchema = Joi.string()
@@ -347,6 +344,7 @@ const updateAppointmentInGroupSchema = Joi.object({
       version: ['uuidv4']
     })
     .label('customerWisereId'),
+  bookingSource: Joi.string().valid(AppointmentBookingSource.SCHEDULED, AppointmentBookingSource.WALK_IN),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
   isPrimary: Joi.bool().required().label('isPrimary')
 });
@@ -406,6 +404,26 @@ const ratingAppointmentSchema = Joi.object({
   contentReview: Joi.string().required().label('contentReview')
 });
 
+const updateAppointmentStatusDetailSchema = Joi.object({
+  appointmentDetailId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('appointmentDetailId'),
+  status: Joi.string()
+    .required()
+    .valid(
+      EAppointmentStatus.NEW,
+      EAppointmentStatus.CONFIRMED,
+      EAppointmentStatus.IN_SERVICE,
+      EAppointmentStatus.ARRIVED,
+      EAppointmentStatus.COMPLETED,
+      EAppointmentStatus.CANCEL,
+      EAppointmentStatus.NO_SHOW
+    )
+    .label('status')
+});
 export {
   createAppointmentDetailSchema,
   createAppointmentSchema,
@@ -423,5 +441,6 @@ export {
   updateAppointmentGroupSchema,
   appointmentCancelSchema,
   appointmentRescheduleSchema,
-  ratingAppointmentSchema
+  ratingAppointmentSchema,
+  updateAppointmentStatusDetailSchema
 };

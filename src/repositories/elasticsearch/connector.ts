@@ -35,4 +35,4 @@ elasticsearchClient.ping(
   }
 );
 
-export default elasticsearchClient;
+export { elasticsearchClient };

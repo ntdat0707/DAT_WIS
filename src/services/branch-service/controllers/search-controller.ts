@@ -43,7 +43,7 @@ import {
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
 import _ from 'lodash';
-import elasticsearchClient from '../../../repositories/elasticsearch';
+import { elasticsearchClient } from '../../../repositories/elasticsearch';
 import { SearchParams } from 'elasticsearch';
 
 export class SearchController {
