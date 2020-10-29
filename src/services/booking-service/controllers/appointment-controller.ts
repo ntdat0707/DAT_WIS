@@ -34,7 +34,8 @@ import {
   RecentBookingModel,
   DealModel,
   PipelineModel,
-  PipelineStageModel
+  PipelineStageModel,
+  LocationImageModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -675,11 +676,57 @@ export class AppointmentController extends BaseController {
             await AppointmentModel.update({ isPrimary: true }, { where: { id: appointmentInGroup.id }, transaction });
           }
         }
+        const deal = await DealModel.findOne({ where: { appointmentId: data.appointmentId } });
+        if (deal) {
+          await deal.update({ status: StatusPipelineStage.LOST }, { transaction });
+        }
       } else {
         await AppointmentModel.update(
           { status: data.status },
           { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
         );
+        const deal = await DealModel.findOne({ where: { appointmentId: data.appointmentId } });
+        if (deal) {
+          if (data.status === EAppointmentStatus.NEW) {
+            const pipeline: any = await PipelineModel.findOne({
+              where: { companyId: res.locals.staffPayload.companyId, name: 'Appointment' },
+              include: [
+                {
+                  model: PipelineStageModel,
+                  as: 'pipelineStages',
+                  where: { order: 1 }
+                }
+              ]
+            });
+            if (pipeline) {
+              await deal.update({ pipelineStageId: pipeline.pipelineStages[0].id }, { transaction });
+            }
+          }
+          if (data.status === EAppointmentStatus.CONFIRMED) {
+            const pipeline: any = await PipelineModel.findOne({
+              where: { companyId: res.locals.staffPayload.companyId, name: 'Appointment' },
+              include: [
+                {
+                  model: PipelineStageModel,
+                  as: 'pipelineStages',
+                  where: { order: 3 }
+                }
+              ]
+            });
+            if (pipeline) {
+              await deal.update({ pipelineStageId: pipeline.pipelineStages[0].id }, { transaction });
+            }
+          }
+          if (
+            data.status === EAppointmentStatus.ARRIVED ||
+            data.status === EAppointmentStatus.IN_SERVICE ||
+            data.status === EAppointmentStatus.COMPLETED
+          ) {
+            if (deal.status === StatusPipelineStage.OPEN) {
+              await deal.update({ status: StatusPipelineStage.WON }, { transaction });
+            }
+          }
+        }
       }
       const newAppointmentStatus = await AppointmentModel.findOne({
         where: { id: data.appointmentId, locationId: workingLocationIds },
@@ -1701,7 +1748,8 @@ export class AppointmentController extends BaseController {
       const title =
         'Appt on ' +
         appointmentHost.date.getDate() +
-        (appointmentHost.date.getMonth() + 1) +
+        ' ' +
+        appointmentHost.date.toLocaleString('en-us', { month: 'short' }) +
         ' • ' +
         appointmentHost.customerWisere.phone;
       existDeal.appointmentId = appointmentHost.id;
@@ -1726,7 +1774,8 @@ export class AppointmentController extends BaseController {
         dealTitle:
           'Appt on ' +
           appointmentHost.date.getDate() +
-          (appointmentHost.date.getMonth() + 1) +
+          ' ' +
+          appointmentHost.date.toLocaleString('en-us', { month: 'short' }) +
           ' • ' +
           appointmentHost.customerWisere.phone,
         expectedCloseDate: appointmentHost.date,
@@ -1751,7 +1800,7 @@ export class AppointmentController extends BaseController {
       });
       if (pipeline) {
         newDeal.pipelineStageId = pipeline.pipelineStages[0].id;
-        await DealModel.create(newDeal, transaction);
+        await DealModel.create(newDeal, { transaction });
       }
     }
   }
@@ -1814,7 +1863,15 @@ export class AppointmentController extends BaseController {
             model: LocationModel,
             as: 'location',
             attributes: ['id', 'name', 'address'],
-            required: false
+            required: false,
+            include: [
+              {
+                model: LocationImageModel,
+                as: 'locationImages',
+                attributes: ['id', 'path', 'isAvatar'],
+                required: false
+              }
+            ]
           }
         ],
         order: [Sequelize.literal('"appointmentDetails"."start_time"')]
@@ -1857,7 +1914,15 @@ export class AppointmentController extends BaseController {
             model: LocationModel,
             as: 'location',
             attributes: ['id', 'name', 'address'],
-            required: false
+            required: false,
+            include: [
+              {
+                model: LocationImageModel,
+                as: 'locationImages',
+                attributes: ['id', 'path', 'isAvatar'],
+                required: false
+              }
+            ]
           }
         ],
         order: [Sequelize.literal('"appointmentDetails"."start_time" DESC')]
