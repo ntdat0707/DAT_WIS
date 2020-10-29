@@ -26,7 +26,7 @@ PaymentMethodModel.init(
     },
     paymentType: {
       field: 'payment_type',
-      type: DataTypes.ENUM(...Object.keys(EPaymentMethodType)),
+      type: DataTypes.ENUM(...Object.values(EPaymentMethodType)),
       defaultValue: EPaymentMethodType.CASH
     },
     paymentTypeNumber: {

@@ -28,7 +28,7 @@ import {
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
 import { IRequestOptions, request } from '../../../utils/request';
-import { AppointmentBookingSource } from '../../../utils/consts';
+import { EAppointmentBookingSource } from '../../../utils/consts';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -105,7 +105,7 @@ export class AppointmentGroupController extends BaseController {
         locationId: req.body.locationId,
         date: req.body.date,
         appointments: req.body.appointments,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, createAppointmentGroupSchema);
       if (validateErrors) {
@@ -519,7 +519,7 @@ export class AppointmentGroupController extends BaseController {
         createNewAppointments: req.body.createNewAppointments,
         updateAppointments: req.body.updateAppointments,
         deleteAppointments: req.body.deleteAppointments,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, updateAppointmentGroupSchema);
       if (validateErrors) {

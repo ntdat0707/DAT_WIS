@@ -52,7 +52,7 @@ InvoiceModel.init(
     },
     source: {
       field: 'source',
-      type: DataTypes.ENUM(...Object.keys(EInvoiceSourceType)),
+      type: DataTypes.ENUM(...Object.values(EInvoiceSourceType)),
       defaultValue: EInvoiceSourceType.POS
     },
     discountId: {
@@ -67,7 +67,7 @@ InvoiceModel.init(
     },
     status: {
       field: 'status',
-      type: DataTypes.ENUM(...Object.keys(EBalanceType)),
+      type: DataTypes.ENUM(...Object.values(EBalanceType)),
       defaultValue: EBalanceType.UNPAID
     },
     balance: {

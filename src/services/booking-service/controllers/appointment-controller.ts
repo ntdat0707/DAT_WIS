@@ -16,8 +16,8 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   EAppointmentStatus,
   AppointmentStatusRules,
-  AppointmentBookingSource,
-  StatusPipelineStage
+  EAppointmentBookingSource,
+  EStatusPipelineStage
 } from '../../../utils/consts';
 import {
   sequelize,
@@ -150,7 +150,7 @@ export class AppointmentController extends BaseController {
         customerWisereId: req.body.customerWisereId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED,
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED,
         appointmentGroupId: req.body.appointmentGroupId,
         relatedAppointmentId: req.body.relatedAppointmentId
       };
@@ -879,7 +879,7 @@ export class AppointmentController extends BaseController {
         createNewAppointments: req.body.createNewAppointments,
         customerWisereId: req.body.customerWisereId,
         date: req.body.date,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
 
       const validateErrors = validate(data, updateAppointmentSchema);
@@ -917,7 +917,7 @@ export class AppointmentController extends BaseController {
       }
       // Check customer wisere exist
       if (data.customerWisereId) {
-        if (appointment.bookingSource === AppointmentBookingSource.MARKETPLACE) {
+        if (appointment.bookingSource === EAppointmentBookingSource.MARKETPLACE) {
           return next(
             new CustomError(
               bookingErrorDetails.E_2009(
@@ -1463,7 +1463,7 @@ export class AppointmentController extends BaseController {
         locationId: req.body.locationId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
-        bookingSource: AppointmentBookingSource.MARKETPLACE,
+        bookingSource: EAppointmentBookingSource.MARKETPLACE,
         appointmentGroupId: req.body.appointmentGroupId,
         relatedAppointmentId: req.body.relatedAppointmentId
       };
@@ -1693,7 +1693,7 @@ export class AppointmentController extends BaseController {
     const existDeal = await DealModel.findOne({
       where: {
         appointmentId: appointmentHost.id,
-        status: StatusPipelineStage.OPEN
+        status: EStatusPipelineStage.OPEN
       }
     });
 
@@ -1780,7 +1780,7 @@ export class AppointmentController extends BaseController {
         attributes: ['id', 'status', 'customerId'],
         where: {
           customerId: customerId,
-          bookingSource: AppointmentBookingSource.MARKETPLACE,
+          bookingSource: EAppointmentBookingSource.MARKETPLACE,
           status: {
             [Op.and]: [
               { [Op.ne]: EAppointmentStatus.CANCEL },
@@ -1823,7 +1823,7 @@ export class AppointmentController extends BaseController {
         attributes: ['id', 'status', 'customerId', 'contentReview', 'numberRating'],
         where: {
           customerId: customerId,
-          bookingSource: AppointmentBookingSource.MARKETPLACE,
+          bookingSource: EAppointmentBookingSource.MARKETPLACE,
           status: {
             [Op.or]: [
               { [Op.eq]: EAppointmentStatus.CANCEL },

@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EAppointmentStatus, AppointmentBookingSource } from '../../../../utils/consts';
+import { EAppointmentStatus, EAppointmentBookingSource } from '../../../../utils/consts';
 
 const createAppointmentDetailSchema = Joi.object({
   serviceId: Joi.string()
@@ -40,7 +40,7 @@ const createAppointmentSchema = Joi.object({
     })
     .label('customerWisereId'),
   date: Joi.string().isoDate().required(),
-  bookingSource: Joi.string().valid(AppointmentBookingSource.SCHEDULED, AppointmentBookingSource.WALK_IN).required(),
+  bookingSource: Joi.string().valid(EAppointmentBookingSource.SCHEDULED, EAppointmentBookingSource.WALK_IN).required(),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
   appointmentGroupId: Joi.string()
     .guid({
@@ -62,7 +62,7 @@ const customerCreateAppointmentSchema = Joi.object({
     .required()
     .label('locationId'),
   date: Joi.string().isoDate().required(),
-  bookingSource: Joi.string().valid(AppointmentBookingSource.MARKETPLACE).required(),
+  bookingSource: Joi.string().valid(EAppointmentBookingSource.MARKETPLACE).required(),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
   appointmentGroupId: Joi.string()
     .guid({
@@ -121,15 +121,7 @@ const updateAppointmentStatusSchema = Joi.object({
     .label('appointmentId'),
   status: Joi.string()
     .required()
-    .valid(
-      EAppointmentStatus.NEW,
-      EAppointmentStatus.CONFIRMED,
-      EAppointmentStatus.IN_SERVICE,
-      EAppointmentStatus.ARRIVED,
-      EAppointmentStatus.COMPLETED,
-      EAppointmentStatus.CANCEL,
-      EAppointmentStatus.NO_SHOW
-    )
+    .valid(...Object.values(EAppointmentStatus))
     .label('status')
 });
 
@@ -154,7 +146,7 @@ const updateAppointmentSchema = Joi.object({
     .required()
     .label('locationId'),
   date: Joi.string().isoDate(),
-  bookingSource: Joi.string().valid(...Object.keys(AppointmentBookingSource)),
+  bookingSource: Joi.string().valid(...Object.values(EAppointmentBookingSource)),
   createNewAppointmentDetails: Joi.array()
     .items(
       Joi.object({
@@ -322,7 +314,7 @@ const createAppointmentGroupSchema = Joi.object({
     })
     .required()
     .label('locationId'),
-  bookingSource: Joi.string().valid(AppointmentBookingSource.SCHEDULED, AppointmentBookingSource.WALK_IN),
+  bookingSource: Joi.string().valid(EAppointmentBookingSource.SCHEDULED, EAppointmentBookingSource.WALK_IN),
   appointments: Joi.array().min(1).max(50).items(createAppointmentInGroupSchema).label('appointments')
 });
 const appointmentGroupIdSchema = Joi.string()
@@ -344,7 +336,7 @@ const updateAppointmentInGroupSchema = Joi.object({
       version: ['uuidv4']
     })
     .label('customerWisereId'),
-  bookingSource: Joi.string().valid(AppointmentBookingSource.SCHEDULED, AppointmentBookingSource.WALK_IN),
+  bookingSource: Joi.string().valid(EAppointmentBookingSource.SCHEDULED, EAppointmentBookingSource.WALK_IN),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
   isPrimary: Joi.bool().required().label('isPrimary')
 });
