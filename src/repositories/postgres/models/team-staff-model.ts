@@ -1,17 +1,18 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+import { ETeamStaffType } from '../../../utils/consts';
 
 import sequelize from '../configs/db-connector';
-class TeamModel extends Model {
+class TeamStaffModel extends Model {
   public id: string;
-  public name!: string;
-  public parentId: string;
-  public description: string;
+  public staffId!: string;
+  public teamId!: string;
+  public position: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-TeamModel.init(
+TeamStaffModel.init(
   {
     id: {
       field: 'id',
@@ -19,20 +20,21 @@ TeamModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    name: {
-      field: 'name',
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    parentId: {
-      field: 'parent_id',
+    staffId: {
+      field: 'staff_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    description: {
-      field: 'description',
-      type: DataTypes.STRING,
+    teamId: {
+      field: 'team_id',
+      type: DataTypes.UUIDV4,
       allowNull: false
+    },
+    position: {
+      field: 'position',
+      type: DataTypes.ENUM(...Object.values(ETeamStaffType)),
+      allowNull: false,
+      defaultValue: ETeamStaffType.MEMBER
     },
     createdAt: {
       field: 'created_at',
@@ -53,8 +55,8 @@ TeamModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'team'
+    tableName: 'team_location'
   }
 );
 
-export { TeamModel };
+export { TeamStaffModel };

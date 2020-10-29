@@ -194,3 +194,8 @@ export enum EPaymentMethodType {
   WALLET = 'wallet',
   OTHER = 'other'
 }
+
+export enum ETeamStaffType {
+  MANAGER = 'manager',
+  MEMBER = 'member'
+}
