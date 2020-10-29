@@ -35,6 +35,10 @@ const dealErrorDetails = {
   E_3302(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3302', 'Pipeline is different', detail);
     return e;
+  },
+  E_3303(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3303', 'Can not reopen deal', detail);
+    return e;
   }
 };
 

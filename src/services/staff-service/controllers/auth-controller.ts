@@ -261,18 +261,13 @@ export class AuthController {
         },
         {
           pipelineId: pipelineId4,
-          name: 'Confirmed',
+          name: 'Contact Made',
           order: 2
         },
         {
           pipelineId: pipelineId4,
-          name: 'Purchased',
+          name: 'Confirmed',
           order: 3
-        },
-        {
-          pipelineId: pipelineId4,
-          name: 'Treatment Planning',
-          order: 4
         }
       ];
 
