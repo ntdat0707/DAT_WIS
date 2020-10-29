@@ -9,7 +9,8 @@ import {
   DealModel,
   CompanyModel,
   CustomerWisereModel,
-  StaffModel
+  StaffModel,
+  AppointmentModel
 } from '../../../repositories/postgres/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
@@ -33,7 +34,7 @@ import {
 } from '../../../utils/response-messages/error-details';
 import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
-import { StatusPipelineStage } from '../../../utils/consts';
+import { EAppointmentStatus, StatusPipelineStage } from '../../../utils/consts';
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 export class DealController {
@@ -814,6 +815,7 @@ export class DealController {
    *         description:
    */
   public updateDeal = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
       const dealId = req.params.dealId;
       const data: any = {
@@ -837,12 +839,63 @@ export class DealController {
       if (!deal) {
         throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
       }
-      if (data.status === StatusPipelineStage.WON || data.status === StatusPipelineStage.LOST) {
-        data.closingDate = Date.now();
+      const pipelineStage = await PipelineStageModel.findOne({ where: { id: data.pipelineStageId } });
+      if (!pipelineStage) {
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3201(`pipeline stage ${data.pipelineStageId} not found`),
+          httpStatus.NOT_FOUND
+        );
       }
-      deal = await deal.update(data);
+      if (data.customerWisereId) {
+        const customerWisere = await CustomerWisereModel.findOne({ where: { id: data.customerWisereId } });
+        if (!customerWisere) {
+          throw new CustomError(
+            customerErrorDetails.E_3001(`customerWisereId ${data.customerWisereId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+      }
+      if (deal.appointmentId) {
+        if (
+          (deal.status === StatusPipelineStage.WON || deal.status === StatusPipelineStage.LOST) &&
+          data.status === StatusPipelineStage.OPEN
+        ) {
+          throw new CustomError(dealErrorDetails.E_3303(`can not reopen deal ${dealId} `), httpStatus.BAD_REQUEST);
+        }
+      }
+      let closingDate: any;
+      if (data.status === StatusPipelineStage.WON || data.status === StatusPipelineStage.LOST) {
+        closingDate = Date.now();
+      } else {
+        closingDate = null;
+      }
+      data.closingDate = closingDate;
+      transaction = await sequelize.transaction();
+      if (deal.appointmentId) {
+        let changeStatus: string;
+        if (pipelineStage.order === 1) {
+          changeStatus = EAppointmentStatus.NEW;
+        } else if (pipelineStage.order === 3) {
+          changeStatus = EAppointmentStatus.CONFIRMED;
+        }
+        if (data.status === StatusPipelineStage.LOST) {
+          const appointment = await AppointmentModel.findOne({ where: { id: deal.appointmentId } });
+          if (appointment) {
+            if (appointment.status !== EAppointmentStatus.IN_SERVICE) {
+              changeStatus = EAppointmentStatus.CANCEL;
+            }
+          }
+        }
+        await AppointmentModel.update({ status: changeStatus }, { where: { id: deal.appointmentId }, transaction });
+      }
+      deal = await deal.update(data, transaction);
+      await transaction.commit();
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
     } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
@@ -1094,9 +1147,11 @@ export class DealController {
    *         description:
    */
   public updateStatusDeal = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
       const dealId = req.params.dealId;
-      const validateErrors = validate(req.body.status, statusDealSchema);
+      const status = req.body.status;
+      const validateErrors = validate(status, statusDealSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
@@ -1104,10 +1159,39 @@ export class DealController {
       if (!deal) {
         throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
       }
-      const closingDate = Date.now();
-      deal = await deal.update({ status: req.body.status, closingDate: closingDate });
+      if (deal.appointmentId) {
+        if (
+          (deal.status === StatusPipelineStage.WON || deal.status === StatusPipelineStage.LOST) &&
+          status === StatusPipelineStage.OPEN
+        ) {
+          throw new CustomError(dealErrorDetails.E_3303(`can not reopen deal ${dealId} `), httpStatus.BAD_REQUEST);
+        }
+      }
+      let closingDate: any;
+      if (status === StatusPipelineStage.WON || status === StatusPipelineStage.LOST) {
+        closingDate = Date.now();
+      } else {
+        closingDate = null;
+      }
+      transaction = await sequelize.transaction();
+      if (deal.appointmentId) {
+        if (status === StatusPipelineStage.LOST) {
+          const appointment = await AppointmentModel.findOne({ where: { id: deal.appointmentId } });
+          if (appointment) {
+            if (appointment.status !== EAppointmentStatus.IN_SERVICE) {
+              await appointment.update({ status: EAppointmentStatus.CANCEL }, { transaction });
+            }
+          }
+        }
+      }
+      deal = await deal.update({ status: status, closingDate: closingDate }, { transaction });
+      await transaction.commit();
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
     } catch (error) {
+      // rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
