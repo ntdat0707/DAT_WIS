@@ -872,8 +872,6 @@ export class AppointmentController extends BaseController {
    *               type: string
    *           locationId:
    *               type: string
-   *           bookingSource:
-   *               type: string
    *           date:
    *               type: string
    *               format: date-time
@@ -938,8 +936,7 @@ export class AppointmentController extends BaseController {
         deleteAppointmentDetails: req.body.deleteAppointmentDetails,
         createNewAppointments: req.body.createNewAppointments,
         customerWisereId: req.body.customerWisereId,
-        date: req.body.date,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
+        date: req.body.date
       };
 
       const validateErrors = validate(data, updateAppointmentSchema);
@@ -1056,14 +1053,14 @@ export class AppointmentController extends BaseController {
               customerWisereId: data.createNewAppointments[i].customerWisereId
                 ? data.createNewAppointments[i].customerWisereId
                 : null,
-              bookingSource: data.bookingSource,
+              bookingSource: appointment.bookingSource,
               appointmentGroupId: appointmentGroupId,
               isPrimary: false,
               date: data.date,
               appointmentCode: appointmentCode
             };
 
-            if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            if (appointment.bookingSource === EAppointmentBookingSource.WALK_IN) {
               newAppointmentData.status = EAppointmentStatus.CONFIRMED;
             }
 
@@ -1073,7 +1070,7 @@ export class AppointmentController extends BaseController {
             for (let index = 0; index < appointmentDetails.length; index++) {
               const appointmentDetailId = uuidv4();
               let statusAppDetail = EAppointmentStatus.NEW;
-              if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              if (appointment.bookingSource === EAppointmentBookingSource.WALK_IN) {
                 statusAppDetail = EAppointmentStatus.CONFIRMED;
               }
               appointmentDetailData.push({
@@ -1106,13 +1103,6 @@ export class AppointmentController extends BaseController {
         customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId,
         appointmentGroupId: appointmentGroupId
       };
-
-      if (
-        appointment.status === EAppointmentStatus.NEW &&
-        req.body.bookingSource === EAppointmentBookingSource.WALK_IN
-      ) {
-        appointmentData.status = EAppointmentStatus.CONFIRMED;
-      }
       await AppointmentModel.update(appointmentData, { where: { id: data.appointmentId }, transaction });
 
       if (data.createNewAppointmentDetails && data.createNewAppointmentDetails.length > 0) {
@@ -1125,7 +1115,7 @@ export class AppointmentController extends BaseController {
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
           let statusAppDetail = EAppointmentStatus.NEW;
-          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+          if (appointment.bookingSource === EAppointmentBookingSource.WALK_IN) {
             statusAppDetail = EAppointmentStatus.CONFIRMED;
           }
           appointmentDetailData.push({
@@ -1184,7 +1174,7 @@ export class AppointmentController extends BaseController {
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
           let statusAppDetail = EAppointmentStatus.NEW;
-          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+          if (appointment.bookingSource === EAppointmentBookingSource.WALK_IN) {
             statusAppDetail = EAppointmentStatus.CONFIRMED;
           }
           appointmentDetailData.push({
@@ -1652,9 +1642,7 @@ export class AppointmentController extends BaseController {
 
       const appointmentDetailData: any[] = [];
       const appointmentDetailStaffData = [];
-      // const staffDataNotify: { ids: string[]; time: { start: Date; end?: Date } }[] = [];
-      // const resourceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
-      // const serviceDataNotify: { id: string; time: { start: Date; end?: Date } }[] = [];
+
       const recentBookingData: any = [];
       for (let i = 0; i < appointmentDetails.length; i++) {
         const appointmentDetailId = uuidv4();
@@ -1687,36 +1675,6 @@ export class AppointmentController extends BaseController {
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       await RecentBookingModel.bulkCreate(recentBookingData, { transaction });
 
-      // const findQuery: FindOptions = {
-      //   where: { id: appointmentId },
-      //   include: [
-      //     {
-      //       model: AppointmentDetailModel,
-      //       as: 'appointmentDetails',
-      //       include: [
-      //         {
-      //           model: ServiceModel,
-      //           as: 'service'
-      //         },
-      //         {
-      //           model: ResourceModel,
-      //           as: 'resource'
-      //         },
-      //         {
-      //           model: StaffModel.scope('safe'),
-      //           as: 'staffs',
-      //           through: { attributes: [] }
-      //         }
-      //       ]
-      //     }
-      //   ],
-      //   transaction
-      // };
-      // if (dataInput.customerId)
-      //   findQuery.include.push({
-      //     model: CustomerModel,
-      //     as: 'customer'
-      //   });
       const query: FindOptions = {
         include: [
           {
