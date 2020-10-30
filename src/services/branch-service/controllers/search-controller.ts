@@ -1655,20 +1655,20 @@ export class SearchController {
       };
 
       let countTypeAvailable = 1;
-      if (search.addressInfor) {
-        const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
-        locationType.forEach((type: string) => {
-          if (search[type]) {
-            countTypeAvailable++;
-            searchParams.body.query.bool.must.push({
-              query_string: {
-                fields: [type],
-                query: `${search[type]}~1`
-              }
-            });
-          }
-        });
-      }
+      // if (search.addressInfor) {
+      //   const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
+      //   locationType.forEach((type: string) => {
+      //     if (search[type]) {
+      //       countTypeAvailable++;
+      //       searchParams.body.query.bool.must.push({
+      //         query_string: {
+      //           fields: [type],
+      //           query: `${search[type]}~1`
+      //         }
+      //       });
+      //     }
+      //   });
+      // }
       if (search.order === EOrder.NEWEST) {
         searchParams.body.sort = [{ openedAt: 'desc' }];
       }
@@ -1676,11 +1676,11 @@ export class SearchController {
       let result: any = null;
       for (let i = 0; i < countTypeAvailable; i++) {
         result = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
-        if (result.meta.totalPages === 0 && countTypeAvailable > 1) {
-          searchParams.body.query.bool.must.pop();
-        } else {
-          break;
-        }
+        // if (result.meta.totalPages === 0 && countTypeAvailable > 1) {
+        //   searchParams.body.query.bool.must.pop();
+        // } else {
+        //   break;
+        // }
       }
 
       let locationResults = result.data;
