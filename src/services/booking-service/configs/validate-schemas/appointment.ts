@@ -146,7 +146,6 @@ const updateAppointmentSchema = Joi.object({
     .required()
     .label('locationId'),
   date: Joi.string().isoDate(),
-  bookingSource: Joi.string().valid(...Object.values(EAppointmentBookingSource)),
   createNewAppointmentDetails: Joi.array()
     .items(
       Joi.object({
@@ -315,7 +314,7 @@ const createAppointmentGroupSchema = Joi.object({
     .required()
     .label('locationId'),
   bookingSource: Joi.string().valid(EAppointmentBookingSource.SCHEDULED, EAppointmentBookingSource.WALK_IN),
-  appointments: Joi.array().min(1).max(50).items(createAppointmentInGroupSchema).label('appointments')
+  appointments: Joi.array().min(2).max(50).items(createAppointmentInGroupSchema).label('appointments')
 });
 const appointmentGroupIdSchema = Joi.string()
   .guid({

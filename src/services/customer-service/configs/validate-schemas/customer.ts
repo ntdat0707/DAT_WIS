@@ -7,7 +7,7 @@ const createCustomerWisereSchema = Joi.object({
   gender: Joi.number()
     .integer()
     .allow(null)
-    .valid(...Object.keys(EGender))
+    .valid(...Object.values(EGender))
     .label('gender'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   email: Joi.string().allow(null).email().label('email'),
