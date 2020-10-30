@@ -142,6 +142,10 @@ const bookingErrorDetails = {
   E_2013(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('2013', 'Appointment status completed or canceled', detail);
     return e;
+  },
+  E_2014(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('2014', 'Appointment must have customer wisere', detail);
+    return e;
   }
 };
 

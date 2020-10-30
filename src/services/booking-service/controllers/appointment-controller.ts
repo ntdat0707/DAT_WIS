@@ -187,6 +187,11 @@ export class AppointmentController extends BaseController {
         }
       }
 
+      if (dataInput.bookingSource === EAppointmentBookingSource.SCHEDULED && !dataInput.customerWisereId) {
+        return next(
+          new CustomError(bookingErrorDetails.E_2014(`Appointment must have customer wisere`), HttpStatus.BAD_REQUEST)
+        );
+      }
       const appointmentId = uuidv4();
       const appointmentDetails = await this.verifyAppointmentDetails(
         dataInput.appointmentDetails,
@@ -399,7 +404,7 @@ export class AppointmentController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
-      if (listAppointmentDetail[0].appointment.customerWisere) {
+      if (dataInput.bookingSource === EAppointmentBookingSource.SCHEDULED) {
         await this.convertApptToDeal(listAppointmentDetail, companyId, res.locals.staffPayload.id, transaction);
       }
       //commit transaction
@@ -1011,6 +1016,17 @@ export class AppointmentController extends BaseController {
           { transaction }
         );
         for (let i = 0; i < data.createNewAppointments.length; i++) {
+          if (
+            appointment.bookingSource === EAppointmentBookingSource.SCHEDULED &&
+            !data.createNewAppointments[i].customerWisereId
+          ) {
+            return next(
+              new CustomError(
+                bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+                HttpStatus.BAD_REQUEST
+              )
+            );
+          }
           if (data.createNewAppointments[i].customerWisereId) {
             const customerWisere = await CustomerWisereModel.findOne({
               where: { id: data.createNewAppointments[i].customerWisereId, companyId }
@@ -1281,7 +1297,7 @@ export class AppointmentController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
-      if (data.customerWisereId) {
+      if (appointment.bookingSource === EAppointmentBookingSource.SCHEDULED) {
         await this.convertApptToDeal(listAppointmentDetail, companyId, res.locals.staffPayload.id, transaction);
       }
       await transaction.commit();

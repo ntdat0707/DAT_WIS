@@ -149,6 +149,11 @@ export class AppointmentGroupController extends BaseController {
       const createAppointmentDetailTasks = [];
       const createAppointmentDetailStaffTasks = [];
       for (const apptData of data.appointments) {
+        if (data.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
+          return next(
+            new CustomError(bookingErrorDetails.E_2014(`Appointment must have customer wisere`), HttpStatus.BAD_REQUEST)
+          );
+        }
         if (apptData.customerWisereId) {
           const customerWisere = await CustomerWisereModel.findOne({
             where: {
@@ -277,16 +282,14 @@ export class AppointmentGroupController extends BaseController {
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
-      for (let i = 0; i < listAppointmentDetail.length; i++) {
-        if (listAppointmentDetail[i].appointment.isPrimary && listAppointmentDetail[i].appointment.customerWisere) {
-          const appointmentController = new AppointmentController();
-          await appointmentController.convertApptToDeal(
-            listAppointmentDetail,
-            res.locals.staffPayload.companyId,
-            res.locals.staffPayload.id,
-            transaction
-          );
-        }
+      if (data.bookingSource === EAppointmentBookingSource.SCHEDULED) {
+        const appointmentController = new AppointmentController();
+        await appointmentController.convertApptToDeal(
+          listAppointmentDetail,
+          res.locals.staffPayload.companyId,
+          res.locals.staffPayload.id,
+          transaction
+        );
       }
       await transaction.commit();
       const isPortReachable = require('is-port-reachable');
@@ -621,7 +624,6 @@ export class AppointmentGroupController extends BaseController {
           )
         );
       }
-
       const bookingSource = await AppointmentModel.findOne({
         where: {
           appointmentGroupId: data.appointmentGroupId
@@ -687,6 +689,15 @@ export class AppointmentGroupController extends BaseController {
         const createAppointmentDetailTasks = [];
         const createAppointmentDetailStaffTasks = [];
         for (const apptData of data.createNewAppointments) {
+          if (bookingSource.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
+            if (transaction) await transaction.rollback();
+            return next(
+              new CustomError(
+                bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+                HttpStatus.BAD_REQUEST
+              )
+            );
+          }
           let appointmentCode = '';
           while (true) {
             const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
@@ -749,7 +760,6 @@ export class AppointmentGroupController extends BaseController {
         await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
         await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
       }
-
       if (data.updateAppointments && data.updateAppointments.length > 0) {
         const arrApptCode = [];
         for (let i = 0; i < data.updateAppointments.length; i++) {
@@ -759,8 +769,8 @@ export class AppointmentGroupController extends BaseController {
               appointmentGroupId: data.appointmentGroupId
             }
           });
-
           if (!appointment) {
+            if (transaction) await transaction.rollback();
             return next(
               new CustomError(
                 bookingErrorDetails.E_2002(`Appointment ${data.updateAppointments[i].appointmentId} not exist`),
@@ -805,6 +815,15 @@ export class AppointmentGroupController extends BaseController {
         const createAppointmentDetailStaffTasks = [];
         let index = 0;
         for (const apptData of data.updateAppointments) {
+          if (bookingSource.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
+            if (transaction) await transaction.rollback();
+            return next(
+              new CustomError(
+                bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+                HttpStatus.BAD_REQUEST
+              )
+            );
+          }
           const newAppointmentId = uuidv4();
           appointmentIds.push(newAppointmentId);
           let statusApp = EAppointmentStatus.NEW;
@@ -863,6 +882,7 @@ export class AppointmentGroupController extends BaseController {
             }
           });
           if (!appointment) {
+            if (transaction) await transaction.rollback();
             return next(
               new CustomError(
                 bookingErrorDetails.E_2002(`Appointment ${data.deleteAppointments[i]} not exist`),
