@@ -672,7 +672,7 @@ export class SearchController {
         where: {
           customerId: searchOption.customerId
         },
-        order: [ ['createdAt', 'DESC'] ],
+        order: [['createdAt', 'DESC']],
         limit: 10,
         subQuery: true,
         attributes: ['id', 'keywords', 'type', 'cateServiceId', 'companyId', 'serviceId', 'locationId', 'createdAt'],
@@ -734,10 +734,10 @@ export class SearchController {
           };
         },
         ['location'](data: any) {
-          const { title, description, pathName, photo } = data.dataValues;
+          const { name, fullAddress, pathName, photo } = data.dataValues;
           return {
-            title,
-            description,
+            title: name,
+            description: fullAddress,
             pathName,
             image: photo
           };
@@ -1710,21 +1710,19 @@ export class SearchController {
 
           if (!searchServiceItem && location.services && !_.isEmpty(location.services)) {
             searchServiceItem =
-              location.services.find(
-                (service: any) =>
-                  removeAccents(service.name || '')
-                    .toLowerCase()
-                    .includes(keywordRemoveAccents)
+              location.services.find((service: any) =>
+                removeAccents(service.name || '')
+                  .toLowerCase()
+                  .includes(keywordRemoveAccents)
               ) || null;
           }
 
           if (!searchCateServiceItem && location.company.cateServices && Array.isArray(location.company.cateServices)) {
             searchCateServiceItem =
-              location.company.cateServices.find(
-                (cateService: any) =>
-                  removeAccents(cateService.name || '')
-                    .toLowerCase()
-                    .includes(keywordRemoveAccents)
+              location.company.cateServices.find((cateService: any) =>
+                removeAccents(cateService.name || '')
+                  .toLowerCase()
+                  .includes(keywordRemoveAccents)
               ) || null;
           }
         }
