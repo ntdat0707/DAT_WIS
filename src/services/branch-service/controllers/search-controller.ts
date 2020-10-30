@@ -672,6 +672,10 @@ export class SearchController {
         where: {
           customerId: searchOption.customerId
         },
+        order: [ ['createdAt', 'DESC'] ],
+        limit: 10,
+        subQuery: true,
+        attributes: ['id', 'keywords', 'type', 'cateServiceId', 'companyId', 'serviceId', 'locationId', 'createdAt'],
         include: [
           {
             model: CateServiceModel,
@@ -705,16 +709,7 @@ export class SearchController {
             required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
-        ],
-        group: [
-          'CustomerSearchModel.id',
-          'cateService.id',
-          'company.id',
-          'company->companyDetail.id',
-          'service.id',
-          'location.id'
-        ],
-        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('keywords')), 'keywords'], 'type']
+        ]
       });
 
       const mapData: any = {
@@ -1178,7 +1173,7 @@ export class SearchController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes: ['id', 'name', 'duration', 'sale_price'],
+              attributes: ['id', 'name', 'duration', 'salePrice'],
               where: { id: serviceIds }
             }
           ],
@@ -1389,7 +1384,7 @@ export class SearchController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes: ['id', 'name', 'duration', 'sale_price'],
+              attributes: ['id', 'name', 'duration', 'salePrice'],
               where: { id: serviceIds }
             }
           ],
