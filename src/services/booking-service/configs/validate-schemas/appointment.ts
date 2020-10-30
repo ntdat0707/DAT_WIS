@@ -336,7 +336,6 @@ const updateAppointmentInGroupSchema = Joi.object({
       version: ['uuidv4']
     })
     .label('customerWisereId'),
-  bookingSource: Joi.string().valid(EAppointmentBookingSource.SCHEDULED, EAppointmentBookingSource.WALK_IN),
   appointmentDetails: Joi.array().min(1).max(100).items(createAppointmentDetailSchema).label('appointmentDetails'),
   isPrimary: Joi.bool().required().label('isPrimary')
 });
@@ -362,7 +361,8 @@ const updateAppointmentGroupSchema = Joi.object({
         version: ['uuidv4']
       })
     )
-    .label('deleteAppointments')
+    .label('deleteAppointments'),
+  bookingSource: Joi.string().valid(EAppointmentBookingSource.SCHEDULED, EAppointmentBookingSource.WALK_IN)
 });
 
 const appointmentCancelSchema = Joi.object({

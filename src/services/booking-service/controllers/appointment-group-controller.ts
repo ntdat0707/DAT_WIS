@@ -29,6 +29,7 @@ import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
 import { IRequestOptions, request } from '../../../utils/request';
 import { EAppointmentBookingSource, EAppointmentStatus } from '../../../utils/consts';
+import { AppointmentController } from './appointment-controller';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -210,23 +211,7 @@ export class AppointmentGroupController extends BaseController {
       await AppointmentModel.bulkCreate(createAppointmentTasks, { transaction });
       await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
       await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
-      await transaction.commit();
-      const isPortReachable = require('is-port-reachable');
-      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
-      if (isLiveHost) {
-        for (let i = 0; i < appointmentIds.length; i++) {
-          const options: IRequestOptions = {
-            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
-            method: 'post',
-            headers: {
-              accept: '*/*',
-              'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({ appointmentId: appointmentIds[i] })
-          };
-          await request(options);
-        }
-      }
+
       // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
       //   where: { id: newAppointmentGroupId },
       //   include: [
@@ -302,10 +287,39 @@ export class AppointmentGroupController extends BaseController {
             required: true,
             through: { attributes: [] }
           }
-        ]
+        ],
+        transaction
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      for (let i = 0; i < listAppointmentDetail.length; i++) {
+        if (listAppointmentDetail[i].appointment.isPrimary && listAppointmentDetail[i].appointment.customerWisere) {
+          const appointmentController = new AppointmentController();
+          await appointmentController.convertApptToDeal(
+            listAppointmentDetail,
+            res.locals.staffPayload.companyId,
+            res.locals.staffPayload.id,
+            transaction
+          );
+        }
+      }
+      await transaction.commit();
+      const isPortReachable = require('is-port-reachable');
+      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      if (isLiveHost) {
+        for (let i = 0; i < appointmentIds.length; i++) {
+          const options: IRequestOptions = {
+            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            method: 'post',
+            headers: {
+              accept: '*/*',
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ appointmentId: appointmentIds[i] })
+          };
+          await request(options);
+        }
+      }
       res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();
@@ -855,23 +869,6 @@ export class AppointmentGroupController extends BaseController {
           });
         }
       }
-      await transaction.commit();
-      const isPortReachable = require('is-port-reachable');
-      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
-      if (isLiveHost) {
-        for (let i = 0; i < appointmentIds.length; i++) {
-          const options: IRequestOptions = {
-            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
-            method: 'post',
-            headers: {
-              accept: '*/*',
-              'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({ appointmentId: appointmentIds[i] })
-          };
-          await request(options);
-        }
-      }
       // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
       //   where: { id: data.appointmentGroupId },
       //   include: [
@@ -947,10 +944,39 @@ export class AppointmentGroupController extends BaseController {
             required: true,
             through: { attributes: [] }
           }
-        ]
+        ],
+        transaction
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      for (let i = 0; i < listAppointmentDetail.length; i++) {
+        if (listAppointmentDetail[i].appointment.isPrimary && listAppointmentDetail[i].appointment.customerWisere) {
+          const appointmentController = new AppointmentController();
+          await appointmentController.convertApptToDeal(
+            listAppointmentDetail,
+            res.locals.staffPayload.companyId,
+            res.locals.staffPayload.id,
+            transaction
+          );
+        }
+      }
+      await transaction.commit();
+      const isPortReachable = require('is-port-reachable');
+      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      if (isLiveHost) {
+        for (let i = 0; i < appointmentIds.length; i++) {
+          const options: IRequestOptions = {
+            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            method: 'post',
+            headers: {
+              accept: '*/*',
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ appointmentId: appointmentIds[i] })
+          };
+          await request(options);
+        }
+      }
       res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();
