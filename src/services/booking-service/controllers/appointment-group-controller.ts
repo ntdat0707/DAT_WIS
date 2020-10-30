@@ -179,12 +179,17 @@ export class AppointmentGroupController extends BaseController {
         //appointment detail data
         for (const apptDetailData of apptData.appointmentDetails) {
           const newAppointmentDetailId = uuidv4();
+          let statusAppDetail = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusAppDetail = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentDetailTasks.push({
             id: newAppointmentDetailId,
             appointmentId: newAppointmentId,
             serviceId: apptDetailData.serviceId,
             startTime: apptDetailData.startTime,
-            resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+            resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+            status: statusAppDetail
           });
 
           // data appointment detail staff
@@ -681,12 +686,17 @@ export class AppointmentGroupController extends BaseController {
           //appointment detail data
           for (const apptDetailData of apptData.appointmentDetails) {
             const newAppointmentDetailId = uuidv4();
+            let statusAppDetail = EAppointmentStatus.NEW;
+            if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              statusAppDetail = EAppointmentStatus.CONFIRMED;
+            }
             createAppointmentDetailTasks.push({
               id: newAppointmentDetailId,
               appointmentId: newAppointmentId,
               serviceId: apptDetailData.serviceId,
               startTime: apptDetailData.startTime,
-              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+              status: statusAppDetail
             });
 
             // data appointment detail staff
@@ -706,7 +716,6 @@ export class AppointmentGroupController extends BaseController {
 
       if (data.updateAppointments && data.updateAppointments.length > 0) {
         const arrApptCode = [];
-        const arrApptStatus = [];
         for (let i = 0; i < data.updateAppointments.length; i++) {
           const appointment = await AppointmentModel.findOne({
             where: {
@@ -724,7 +733,6 @@ export class AppointmentGroupController extends BaseController {
             );
           }
           arrApptCode.push(appointment.appointmentCode);
-          arrApptStatus.push(appointment.status);
           await AppointmentModel.destroy({
             where: { id: data.updateAppointments[i].appointmentId },
             transaction
@@ -763,11 +771,8 @@ export class AppointmentGroupController extends BaseController {
         for (const apptData of data.updateAppointments) {
           const newAppointmentId = uuidv4();
           appointmentIds.push(newAppointmentId);
-          let statusApp = arrApptStatus[index];
-          if (
-            arrApptStatus[index] === EAppointmentStatus.NEW &&
-            req.body.bookingSource === EAppointmentBookingSource.WALK_IN
-          ) {
+          let statusApp = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
             statusApp = EAppointmentStatus.CONFIRMED;
           }
           createAppointmentTasks.push({
@@ -786,12 +791,17 @@ export class AppointmentGroupController extends BaseController {
           //appointment detail data
           for (const apptDetailData of apptData.appointmentDetails) {
             const newAppointmentDetailId = uuidv4();
+            let statusAppDetail = EAppointmentStatus.NEW;
+            if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              statusAppDetail = EAppointmentStatus.CONFIRMED;
+            }
             createAppointmentDetailTasks.push({
               id: newAppointmentDetailId,
               appointmentId: newAppointmentId,
               serviceId: apptDetailData.serviceId,
               startTime: apptDetailData.startTime,
-              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+              status: statusAppDetail
             });
 
             // data appointment detail staff

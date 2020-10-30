@@ -1147,7 +1147,6 @@ export class AppointmentController extends BaseController {
         await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       }
       if (data.updateAppointmentDetails && data.updateAppointmentDetails.length > 0) {
-        const appDetailStatus = [];
         for (let i = 0; i < data.updateAppointmentDetails.length; i++) {
           const appointmentDetail = await AppointmentDetailModel.findOne({
             where: {
@@ -1166,7 +1165,6 @@ export class AppointmentController extends BaseController {
               )
             );
           }
-          appDetailStatus.push(appointmentDetail.status);
           await AppointmentDetailModel.destroy({
             where: { id: data.updateAppointmentDetails[i].appointmentDetailId },
             transaction
@@ -1181,11 +1179,8 @@ export class AppointmentController extends BaseController {
         const appointmentDetails = await this.verifyAppointmentDetails(data.updateAppointmentDetails, data.locationId);
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
-          let statusAppDetail = appDetailStatus[i];
-          if (
-            appDetailStatus[i] === EAppointmentStatus.NEW &&
-            req.body.bookingSource === EAppointmentBookingSource.WALK_IN
-          ) {
+          let statusAppDetail = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
             statusAppDetail = EAppointmentStatus.CONFIRMED;
           }
           appointmentDetailData.push({
