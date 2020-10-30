@@ -76,11 +76,11 @@ export const updateStaffSchema = Joi.object({
       })
     )
     .label('serviceIds'),
-  teamStaffId: Joi.string()
+  teamId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .label('teamStaffId')
+    .label('teamId')
 });
 
 const filterStaffSchema = Joi.object({
@@ -98,13 +98,14 @@ const filterStaffSchema = Joi.object({
         version: ['uuidv4']
       })
     ),
-  teamStaffIds: Joi.array()
+  teamIds: Joi.array()
     .min(1)
     .items(
       Joi.string().guid({
         version: ['uuidv4']
       })
-    ),
+    )
+    .label('teamIds'),
   searchValue: Joi.string(),
   isServiceProvider: Joi.boolean().label('isServiceProvider')
 });

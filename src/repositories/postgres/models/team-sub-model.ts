@@ -1,17 +1,16 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 
 import sequelize from '../configs/db-connector';
-class TeamModel extends Model {
+class TeamSubModel extends Model {
   public id: string;
-  public name!: string;
-  public parentId: string;
-  public description: string;
+  public teamSubId!: string;
+  public teamId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-TeamModel.init(
+TeamSubModel.init(
   {
     id: {
       field: 'id',
@@ -19,19 +18,14 @@ TeamModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    name: {
-      field: 'name',
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    parentId: {
-      field: 'parent_id',
+    teamSubId: {
+      field: 'team_sub_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    description: {
-      field: 'description',
-      type: DataTypes.STRING,
+    teamId: {
+      field: 'team_id',
+      type: DataTypes.UUIDV4,
       allowNull: false
     },
     createdAt: {
@@ -53,8 +47,8 @@ TeamModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'team'
+    tableName: 'team_sub'
   }
 );
 
-export { TeamModel };
+export { TeamSubModel };
