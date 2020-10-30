@@ -1540,8 +1540,6 @@ export class SearchController {
    *           searchBy:
    *               type: string
    *               enum: [ 'service', 'cate-service', 'company',  'city' ]
-   *           address:
-   *               type: string
    *           fullAddress:
    *               type: string
    *           latitude:
@@ -1701,7 +1699,7 @@ export class SearchController {
         if (
           !searchLocationItem &&
           location.name &&
-          removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)
+          removeAccents(location.name).toLowerCase().includes(keywordRemoveAccents)
         ) {
           searchLocationItem = location;
         }
@@ -1710,22 +1708,28 @@ export class SearchController {
           if (
             !searchCompanyItem &&
             location.company.businessName &&
-            removeAccents(location.company.businessName).toLowerCase().search(keywordRemoveAccents)
+            removeAccents(location.company.businessName).toLowerCase().includes(keywordRemoveAccents)
           ) {
             searchCompanyItem = location.company;
           }
 
           if (!searchServiceItem && location.services && !_.isEmpty(location.services)) {
             searchServiceItem =
-              location.services.find((service: any) =>
-                removeAccents(service.name).toLowerCase().search(keywordRemoveAccents)
+              location.services.find(
+                (service: any) =>
+                  removeAccents(service.name || '')
+                    .toLowerCase()
+                    .includes(keywordRemoveAccents)
               ) || null;
           }
 
           if (!searchCateServiceItem && location.company.cateServices && Array.isArray(location.company.cateServices)) {
             searchCateServiceItem =
-              location.company.cateServices.find((cateService: any) =>
-                removeAccents(cateService.name).toLowerCase().search(keywordRemoveAccents)
+              location.company.cateServices.find(
+                (cateService: any) =>
+                  removeAccents(cateService.name || '')
+                    .toLowerCase()
+                    .includes(keywordRemoveAccents)
               ) || null;
           }
         }
