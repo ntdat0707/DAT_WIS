@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import _ from 'lodash';
-import shortId from 'shortid';
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
@@ -149,19 +148,20 @@ export class ServiceController {
           return next(new CustomError(branchErrorDetails.E_1204(), HttpStatus.BAD_REQUEST));
         }
       } else {
-        while (true) {
-          const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
-          const randomCode = random.toUpperCase();
-          serviceCode = randomCode;
-          const existAppCode = await ServiceModel.findOne({
-            where: {
-              serviceCode: serviceCode
+        const services: any = await ServiceModel.findAll({
+          include: [
+            {
+              model: LocationModel,
+              as: 'locations',
+              required: true,
+              where: {
+                id: res.locals.staffPayload.workingLocationIds
+              }
             }
-          });
-          if (!existAppCode) {
-            break;
-          }
-        }
+          ]
+        });
+        const zeroPad = (num: number, places: number) => String(num).padStart(places, '0');
+        serviceCode = `SER${zeroPad(services.length, 5)}`;
       }
 
       const data: any = {
@@ -761,6 +761,7 @@ export class ServiceController {
 
       transaction = await sequelize.transaction();
       for (let i = 0; i < req.body.serviceDetails.length; i++) {
+        const zeroPad = (num: number, places: number) => String(num).padStart(places, '0');
         const data = {
           salePrice: !isNaN(parseInt(req.body.serviceDetails[i].salePrice, 10))
             ? req.body.serviceDetails[i].salePrice
@@ -768,7 +769,7 @@ export class ServiceController {
           duration: req.body.serviceDetails[i].duration,
           cateServiceId: req.body.cateServiceId,
           name: req.body.serviceDetails[i].name,
-          serviceCode: shortId.generate()
+          serviceCode: `SER${zeroPad(i + 1, 5)}`
         };
         const service = await ServiceModel.create(data, { transaction });
         const serviceStaff = (req.body.staffIds as []).map((id) => ({

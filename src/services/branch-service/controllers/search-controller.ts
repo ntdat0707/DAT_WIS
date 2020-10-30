@@ -672,6 +672,10 @@ export class SearchController {
         where: {
           customerId: searchOption.customerId
         },
+        order: [ ['createdAt', 'DESC'] ],
+        limit: 10,
+        subQuery: true,
+        attributes: ['id', 'keywords', 'type', 'cateServiceId', 'companyId', 'serviceId', 'locationId', 'createdAt'],
         include: [
           {
             model: CateServiceModel,
@@ -705,16 +709,7 @@ export class SearchController {
             required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
-        ],
-        group: [
-          'CustomerSearchModel.id',
-          'cateService.id',
-          'company.id',
-          'company->companyDetail.id',
-          'service.id',
-          'location.id'
-        ],
-        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('keywords')), 'keywords'], 'type']
+        ]
       });
 
       const mapData: any = {
@@ -1178,7 +1173,7 @@ export class SearchController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes: ['id', 'name', 'duration', 'sale_price'],
+              attributes: ['id', 'name', 'duration', 'salePrice'],
               where: { id: serviceIds }
             }
           ],
@@ -1389,7 +1384,7 @@ export class SearchController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes: ['id', 'name', 'duration', 'sale_price'],
+              attributes: ['id', 'name', 'duration', 'salePrice'],
               where: { id: serviceIds }
             }
           ],
@@ -1540,8 +1535,6 @@ export class SearchController {
    *           searchBy:
    *               type: string
    *               enum: [ 'service', 'cate-service', 'company',  'city' ]
-   *           address:
-   *               type: string
    *           fullAddress:
    *               type: string
    *           latitude:
@@ -1701,7 +1694,7 @@ export class SearchController {
         if (
           !searchLocationItem &&
           location.name &&
-          removeAccents(location.name).toLowerCase().search(keywordRemoveAccents)
+          removeAccents(location.name).toLowerCase().includes(keywordRemoveAccents)
         ) {
           searchLocationItem = location;
         }
@@ -1710,22 +1703,28 @@ export class SearchController {
           if (
             !searchCompanyItem &&
             location.company.businessName &&
-            removeAccents(location.company.businessName).toLowerCase().search(keywordRemoveAccents)
+            removeAccents(location.company.businessName).toLowerCase().includes(keywordRemoveAccents)
           ) {
             searchCompanyItem = location.company;
           }
 
           if (!searchServiceItem && location.services && !_.isEmpty(location.services)) {
             searchServiceItem =
-              location.services.find((service: any) =>
-                removeAccents(service.name).toLowerCase().search(keywordRemoveAccents)
+              location.services.find(
+                (service: any) =>
+                  removeAccents(service.name || '')
+                    .toLowerCase()
+                    .includes(keywordRemoveAccents)
               ) || null;
           }
 
           if (!searchCateServiceItem && location.company.cateServices && Array.isArray(location.company.cateServices)) {
             searchCateServiceItem =
-              location.company.cateServices.find((cateService: any) =>
-                removeAccents(cateService.name).toLowerCase().search(keywordRemoveAccents)
+              location.company.cateServices.find(
+                (cateService: any) =>
+                  removeAccents(cateService.name || '')
+                    .toLowerCase()
+                    .includes(keywordRemoveAccents)
               ) || null;
           }
         }

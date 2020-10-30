@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op, Sequelize } from 'sequelize';
+import { FindOptions, Op, Sequelize, Transaction } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 import _ from 'lodash';
@@ -862,11 +862,6 @@ export class StaffController {
    *       name: staffId
    *       schema:
    *          type: string
-   *     - in: query
-   *       name: locationId
-   *       require: true
-   *       schema:
-   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -876,11 +871,10 @@ export class StaffController {
    *         description: Internal server errors
    */
   public deleteStaff = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: Transaction;
     try {
-      const { workingLocationIds } = res.locals.staffPayload;
       const dataDelete = {
-        staffId: req.params.staffId,
-        locationId: req.query.locationId
+        staffId: req.params.staffId
       };
       const validateErrors = validate(dataDelete, deleteStaffSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
@@ -890,29 +884,17 @@ export class StaffController {
           new CustomError(staffErrorDetails.E_4000(`staffId ${dataDelete.staffId} not found`), HttpStatus.NOT_FOUND)
         );
 
-      const locationStaff = await LocationStaffModel.findOne({
-        where: { staffId: dataDelete.staffId, locationId: dataDelete.locationId }
-      });
-      if (!workingLocationIds.includes(locationStaff.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${locationStaff.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
-      if (!locationStaff) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${locationStaff.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
-      await StaffModel.destroy({ where: { id: locationStaff.staffId } });
-      await LocationStaffModel.destroy({ where: { staffId: locationStaff.staffId } });
+      transaction = await sequelize.transaction();
+      await StaffModel.destroy({ where: { id: dataDelete.staffId }, transaction });
+      await LocationStaffModel.destroy({ where: { staffId: dataDelete.staffId }, transaction });
+      await ServiceStaffModel.destroy({ where: { staffId: dataDelete.staffId }, transaction });
+      await PositionModel.destroy({ where: { staffId: dataDelete.staffId }, transaction });
+      await transaction.commit();
       return res.status(HttpStatus.OK).send();
     } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
