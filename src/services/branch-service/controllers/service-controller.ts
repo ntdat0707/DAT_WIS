@@ -148,19 +148,20 @@ export class ServiceController {
           return next(new CustomError(branchErrorDetails.E_1204(), HttpStatus.BAD_REQUEST));
         }
       } else {
-        while (true) {
-          const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
-          const randomCode = random.toUpperCase();
-          serviceCode = randomCode;
-          const existAppCode = await ServiceModel.findOne({
-            where: {
-              serviceCode: serviceCode
+        const services: any = await ServiceModel.findAll({
+          include: [
+            {
+              model: LocationModel,
+              as: 'locations',
+              required: true,
+              where: {
+                id: res.locals.staffPayload.workingLocationIds
+              }
             }
-          });
-          if (!existAppCode) {
-            break;
-          }
-        }
+          ]
+        });
+        const zeroPad = (num: number, places: number) => String(num).padStart(places, '0');
+        serviceCode = `SER${zeroPad(services.length, 5)}`;
       }
 
       const data: any = {
