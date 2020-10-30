@@ -6,6 +6,7 @@ class TeamModel extends Model {
   public name!: string;
   public parentId: string;
   public description: string;
+  public photo: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -32,7 +33,12 @@ TeamModel.init(
     description: {
       field: 'description',
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
+    },
+    photo: {
+      field: 'photo',
+      type: DataTypes.TEXT,
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',

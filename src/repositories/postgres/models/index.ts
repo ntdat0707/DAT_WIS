@@ -233,8 +233,8 @@ PaymentModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider'
 StaffModel.hasMany(CustomerWisereModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'customerWiseres' });
 CustomerWisereModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
-TeamModel.belongsToMany(StaffModel, { through: TeamStaffModel, foreignKey: 'teamId', as: 'staffs' });
-StaffModel.belongsToMany(TeamModel, { through: TeamStaffModel, foreignKey: 'staffId', as: 'teamStaffs' });
+TeamModel.belongsToMany(StaffModel, { through: TeamStaffModel, as: 'staffs', foreignKey: 'teamId' });
+StaffModel.belongsToMany(TeamModel, { through: TeamStaffModel, as: 'teamStaffs', foreignKey: 'staffId' });
 
 TeamModel.belongsToMany(LocationModel, { through: TeamLocationModel, foreignKey: 'teamId', as: 'locations' });
 LocationModel.belongsToMany(TeamModel, { through: TeamLocationModel, foreignKey: 'locationId', as: 'teamLocations' });

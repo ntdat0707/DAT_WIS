@@ -55,7 +55,7 @@ TeamStaffModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'team_location'
+    tableName: 'team_staff'
   }
 );
 

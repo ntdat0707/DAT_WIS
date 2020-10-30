@@ -88,7 +88,8 @@ export class StaffController {
           {
             model: TeamModel,
             as: 'teamStaffs',
-            required: false,
+            through: { attributes: [] },
+            required: true,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
         ]
@@ -1644,74 +1645,6 @@ export class StaffController {
         await transaction.rollback();
       }
       return error;
-    }
-  };
-
-  /**
-   * @swagger
-   * /staff/get-teams-company:
-   *   get:
-   *     tags:
-   *       - Staff
-   *     security:
-   *       - Bearer: []
-   *     name: getTeamsStaff
-   *     parameters:
-   *     - in: query
-   *       name: pageNum
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: searchValue
-   *       required: false
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public getTeamsCompany = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const companyId = res.locals.staffPayload.companyId;
-      const fullPath = req.headers['x-base-url'] + req.originalUrl;
-      const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
-      };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const query: FindOptions = {
-        where: { companyId: companyId },
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      };
-
-      if (req.query.searchValue) {
-        query.where = {
-          ...query.where,
-          ...{
-            [Op.or]: [Sequelize.literal(`unaccent("TeamModel"."name") ilike unaccent('%${req.query.searchValue}%')`)]
-          }
-        };
-      }
-      const teamStaffs = await paginate(
-        TeamModel,
-        query,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
-        fullPath
-      );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(teamStaffs));
-    } catch (error) {
-      return next(error);
     }
   };
 
