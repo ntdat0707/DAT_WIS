@@ -201,6 +201,8 @@ const paginateElasicSearch = async <T extends Model<T>>(
       searchParams.body = { from, size };
     }
 
+    searchParams.ignore = [404];
+
     if (searchParams.body.sort) {
       searchParams.body.sort.push('_score');
     } else {
