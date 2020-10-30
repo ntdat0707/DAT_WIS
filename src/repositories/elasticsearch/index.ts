@@ -1,1 +1,1 @@
-export { elasticsearchClient } from './connector';
+export { elasticsearchClient, esClient } from './connector';

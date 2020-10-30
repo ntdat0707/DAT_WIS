@@ -28,6 +28,8 @@ import {
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
 import { IRequestOptions, request } from '../../../utils/request';
+import { EAppointmentBookingSource, EAppointmentStatus } from '../../../utils/consts';
+import { AppointmentController } from './appointment-controller';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -54,9 +56,12 @@ export class AppointmentGroupController extends BaseController {
    *       required:
    *           - locationId
    *           - date
+   *           - bookingSource
    *           - appointments
    *       properties:
    *           locationId:
+   *               type: string
+   *           bookingSource:
    *               type: string
    *           date:
    *               type: string
@@ -100,7 +105,8 @@ export class AppointmentGroupController extends BaseController {
       const data = {
         locationId: req.body.locationId,
         date: req.body.date,
-        appointments: req.body.appointments
+        appointments: req.body.appointments,
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, createAppointmentGroupSchema);
       if (validateErrors) {
@@ -154,6 +160,11 @@ export class AppointmentGroupController extends BaseController {
         }
         const newAppointmentId = uuidv4();
         appointmentIds.push(newAppointmentId);
+
+        let statusApp = EAppointmentStatus.NEW;
+        if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+          statusApp = EAppointmentStatus.CONFIRMED;
+        }
         createAppointmentTasks.push({
           id: newAppointmentId,
           appointmentGroupId: newAppointmentGroupId,
@@ -161,18 +172,25 @@ export class AppointmentGroupController extends BaseController {
           date: data.date,
           customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
           isPrimary: apptData.isPrimary === true ? true : false,
-          appointmentCode: appointmentCode
+          appointmentCode: appointmentCode,
+          bookingSource: data.bookingSource,
+          status: statusApp
         });
 
         //appointment detail data
         for (const apptDetailData of apptData.appointmentDetails) {
           const newAppointmentDetailId = uuidv4();
+          let statusAppDetail = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusAppDetail = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentDetailTasks.push({
             id: newAppointmentDetailId,
             appointmentId: newAppointmentId,
             serviceId: apptDetailData.serviceId,
             startTime: apptDetailData.startTime,
-            resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+            resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+            status: statusAppDetail
           });
 
           // data appointment detail staff
@@ -193,23 +211,7 @@ export class AppointmentGroupController extends BaseController {
       await AppointmentModel.bulkCreate(createAppointmentTasks, { transaction });
       await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
       await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
-      await transaction.commit();
-      const isPortReachable = require('is-port-reachable');
-      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
-      if (isLiveHost) {
-        for (let i = 0; i < appointmentIds.length; i++) {
-          const options: IRequestOptions = {
-            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
-            method: 'post',
-            headers: {
-              accept: '*/*',
-              'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({ appointmentId: appointmentIds[i] })
-          };
-          await request(options);
-        }
-      }
+
       // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
       //   where: { id: newAppointmentGroupId },
       //   include: [
@@ -285,10 +287,39 @@ export class AppointmentGroupController extends BaseController {
             required: true,
             through: { attributes: [] }
           }
-        ]
+        ],
+        transaction
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      for (let i = 0; i < listAppointmentDetail.length; i++) {
+        if (listAppointmentDetail[i].appointment.isPrimary && listAppointmentDetail[i].appointment.customerWisere) {
+          const appointmentController = new AppointmentController();
+          await appointmentController.convertApptToDeal(
+            listAppointmentDetail,
+            res.locals.staffPayload.companyId,
+            res.locals.staffPayload.id,
+            transaction
+          );
+        }
+      }
+      await transaction.commit();
+      const isPortReachable = require('is-port-reachable');
+      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      if (isLiveHost) {
+        for (let i = 0; i < appointmentIds.length; i++) {
+          const options: IRequestOptions = {
+            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            method: 'post',
+            headers: {
+              accept: '*/*',
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ appointmentId: appointmentIds[i] })
+          };
+          await request(options);
+        }
+      }
       res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();
@@ -455,6 +486,8 @@ export class AppointmentGroupController extends BaseController {
    *       properties:
    *           locationId:
    *               type: string
+   *           bookingSource:
+   *               type: string
    *           date:
    *               type: string
    *               format: date-time
@@ -510,7 +543,8 @@ export class AppointmentGroupController extends BaseController {
         date: req.body.date,
         createNewAppointments: req.body.createNewAppointments,
         updateAppointments: req.body.updateAppointments,
-        deleteAppointments: req.body.deleteAppointments
+        deleteAppointments: req.body.deleteAppointments,
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, updateAppointmentGroupSchema);
       if (validateErrors) {
@@ -647,6 +681,10 @@ export class AppointmentGroupController extends BaseController {
           }
           const newAppointmentId = uuidv4();
           appointmentIds.push(newAppointmentId);
+          let statusApp = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusApp = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentTasks.push({
             id: newAppointmentId,
             appointmentGroupId: data.appointmentGroupId,
@@ -654,18 +692,25 @@ export class AppointmentGroupController extends BaseController {
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
-            appointmentCode: appointmentCode
+            appointmentCode: appointmentCode,
+            bookingSource: data.bookingSource,
+            status: statusApp
           });
 
           //appointment detail data
           for (const apptDetailData of apptData.appointmentDetails) {
             const newAppointmentDetailId = uuidv4();
+            let statusAppDetail = EAppointmentStatus.NEW;
+            if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              statusAppDetail = EAppointmentStatus.CONFIRMED;
+            }
             createAppointmentDetailTasks.push({
               id: newAppointmentDetailId,
               appointmentId: newAppointmentId,
               serviceId: apptDetailData.serviceId,
               startTime: apptDetailData.startTime,
-              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+              status: statusAppDetail
             });
 
             // data appointment detail staff
@@ -740,6 +785,10 @@ export class AppointmentGroupController extends BaseController {
         for (const apptData of data.updateAppointments) {
           const newAppointmentId = uuidv4();
           appointmentIds.push(newAppointmentId);
+          let statusApp = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusApp = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentTasks.push({
             id: newAppointmentId,
             appointmentGroupId: data.appointmentGroupId,
@@ -747,19 +796,26 @@ export class AppointmentGroupController extends BaseController {
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
-            appointmentCode: arrApptCode[index]
+            appointmentCode: arrApptCode[index],
+            bookingSource: data.bookingSource,
+            status: statusApp
           });
           index++;
 
           //appointment detail data
           for (const apptDetailData of apptData.appointmentDetails) {
             const newAppointmentDetailId = uuidv4();
+            let statusAppDetail = EAppointmentStatus.NEW;
+            if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              statusAppDetail = EAppointmentStatus.CONFIRMED;
+            }
             createAppointmentDetailTasks.push({
               id: newAppointmentDetailId,
               appointmentId: newAppointmentId,
               serviceId: apptDetailData.serviceId,
               startTime: apptDetailData.startTime,
-              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+              status: statusAppDetail
             });
 
             // data appointment detail staff
@@ -811,23 +867,6 @@ export class AppointmentGroupController extends BaseController {
             where: { appointmentDetailId: appointmentDetailIds },
             transaction
           });
-        }
-      }
-      await transaction.commit();
-      const isPortReachable = require('is-port-reachable');
-      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
-      if (isLiveHost) {
-        for (let i = 0; i < appointmentIds.length; i++) {
-          const options: IRequestOptions = {
-            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
-            method: 'post',
-            headers: {
-              accept: '*/*',
-              'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({ appointmentId: appointmentIds[i] })
-          };
-          await request(options);
         }
       }
       // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
@@ -905,10 +944,39 @@ export class AppointmentGroupController extends BaseController {
             required: true,
             through: { attributes: [] }
           }
-        ]
+        ],
+        transaction
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      for (let i = 0; i < listAppointmentDetail.length; i++) {
+        if (listAppointmentDetail[i].appointment.isPrimary && listAppointmentDetail[i].appointment.customerWisere) {
+          const appointmentController = new AppointmentController();
+          await appointmentController.convertApptToDeal(
+            listAppointmentDetail,
+            res.locals.staffPayload.companyId,
+            res.locals.staffPayload.id,
+            transaction
+          );
+        }
+      }
+      await transaction.commit();
+      const isPortReachable = require('is-port-reachable');
+      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      if (isLiveHost) {
+        for (let i = 0; i < appointmentIds.length; i++) {
+          const options: IRequestOptions = {
+            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            method: 'post',
+            headers: {
+              accept: '*/*',
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ appointmentId: appointmentIds[i] })
+          };
+          await request(options);
+        }
+      }
       res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();

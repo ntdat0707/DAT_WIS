@@ -1,12 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import _ from 'lodash';
-import shortId from 'shortid';
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-
 import {
   createServiceSchema,
   serviceIdSchema,
@@ -34,6 +32,7 @@ import { LocationServiceModel } from '../../../repositories/postgres/models/loca
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { SearchParams } from 'elasticsearch';
 import { elasticsearchClient } from '../../../repositories/elasticsearch';
+import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ServiceController {
@@ -97,7 +96,6 @@ export class ServiceController {
    *     - in: "formData"
    *       name: isAllowedMarketplace
    *       type: boolean
-   *       required: true
    *     - in: "formData"
    *       name: resourceIds
    *       type: array
@@ -284,10 +282,17 @@ export class ServiceController {
         delete serviceMapping.staffs;
         return serviceMapping;
       });
-
-      await elasticsearchClient.create({
+      //require('array.prototype.flatmap').shim();
+      // const esData = serviceData.flatMap((doc:any) => [{ index: { _index: 'get_services' } }, doc]);
+      // await elasticsearchClient.index({
+      //   id: data.id,
+      //   index: 'get_services',
+      //   body: serviceData,
+      //   type: '_doc'
+      // });
+      await esClient.index({
         id: data.id,
-        index: 'get-services',
+        index: 'get_services',
         body: serviceData,
         type: '_doc'
       });
@@ -349,7 +354,7 @@ export class ServiceController {
 
       await elasticsearchClient.delete({
         id: serviceId,
-        index: 'get-services',
+        index: 'get_services',
         type: '_doc'
       });
 
@@ -557,7 +562,6 @@ export class ServiceController {
           }
         });
       }
-
       const services = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
       services.data = services.data.map((item: any) => ({
         ...item._source
@@ -756,6 +760,7 @@ export class ServiceController {
 
       transaction = await sequelize.transaction();
       for (let i = 0; i < req.body.serviceDetails.length; i++) {
+        const zeroPad = (num: number, places: number) => String(num).padStart(places, '0');
         const data = {
           salePrice: !isNaN(parseInt(req.body.serviceDetails[i].salePrice, 10))
             ? req.body.serviceDetails[i].salePrice
@@ -763,7 +768,7 @@ export class ServiceController {
           duration: req.body.serviceDetails[i].duration,
           cateServiceId: req.body.cateServiceId,
           name: req.body.serviceDetails[i].name,
-          serviceCode: shortId.generate()
+          serviceCode: `SER${zeroPad(i + 1, 5)}`
         };
         const service = await ServiceModel.create(data, { transaction });
         const serviceStaff = (req.body.staffIds as []).map((id) => ({
@@ -853,7 +858,6 @@ export class ServiceController {
    *     - in: "formData"
    *       name: isAllowedMarketplace
    *       type: boolean
-   *       required: true
    *     - in: "formData"
    *       name: status
    *       type: string
@@ -1088,7 +1092,7 @@ export class ServiceController {
 
       await elasticsearchClient.update({
         id: params.serviceId,
-        index: 'get-services',
+        index: 'get_services',
         body: {
           doc: serviceData,
           doc_as_upsert: true

@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 
-import { EAppointmentStatus, AppointmentBookingSource } from '../../../utils/consts';
+import { EAppointmentStatus, EAppointmentBookingSource } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
 class AppointmentModel extends Model {
@@ -88,7 +88,7 @@ AppointmentModel.init(
     },
     bookingSource: {
       field: 'booking_source',
-      type: DataTypes.ENUM(...Object.keys(AppointmentBookingSource)),
+      type: DataTypes.ENUM(...Object.values(EAppointmentBookingSource)),
       allowNull: false
     },
     contentReview: {

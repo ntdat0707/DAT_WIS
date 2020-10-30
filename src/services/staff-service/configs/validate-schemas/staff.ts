@@ -10,11 +10,6 @@ const staffIdSchema = Joi.string()
 
 export const createStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
-  locationId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .label('locationId'),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
   email: Joi.string().allow(null, '').label('email'),
@@ -35,6 +30,7 @@ export const createStaffSchema = Joi.object({
         .required()
     )
     .label('workingLocationIds'),
+  isServiceProvider: Joi.boolean().required().label('isServiceProvider'),
   serviceIds: Joi.array()
     .min(1)
     .items(
@@ -61,6 +57,7 @@ export const updateStaffSchema = Joi.object({
   address: Joi.string(),
   color: Joi.string(),
   phone: Joi.string().regex(/^\d+$/).disallow('', null).label('phone'),
+  isServiceProvider: Joi.boolean().required().label('isServiceProvider'),
   workingLocationIds: Joi.array()
     .min(1)
     .required()
@@ -108,7 +105,8 @@ const filterStaffSchema = Joi.object({
         version: ['uuidv4']
       })
     ),
-  searchValue: Joi.string()
+  searchValue: Joi.string(),
+  isServiceProvider: Joi.boolean().label('isServiceProvider')
 });
 
 export const createStaffsSchema = Joi.object({
@@ -170,5 +168,34 @@ const deleteStaffSchema = Joi.object({
     .required()
     .label('staffId')
 });
-
-export { staffIdSchema, filterStaffSchema, getStaffMultipleService, getStaffAvailableTimeSlots, deleteStaffSchema };
+const settingPositionStaffSchema = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  listPostionStaff: Joi.array()
+    .required()
+    .length(2)
+    .items(
+      Joi.object({
+        staffId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .required()
+          .label('staffId'),
+        index: Joi.number().integer().min(0).label('index')
+      })
+    )
+    .label('listPostionStaff')
+});
+export {
+  staffIdSchema,
+  filterStaffSchema,
+  getStaffMultipleService,
+  getStaffAvailableTimeSlots,
+  deleteStaffSchema,
+  settingPositionStaffSchema
+};

@@ -3,7 +3,7 @@ import { ETypeMarketPlaceField } from '../../../../utils/consts';
 
 const createMarketplaceField = Joi.object({
   type: Joi.string()
-    .valid(...Object.keys(ETypeMarketPlaceField))
+    .valid(...Object.values(ETypeMarketPlaceField))
     .required()
     .label('type'),
   name: Joi.string().required().label('name'),

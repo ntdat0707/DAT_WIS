@@ -99,6 +99,22 @@ const staffErrorDetails = {
   E_4011(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_4011', 'Team staff has been not assign', detail);
     return e;
+  },
+
+  /**
+   *
+   * Position
+   * @param {string} [detail=null]
+   * @returns {IErrorDetail}
+   */
+  E_4012(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('40012', 'Position already initialized', detail);
+    return e;
+  },
+
+  E_4013(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('40011', 'StaffId or index invalid', detail);
+    return e;
   }
 };
 

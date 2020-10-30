@@ -28,7 +28,8 @@ import {
   CompanyModel,
   LocationWorkingHourModel,
   TeamStaffModel,
-  CateServiceModel
+  CateServiceModel,
+  PositionModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -38,10 +39,10 @@ import {
   createStaffsSchema,
   updateStaffSchema,
   getStaffMultipleService,
-  deleteStaffSchema
+  deleteStaffSchema,
+  settingPositionStaffSchema
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
-import { companyErrorDetails } from '../../../utils/response-messages/error-details/branch/company';
 
 export class StaffController {
   /**
@@ -134,6 +135,11 @@ export class StaffController {
    *       required: false
    *       schema:
    *          type: string
+   *     - in: query
+   *       name: isServiceProvider
+   *       required: false
+   *       schema:
+   *          type: boolean
    *     responses:
    *       200:
    *         description: success
@@ -152,10 +158,27 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const filter = { workingLocationIds: req.query.workingLocationIds, teamStaffIds: req.query.teamStaffIds };
+      const filter = {
+        workingLocationIds: req.query.workingLocationIds,
+        teamStaffIds: req.query.teamStaffIds,
+        isServiceProvider: req.query.isServiceProvider
+      };
       const validateFilterErrors = validate(filter, filterStaffSchema);
       if (validateFilterErrors) return next(new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST));
-      const query: FindOptions = { include: [] };
+      const query: FindOptions = {
+        include: [],
+        where: {},
+        order: [[{ model: PositionModel, as: 'positions' }, 'index', 'ASC']]
+      };
+
+      if (filter.isServiceProvider !== null && filter.isServiceProvider !== undefined) {
+        query.where = {
+          ...query.where,
+          ...{
+            isServiceProvider: filter.isServiceProvider
+          }
+        };
+      }
       if (
         filter.workingLocationIds &&
         Array.isArray(filter.workingLocationIds) &&
@@ -181,6 +204,13 @@ export class StaffController {
                 attributes: []
               },
               where: { id: filter.workingLocationIds }
+            },
+            {
+              model: PositionModel,
+              as: 'positions',
+              required: false,
+              attributes: ['staff_id', 'index', 'location_id'],
+              where: { locationId: filter.workingLocationIds }
             }
           ]
         ];
@@ -193,6 +223,13 @@ export class StaffController {
               as: 'workingLocations',
               required: true,
               where: { id: workingLocationIds }
+            },
+            {
+              model: PositionModel,
+              as: 'positions',
+              required: false,
+              attributes: ['staff_id', 'index', 'location_id'],
+              where: { locationId: workingLocationIds }
             }
           ]
         ];
@@ -208,7 +245,7 @@ export class StaffController {
             {
               model: TeamStaffModel,
               as: 'teamStaff',
-              required: false,
+              required: true,
               where: { id: filter.teamStaffIds }
             }
           ]
@@ -255,10 +292,6 @@ export class StaffController {
    *       type: file
    *       description: The file to upload.
    *     - in: "formData"
-   *       name: locationId
-   *       type: string
-   *       required: true
-   *     - in: "formData"
    *       name: teamStaffId
    *       type: string
    *     - in: "formData"
@@ -290,6 +323,10 @@ export class StaffController {
    *     - in: "formData"
    *       name: color
    *       type: string
+   *     - in: "formData"
+   *       name: isServiceProvider
+   *       type: boolean
+   *       required: true
    *     - in: "formData"
    *       name: workingLocationIds
    *       type: array
@@ -330,16 +367,9 @@ export class StaffController {
         passportNumber: req.body.passportNumber,
         address: req.body.address,
         color: req.body.color,
+        isServiceProvider: req.body.isServiceProvider,
         id: uuidv4()
       };
-
-      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
 
       if (req.body.workingLocationIds) {
         const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
@@ -365,6 +395,51 @@ export class StaffController {
           staffId: profile.id
         }));
         await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
+
+        for (let i = 0; i < req.body.workingLocationIds.length; i++) {
+          const getMaxIndex: number = await PositionModel.max('index', {
+            where: {
+              ownerId: res.locals.staffPayload.id,
+              locationId: req.body.workingLocationIds[i]
+            }
+          });
+
+          if (getMaxIndex) {
+            const position = {
+              ownerId: res.locals.staffPayload.id,
+              staffId: profile.id,
+              index: getMaxIndex + 1,
+              locationId: req.body.workingLocationIds[i]
+            };
+            await PositionModel.create(position, { transaction });
+          } else {
+            const staffs = await StaffModel.findAll({
+              include: [
+                {
+                  model: LocationModel,
+                  as: 'workingLocations',
+                  required: true,
+                  where: { id: req.body.workingLocationIds[i] }
+                }
+              ]
+            });
+
+            const dataPosition = staffs.map((x, index) => ({
+              ownerId: res.locals.staffPayload.id,
+              staffId: x.id,
+              index: index,
+              locationId: req.body.workingLocationIds[i]
+            }));
+
+            dataPosition.push({
+              ownerId: res.locals.staffPayload.id,
+              staffId: profile.id,
+              index: staffs.length,
+              locationId: req.body.workingLocationIds[i]
+            });
+            await PositionModel.bulkCreate(dataPosition, { transaction });
+          }
+        }
       }
       if (req.body.serviceIds) {
         const serviceStaffData = (req.body.serviceIds as []).map((x) => ({
@@ -373,6 +448,7 @@ export class StaffController {
         }));
         await ServiceStaffModel.bulkCreate(serviceStaffData, { transaction });
       }
+
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
@@ -433,6 +509,14 @@ export class StaffController {
    *       name: teamStaffId
    *       type: string
    *     - in: "formData"
+   *       name: isServiceProvider
+   *       type: boolean
+   *       required: true
+   *     - in: "formData"
+   *       name: isAllowedMarketPlace
+   *       type: boolean
+   *       required: true
+   *     - in: "formData"
    *       name: workingLocationIds
    *       type: array
    *       items:
@@ -469,7 +553,8 @@ export class StaffController {
         address: req.body.address,
         phone: req.body.phone,
         color: req.body.color,
-        isAllowedMarketPlace: req.body.isAllowedMarketPlace
+        isAllowedMarketPlace: req.body.isAllowedMarketPlace,
+        isServiceProvider: req.body.isServiceProvider
       };
       if (req.file) profile.avatarPath = (req.file as any).location;
 
@@ -921,6 +1006,18 @@ export class StaffController {
       await LocationStaffModel.bulkCreate(workingLocationData, { transaction });
       const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
       await StaffModel.update({ onboardStep: 3 }, { where: { id: company.ownerId }, transaction });
+
+      const arrPosition = [];
+      for (let i = 0; i < staffs.length; i++) {
+        const position = {
+          ownerId: res.locals.staffPayload.id,
+          staffId: staffs[i].id,
+          index: i,
+          locationId: req.body.locationId
+        };
+        arrPosition.push(position);
+      }
+      await PositionModel.bulkCreate(arrPosition, { transaction });
       //commit transaction
       await transaction.commit();
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
@@ -1462,17 +1559,16 @@ export class StaffController {
    * definitions:
    *   SettingPositionStaff:
    *       required:
-   *           - ownerId
+   *           - locationId
    *           - listPostionStaff
    *       properties:
-   *           ownerId:
-   *               type: string
+   *           locationId:
+   *              type: string
    *           listPostionStaff:
    *               type: array
    *               items:
    *                   $ref: '#/definitions/PostionStaffDetail'
    */
-
   /**
    * @swagger
    * /staff/setting-position-staff:
@@ -1497,40 +1593,55 @@ export class StaffController {
    *         description: Internal server errors
    */
   public settingPositionStaff = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
-      const dataInput = { ...req.body };
-      const validateErrors = validate(dataInput, getStaffMultipleService);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-
-      const staffIds = await ServiceStaffModel.findAll({
-        where: {
-          serviceId: {
-            [Op.in]: dataInput.serviceIds
-          }
-        }
-      }).then((services) => services.map((service) => service.staffId));
-      const staffs = await StaffModel.findAll({
-        include: [
-          {
-            model: LocationModel,
-            as: 'workingLocations',
-            through: { attributes: [] },
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-            where: { locationId: dataInput.locationId }
-          }
-        ],
-        where: {
-          id: { [Op.in]: staffIds }
-        },
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      });
-
-      if (!staffs) {
-        return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
+      const { workingLocationIds } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(req.body.locationId)) {
+        return next(new CustomError(branchErrorDetails.E_1001(), HttpStatus.FORBIDDEN));
       }
 
-      res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
+      const dataInput = { ...req.body };
+      const id = res.locals.staffPayload.id;
+      const validateErrors = validate(dataInput, settingPositionStaffSchema);
+      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+
+      const existPosition1 = await PositionModel.findOne({
+        where: {
+          ownerId: id,
+          staffId: dataInput.listPostionStaff[0].staffId,
+          index: dataInput.listPostionStaff[0].index,
+          locationId: req.body.locationId
+        }
+      });
+
+      const existPosition2 = await PositionModel.findOne({
+        where: {
+          ownerId: id,
+          staffId: dataInput.listPostionStaff[1].staffId,
+          index: dataInput.listPostionStaff[1].index,
+          locationId: req.body.locationId
+        }
+      });
+
+      if (!existPosition1 || !existPosition2) {
+        return next(new CustomError(staffErrorDetails.E_4013(), HttpStatus.BAD_REQUEST));
+      }
+
+      const temp = existPosition2.index;
+      existPosition2.index = existPosition1.index;
+      existPosition1.index = temp;
+
+      transaction = await sequelize.transaction();
+
+      await existPosition1.save({ transaction });
+      await existPosition2.save({ transaction });
+      await transaction.commit();
+
+      res.status(HttpStatus.OK).send(buildSuccessMessage({ existPosition1, existPosition2 }));
     } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
       return error;
     }
   };
@@ -1640,7 +1751,6 @@ export class StaffController {
    */
   public getStaffInTeam = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const companyId = res.locals.staffPayload.companyId;
       const teamStaffId = req.query.teamStaffId;
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
@@ -1649,15 +1759,21 @@ export class StaffController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      const teamStaff = await TeamStaffModel.findOne({ where: { companyId } });
-      if (!teamStaff)
-        return next(
-          new CustomError(companyErrorDetails.E_4002('You can not access to this company'), HttpStatus.FORBIDDEN)
-        );
       const query: FindOptions = {
-        where: { teamStaffId: teamStaffId },
+        include: [],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       };
+      query.include = [
+        ...query.include,
+        ...[
+          {
+            model: TeamStaffModel,
+            as: 'teamStaff',
+            required: true,
+            where: { id: teamStaffId, companyId: res.locals.staffPayload.companyId }
+          }
+        ]
+      ];
       const staffs = await paginate(
         StaffModel,
         query,
@@ -1729,6 +1845,68 @@ export class StaffController {
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /staff/init-position-staff/{locationId}:
+   *   post:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: initPositionStaff
+   *     parameters:
+   *     - in: path
+   *       name: locationId
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: Success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: |
+   *           </br> xxx1: Something error
+   *           </br> xxx2: Internal server errors
+   */
+  public initPositionStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { workingLocationIds } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(req.params.locationId)) {
+        return next(new CustomError(branchErrorDetails.E_1001(), HttpStatus.FORBIDDEN));
+      }
+
+      const existLocationId = await PositionModel.findOne({ where: { locationId: req.params.locationId } });
+      if (existLocationId) {
+        return next(new CustomError(staffErrorDetails.E_4012(), HttpStatus.BAD_REQUEST));
+      }
+
+      const staffs = await StaffModel.findAll({
+        include: [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            required: true,
+            where: { id: req.params.locationId }
+          }
+        ]
+      });
+
+      const dataPosition = staffs.map((x, index) => ({
+        ownerId: res.locals.staffPayload.id,
+        staffId: x.id,
+        index: index,
+        locationId: req.params.locationId
+      }));
+
+      await PositionModel.bulkCreate(dataPosition);
+
+      return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }

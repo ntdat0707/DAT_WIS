@@ -1,5 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
-import { StatusPipelineStage } from '../../../utils/consts';
+import { EStatusPipelineStage } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
 class DealModel extends Model {
@@ -17,6 +17,7 @@ class DealModel extends Model {
   public closingDate: Date;
   public probability: number;
   public createdBy: string;
+  public appointmentId: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -71,8 +72,8 @@ DealModel.init(
     },
     status: {
       field: 'status',
-      type: DataTypes.ENUM(StatusPipelineStage.OPEN, StatusPipelineStage.WON, StatusPipelineStage.LOST),
-      defaultValue: StatusPipelineStage.OPEN
+      type: DataTypes.ENUM(...Object.values(EStatusPipelineStage)),
+      defaultValue: EStatusPipelineStage.OPEN
     },
     expectedCloseDate: {
       field: 'expected_close_date',
@@ -91,6 +92,11 @@ DealModel.init(
     },
     createdBy: {
       field: 'created_by',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    appointmentId: {
+      field: 'appointment_id',
       type: DataTypes.UUIDV4,
       allowNull: true
     },

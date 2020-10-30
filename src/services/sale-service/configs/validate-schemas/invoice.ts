@@ -1,12 +1,11 @@
 import Joi from 'joi';
-import { ESourceType } from '../../../../utils/consts';
+import { EInvoiceSourceType } from '../../../../utils/consts';
 
 const createInvoiceSchema = Joi.object({
   invoiceId: Joi.string()
     .guid({
       version: ['uuidv4']
     })
-    .required()
     .label('invoiceId'),
   locationId: Joi.string()
     .guid({
@@ -27,7 +26,13 @@ const createInvoiceSchema = Joi.object({
     .allow(null)
     .label('customerWisereId'),
   source: Joi.string()
-    .valid(ESourceType.POS, ESourceType.WEBSITE, ESourceType.FACEBOOK, ESourceType.MARKETPLACE, ESourceType.OTHER)
+    .valid(
+      EInvoiceSourceType.POS,
+      EInvoiceSourceType.WEBSITE,
+      EInvoiceSourceType.FACEBOOK,
+      EInvoiceSourceType.MARKETPLACE,
+      EInvoiceSourceType.OTHER
+    )
     .allow(null, '')
     .label('source'),
   note: Joi.string().allow(null, '').label('note'),
@@ -115,76 +120,89 @@ const createInvoiceLogSchema = Joi.object({
     })
     .required()
     .label('locationId'),
-  appointmentId: Joi.string().guid({
-    version: ['uuidv4']
-  }),
-  customerWisereId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .allow(null)
-    .label('customerWisereId'),
-  source: Joi.string()
-    .valid(ESourceType.POS, ESourceType.WEBSITE, ESourceType.FACEBOOK, ESourceType.MARKETPLACE, ESourceType.OTHER)
-    .allow(null, '')
-    .label('source'),
-  note: Joi.string().allow(null, '').label('note'),
-  discountId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .allow(null)
-    .label('discountId'),
-  tax: Joi.number().integer().min(0).allow(null).label('tax'),
-  totalQuantity: Joi.number().integer().min(1).required().label('totalQuantity'),
-  subTotal: Joi.number().integer().min(0).required().label('subTotal'),
-  totalAmount: Joi.number().integer().min(0).required().label('totalAmount'),
-  balance: Joi.number().integer().min(0).required().label('balance'),
-  listInvoiceDetail: Joi.array()
+  listInvoices: Joi.array()
     .min(1)
     .required()
     .items(
       Joi.object({
-        serviceId: Joi.string()
+        appointmentId: Joi.string().guid({
+          version: ['uuidv4']
+        }),
+        customerWisereId: Joi.string()
           .guid({
             version: ['uuidv4']
           })
-          .required()
-          .label('serviceId'),
-        unit: Joi.string().allow(null, '').label('unit'),
-        quantity: Joi.number().integer().min(1).required().label('quantity'),
-        listStaff: Joi.array()
+          .allow(null)
+          .label('customerWisereId'),
+        source: Joi.string()
+          .valid(
+            EInvoiceSourceType.POS,
+            EInvoiceSourceType.WEBSITE,
+            EInvoiceSourceType.FACEBOOK,
+            EInvoiceSourceType.MARKETPLACE,
+            EInvoiceSourceType.OTHER
+          )
+          .allow(null, '')
+          .label('source'),
+        note: Joi.string().allow(null, '').label('note'),
+        discountId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .allow(null)
+          .label('discountId'),
+        tax: Joi.number().integer().min(0).allow(null).label('tax'),
+        totalQuantity: Joi.number().integer().min(1).required().label('totalQuantity'),
+        subTotal: Joi.number().integer().min(0).required().label('subTotal'),
+        totalAmount: Joi.number().integer().min(0).required().label('totalAmount'),
+        balance: Joi.number().integer().min(0).required().label('balance'),
+        listInvoiceDetails: Joi.array()
           .min(1)
           .required()
           .items(
             Joi.object({
-              staffId: Joi.string()
+              serviceId: Joi.string()
                 .guid({
                   version: ['uuidv4']
                 })
                 .required()
-                .label('staffId')
+                .label('serviceId'),
+              unit: Joi.string().allow(null, '').label('unit'),
+              quantity: Joi.number().integer().min(1).required().label('quantity'),
+              listStaff: Joi.array()
+                .min(1)
+                .required()
+                .items(
+                  Joi.object({
+                    staffId: Joi.string()
+                      .guid({
+                        version: ['uuidv4']
+                      })
+                      .required()
+                      .label('staffId')
+                  })
+                )
+                .label('listStaff')
             })
           )
-          .label('listStaff')
+          .label('listInvoiceDetails')
       })
     )
-    .label('listInvoiceDetail'),
-  listPayment: Joi.array()
-    .allow(null)
-    .items(
-      Joi.object({
-        paymentMethodId: Joi.string()
-          .guid({
-            version: ['uuidv4']
-          })
-          .required()
-          .label('paymentMethodId'),
-        amount: Joi.number().integer().min(1).required().label('amount'),
-        name: Joi.string().allow(null, '').label('name'),
-        accountNumber: Joi.number().integer().allow(null).label('accountNumber')
-      })
-    )
-    .label('listPayment')
+    .label('listInvoices')
 });
-export { createInvoiceSchema, receiptIdSchema, customerWisereIdSchema, createInvoiceLogSchema };
+
+const getListInvoicesLog = Joi.object({
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  staffId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('staffId')
+});
+export { createInvoiceSchema, receiptIdSchema, customerWisereIdSchema, createInvoiceLogSchema, getListInvoicesLog };

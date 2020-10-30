@@ -23,7 +23,8 @@ import {
   CompanyModel,
   LocationModel,
   PipelineModel,
-  PipelineStageModel
+  PipelineStageModel,
+  PaymentMethodModel
 } from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
@@ -46,9 +47,9 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import { generatePWD } from '../../../utils/lib/generatePassword';
 import { v4 } from 'public-ip';
-import { LoginLogModel } from '../../../repositories/mongo/models/login-log-model';
+import { LoginLogModel } from '../../../repositories/mongo/models';
 import geoip from 'geoip-lite';
-import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
+import { MqttUserModel } from '../../../repositories/mongo/models';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
@@ -119,6 +120,34 @@ export class AuthController {
       data.onboardStep = 0;
       await StaffModel.create({ ...data, ...{ isBusinessAccount: true, id: staffId } }, { transaction });
       await CompanyModel.create({ id: companyId, ownerId: staffId }, { transaction });
+
+      //create paymentMethod
+      const paymentMethods = [];
+      for (let i = 1; i < 5; i++) {
+        let typeInfor: any = {};
+        switch (i) {
+          case 1:
+            typeInfor = { paymentType: 'cash', paymentTypeNumber: 1 };
+            break;
+          case 2:
+            typeInfor = { paymentType: 'card', paymentTypeNumber: 2 };
+            break;
+          case 3:
+            typeInfor = { paymentType: 'wallet', paymentTypeNumber: 3 };
+            break;
+          case 4:
+            typeInfor = { paymentType: 'other', paymentTypeNumber: 4 };
+            break;
+        } // 1:cash, 2:card, 3:waller, 4:other
+        const paymentMethodData = {
+          id: uuidv4(),
+          companyId: companyId,
+          paymentType: typeInfor.paymentType,
+          paymentTypeNumber: typeInfor.paymentTypeNumber
+        };
+        paymentMethods.push(paymentMethodData);
+      }
+      await PaymentMethodModel.bulkCreate(paymentMethods, { transaction });
 
       const pipelineId1 = uuidv4();
       const pipelineId2 = uuidv4();
@@ -232,18 +261,13 @@ export class AuthController {
         },
         {
           pipelineId: pipelineId4,
-          name: 'Confirmed',
+          name: 'Contact Made',
           order: 2
         },
         {
           pipelineId: pipelineId4,
-          name: 'Purchased',
+          name: 'Confirmed',
           order: 3
-        },
-        {
-          pipelineId: pipelineId4,
-          name: 'Treatment Planning',
-          order: 4
         }
       ];
 

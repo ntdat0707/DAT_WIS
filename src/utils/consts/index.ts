@@ -106,7 +106,7 @@ export {
   IManagementEditAppointmentDetailData
 };
 
-export enum BusinessType {
+export enum EBusinessType {
   DENTAL = 'DENTAL',
   SPA = 'SPA',
   BEAUTY_SALON = 'BEAUTY_SALON',
@@ -115,15 +115,16 @@ export enum BusinessType {
   MASSAGE = 'MASSAGE'
 }
 
-export enum AppointmentBookingSource {
-  STAFF = 'STAFF',
-  MARKETPLACE = 'MARKETPLACE'
+export enum EAppointmentBookingSource {
+  SCHEDULED = 'SCHEDULED',
+  MARKETPLACE = 'MARKETPLACE',
+  WALK_IN = 'WALK_IN'
 }
 
-export enum StatusPipelineStage {
-  OPEN = 'Open',
-  WON = 'Won',
-  LOST = 'Lost'
+export enum EStatusPipelineStage {
+  OPEN = 'open',
+  WON = 'won',
+  LOST = 'lost'
 }
 
 export enum ESource {
@@ -150,7 +151,7 @@ export enum EContactType {
   MOBILE = 'mobile'
 }
 
-export enum ESourceType {
+export enum EInvoiceSourceType {
   POS = 'pos',
   WEBSITE = 'website',
   FACEBOOK = 'facebook',
@@ -172,9 +173,9 @@ export enum EBalanceType {
 }
 
 export enum ESourceLoginType {
-  WEB = 'web',
-  IOS = 'ios',
-  ANDROID = 'android'
+  WEB = 'WEB',
+  IOS = 'IOS',
+  ANDROID = 'ANDROID'
 }
 
 export enum EExtraTimeType {

@@ -1656,7 +1656,8 @@ export class SearchController {
               ]
             }
           }
-        }
+        },
+        ignore: [404]
       };
 
       let countTypeAvailable = 1;

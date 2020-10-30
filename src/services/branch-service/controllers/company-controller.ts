@@ -74,7 +74,6 @@ export class CompanyController {
           ownerId: id
         }
       });
-
       if (!company) {
         transaction = await sequelize.transaction();
         company = await CompanyModel.create({ ownerId: id }, { transaction });

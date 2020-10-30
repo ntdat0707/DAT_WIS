@@ -194,7 +194,7 @@ LocationModel.belongsToMany(CustomerModel, {
   foreignKey: 'locationId'
 });
 
-StaffModel.hasMany(PositionModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'position' });
+StaffModel.hasMany(PositionModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'positions' });
 PositionModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 
 StaffModel.hasMany(PositionModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'listPosition' });
@@ -215,8 +215,8 @@ StaffModel.belongsTo(TeamStaffModel, { foreignKey: 'teamStaffId', as: 'teamStaff
 CompanyModel.hasMany(TeamStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'teamStaffs' });
 TeamStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
 
-CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerId', sourceKey: 'id', as: 'receipts' });
-ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerId', as: 'customerWisere' });
+CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
 LocationModel.hasMany(ReceiptModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'receipts' });
 ReceiptModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
@@ -232,6 +232,9 @@ PaymentModel.belongsTo(PaymentMethodModel, { foreignKey: 'paymentMethodId', as: 
 
 ProviderModel.hasMany(PaymentModel, { foreignKey: 'providerId', sourceKey: 'id', as: 'payments' });
 PaymentModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider' });
+
+StaffModel.hasMany(CustomerWisereModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'customerWiseres' });
+CustomerWisereModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
 export {
   sequelize,
@@ -269,5 +272,6 @@ export {
   DiscountModel,
   PaymentMethodModel,
   ProviderModel,
-  TipsModel
+  TipsModel,
+  PositionModel
 };
