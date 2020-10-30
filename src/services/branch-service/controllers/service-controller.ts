@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import _ from 'lodash';
-import shortId from 'shortid';
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
@@ -761,6 +760,7 @@ export class ServiceController {
 
       transaction = await sequelize.transaction();
       for (let i = 0; i < req.body.serviceDetails.length; i++) {
+        const zeroPad = (num: number, places: number) => String(num).padStart(places, '0');
         const data = {
           salePrice: !isNaN(parseInt(req.body.serviceDetails[i].salePrice, 10))
             ? req.body.serviceDetails[i].salePrice
@@ -768,7 +768,7 @@ export class ServiceController {
           duration: req.body.serviceDetails[i].duration,
           cateServiceId: req.body.cateServiceId,
           name: req.body.serviceDetails[i].name,
-          serviceCode: shortId.generate()
+          serviceCode: `SER${zeroPad(i + 1, 5)}`
         };
         const service = await ServiceModel.create(data, { transaction });
         const serviceStaff = (req.body.staffIds as []).map((id) => ({
