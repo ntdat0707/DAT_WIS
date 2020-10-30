@@ -685,7 +685,9 @@ export class AppointmentController extends BaseController {
             await AppointmentModel.update({ isPrimary: true }, { where: { id: appointmentInGroup.id }, transaction });
           }
         }
-        const deal = await DealModel.findOne({ where: { appointmentId: data.appointmentId } });
+        const deal = await DealModel.findOne({
+          where: { appointmentId: data.appointmentId, status: EStatusPipelineStage.OPEN }
+        });
         if (deal) {
           await deal.update({ status: EStatusPipelineStage.LOST }, { transaction });
         }
@@ -694,7 +696,9 @@ export class AppointmentController extends BaseController {
           { status: data.status },
           { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
         );
-        const deal = await DealModel.findOne({ where: { appointmentId: data.appointmentId } });
+        const deal = await DealModel.findOne({
+          where: { appointmentId: data.appointmentId, status: EStatusPipelineStage.OPEN }
+        });
         if (deal) {
           if (data.status === EAppointmentStatus.NEW) {
             const pipeline: any = await PipelineModel.findOne({
