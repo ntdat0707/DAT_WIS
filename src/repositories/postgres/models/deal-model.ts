@@ -1,5 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
-import { StatusPipelineStage } from '../../../utils/consts';
+import { EStatusPipelineStage } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
 class DealModel extends Model {
@@ -72,8 +72,8 @@ DealModel.init(
     },
     status: {
       field: 'status',
-      type: DataTypes.ENUM(StatusPipelineStage.OPEN, StatusPipelineStage.WON, StatusPipelineStage.LOST),
-      defaultValue: StatusPipelineStage.OPEN
+      type: DataTypes.ENUM(...Object.values(EStatusPipelineStage)),
+      defaultValue: EStatusPipelineStage.OPEN
     },
     expectedCloseDate: {
       field: 'expected_close_date',

@@ -37,8 +37,22 @@ elasticsearchClient.ping(
 );
 
 const esClient = new Client({
-  node: 'http://128.199.79.238:9201',
+  node: `http://${env!.ELASTICSEARCH_HOST || 'localhost'}:${env!.ELASTICSEARCH_PORT || 9200}`,
   ssl: { rejectUnauthorized: false }
+});
+
+esClient.ping({}, { requestTimeout: 3 * 60 * 1000 }, (error) => {
+  if (error) {
+    logger.error({
+      label: 'Elasticsearch',
+      message: `Elasticsearch connect to ${elsConfig.host} failed ${error}`
+    });
+  } else {
+    logger.info({
+      label: 'Elasticsearch',
+      message: `Elasticsearch connected to ${elsConfig.host}`
+    });
+  }
 });
 
 export { elasticsearchClient, esClient };

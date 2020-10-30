@@ -233,6 +233,9 @@ PaymentModel.belongsTo(PaymentMethodModel, { foreignKey: 'paymentMethodId', as: 
 ProviderModel.hasMany(PaymentModel, { foreignKey: 'providerId', sourceKey: 'id', as: 'payments' });
 PaymentModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider' });
 
+StaffModel.hasMany(CustomerWisereModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'customerWiseres' });
+CustomerWisereModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
+
 export {
   sequelize,
   StaffModel,

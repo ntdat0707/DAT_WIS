@@ -34,7 +34,7 @@ import {
 } from '../../../utils/response-messages/error-details';
 import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
-import { EAppointmentStatus, StatusPipelineStage } from '../../../utils/consts';
+import { EAppointmentStatus, EStatusPipelineStage } from '../../../utils/consts';
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 export class DealController {
@@ -573,7 +573,7 @@ export class DealController {
       if (!conditions.showStatus) {
         query.where = {
           ...query.where,
-          ...{ status: { [Op.eq]: StatusPipelineStage.OPEN } }
+          ...{ status: { [Op.eq]: EStatusPipelineStage.OPEN } }
         };
       }
       const conditionPipelineId = conditions.pipelineId
@@ -857,14 +857,14 @@ export class DealController {
       }
       if (deal.appointmentId) {
         if (
-          (deal.status === StatusPipelineStage.WON || deal.status === StatusPipelineStage.LOST) &&
-          data.status === StatusPipelineStage.OPEN
+          (deal.status === EStatusPipelineStage.WON || deal.status === EStatusPipelineStage.LOST) &&
+          data.status === EStatusPipelineStage.OPEN
         ) {
           throw new CustomError(dealErrorDetails.E_3303(`can not reopen deal ${dealId} `), httpStatus.BAD_REQUEST);
         }
       }
       let closingDate: any;
-      if (data.status === StatusPipelineStage.WON || data.status === StatusPipelineStage.LOST) {
+      if (data.status === EStatusPipelineStage.WON || data.status === EStatusPipelineStage.LOST) {
         closingDate = Date.now();
       } else {
         closingDate = null;
@@ -878,7 +878,7 @@ export class DealController {
         } else if (pipelineStage.order === 3) {
           changeStatus = EAppointmentStatus.CONFIRMED;
         }
-        if (data.status === StatusPipelineStage.LOST) {
+        if (data.status === EStatusPipelineStage.LOST) {
           const appointment = await AppointmentModel.findOne({ where: { id: deal.appointmentId } });
           if (appointment) {
             if (appointment.status !== EAppointmentStatus.IN_SERVICE) {
@@ -1161,21 +1161,21 @@ export class DealController {
       }
       if (deal.appointmentId) {
         if (
-          (deal.status === StatusPipelineStage.WON || deal.status === StatusPipelineStage.LOST) &&
-          status === StatusPipelineStage.OPEN
+          (deal.status === EStatusPipelineStage.WON || deal.status === EStatusPipelineStage.LOST) &&
+          status === EStatusPipelineStage.OPEN
         ) {
           throw new CustomError(dealErrorDetails.E_3303(`can not reopen deal ${dealId} `), httpStatus.BAD_REQUEST);
         }
       }
       let closingDate: any;
-      if (status === StatusPipelineStage.WON || status === StatusPipelineStage.LOST) {
+      if (status === EStatusPipelineStage.WON || status === EStatusPipelineStage.LOST) {
         closingDate = Date.now();
       } else {
         closingDate = null;
       }
       transaction = await sequelize.transaction();
       if (deal.appointmentId) {
-        if (status === StatusPipelineStage.LOST) {
+        if (status === EStatusPipelineStage.LOST) {
           const appointment = await AppointmentModel.findOne({ where: { id: deal.appointmentId } });
           if (appointment) {
             if (appointment.status !== EAppointmentStatus.IN_SERVICE) {

@@ -20,7 +20,7 @@ const bookingErrorDetails = {
    * @returns {IErrorDetail}
    */
   E_2001(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('2000', 'Appointment detail not match', detail);
+    const e = buildErrorDetail('2001', 'Appointment detail not match', detail);
     return e;
   },
   /**

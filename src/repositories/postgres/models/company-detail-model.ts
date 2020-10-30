@@ -1,6 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-import { BusinessType } from '../../../utils/consts';
+import { EBusinessType } from '../../../utils/consts';
 class CompanyDetailModel extends Model {
   public id: string;
   public description!: string;
@@ -28,7 +28,7 @@ CompanyDetailModel.init(
     },
     businessType: {
       field: 'business_type',
-      type: DataTypes.ENUM(...Object.keys(BusinessType)),
+      type: DataTypes.ENUM(...Object.values(EBusinessType)),
       allowNull: true
     },
     businessName: {

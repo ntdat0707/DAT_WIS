@@ -16,10 +16,10 @@ const createCustomerWisereSchema = Joi.object({
   address: Joi.string().label('address'),
   color: Joi.string().regex(/^#[0-9A-F]{6}$/i),
   source: Joi.string()
-    .valid(...Object.keys(ESource))
+    .valid(...Object.values(ESource))
     .label('source'),
   label: Joi.string()
-    .valid(...Object.keys(ELabel))
+    .valid(...Object.values(ELabel))
     .label('label'),
   note: Joi.string().label('note'),
   job: Joi.string().label('job'),

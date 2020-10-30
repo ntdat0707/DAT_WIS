@@ -755,6 +755,11 @@ export class CustomerController {
             model: ContactModel,
             as: 'contacts',
             required: false
+          },
+          {
+            model: StaffModel,
+            as: 'owner',
+            required: false
           }
         ]
       });

@@ -28,7 +28,7 @@ import {
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
 import { IRequestOptions, request } from '../../../utils/request';
-import { AppointmentBookingSource } from '../../../utils/consts';
+import { EAppointmentBookingSource, EAppointmentStatus } from '../../../utils/consts';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -105,7 +105,7 @@ export class AppointmentGroupController extends BaseController {
         locationId: req.body.locationId,
         date: req.body.date,
         appointments: req.body.appointments,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, createAppointmentGroupSchema);
       if (validateErrors) {
@@ -159,6 +159,11 @@ export class AppointmentGroupController extends BaseController {
         }
         const newAppointmentId = uuidv4();
         appointmentIds.push(newAppointmentId);
+
+        let statusApp = EAppointmentStatus.NEW;
+        if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+          statusApp = EAppointmentStatus.CONFIRMED;
+        }
         createAppointmentTasks.push({
           id: newAppointmentId,
           appointmentGroupId: newAppointmentGroupId,
@@ -167,7 +172,8 @@ export class AppointmentGroupController extends BaseController {
           customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
           isPrimary: apptData.isPrimary === true ? true : false,
           appointmentCode: appointmentCode,
-          bookingSource: data.bookingSource
+          bookingSource: data.bookingSource,
+          status: statusApp
         });
 
         //appointment detail data
@@ -519,7 +525,7 @@ export class AppointmentGroupController extends BaseController {
         createNewAppointments: req.body.createNewAppointments,
         updateAppointments: req.body.updateAppointments,
         deleteAppointments: req.body.deleteAppointments,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, updateAppointmentGroupSchema);
       if (validateErrors) {
@@ -656,6 +662,10 @@ export class AppointmentGroupController extends BaseController {
           }
           const newAppointmentId = uuidv4();
           appointmentIds.push(newAppointmentId);
+          let statusApp = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusApp = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentTasks.push({
             id: newAppointmentId,
             appointmentGroupId: data.appointmentGroupId,
@@ -664,7 +674,8 @@ export class AppointmentGroupController extends BaseController {
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
             appointmentCode: appointmentCode,
-            bookingSource: data.bookingSource
+            bookingSource: data.bookingSource,
+            status: statusApp
           });
 
           //appointment detail data
@@ -695,6 +706,7 @@ export class AppointmentGroupController extends BaseController {
 
       if (data.updateAppointments && data.updateAppointments.length > 0) {
         const arrApptCode = [];
+        const arrApptStatus = [];
         for (let i = 0; i < data.updateAppointments.length; i++) {
           const appointment = await AppointmentModel.findOne({
             where: {
@@ -712,6 +724,7 @@ export class AppointmentGroupController extends BaseController {
             );
           }
           arrApptCode.push(appointment.appointmentCode);
+          arrApptStatus.push(appointment.status);
           await AppointmentModel.destroy({
             where: { id: data.updateAppointments[i].appointmentId },
             transaction
@@ -750,6 +763,13 @@ export class AppointmentGroupController extends BaseController {
         for (const apptData of data.updateAppointments) {
           const newAppointmentId = uuidv4();
           appointmentIds.push(newAppointmentId);
+          let statusApp = arrApptStatus[index];
+          if (
+            arrApptStatus[index] === EAppointmentStatus.NEW &&
+            req.body.bookingSource === EAppointmentBookingSource.WALK_IN
+          ) {
+            statusApp = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentTasks.push({
             id: newAppointmentId,
             appointmentGroupId: data.appointmentGroupId,
@@ -758,7 +778,8 @@ export class AppointmentGroupController extends BaseController {
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
             appointmentCode: arrApptCode[index],
-            bookingSource: data.bookingSource
+            bookingSource: data.bookingSource,
+            status: statusApp
           });
           index++;
 

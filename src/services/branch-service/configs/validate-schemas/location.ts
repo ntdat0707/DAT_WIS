@@ -193,7 +193,7 @@ const searchSchema = Joi.object({
   latitude: Joi.number().allow(null).label('latitude'),
   longitude: Joi.number().allow(null).label('longitude'),
   searchBy: Joi.string()
-    .valid(...Object.keys(ESearchBy))
+    .valid(...Object.values(ESearchBy))
     .allow(null, '')
     .label('searchBy'),
   order: Joi.string()

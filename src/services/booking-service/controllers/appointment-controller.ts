@@ -16,8 +16,8 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   EAppointmentStatus,
   AppointmentStatusRules,
-  AppointmentBookingSource,
-  StatusPipelineStage
+  EAppointmentBookingSource,
+  EStatusPipelineStage
 } from '../../../utils/consts';
 import {
   sequelize,
@@ -34,7 +34,8 @@ import {
   RecentBookingModel,
   DealModel,
   PipelineModel,
-  PipelineStageModel
+  PipelineStageModel,
+  LocationImageModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -150,7 +151,7 @@ export class AppointmentController extends BaseController {
         customerWisereId: req.body.customerWisereId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED,
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED,
         appointmentGroupId: req.body.appointmentGroupId,
         relatedAppointmentId: req.body.relatedAppointmentId
       };
@@ -215,6 +216,10 @@ export class AppointmentController extends BaseController {
         appointmentCode: appointmentCode,
         date: dataInput.date
       };
+
+      if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+        appointmentData.status = EAppointmentStatus.CONFIRMED;
+      }
 
       if (dataInput.appointmentGroupId) {
         const appointmentGroup = await AppointmentGroupModel.findOne({
@@ -289,13 +294,18 @@ export class AppointmentController extends BaseController {
           }
         });
         const appointmentDetailId = uuidv4();
+        let statusAppDetail = EAppointmentStatus.NEW;
+        if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+          statusAppDetail = EAppointmentStatus.CONFIRMED;
+        }
         appointmentDetailData.push({
           id: appointmentDetailId,
           appointmentId,
           serviceId: appointmentDetails[i].serviceId,
           resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
           startTime: appointmentDetails[i].startTime,
-          duration: appointmentDetails[i].duration
+          duration: appointmentDetails[i].duration,
+          status: statusAppDetail
         });
         for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
           appointmentDetailStaffData.push({
@@ -675,11 +685,57 @@ export class AppointmentController extends BaseController {
             await AppointmentModel.update({ isPrimary: true }, { where: { id: appointmentInGroup.id }, transaction });
           }
         }
+        const deal = await DealModel.findOne({ where: { appointmentId: data.appointmentId } });
+        if (deal) {
+          await deal.update({ status: EStatusPipelineStage.LOST }, { transaction });
+        }
       } else {
         await AppointmentModel.update(
           { status: data.status },
           { where: { id: data.appointmentId, locationId: workingLocationIds }, transaction }
         );
+        const deal = await DealModel.findOne({ where: { appointmentId: data.appointmentId } });
+        if (deal) {
+          if (data.status === EAppointmentStatus.NEW) {
+            const pipeline: any = await PipelineModel.findOne({
+              where: { companyId: res.locals.staffPayload.companyId, name: 'Appointment' },
+              include: [
+                {
+                  model: PipelineStageModel,
+                  as: 'pipelineStages',
+                  where: { order: 1 }
+                }
+              ]
+            });
+            if (pipeline) {
+              await deal.update({ pipelineStageId: pipeline.pipelineStages[0].id }, { transaction });
+            }
+          }
+          if (data.status === EAppointmentStatus.CONFIRMED) {
+            const pipeline: any = await PipelineModel.findOne({
+              where: { companyId: res.locals.staffPayload.companyId, name: 'Appointment' },
+              include: [
+                {
+                  model: PipelineStageModel,
+                  as: 'pipelineStages',
+                  where: { order: 3 }
+                }
+              ]
+            });
+            if (pipeline) {
+              await deal.update({ pipelineStageId: pipeline.pipelineStages[0].id }, { transaction });
+            }
+          }
+          if (
+            data.status === EAppointmentStatus.ARRIVED ||
+            data.status === EAppointmentStatus.IN_SERVICE ||
+            data.status === EAppointmentStatus.COMPLETED
+          ) {
+            if (deal.status === EStatusPipelineStage.OPEN) {
+              await deal.update({ status: EStatusPipelineStage.WON }, { transaction });
+            }
+          }
+        }
       }
       const newAppointmentStatus = await AppointmentModel.findOne({
         where: { id: data.appointmentId, locationId: workingLocationIds },
@@ -879,7 +935,7 @@ export class AppointmentController extends BaseController {
         createNewAppointments: req.body.createNewAppointments,
         customerWisereId: req.body.customerWisereId,
         date: req.body.date,
-        bookingSource: req.body.bookingSource ? req.body.bookingSource : AppointmentBookingSource.SCHEDULED
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
 
       const validateErrors = validate(data, updateAppointmentSchema);
@@ -917,7 +973,7 @@ export class AppointmentController extends BaseController {
       }
       // Check customer wisere exist
       if (data.customerWisereId) {
-        if (appointment.bookingSource === AppointmentBookingSource.MARKETPLACE) {
+        if (appointment.bookingSource === EAppointmentBookingSource.MARKETPLACE) {
           return next(
             new CustomError(
               bookingErrorDetails.E_2009(
@@ -1002,18 +1058,28 @@ export class AppointmentController extends BaseController {
               date: data.date,
               appointmentCode: appointmentCode
             };
+
+            if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              newAppointmentData.status = EAppointmentStatus.CONFIRMED;
+            }
+
             await AppointmentModel.create(newAppointmentData, { transaction });
             const appointmentDetailData: any[] = [];
             const appointmentDetailStaffData = [];
             for (let index = 0; index < appointmentDetails.length; index++) {
               const appointmentDetailId = uuidv4();
+              let statusAppDetail = EAppointmentStatus.NEW;
+              if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+                statusAppDetail = EAppointmentStatus.CONFIRMED;
+              }
               appointmentDetailData.push({
                 id: appointmentDetailId,
                 appointmentId,
                 serviceId: appointmentDetails[index].serviceId,
                 resourceId: appointmentDetails[index].resourceId ? appointmentDetails[index].resourceId : null,
                 startTime: appointmentDetails[index].startTime,
-                duration: appointmentDetails[index].duration
+                duration: appointmentDetails[index].duration,
+                status: statusAppDetail
               });
               for (let j = 0; j < appointmentDetails[index].staffIds.length; j++) {
                 appointmentDetailStaffData.push({
@@ -1036,6 +1102,13 @@ export class AppointmentController extends BaseController {
         customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId,
         appointmentGroupId: appointmentGroupId
       };
+
+      if (
+        appointment.status === EAppointmentStatus.NEW &&
+        req.body.bookingSource === EAppointmentBookingSource.WALK_IN
+      ) {
+        appointmentData.status = EAppointmentStatus.CONFIRMED;
+      }
       await AppointmentModel.update(appointmentData, { where: { id: data.appointmentId }, transaction });
 
       if (data.createNewAppointmentDetails && data.createNewAppointmentDetails.length > 0) {
@@ -1047,13 +1120,18 @@ export class AppointmentController extends BaseController {
         const appointmentDetailStaffData = [];
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
+          let statusAppDetail = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusAppDetail = EAppointmentStatus.CONFIRMED;
+          }
           appointmentDetailData.push({
             id: appointmentDetailId,
             appointmentId: data.appointmentId,
             serviceId: appointmentDetails[i].serviceId,
             resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
             startTime: appointmentDetails[i].startTime,
-            duration: appointmentDetails[i].duration
+            duration: appointmentDetails[i].duration,
+            status: statusAppDetail
           });
           for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
             appointmentDetailStaffData.push({
@@ -1069,6 +1147,7 @@ export class AppointmentController extends BaseController {
         await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
       }
       if (data.updateAppointmentDetails && data.updateAppointmentDetails.length > 0) {
+        const appDetailStatus = [];
         for (let i = 0; i < data.updateAppointmentDetails.length; i++) {
           const appointmentDetail = await AppointmentDetailModel.findOne({
             where: {
@@ -1087,6 +1166,7 @@ export class AppointmentController extends BaseController {
               )
             );
           }
+          appDetailStatus.push(appointmentDetail.status);
           await AppointmentDetailModel.destroy({
             where: { id: data.updateAppointmentDetails[i].appointmentDetailId },
             transaction
@@ -1101,13 +1181,21 @@ export class AppointmentController extends BaseController {
         const appointmentDetails = await this.verifyAppointmentDetails(data.updateAppointmentDetails, data.locationId);
         for (let i = 0; i < appointmentDetails.length; i++) {
           const appointmentDetailId = uuidv4();
+          let statusAppDetail = appDetailStatus[i];
+          if (
+            appDetailStatus[i] === EAppointmentStatus.NEW &&
+            req.body.bookingSource === EAppointmentBookingSource.WALK_IN
+          ) {
+            statusAppDetail = EAppointmentStatus.CONFIRMED;
+          }
           appointmentDetailData.push({
             id: appointmentDetailId,
             appointmentId: data.appointmentId,
             serviceId: appointmentDetails[i].serviceId,
             resourceId: appointmentDetails[i].resourceId ? appointmentDetails[i].resourceId : null,
             startTime: appointmentDetails[i].startTime,
-            duration: appointmentDetails[i].duration
+            duration: appointmentDetails[i].duration,
+            status: statusAppDetail
           });
           for (let j = 0; j < appointmentDetails[i].staffIds.length; j++) {
             appointmentDetailStaffData.push({
@@ -1463,7 +1551,7 @@ export class AppointmentController extends BaseController {
         locationId: req.body.locationId,
         date: req.body.date,
         appointmentDetails: req.body.appointmentDetails,
-        bookingSource: AppointmentBookingSource.MARKETPLACE,
+        bookingSource: EAppointmentBookingSource.MARKETPLACE,
         appointmentGroupId: req.body.appointmentGroupId,
         relatedAppointmentId: req.body.relatedAppointmentId
       };
@@ -1693,7 +1781,7 @@ export class AppointmentController extends BaseController {
     const existDeal = await DealModel.findOne({
       where: {
         appointmentId: appointmentHost.id,
-        status: StatusPipelineStage.OPEN
+        status: EStatusPipelineStage.OPEN
       }
     });
 
@@ -1701,7 +1789,8 @@ export class AppointmentController extends BaseController {
       const title =
         'Appt on ' +
         appointmentHost.date.getDate() +
-        (appointmentHost.date.getMonth() + 1) +
+        ' ' +
+        appointmentHost.date.toLocaleString('en-us', { month: 'short' }) +
         ' • ' +
         appointmentHost.customerWisere.phone;
       existDeal.appointmentId = appointmentHost.id;
@@ -1726,7 +1815,8 @@ export class AppointmentController extends BaseController {
         dealTitle:
           'Appt on ' +
           appointmentHost.date.getDate() +
-          (appointmentHost.date.getMonth() + 1) +
+          ' ' +
+          appointmentHost.date.toLocaleString('en-us', { month: 'short' }) +
           ' • ' +
           appointmentHost.customerWisere.phone,
         expectedCloseDate: appointmentHost.date,
@@ -1751,7 +1841,7 @@ export class AppointmentController extends BaseController {
       });
       if (pipeline) {
         newDeal.pipelineStageId = pipeline.pipelineStages[0].id;
-        await DealModel.create(newDeal, transaction);
+        await DealModel.create(newDeal, { transaction });
       }
     }
   }
@@ -1780,7 +1870,7 @@ export class AppointmentController extends BaseController {
         attributes: ['id', 'status', 'customerId'],
         where: {
           customerId: customerId,
-          bookingSource: AppointmentBookingSource.MARKETPLACE,
+          bookingSource: EAppointmentBookingSource.MARKETPLACE,
           status: {
             [Op.and]: [
               { [Op.ne]: EAppointmentStatus.CANCEL },
@@ -1814,7 +1904,15 @@ export class AppointmentController extends BaseController {
             model: LocationModel,
             as: 'location',
             attributes: ['id', 'name', 'address'],
-            required: false
+            required: false,
+            include: [
+              {
+                model: LocationImageModel,
+                as: 'locationImages',
+                attributes: ['id', 'path', 'isAvatar'],
+                required: false
+              }
+            ]
           }
         ],
         order: [Sequelize.literal('"appointmentDetails"."start_time"')]
@@ -1823,7 +1921,7 @@ export class AppointmentController extends BaseController {
         attributes: ['id', 'status', 'customerId', 'contentReview', 'numberRating'],
         where: {
           customerId: customerId,
-          bookingSource: AppointmentBookingSource.MARKETPLACE,
+          bookingSource: EAppointmentBookingSource.MARKETPLACE,
           status: {
             [Op.or]: [
               { [Op.eq]: EAppointmentStatus.CANCEL },
@@ -1857,7 +1955,15 @@ export class AppointmentController extends BaseController {
             model: LocationModel,
             as: 'location',
             attributes: ['id', 'name', 'address'],
-            required: false
+            required: false,
+            include: [
+              {
+                model: LocationImageModel,
+                as: 'locationImages',
+                attributes: ['id', 'path', 'isAvatar'],
+                required: false
+              }
+            ]
           }
         ],
         order: [Sequelize.literal('"appointmentDetails"."start_time" DESC')]

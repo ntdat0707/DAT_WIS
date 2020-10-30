@@ -33,7 +33,7 @@ import { LocationServiceModel } from '../../../repositories/postgres/models/loca
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { SearchParams } from 'elasticsearch';
 import { elasticsearchClient } from '../../../repositories/elasticsearch';
-// import { esClient } from '../../../repositories/elasticsearch';
+import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ServiceController {
@@ -285,7 +285,13 @@ export class ServiceController {
       });
       //require('array.prototype.flatmap').shim();
       // const esData = serviceData.flatMap((doc:any) => [{ index: { _index: 'get_services' } }, doc]);
-      await elasticsearchClient.index({
+      // await elasticsearchClient.index({
+      //   id: data.id,
+      //   index: 'get_services',
+      //   body: serviceData,
+      //   type: '_doc'
+      // });
+      await esClient.index({
         id: data.id,
         index: 'get_services',
         body: serviceData,
