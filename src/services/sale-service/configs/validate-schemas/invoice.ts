@@ -205,4 +205,19 @@ const getListInvoicesLog = Joi.object({
     .required()
     .label('staffId')
 });
-export { createInvoiceSchema, receiptIdSchema, customerWisereIdSchema, createInvoiceLogSchema, getListInvoicesLog };
+
+const invoiceIdSchema = Joi.string()
+  .guid({
+    version: ['uuidv4']
+  })
+  .required()
+  .label('invoiceId');
+
+export {
+  createInvoiceSchema,
+  receiptIdSchema,
+  customerWisereIdSchema,
+  createInvoiceLogSchema,
+  getListInvoicesLog,
+  invoiceIdSchema
+};

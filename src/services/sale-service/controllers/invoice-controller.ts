@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { baseValidateSchemas, validate } from '../../../utils/validator';
-import { createInvoiceSchema, receiptIdSchema } from '../configs/validate-schemas';
+import { createInvoiceSchema, receiptIdSchema, invoiceIdSchema } from '../configs/validate-schemas';
 import {
   AppointmentModel,
   CustomerWisereModel,
@@ -382,6 +382,60 @@ export class InvoiceController {
         fullPath
       );
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoices));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /sale/get-invoice/{invoiceId}:
+   *   get:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: getInvoice
+   *     parameters:
+   *     - in: path
+   *       name: invoiceId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getInvoice = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const invoiceId = req.params.invoiceId;
+      const validateErrors = validate(invoiceId, invoiceIdSchema);
+      if (validateErrors) {
+        if (validateErrors) {
+          return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        }
+      }
+      const invoice = await InvoiceModel.findOne({
+        where: { id: invoiceId },
+        include: [
+          {
+            model: InvoiceDetailModel,
+            as: 'invoiceDetails',
+            include: [
+              {
+                model: InvoiceDetailStaffModel,
+                as: 'invoiceDetailStaffs'
+              }
+            ]
+          }
+        ]
+      });
+      if (!invoice) {
+        throw new CustomError(invoiceErrorDetails.E_3300(`invoiceId ${invoiceId} not found`), httpStatus.NOT_FOUND);
+      }
+      return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
     } catch (error) {
       return next(error);
     }
