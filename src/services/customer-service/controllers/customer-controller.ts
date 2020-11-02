@@ -1059,8 +1059,10 @@ export class CustomerController {
         if (!customer) {
           const password = await generatePWD(8);
           data = {
-            firstName: req.body.fullName.split(' ')[0],
-            lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
+            lastName: req.body.fullName.split(' ')[0],
+            firstName: req.body.fullName.split(' ').slice(1).join(' ')
+              ? req.body.fullName.split(' ').slice(1).join(' ')
+              : null,
             email: req.body.email ? req.body.email : null,
             facebookId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
@@ -1115,8 +1117,10 @@ export class CustomerController {
         if (!customer) {
           const password = await generatePWD(8);
           data = {
-            firstName: req.body.fullName.split(' ')[0],
-            lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
+            lastName: req.body.fullName.split(' ')[0],
+            firstName: req.body.fullName.split(' ').slice(1).join(' ')
+              ? req.body.fullName.split(' ').slice(1).join(' ')
+              : null,
             email: req.body.email,
             googleId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
