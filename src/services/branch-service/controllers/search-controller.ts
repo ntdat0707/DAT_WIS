@@ -672,6 +672,10 @@ export class SearchController {
         where: {
           customerId: searchOption.customerId
         },
+        order: [['createdAt', 'DESC']],
+        limit: 10,
+        subQuery: true,
+        attributes: ['id', 'keywords', 'type', 'cateServiceId', 'companyId', 'serviceId', 'locationId', 'createdAt'],
         include: [
           {
             model: CateServiceModel,
@@ -705,16 +709,7 @@ export class SearchController {
             required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
-        ],
-        group: [
-          'CustomerSearchModel.id',
-          'cateService.id',
-          'company.id',
-          'company->companyDetail.id',
-          'service.id',
-          'location.id'
-        ],
-        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('keywords')), 'keywords'], 'type']
+        ]
       });
 
       const mapData: any = {
@@ -739,10 +734,10 @@ export class SearchController {
           };
         },
         ['location'](data: any) {
-          const { title, description, pathName, photo } = data.dataValues;
+          const { name, fullAddress, pathName, photo } = data.dataValues;
           return {
-            title,
-            description,
+            title: name,
+            description: fullAddress,
             pathName,
             image: photo
           };
@@ -1178,7 +1173,7 @@ export class SearchController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes: ['id', 'name', 'duration', 'sale_price'],
+              attributes: ['id', 'name', 'duration', 'salePrice'],
               where: { id: serviceIds }
             }
           ],
@@ -1389,7 +1384,7 @@ export class SearchController {
               model: ServiceModel,
               as: 'services',
               required: true,
-              attributes: ['id', 'name', 'duration', 'sale_price'],
+              attributes: ['id', 'name', 'duration', 'salePrice'],
               where: { id: serviceIds }
             }
           ],
@@ -1660,20 +1655,20 @@ export class SearchController {
       };
 
       let countTypeAvailable = 1;
-      if (search.addressInfor) {
-        const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
-        locationType.forEach((type: string) => {
-          if (search[type]) {
-            countTypeAvailable++;
-            searchParams.body.query.bool.must.push({
-              query_string: {
-                fields: [type],
-                query: `${search[type]}~1`
-              }
-            });
-          }
-        });
-      }
+      // if (search.addressInfor) {
+      //   const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
+      //   locationType.forEach((type: string) => {
+      //     if (search[type]) {
+      //       countTypeAvailable++;
+      //       searchParams.body.query.bool.must.push({
+      //         query_string: {
+      //           fields: [type],
+      //           query: `${search[type]}~1`
+      //         }
+      //       });
+      //     }
+      //   });
+      // }
       if (search.order === EOrder.NEWEST) {
         searchParams.body.sort = [{ openedAt: 'desc' }];
       }
@@ -1681,11 +1676,11 @@ export class SearchController {
       let result: any = null;
       for (let i = 0; i < countTypeAvailable; i++) {
         result = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
-        if (result.meta.totalPages === 0 && countTypeAvailable > 1) {
-          searchParams.body.query.bool.must.pop();
-        } else {
-          break;
-        }
+        // if (result.meta.totalPages === 0 && countTypeAvailable > 1) {
+        //   searchParams.body.query.bool.must.pop();
+        // } else {
+        //   break;
+        // }
       }
 
       let locationResults = result.data;
@@ -1715,21 +1710,19 @@ export class SearchController {
 
           if (!searchServiceItem && location.services && !_.isEmpty(location.services)) {
             searchServiceItem =
-              location.services.find(
-                (service: any) =>
-                  removeAccents(service.name || '')
-                    .toLowerCase()
-                    .includes(keywordRemoveAccents)
+              location.services.find((service: any) =>
+                removeAccents(service.name || '')
+                  .toLowerCase()
+                  .includes(keywordRemoveAccents)
               ) || null;
           }
 
           if (!searchCateServiceItem && location.company.cateServices && Array.isArray(location.company.cateServices)) {
             searchCateServiceItem =
-              location.company.cateServices.find(
-                (cateService: any) =>
-                  removeAccents(cateService.name || '')
-                    .toLowerCase()
-                    .includes(keywordRemoveAccents)
+              location.company.cateServices.find((cateService: any) =>
+                removeAccents(cateService.name || '')
+                  .toLowerCase()
+                  .includes(keywordRemoveAccents)
               ) || null;
           }
         }
