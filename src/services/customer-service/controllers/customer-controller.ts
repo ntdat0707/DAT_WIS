@@ -966,7 +966,6 @@ export class CustomerController {
       let mqttUserModel: any;
       const validateErrors = validate(req.body, loginSocialSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      transaction = await sequelize.transaction();
       if (req.body.email) {
         if (req.body.provider === ESocialType.GOOGLE) {
           socialInfor = await validateGoogleToken(req.body.token);
@@ -1050,9 +1049,14 @@ export class CustomerController {
         }
       }
 
+      transaction = await sequelize.transaction();
       if (req.body.provider === ESocialType.FACEBOOK) {
         socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
+          //rollback transaction
+          if (transaction) {
+            await transaction.rollback();
+          }
           return next(new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
         customer = await CustomerModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
@@ -1090,8 +1094,11 @@ export class CustomerController {
           };
           refreshToken = await createRefreshToken(refreshTokenData);
           profile = await CustomerModel.findOne({
-            where: { facebookId: newCustomer.facebookId }
+            where: { facebookId: newCustomer.facebookId },
+            transaction
           });
+          //commit transaction
+          await transaction.commit();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         accessTokenData = {
@@ -1108,8 +1115,11 @@ export class CustomerController {
         };
         refreshToken = await createRefreshToken(refreshTokenData);
         profile = await CustomerModel.findOne({
-          where: { facebookId: customer.facebookId }
+          where: { facebookId: customer.facebookId },
+          transaction
         });
+        //commit transaction
+        await transaction.commit();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
       if (req.body.provider === ESocialType.GOOGLE) {
@@ -1148,8 +1158,11 @@ export class CustomerController {
           };
           refreshToken = await createRefreshToken(refreshTokenData);
           profile = await CustomerModel.findOne({
-            where: { googleId: newCustomer.googleId }
+            where: { googleId: newCustomer.googleId },
+            transaction
           });
+          //commit transaction
+          await transaction.commit();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         accessTokenData = {
@@ -1166,8 +1179,10 @@ export class CustomerController {
         };
         refreshToken = await createRefreshToken(refreshTokenData);
         profile = await CustomerModel.findOne({
-          where: { googleId: customer.googleId }
+          where: { googleId: customer.googleId },
+          transaction
         });
+        //commit transaction
         await transaction.commit();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
