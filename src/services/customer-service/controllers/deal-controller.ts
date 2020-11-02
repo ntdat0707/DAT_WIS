@@ -37,6 +37,7 @@ import { paginate } from '../../../utils/paginator';
 import { EAppointmentStatus, EStatusPipelineStage } from '../../../utils/consts';
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
+import moment from 'moment';
 export class DealController {
   /**
    * @swagger
@@ -555,6 +556,12 @@ export class DealController {
             model: StaffModel,
             as: 'owner',
             required: false
+          },
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: false,
+            attributes: ['id', 'status']
           }
         ]
       };
@@ -593,6 +600,21 @@ export class DealController {
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
+      const currentDate = moment().format('YYYY/MM/DD');
+      deals.data = deals.data.map((deal: any) => {
+        let isExpired = false;
+        if (
+          new Date(currentDate) > new Date(deal.expectedCloseDate) ||
+          (deal.appointment && deal.appointment.status === EAppointmentStatus.NO_SHOW)
+        ) {
+          isExpired = true;
+        }
+        deal = {
+          isExpired: isExpired,
+          ...deal.dataValues
+        };
+        return deal;
+      });
       return res.status(httpStatus.OK).send(buildSuccessMessage(deals));
     } catch (error) {
       return next(error);
@@ -724,7 +746,7 @@ export class DealController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const deal = await DealModel.findOne({
+      let deal: any = await DealModel.findOne({
         where: { id: dealId },
         include: [
           {
@@ -745,12 +767,30 @@ export class DealController {
             model: StaffModel,
             as: 'owner',
             required: false
+          },
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: false,
+            attributes: ['id', 'status']
           }
         ]
       });
       if (!deal) {
         throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
       }
+      const currentDate = moment().format('YYYY/MM/DD');
+      let isExpired = false;
+      if (
+        new Date(currentDate) > new Date(deal.expectedCloseDate) ||
+        (deal.appointment && deal.appointment.status === EAppointmentStatus.NO_SHOW)
+      ) {
+        isExpired = true;
+      }
+      deal = {
+        isExpired: isExpired,
+        ...deal.dataValues
+      };
       return res.status(httpStatus.OK).send(buildSuccessMessage(deal));
     } catch (error) {
       return next(error);
