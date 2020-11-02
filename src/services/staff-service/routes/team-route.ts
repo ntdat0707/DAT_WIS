@@ -13,5 +13,12 @@ export class TeamRoutes {
   private config(): void {
     this.router.get('/get-teams-location/:locationId', isAuthenticated, this.teamController.getTeamsLocation);
     this.router.post('/create-team', uploadAsMiddleware('photo'), isAuthenticated, this.teamController.createTeam);
+    this.router.put(
+      '/update-team/:teamId',
+      uploadAsMiddleware('photo'),
+      isAuthenticated,
+      this.teamController.updateTeam
+    );
+    this.router.get('/get-sub-teams/:parentId', isAuthenticated, this.teamController.getSubTeams);
   }
 }
