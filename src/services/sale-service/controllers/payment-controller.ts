@@ -84,7 +84,7 @@ export class PaymentController {
     try {
       const validateErrors = validate(req.body, createPaymentSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const invoice = await InvoiceModel.findOne({ where: { id: req.body.invoiceId } });
       if (!invoice) {
@@ -224,7 +224,7 @@ export class PaymentController {
       };
       const validateErrors = validate(data, createPaymentMethodSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const paymentMethod = await PaymentMethodModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
@@ -308,7 +308,7 @@ export class PaymentController {
       };
       const validateErrors = validate(data, updatePaymentMethodSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const paymentMethod = await PaymentMethodModel.findOne({ where: { id: data.paymentMethodId } });
       if (!paymentMethod) {
@@ -351,7 +351,7 @@ export class PaymentController {
       const paymentMethodId = req.params.paymentMethodId;
       const validateErrors = validate(paymentMethodId, deletePaymentMethodSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const paymentMethod = await PaymentMethodModel.findOne({
         where: { id: paymentMethodId }

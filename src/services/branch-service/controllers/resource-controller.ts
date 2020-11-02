@@ -66,7 +66,7 @@ export class ResourceController {
     try {
       const validateErrors = validate(body, createResourceSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const data: any = {
         locationId: body.locationId,
@@ -108,7 +108,7 @@ export class ResourceController {
       const { workingLocationIds } = res.locals.staffPayload;
       const resourceId = req.params.resourceId;
       const validateErrors = validate(resourceId, resourceIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const resource = await ResourceModel.findOne({ where: { id: resourceId } });
       if (!resource)
         return next(
@@ -172,10 +172,10 @@ export class ResourceController {
       };
       let validateErrors: any;
       validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       if (req.query.locationIds && req.query.locationIds.length > 0) {
         validateErrors = validate(req.query.locationIds, locationIdsSchema);
-        if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const query: FindOptions = {
         include: [
@@ -255,7 +255,7 @@ export class ResourceController {
             .label('locationId')
         })
       );
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const { workingLocationIds } = res.locals.staffPayload;
       const resourcesInService = await ResourceModel.findAll({
         where: {
@@ -309,7 +309,7 @@ export class ResourceController {
       const { workingLocationIds } = res.locals.staffPayload;
       const resourceId = req.params.resourceId;
       const validateErrors = validate(resourceId, resourceIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const resource = await ResourceModel.findOne({
         where: {
           id: resourceId
@@ -392,7 +392,7 @@ export class ResourceController {
       const { workingLocationIds } = res.locals.staffPayload;
       const validateErrors = validate(body, updateResourceSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const resource = await ResourceModel.findOne({
         where: {

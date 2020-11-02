@@ -110,11 +110,11 @@ export class DealController {
       let validateErrors: any;
       validateErrors = validate(pipelineId, pipelineIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       validateErrors = validate(movePipelineStageId, movePipelineStageIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const checkPipeline = await PipelineModel.findOne({
         where: { id: pipelineId, companyId: res.locals.staffPayload.companyId }
@@ -195,7 +195,7 @@ export class DealController {
       const pipelineId = req.params.pipelineId;
       const validateErrors = validate(pipelineId, pipelineIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const listPipelineStage: any = await PipelineStageModel.findAll({
         where: { pipelineId: pipelineId },
@@ -335,7 +335,7 @@ export class DealController {
     try {
       const validateErrors = validate(req.body, settingPipelineStageSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
       if (req.body.listPipelineStage.length !== checkUniqName.length) {
@@ -534,7 +534,7 @@ export class DealController {
       let validateErrors: any;
       validateErrors = validate(conditions, filterDeal);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const paginateOptions = {
         pageNum: req.query.pageNum,
@@ -542,7 +542,7 @@ export class DealController {
       };
       validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const query: FindOptions = {
         where: { createdBy: conditions.staffId },
@@ -676,7 +676,7 @@ export class DealController {
     try {
       const validateErrors = validate(req.body, createDealSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const data = {
         dealTitle: req.body.dealTitle,
@@ -744,7 +744,7 @@ export class DealController {
       const dealId = req.params.dealId;
       const validateErrors = validate(dealId, dealIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       let deal: any = await DealModel.findOne({
         where: { id: dealId },
@@ -873,7 +873,7 @@ export class DealController {
       };
       const validateErrors = validate(data, updateDealSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       let deal = await DealModel.findOne({ where: { id: dealId } });
       if (!deal) {
@@ -967,11 +967,11 @@ export class DealController {
       const dealId = req.params.dealId;
       const validateErrors = validate(dealId, dealIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const deal = await DealModel.findOne({ where: { id: dealId } });
       if (!deal) {
-        return next(new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND));
+        throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
       }
       await DealModel.destroy({ where: { id: dealId } });
       return res.status(httpStatus.OK).send();
@@ -1014,7 +1014,7 @@ export class DealController {
       const newPipelineStageId = req.body.newPipelineStageId;
       const validateErrors = validate(newPipelineStageId, pipelineStageIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       let deal: any = await DealModel.findOne({
         where: { id: dealId },
@@ -1026,7 +1026,7 @@ export class DealController {
         ]
       });
       if (!deal) {
-        return next(new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND));
+        throw new CustomError(dealErrorDetails.E_3301(`dealId ${dealId} not found`), httpStatus.NOT_FOUND);
       }
       const checkNewPipelineStage = await PipelineStageModel.findOne({ where: { id: newPipelineStageId } });
       if (!checkNewPipelineStage) {
@@ -1117,7 +1117,7 @@ export class DealController {
     try {
       const validateErrors = validate(req.body, settingPipelineSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
       if (req.body.listPipelineStage.length !== checkUniqName.length) {
@@ -1193,7 +1193,7 @@ export class DealController {
       const status = req.body.status;
       const validateErrors = validate(status, statusDealSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       let deal = await DealModel.findOne({ where: { id: dealId } });
       if (!deal) {

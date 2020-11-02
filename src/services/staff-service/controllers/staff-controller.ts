@@ -71,7 +71,7 @@ export class StaffController {
     try {
       const staffId = req.params.staffId;
       const validateErrors = validate(staffId, staffIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const staff: any = await StaffModel.findOne({
         where: { id: staffId },
         include: [
@@ -89,7 +89,7 @@ export class StaffController {
         ]
       });
       if (!staff)
-        return next(new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND));
+        throw new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);
@@ -157,14 +157,14 @@ export class StaffController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const filter = {
         workingLocationIds: req.query.workingLocationIds,
         teamStaffIds: req.query.teamStaffIds,
         isServiceProvider: req.query.isServiceProvider
       };
       const validateFilterErrors = validate(filter, filterStaffSchema);
-      if (validateFilterErrors) return next(new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST));
+      if (validateFilterErrors) throw new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST);
       const query: FindOptions = {
         include: [],
         where: {},
@@ -354,7 +354,7 @@ export class StaffController {
       transaction = await sequelize.transaction();
       const validateErrors = validate(req.body, createStaffSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const profile: any = {
         teamStaffId: req.body.teamStaffId,
@@ -384,7 +384,7 @@ export class StaffController {
       }
       if (req.body.email) {
         const checkEmailExists = await StaffModel.findOne({ where: { email: req.body.email } });
-        if (checkEmailExists) return next(new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST));
+        if (checkEmailExists) throw new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST);
       }
       if (req.file) profile.avatarPath = (req.file as any).location;
       const staff = await StaffModel.create(profile, { transaction });
@@ -571,7 +571,7 @@ export class StaffController {
       if (req.body.teamStaffId) {
         const teamStaffId = await TeamStaffModel.findOne({ where: { id: req.body.teamStaffId } });
         if (!teamStaffId) {
-          return next(new CustomError(staffErrorDetails.E_4011('Team staff has been not assign')));
+          throw new CustomError(staffErrorDetails.E_4011('Team staff has been not assign'));
         }
         profile = {
           ...profile,
@@ -764,7 +764,7 @@ export class StaffController {
     try {
       const { workingLocationIds } = res.locals.staffPayload;
       const validateErrors = validate(req.query, filterStaffSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const query: FindOptions = {
         include: [],
         where: {}
@@ -875,7 +875,7 @@ export class StaffController {
         staffId: req.params.staffId
       };
       const validateErrors = validate(dataDelete, deleteStaffSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const staff = await StaffModel.findOne({ where: { id: dataDelete.staffId } });
       if (!staff)
         return next(
@@ -959,7 +959,7 @@ export class StaffController {
     try {
       const validateErrors = validate(req.body, createStaffsSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const profiles = [];
       for (let i = 0; i < req.body.staffDetails.length; i++) {
@@ -1083,7 +1083,7 @@ export class StaffController {
     try {
       const dataInput = { ...req.body };
       const validateErrors = validate(dataInput, getStaffMultipleService);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const staffs = await StaffModel.findAll({
         include: [
           {
@@ -1105,7 +1105,7 @@ export class StaffController {
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
       if (!staffs) {
-        return next(new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND));
+        throw new CustomError(staffErrorDetails.E_4000('staff not found'), HttpStatus.NOT_FOUND);
       }
       res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
@@ -1167,7 +1167,7 @@ export class StaffController {
       const serviceDuration = dataInput.serviceDuration;
       const durationTime = minutesToNum(serviceDuration);
       const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const workingTime = await StaffModel.findOne({
         attributes: [],
         include: [
@@ -1579,13 +1579,13 @@ export class StaffController {
     try {
       const { workingLocationIds } = res.locals.staffPayload;
       if (!workingLocationIds.includes(req.body.locationId)) {
-        return next(new CustomError(branchErrorDetails.E_1001(), HttpStatus.FORBIDDEN));
+        throw new CustomError(branchErrorDetails.E_1001(), HttpStatus.FORBIDDEN);
       }
 
       const dataInput = { ...req.body };
       const id = res.locals.staffPayload.id;
       const validateErrors = validate(dataInput, settingPositionStaffSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
 
       const existPosition1 = await PositionModel.findOne({
         where: {
@@ -1606,7 +1606,7 @@ export class StaffController {
       });
 
       if (!existPosition1 || !existPosition2) {
-        return next(new CustomError(staffErrorDetails.E_4013(), HttpStatus.BAD_REQUEST));
+        throw new CustomError(staffErrorDetails.E_4013(), HttpStatus.BAD_REQUEST);
       }
 
       const temp = existPosition2.index;
@@ -1670,7 +1670,7 @@ export class StaffController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const query: FindOptions = {
         where: { companyId: companyId },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
@@ -1740,7 +1740,7 @@ export class StaffController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const query: FindOptions = {
         include: [],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
@@ -1794,7 +1794,7 @@ export class StaffController {
     try {
       const validateErrors = validate(req.params.staffId, staffIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const staff = await StaffModel.findOne({
         where: { id: req.params.staffId }
@@ -1860,12 +1860,12 @@ export class StaffController {
     try {
       const { workingLocationIds } = res.locals.staffPayload;
       if (!workingLocationIds.includes(req.params.locationId)) {
-        return next(new CustomError(branchErrorDetails.E_1001(), HttpStatus.FORBIDDEN));
+        throw new CustomError(branchErrorDetails.E_1001(), HttpStatus.FORBIDDEN);
       }
 
       const existLocationId = await PositionModel.findOne({ where: { locationId: req.params.locationId } });
       if (existLocationId) {
-        return next(new CustomError(staffErrorDetails.E_4012(), HttpStatus.BAD_REQUEST));
+        throw new CustomError(staffErrorDetails.E_4012(), HttpStatus.BAD_REQUEST);
       }
 
       const staffs = await StaffModel.findAll({

@@ -66,7 +66,7 @@ export class CompanyController {
       };
       const validateErrors = validate(data, initCompanySchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       let company = await CompanyModel.findOne({
         where: {
@@ -146,7 +146,7 @@ export class CompanyController {
       };
       const validateErrors = validate(data, updateCompanyDetailSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       let company: any = await CompanyModel.findOne({
         where: {
@@ -167,7 +167,7 @@ export class CompanyController {
       company = { ...company, ...company.companyDetail?.dataValues, ['companyDetail']: undefined };
       transaction = await sequelize.transaction();
       if (!company) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       } else {
         company.phone = !data.phone ? company.phone : data.phone;
         company.businessName = !data.businessName ? company.businessName : data.businessName;

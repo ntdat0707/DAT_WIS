@@ -146,7 +146,7 @@ export class InvoiceController {
       let validateErrors: any;
       validateErrors = validate(req.body, createInvoiceSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       if (!workingLocationIds.includes(req.body.locationId)) {
         throw new CustomError(
@@ -359,7 +359,7 @@ export class InvoiceController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const query: FindOptions = {
         include: [
@@ -414,7 +414,7 @@ export class InvoiceController {
       const validateErrors = validate(invoiceId, invoiceIdSchema);
       if (validateErrors) {
         if (validateErrors) {
-          return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+          throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
         }
       }
       const invoice = await InvoiceModel.findOne({
@@ -478,7 +478,7 @@ export class InvoiceController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const query: FindOptions = {
         include: [
@@ -533,7 +533,7 @@ export class InvoiceController {
       const validateErrors = validate(receiptId, receiptIdSchema);
       if (validateErrors) {
         if (validateErrors) {
-          return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+          throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
         }
       }
       const receipt = await ReceiptModel.findOne({
@@ -671,7 +671,7 @@ export class InvoiceController {
       let validateErrors: any;
       validateErrors = validate(req.body, createInvoiceLogSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       if (!workingLocationIds.includes(req.body.locationId)) {
         throw new CustomError(
@@ -680,7 +680,7 @@ export class InvoiceController {
         );
       }
       if (!(req.body.listInvoices as []).every((invoice) => req.body.listInvoices.includes(invoice))) {
-        return next(new CustomError(invoiceErrorDetails.E_3308(), httpStatus.BAD_REQUEST));
+        throw new CustomError(invoiceErrorDetails.E_3308(), httpStatus.BAD_REQUEST);
       }
       const listInvoices = [...req.body.listInvoices];
       for (let i = 0; i < listInvoices.length; i++) {
@@ -768,14 +768,14 @@ export class InvoiceController {
       };
       const validateErrors = validate(dataInput, getListInvoicesLog);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const invoices = await InvoiceLogModel.find({
         staffId: res.locals.staffPayload.id,
         locationId: req.params.locationId
       }).exec();
       if (!invoices) {
-        return next(new CustomError(invoiceErrorDetails.E_3300(`Invoice log not found`), httpStatus.NOT_FOUND));
+        throw new CustomError(invoiceErrorDetails.E_3300(`Invoice log not found`), httpStatus.NOT_FOUND);
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoices));
     } catch (error) {

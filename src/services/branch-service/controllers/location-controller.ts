@@ -169,7 +169,7 @@ export class LocationController {
       };
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       for (let i = 0; i < data.addressInfor.length; i++) {
@@ -198,7 +198,7 @@ export class LocationController {
       }
 
       if (!data.street) {
-        return next(new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST));
+        throw new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST);
       }
       data.companyId = res.locals.staffPayload.companyId;
 
@@ -380,7 +380,7 @@ export class LocationController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const query: FindOptions = {
         where: {
@@ -442,7 +442,7 @@ export class LocationController {
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const location: any = await LocationModel.findOne({
         where: {
@@ -512,7 +512,7 @@ export class LocationController {
       const locationId = req.params.locationId;
       const validateErrors = validate(locationId, locationIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       if (!(workingLocationIds as string[]).includes(locationId)) {
         return next(
@@ -605,7 +605,7 @@ export class LocationController {
       };
       const validateErrors = validate(body, createLocationWorkingTimeSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
@@ -763,11 +763,11 @@ export class LocationController {
       let validateErrors: any;
       validateErrors = validate(params.locationId, locationIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       validateErrors = validate(body, updateLocationSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const location = await LocationModel.findOne({
         where: {
@@ -813,10 +813,10 @@ export class LocationController {
 
       if (body.placeId && body.placeId !== location.placeId) {
         if (!body.addressInfor || body.addressInfor.length === 0) {
-          return next(new CustomError(locationErrorDetails.E_1009(), HttpStatus.NOT_FOUND));
+          throw new CustomError(locationErrorDetails.E_1009(), HttpStatus.NOT_FOUND);
         }
         if (!body.fullAddress) {
-          return next(new CustomError(locationErrorDetails.E_1010(), HttpStatus.NOT_FOUND));
+          throw new CustomError(locationErrorDetails.E_1010(), HttpStatus.NOT_FOUND);
         }
         for (let i = 0; i < body.addressInfor.length; i++) {
           switch (body.addressInfor[i].types[0]) {
@@ -844,7 +844,7 @@ export class LocationController {
         }
 
         if (!data.street) {
-          return next(new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST));
+          throw new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST);
         }
         data.placeId = body.placeId;
       }
