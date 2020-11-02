@@ -38,7 +38,6 @@ import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoic
 import { PaymentController } from './payment-controller';
 import { createInvoiceLogSchema, getListInvoicesLog } from '../configs/validate-schemas/invoice';
 import { InvoiceLogModel } from '../../../repositories/mongo/models';
-import { includes } from 'lodash';
 export class InvoiceController {
   /**
    * @swagger
