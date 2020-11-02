@@ -720,7 +720,11 @@ export class AppointmentController extends BaseController {
               await deal.update({ pipelineStageId: pipeline.pipelineStages[0].id }, { transaction });
             }
           }
-          if (data.status === EAppointmentStatus.CONFIRMED) {
+          if (
+            data.status === EAppointmentStatus.CONFIRMED ||
+            data.status === EAppointmentStatus.ARRIVED ||
+            data.status === EAppointmentStatus.IN_SERVICE
+          ) {
             const pipeline: any = await PipelineModel.findOne({
               where: { companyId: res.locals.staffPayload.companyId, name: 'Appointment' },
               include: [
@@ -735,11 +739,7 @@ export class AppointmentController extends BaseController {
               await deal.update({ pipelineStageId: pipeline.pipelineStages[0].id }, { transaction });
             }
           }
-          if (
-            data.status === EAppointmentStatus.ARRIVED ||
-            data.status === EAppointmentStatus.IN_SERVICE ||
-            data.status === EAppointmentStatus.COMPLETED
-          ) {
+          if (data.status === EAppointmentStatus.COMPLETED) {
             if (deal.status === EStatusPipelineStage.OPEN) {
               await deal.update({ status: EStatusPipelineStage.WON }, { transaction });
             }
