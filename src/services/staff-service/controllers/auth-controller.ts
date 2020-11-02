@@ -986,8 +986,10 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
-          //commit transaction
-          await transaction.commit();
+          //rollback transaction
+          if (transaction) {
+            await transaction.rollback();
+          }
           return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
         staff = await StaffModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
