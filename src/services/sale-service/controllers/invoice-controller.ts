@@ -14,7 +14,7 @@ import {
   sequelize,
   ServiceModel,
   StaffModel,
-  PaymentReceiptModel
+  ReceiptModel
 } from '../../../repositories/postgres/models';
 import {
   bookingErrorDetails,
@@ -513,7 +513,7 @@ export class InvoiceController {
         ]
       };
       const receipts = await paginate(
-        PaymentReceiptModel,
+        ReceiptModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
@@ -554,7 +554,7 @@ export class InvoiceController {
           return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
         }
       }
-      const receipt = await PaymentReceiptModel.findOne({
+      const receipt = await ReceiptModel.findOne({
         where: { id: receiptId },
         include: [
           // {

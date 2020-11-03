@@ -1,7 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class PaymentReceiptModel extends Model {
+class ReceiptModel extends Model {
   public id: string;
   public code: string;
   public customerWisereId!: string;
@@ -17,7 +17,7 @@ class PaymentReceiptModel extends Model {
   public readonly deletedAt: Date;
 }
 
-PaymentReceiptModel.init(
+ReceiptModel.init(
   {
     id: {
       field: 'id',
@@ -95,4 +95,4 @@ PaymentReceiptModel.init(
   }
 );
 
-export { PaymentReceiptModel };
+export { ReceiptModel };
