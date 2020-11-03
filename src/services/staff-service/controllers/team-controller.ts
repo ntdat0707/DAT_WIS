@@ -415,7 +415,6 @@ export class TeamController {
 
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
-      //buildSuccessMessage(teamStaffs));
     } catch (error) {
       if (transaction) {
         await transaction.rollback();
