@@ -12,7 +12,6 @@ import {
   InvoiceModel,
   LocationModel,
   PaymentMethodModel,
-  PaymentModel,
   ProviderModel,
   ReceiptModel,
   sequelize,
@@ -35,7 +34,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
-import { PaymentController } from './payment-controller';
+import { ReceiptController } from './receipt-controller';
 import { createInvoiceLogSchema, getListInvoicesLog } from '../configs/validate-schemas/invoice';
 import { InvoiceLogModel } from '../../../repositories/mongo/models';
 export class InvoiceController {
@@ -292,15 +291,15 @@ export class InvoiceController {
       if (req.body.listPayment) {
         const data = {
           invoiceId: dataInvoice.id,
-          customerId: dataInvoice.customerWisereId,
+          customerWisereId: dataInvoice.customerWisereId,
           staffId: res.locals.staffPayload.id,
           locationId: dataInvoice.locationId,
           total: totalAmount,
           balance: totalAmount,
           paymentMethods: req.body.listPayment
         };
-        const paymentController = new PaymentController();
-        checkBalance = await paymentController.createPaymentReceipt(data, transaction);
+        const paymentController = new ReceiptController();
+        checkBalance = await paymentController.generateInvoiceReceipt(data, transaction);
       } else {
         checkBalance = dataInvoice.balance;
       }
@@ -425,10 +424,31 @@ export class InvoiceController {
             as: 'invoiceDetails',
             include: [
               {
+                attributes: ['id', 'name'],
+                model: ServiceModel,
+                as: 'service'
+              },
+              {
+                attributes: ['id'],
                 model: InvoiceDetailStaffModel,
-                as: 'invoiceDetailStaffs'
+                as: 'invoiceDetailStaffs',
+                include: [
+                  {
+                    model: StaffModel,
+                    as: 'staff'
+                  }
+                ]
               }
             ]
+          },
+          {
+            model: CustomerWisereModel,
+            as: 'customerWisere',
+            required: false
+          },
+          {
+            model: LocationModel,
+            as: 'location'
           }
         ]
       });
@@ -540,30 +560,35 @@ export class InvoiceController {
         where: { id: receiptId },
         include: [
           {
-            model: PaymentModel,
-            as: 'payment',
-            include: [
-              {
-                model: PaymentMethodModel,
-                as: 'paymentMethod',
-                required: true
-              },
-              {
-                model: ProviderModel,
-                as: 'provider',
-                required: false
-              }
-            ]
+            model: InvoiceModel,
+            as: 'invoices',
+            through: { attributes: [] },
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          },
+          {
+            model: PaymentMethodModel,
+            as: 'paymentMethod',
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          },
+          {
+            model: ProviderModel,
+            as: 'provider',
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
             model: StaffModel,
             as: 'staff',
-            required: true
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
             model: CustomerWisereModel,
             as: 'customerWisere',
-            required: false
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
             model: LocationModel,

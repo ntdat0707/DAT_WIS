@@ -22,10 +22,6 @@ const invoiceErrorDetails = {
     const e = buildErrorDetail('3304', 'Appointment existed in invoice', detail);
     return e;
   },
-  E_3305(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3305', 'The amount is greater than the balance in the invoice', detail);
-    return e;
-  },
   E_3306(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3306', 'Balance of invoice is incorrect', detail);
     return e;
