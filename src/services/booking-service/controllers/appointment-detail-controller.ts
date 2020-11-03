@@ -102,15 +102,13 @@ export class AppointmentDetailController extends BaseController {
         where: { id: data.appointmentId, locationId: workingLocationIds }
       });
       if (!appointment) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       const checkAppointmentDetail = await this.verifyAppointmentDetails([data], appointment.locationId);
-      if (checkAppointmentDetail instanceof CustomError) throw checkAppointmentDetail;
+      if (checkAppointmentDetail instanceof CustomError) return next(checkAppointmentDetail);
       // start transaction
       transaction = await sequelize.transaction();
       const appointmentDetail = await AppointmentDetailModel.create(
@@ -219,11 +217,9 @@ export class AppointmentDetailController extends BaseController {
         ]
       });
       if (!appointmentDetailStoraged) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2004(`Not found appointment detail ${data.appointmentDetailId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2004(`Not found appointment detail ${data.appointmentDetailId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       const appointmentId = appointmentDetailStoraged.appointmentId;
@@ -357,11 +353,9 @@ export class AppointmentDetailController extends BaseController {
         ]
       });
       if (!appointmentDetailStoraged) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2004(`Not found appointment detail ${appointmentDetailId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2004(`Not found appointment detail ${appointmentDetailId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       // start transaction
@@ -439,11 +433,9 @@ export class AppointmentDetailController extends BaseController {
         ]
       });
       if (!appointmentDetail) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2004(`Not found appointment detail ${appointmentDetailId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2004(`Not found appointment detail ${appointmentDetailId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetail));
@@ -513,31 +505,25 @@ export class AppointmentDetailController extends BaseController {
         ]
       });
       if (!appointmentDetail) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2004(`Not found appointment detail ${data.appointmentDetailId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2004(`Not found appointment detail ${data.appointmentDetailId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       if (!workingLocationIds.includes(appointmentDetail.appointment.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${appointmentDetail.appointment.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${appointmentDetail.appointment.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       }
       const isValidStatus =
         AppointmentStatusRules[appointmentDetail.status as EAppointmentStatus][data.status as EAppointmentStatus];
       if (!isValidStatus) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2012(
-              `Can not update appointment detail status from ${appointmentDetail.status} to ${data.status}`
-            ),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2012(
+            `Can not update appointment detail status from ${appointmentDetail.status} to ${data.status}`
+          ),
+          HttpStatus.NOT_FOUND
         );
       }
       await AppointmentDetailModel.update({ status: data.status }, { where: { id: data.appointmentDetailId } });

@@ -111,15 +111,11 @@ export class ResourceController {
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const resource = await ResourceModel.findOne({ where: { id: resourceId } });
       if (!resource)
-        return next(
-          new CustomError(resourceErrorDetails.E_1101(`resourceId ${resourceId} not found`), HttpStatus.NOT_FOUND)
-        );
+        throw new CustomError(resourceErrorDetails.E_1101(`resourceId ${resourceId} not found`), HttpStatus.NOT_FOUND);
       if (!workingLocationIds.includes(resource.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${resource.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${resource.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       }
       await ResourceModel.destroy({ where: { id: resourceId } });
@@ -328,15 +324,11 @@ export class ResourceController {
         ]
       });
       if (!resource)
-        return next(
-          new CustomError(resourceErrorDetails.E_1101(`resourceId ${resourceId} not found`), HttpStatus.NOT_FOUND)
-        );
+        throw new CustomError(resourceErrorDetails.E_1101(`resourceId ${resourceId} not found`), HttpStatus.NOT_FOUND);
       if (!workingLocationIds.includes(resource.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${resource.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${resource.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(resource));
@@ -400,16 +392,15 @@ export class ResourceController {
         }
       });
       if (!resource) {
-        return next(
-          new CustomError(resourceErrorDetails.E_1101(`resourceId ${body.resourceId} not found`), HttpStatus.NOT_FOUND)
+        throw new CustomError(
+          resourceErrorDetails.E_1101(`resourceId ${body.resourceId} not found`),
+          HttpStatus.NOT_FOUND
         );
       }
       if (!workingLocationIds.includes(resource.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${resource.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${resource.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       }
       const data: any = {

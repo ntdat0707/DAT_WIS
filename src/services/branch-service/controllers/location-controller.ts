@@ -258,8 +258,9 @@ export class LocationController {
 
       if (req.body.workingTimes && req.body.workingTimes.length > 0) {
         if (_.uniqBy(req.body.workingTimes, 'day').length !== req.body.workingTimes.length) {
-          return next(
-            new CustomError(locationErrorDetails.E_1002('Weekday do not allow duplicate value'), HttpStatus.BAD_REQUEST)
+          throw new CustomError(
+            locationErrorDetails.E_1002('Weekday do not allow duplicate value'),
+            HttpStatus.BAD_REQUEST
           );
         }
         const even = (element: any) => {
@@ -267,9 +268,7 @@ export class LocationController {
         };
         const checkValidWoringTime = await req.body.workingTimes.some(even);
         if (checkValidWoringTime) {
-          return next(
-            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
-          );
+          throw new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST);
         }
 
         const workingsTimes = (req.body.workingTimes as []).map((value: any) => ({
@@ -475,9 +474,7 @@ export class LocationController {
         ]
       });
       if (!location) {
-        return next(
-          new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
-        );
+        throw new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND);
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(location));
     } catch (error) {
@@ -515,8 +512,9 @@ export class LocationController {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       if (!(workingLocationIds as string[]).includes(locationId)) {
-        return next(
-          new CustomError(locationErrorDetails.E_1001(`Can not access to this ${locationId}`), HttpStatus.NOT_FOUND)
+        throw new CustomError(
+          locationErrorDetails.E_1001(`Can not access to this ${locationId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       const rowsDeleted: any = await LocationModel.destroy({
@@ -525,9 +523,7 @@ export class LocationController {
         }
       });
       if (!rowsDeleted) {
-        return next(
-          new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND)
-        );
+        throw new CustomError(locationErrorDetails.E_1000(`locationId ${locationId} not found`), HttpStatus.NOT_FOUND);
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(rowsDeleted));
     } catch (error) {
@@ -609,16 +605,15 @@ export class LocationController {
       }
 
       if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
-        return next(
-          new CustomError(locationErrorDetails.E_1002('Weekday do not allow duplicate value'), HttpStatus.BAD_REQUEST)
+        throw new CustomError(
+          locationErrorDetails.E_1002('Weekday do not allow duplicate value'),
+          HttpStatus.BAD_REQUEST
         );
       }
       if (!(workingLocationIds as string[]).includes(body.locationId)) {
-        return next(
-          new CustomError(
-            locationErrorDetails.E_1001(`Can not access to this ${body.locationId}`),
-            HttpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          locationErrorDetails.E_1001(`Can not access to this ${body.locationId}`),
+          HttpStatus.BAD_REQUEST
         );
       }
       const even = (element: any) => {
@@ -626,9 +621,7 @@ export class LocationController {
       };
       const checkValidWoringTime = await body.workingTimes.some(even);
       if (checkValidWoringTime) {
-        return next(
-          new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
-        );
+        throw new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST);
       }
 
       const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
@@ -637,11 +630,9 @@ export class LocationController {
         }
       });
       if (existLocationWorkingHour) {
-        return next(
-          new CustomError(
-            locationErrorDetails.E_1003(`Location ${body.locationId} working hours is exist`),
-            HttpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          locationErrorDetails.E_1003(`Location ${body.locationId} working hours is exist`),
+          HttpStatus.BAD_REQUEST
         );
       }
 
@@ -776,11 +767,9 @@ export class LocationController {
         }
       });
       if (!location) {
-        return next(
-          new CustomError(
-            locationErrorDetails.E_1000(`locationId ${params.locationId} not found`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          locationErrorDetails.E_1000(`locationId ${params.locationId} not found`),
+          HttpStatus.NOT_FOUND
         );
       }
 
@@ -853,16 +842,15 @@ export class LocationController {
       transaction = await sequelize.transaction();
       if (body.workingTimes && body.workingTimes.length > 0) {
         if (_.uniqBy(body.workingTimes, 'day').length !== body.workingTimes.length) {
-          return next(
-            new CustomError(locationErrorDetails.E_1002('Weekday do not allow duplicate value'), HttpStatus.BAD_REQUEST)
+          throw new CustomError(
+            locationErrorDetails.E_1002('Weekday do not allow duplicate value'),
+            HttpStatus.BAD_REQUEST
           );
         }
         if (!(workingLocationIds as string[]).includes(params.locationId)) {
-          return next(
-            new CustomError(
-              locationErrorDetails.E_1001(`Can not access to this ${params.locationId}`),
-              HttpStatus.BAD_REQUEST
-            )
+          throw new CustomError(
+            locationErrorDetails.E_1001(`Can not access to this ${params.locationId}`),
+            HttpStatus.BAD_REQUEST
           );
         }
         const even = (element: any) => {
@@ -870,9 +858,7 @@ export class LocationController {
         };
         const checkValidWoringTime = await body.workingTimes.some(even);
         if (checkValidWoringTime) {
-          return next(
-            new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST)
-          );
+          throw new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST);
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({
           where: {

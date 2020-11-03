@@ -88,8 +88,7 @@ export class StaffController {
           }
         ]
       });
-      if (!staff)
-        throw new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND);
+      if (!staff) throw new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);
@@ -186,11 +185,9 @@ export class StaffController {
       ) {
         const diff = _.difference(filter.workingLocationIds as string[], workingLocationIds);
         if (diff.length) {
-          return next(
-            new CustomError(
-              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
-              HttpStatus.FORBIDDEN
-            )
+          throw new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+            HttpStatus.FORBIDDEN
           );
         }
         query.include = [
@@ -374,11 +371,9 @@ export class StaffController {
       if (req.body.workingLocationIds) {
         const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
         if (diff.length) {
-          return next(
-            new CustomError(
-              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
-              HttpStatus.FORBIDDEN
-            )
+          throw new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+            HttpStatus.FORBIDDEN
           );
         }
       }
@@ -776,11 +771,9 @@ export class StaffController {
       ) {
         const diff = _.difference(req.query.workingLocationIds as string[], res.locals.staffPayload.workingLocationIds);
         if (diff.length) {
-          return next(
-            new CustomError(
-              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
-              HttpStatus.FORBIDDEN
-            )
+          throw new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+            HttpStatus.FORBIDDEN
           );
         }
 
@@ -878,8 +871,9 @@ export class StaffController {
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const staff = await StaffModel.findOne({ where: { id: dataDelete.staffId } });
       if (!staff)
-        return next(
-          new CustomError(staffErrorDetails.E_4000(`staffId ${dataDelete.staffId} not found`), HttpStatus.NOT_FOUND)
+        throw new CustomError(
+          staffErrorDetails.E_4000(`staffId ${dataDelete.staffId} not found`),
+          HttpStatus.NOT_FOUND
         );
 
       transaction = await sequelize.transaction();
@@ -973,11 +967,9 @@ export class StaffController {
         profiles.push(profile);
       }
       if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       transaction = await sequelize.transaction();
       const staffs = await StaffModel.bulkCreate(profiles, { transaction });
@@ -1355,9 +1347,7 @@ export class StaffController {
         });
       }
       if (!workingTime) {
-        return next(
-          new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND)
-        );
+        throw new CustomError(staffErrorDetails.E_4000(`staffId ${dataInput.staffId} not found`), HttpStatus.NOT_FOUND);
       }
       res.status(HttpStatus.OK).send(buildSuccessMessage(newTimeSlot));
     } catch (error) {
@@ -1800,8 +1790,9 @@ export class StaffController {
         where: { id: req.params.staffId }
       });
       if (!staff) {
-        return next(
-          new CustomError(staffErrorDetails.E_4000(`staff Id ${req.params.staffId} not found`), HttpStatus.NOT_FOUND)
+        throw new CustomError(
+          staffErrorDetails.E_4000(`staff Id ${req.params.staffId} not found`),
+          HttpStatus.NOT_FOUND
         );
       }
       let cateServices: any = [];

@@ -163,11 +163,9 @@ export class AppointmentController extends BaseController {
       // Check location
       const { workingLocationIds, companyId } = res.locals.staffPayload;
       if (!workingLocationIds.includes(dataInput.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${dataInput.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${dataInput.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       }
 
@@ -176,20 +174,19 @@ export class AppointmentController extends BaseController {
           where: { id: dataInput.customerWisereId, companyId }
         });
         if (!customerWisere) {
-          return next(
-            new CustomError(
-              customerErrorDetails.E_3001(
-                `Can not find customerWisere ${dataInput.customerWisereId} in location ${dataInput.locationId}`
-              ),
-              HttpStatus.BAD_REQUEST
-            )
+          throw new CustomError(
+            customerErrorDetails.E_3001(
+              `Can not find customerWisere ${dataInput.customerWisereId} in location ${dataInput.locationId}`
+            ),
+            HttpStatus.BAD_REQUEST
           );
         }
       }
 
       if (dataInput.bookingSource === EAppointmentBookingSource.SCHEDULED && !dataInput.customerWisereId) {
-        return next(
-          new CustomError(bookingErrorDetails.E_2014(`Appointment must have customer wisere`), HttpStatus.BAD_REQUEST)
+        throw new CustomError(
+          bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+          HttpStatus.BAD_REQUEST
         );
       }
       const appointmentId = uuidv4();
@@ -234,11 +231,9 @@ export class AppointmentController extends BaseController {
         });
 
         if (!appointmentGroup) {
-          return next(
-            new CustomError(
-              bookingErrorDetails.E_2007(`appointment group ${dataInput.appointmentGroupId} not found`),
-              HttpStatus.NOT_FOUND
-            )
+          throw new CustomError(
+            bookingErrorDetails.E_2007(`appointment group ${dataInput.appointmentGroupId} not found`),
+            HttpStatus.NOT_FOUND
           );
         }
         appointmentData.appointmentGroupId = dataInput.appointmentGroupId;
@@ -254,11 +249,9 @@ export class AppointmentController extends BaseController {
         });
 
         if (!appointment) {
-          return next(
-            new CustomError(
-              bookingErrorDetails.E_2002(`appointment ${dataInput.relatedAppointmentId} not found`),
-              HttpStatus.NOT_FOUND
-            )
+          throw new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${dataInput.relatedAppointmentId} not found`),
+            HttpStatus.NOT_FOUND
           );
         }
         const appointmentGroupId = uuidv4();
@@ -495,11 +488,9 @@ export class AppointmentController extends BaseController {
       }
       const { workingLocationIds } = res.locals.staffPayload;
       if (!workingLocationIds.includes(conditions.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${conditions.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${conditions.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       }
       const query: FindOptions = {
@@ -644,24 +635,18 @@ export class AppointmentController extends BaseController {
         where: { id: data.appointmentId, locationId: workingLocationIds }
       });
       if (!appointment) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
+          HttpStatus.NOT_FOUND
         );
       }
 
       const isValidStatus =
         AppointmentStatusRules[appointment.status as EAppointmentStatus][data.status as EAppointmentStatus];
       if (!isValidStatus) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2003(
-              `Can not update appointment status from ${appointment.status} to  ${data.status}`
-            ),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2003(`Can not update appointment status from ${appointment.status} to  ${data.status}`),
+          HttpStatus.NOT_FOUND
         );
       }
       // start transaction
@@ -952,52 +937,42 @@ export class AppointmentController extends BaseController {
 
       const appointment = await AppointmentModel.findOne({ where: { id: data.appointmentId } });
       if (!appointment) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`Not found appointment ${data.appointmentId}`),
+          HttpStatus.NOT_FOUND
         );
       }
 
       if (appointment.status === EAppointmentStatus.COMPLETED || appointment.status === EAppointmentStatus.CANCEL) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2013(`Appointment ${data.appointmentId} ${appointment.status}`),
-            HttpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2013(`Appointment ${data.appointmentId} ${appointment.status}`),
+          HttpStatus.BAD_REQUEST
         );
       }
 
       if (data.locationId !== appointment.locationId) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2008(`Location ${data.locationId} incorrect in appointment ${data.appointmentId}`),
-            HttpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2008(`Location ${data.locationId} incorrect in appointment ${data.appointmentId}`),
+          HttpStatus.BAD_REQUEST
         );
       }
       // Check customer wisere exist
       if (data.customerWisereId) {
         if (appointment.bookingSource === EAppointmentBookingSource.MARKETPLACE) {
-          return next(
-            new CustomError(
-              bookingErrorDetails.E_2009(
-                `Customer wisere ${data.customerWisereId} disallow update in appointment ${data.appointmentId}`
-              ),
-              HttpStatus.BAD_REQUEST
-            )
+          throw new CustomError(
+            bookingErrorDetails.E_2009(
+              `Customer wisere ${data.customerWisereId} disallow update in appointment ${data.appointmentId}`
+            ),
+            HttpStatus.BAD_REQUEST
           );
         }
         const customerWisere = await CustomerWisereModel.findOne({ where: { id: data.customerWisereId, companyId } });
         if (!customerWisere) {
-          return next(
-            new CustomError(
-              customerErrorDetails.E_3001(
-                `Can not find customerWisere ${data.customerWisereId} in location ${data.locationId}`
-              ),
-              HttpStatus.BAD_REQUEST
-            )
+          throw new CustomError(
+            customerErrorDetails.E_3001(
+              `Can not find customerWisere ${data.customerWisereId} in location ${data.locationId}`
+            ),
+            HttpStatus.BAD_REQUEST
           );
         }
       }
@@ -1020,11 +995,9 @@ export class AppointmentController extends BaseController {
             appointment.bookingSource === EAppointmentBookingSource.SCHEDULED &&
             !data.createNewAppointments[i].customerWisereId
           ) {
-            return next(
-              new CustomError(
-                bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
-                HttpStatus.BAD_REQUEST
-              )
+            throw new CustomError(
+              bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+              HttpStatus.BAD_REQUEST
             );
           }
           if (data.createNewAppointments[i].customerWisereId) {
@@ -1032,13 +1005,11 @@ export class AppointmentController extends BaseController {
               where: { id: data.createNewAppointments[i].customerWisereId, companyId }
             });
             if (!customerWisere) {
-              return next(
-                new CustomError(
-                  customerErrorDetails.E_3001(
-                    `Can not find customerWisere ${data.createNewAppointments[i].customerWisereId} in location ${data.locationId}`
-                  ),
-                  HttpStatus.BAD_REQUEST
-                )
+              throw new CustomError(
+                customerErrorDetails.E_3001(
+                  `Can not find customerWisere ${data.createNewAppointments[i].customerWisereId} in location ${data.locationId}`
+                ),
+                HttpStatus.BAD_REQUEST
               );
             }
             const appointmentId = uuidv4();
@@ -1166,13 +1137,11 @@ export class AppointmentController extends BaseController {
           });
 
           if (!appointmentDetail) {
-            return next(
-              new CustomError(
-                bookingErrorDetails.E_2004(
-                  `Appointment detail ${data.updateAppointmentDetails[i].appointmentDetailId} not exist`
-                ),
-                HttpStatus.NOT_FOUND
-              )
+            throw new CustomError(
+              bookingErrorDetails.E_2004(
+                `Appointment detail ${data.updateAppointmentDetails[i].appointmentDetailId} not exist`
+              ),
+              HttpStatus.NOT_FOUND
             );
           }
           await AppointmentDetailModel.destroy({
@@ -1224,11 +1193,9 @@ export class AppointmentController extends BaseController {
           });
 
           if (!appointmentDetail) {
-            return next(
-              new CustomError(
-                bookingErrorDetails.E_2004(`Appointment detail ${data.deleteAppointmentDetails[i]} not exist`),
-                HttpStatus.NOT_FOUND
-              )
+            throw new CustomError(
+              bookingErrorDetails.E_2004(`Appointment detail ${data.deleteAppointmentDetails[i]} not exist`),
+              HttpStatus.NOT_FOUND
             );
           }
           await AppointmentDetailStaffModel.destroy({
@@ -1362,11 +1329,9 @@ export class AppointmentController extends BaseController {
         where: { id: req.params.appointmentId, locationId: workingLocationIds }
       });
       if (!appointmentStoraged) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       // start transaction
@@ -1453,11 +1418,9 @@ export class AppointmentController extends BaseController {
         ]
       });
       if (!appointment) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointment));
@@ -1573,11 +1536,9 @@ export class AppointmentController extends BaseController {
       });
 
       if (!location) {
-        return next(
-          new CustomError(
-            locationErrorDetails.E_1000(`Can not find location ${dataInput.locationId}`),
-            HttpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          locationErrorDetails.E_1000(`Can not find location ${dataInput.locationId}`),
+          HttpStatus.BAD_REQUEST
         );
       }
 
@@ -1620,11 +1581,9 @@ export class AppointmentController extends BaseController {
         });
 
         if (!appointmentGroup) {
-          return next(
-            new CustomError(
-              bookingErrorDetails.E_2007(`appointment group ${dataInput.appointmentGroupId} not found`),
-              HttpStatus.NOT_FOUND
-            )
+          throw new CustomError(
+            bookingErrorDetails.E_2007(`appointment group ${dataInput.appointmentGroupId} not found`),
+            HttpStatus.NOT_FOUND
           );
         }
         appointmentData.appointmentGroupId = dataInput.appointmentGroupId;
@@ -1640,11 +1599,9 @@ export class AppointmentController extends BaseController {
         });
 
         if (!appointment) {
-          return next(
-            new CustomError(
-              bookingErrorDetails.E_2002(`appointment ${dataInput.relatedAppointmentId} not found`),
-              HttpStatus.NOT_FOUND
-            )
+          throw new CustomError(
+            bookingErrorDetails.E_2002(`appointment ${dataInput.relatedAppointmentId} not found`),
+            HttpStatus.NOT_FOUND
           );
         }
         const appointmentGroupId = uuidv4();
@@ -2005,11 +1962,9 @@ export class AppointmentController extends BaseController {
         where: { id: data.appointmentId, customerId: res.locals.customerPayload.id }
       });
       if (!appointment) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`appointment ${data.appointmentId} not found`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`appointment ${data.appointmentId} not found`),
+          HttpStatus.NOT_FOUND
         );
       }
       if (
@@ -2102,11 +2057,9 @@ export class AppointmentController extends BaseController {
         ]
       });
       if (!appointment) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`Not found appointment ${req.params.appointmentId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointment));
@@ -2161,11 +2114,9 @@ export class AppointmentController extends BaseController {
         where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
       });
       if (!appointment) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
+          HttpStatus.NOT_FOUND
         );
       }
       if (
@@ -2173,9 +2124,7 @@ export class AppointmentController extends BaseController {
         appointment.status !== EAppointmentStatus.CONFIRMED &&
         appointment.status !== EAppointmentStatus.ARRIVED
       ) {
-        return next(
-          new CustomError(bookingErrorDetails.E_2003(`Can not reschedule appointment`), HttpStatus.BAD_REQUEST)
-        );
+        throw new CustomError(bookingErrorDetails.E_2003(`Can not reschedule appointment`), HttpStatus.BAD_REQUEST);
       }
       await AppointmentDetailModel.update(
         { startTime: req.body.startTime },
@@ -2232,16 +2181,15 @@ export class AppointmentController extends BaseController {
         where: { id: appointmentId, customerId: res.locals.customerPayload.id }
       });
       if (!appointment) {
-        return next(
-          new CustomError(bookingErrorDetails.E_2002(`appointment ${appointmentId} not found`), HttpStatus.NOT_FOUND)
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`appointment ${appointmentId} not found`),
+          HttpStatus.NOT_FOUND
         );
       }
       if (appointment.status !== EAppointmentStatus.NEW && appointment.status !== EAppointmentStatus.CONFIRMED) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2003(`Can not update status ready for appointment`),
-            HttpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2003(`Can not update status ready for appointment`),
+          HttpStatus.BAD_REQUEST
         );
       }
       transaction = await sequelize.transaction();
@@ -2310,19 +2258,15 @@ export class AppointmentController extends BaseController {
         where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
       });
       if (!appointment) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
+          HttpStatus.NOT_FOUND
         );
       }
       if (appointment.status !== EAppointmentStatus.COMPLETED) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2011(`Status appointment ${req.body.appointmentId} must be complete`),
-            HttpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2011(`Status appointment ${req.body.appointmentId} must be complete`),
+          HttpStatus.BAD_REQUEST
         );
       }
       const data = {
