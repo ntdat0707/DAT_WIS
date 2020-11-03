@@ -58,7 +58,7 @@ export class ReceiptController {
 
   /**
    * @swagger
-   * /sale/receipt/create-receipt:
+   * /sale/receipt/create-invoice-receipt:
    *   post:
    *     tags:
    *       - Sale
