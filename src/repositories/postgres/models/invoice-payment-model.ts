@@ -1,7 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class PaymentModel extends Model {
+class InvoicePaymentModel extends Model {
   public id: string;
   public invoiceId!: string;
   public paymentMethodId!: string;
@@ -12,7 +12,7 @@ class PaymentModel extends Model {
   public readonly deletedAt: Date;
 }
 
-PaymentModel.init(
+InvoicePaymentModel.init(
   {
     id: {
       field: 'id',
@@ -59,10 +59,10 @@ PaymentModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'payment',
+    tableName: 'invoice_payment',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { PaymentModel };
+export { InvoicePaymentModel };

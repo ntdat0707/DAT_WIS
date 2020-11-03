@@ -32,7 +32,7 @@ import { PositionModel } from './position-model';
 import { InvoiceModel } from './invoice-model';
 import { InvoiceDetailModel } from './invoice-detail-model';
 import { InvoiceDetailStaffModel } from './invoice-detail-staff-model';
-import { PaymentModel } from './payment-model';
+import { InvoicePaymentModel } from './invoice-payment-model';
 import { ReceiptModel } from './receipt-model';
 import { DiscountModel } from './discount-model';
 import { PaymentMethodModel } from './payment-method-model';
@@ -231,17 +231,21 @@ ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as
 LocationModel.hasMany(ReceiptModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'receipts' });
 ReceiptModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
-PaymentModel.hasMany(ReceiptModel, { foreignKey: 'paymentId', sourceKey: 'id', as: 'receipts' });
-ReceiptModel.belongsTo(PaymentModel, { foreignKey: 'paymentId', as: 'payment' });
+InvoicePaymentModel.hasMany(ReceiptModel, { foreignKey: 'paymentId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(InvoicePaymentModel, { foreignKey: 'paymentId', as: 'invoicePayment' });
 
 StaffModel.hasMany(ReceiptModel, { foreignKey: 'staffId', sourceKey: 'id', as: 'receipts' });
 ReceiptModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 
-PaymentMethodModel.hasMany(PaymentModel, { foreignKey: 'paymentMethodId', sourceKey: 'id', as: 'payments' });
-PaymentModel.belongsTo(PaymentMethodModel, { foreignKey: 'paymentMethodId', as: 'paymentMethod' });
+PaymentMethodModel.hasMany(InvoicePaymentModel, {
+  foreignKey: 'paymentMethodId',
+  sourceKey: 'id',
+  as: 'invoicePayments'
+});
+InvoicePaymentModel.belongsTo(PaymentMethodModel, { foreignKey: 'paymentMethodId', as: 'paymentMethod' });
 
-ProviderModel.hasMany(PaymentModel, { foreignKey: 'providerId', sourceKey: 'id', as: 'payments' });
-PaymentModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider' });
+ProviderModel.hasMany(InvoicePaymentModel, { foreignKey: 'providerId', sourceKey: 'id', as: 'invoicePayments' });
+InvoicePaymentModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider' });
 
 StaffModel.hasMany(CustomerWisereModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'customerWiseres' });
 CustomerWisereModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -276,7 +280,7 @@ export {
   InvoiceModel,
   InvoiceDetailModel,
   InvoiceDetailStaffModel,
-  PaymentModel,
+  InvoicePaymentModel,
   ReceiptModel,
   TeamStaffModel,
   DiscountModel,

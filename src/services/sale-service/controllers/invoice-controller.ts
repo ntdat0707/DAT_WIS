@@ -12,7 +12,7 @@ import {
   InvoiceModel,
   LocationModel,
   PaymentMethodModel,
-  PaymentModel,
+  InvoicePaymentModel,
   ProviderModel,
   ReceiptModel,
   sequelize,
@@ -35,7 +35,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
-import { PaymentController } from './payment-controller';
+import { InvoicePaymentController } from './invoice-payment-controller';
 import { createInvoiceLogSchema, getListInvoicesLog } from '../configs/validate-schemas/invoice';
 import { InvoiceLogModel } from '../../../repositories/mongo/models';
 export class InvoiceController {
@@ -292,14 +292,14 @@ export class InvoiceController {
       if (req.body.listPayment) {
         const data = {
           invoiceId: dataInvoice.id,
-          customerId: dataInvoice.customerWisereId,
+          customerWisereId: dataInvoice.customerWisereId,
           staffId: res.locals.staffPayload.id,
           locationId: dataInvoice.locationId,
           total: totalAmount,
           balance: totalAmount,
           paymentMethods: req.body.listPayment
         };
-        const paymentController = new PaymentController();
+        const paymentController = new InvoicePaymentController();
         checkBalance = await paymentController.createPaymentReceipt(data, transaction);
       } else {
         checkBalance = dataInvoice.balance;
@@ -429,6 +429,15 @@ export class InvoiceController {
                 as: 'invoiceDetailStaffs'
               }
             ]
+          },
+          {
+            model: CustomerWisereModel,
+            as: 'customerWisere',
+            required: false
+          },
+          {
+            model: LocationModel,
+            as: 'location'
           }
         ]
       });
@@ -540,8 +549,8 @@ export class InvoiceController {
         where: { id: receiptId },
         include: [
           {
-            model: PaymentModel,
-            as: 'payment',
+            model: InvoicePaymentModel,
+            as: 'invoicePayment',
             include: [
               {
                 model: PaymentMethodModel,
