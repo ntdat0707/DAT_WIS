@@ -124,11 +124,9 @@ export class ServiceController {
     try {
       const diff = _.difference(body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
       if (diff.length) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+          HttpStatus.FORBIDDEN
         );
       }
       const validateErrors = validate(body, createServiceSchema);
@@ -286,9 +284,7 @@ export class ServiceController {
         ]
       });
       if (!service)
-        return next(
-          new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
-        );
+        throw new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND);
 
       await elasticsearchClient.delete({
         id: serviceId,
@@ -367,9 +363,7 @@ export class ServiceController {
         ]
       });
       if (!service)
-        return next(
-          new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
-        );
+        throw new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       return next(error);
@@ -431,11 +425,9 @@ export class ServiceController {
       const { workingLocationIds } = res.locals.staffPayload;
       const locationIdsDiff = _.difference(req.query.locationIds as string[], workingLocationIds);
       if (locationIdsDiff.length > 0) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(locationIdsDiff)}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(locationIdsDiff)}`),
+          HttpStatus.FORBIDDEN
         );
       }
       const paginateOptions = {
@@ -549,11 +541,9 @@ export class ServiceController {
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const locationIdsDiff = _.difference(data.locationIds as string[], workingLocationIds);
       if (locationIdsDiff.length > 0) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(locationIdsDiff)}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(locationIdsDiff)}`),
+          HttpStatus.FORBIDDEN
         );
       }
       const query: FindOptions = {
@@ -660,11 +650,9 @@ export class ServiceController {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       const cateService = await CateServiceModel.findOne({
         where: {
@@ -673,8 +661,9 @@ export class ServiceController {
         }
       });
       if (!cateService) {
-        return next(
-          new CustomError(branchErrorDetails.E_1205(`${req.body.cateServiceId} out of company`), HttpStatus.FORBIDDEN)
+        throw new CustomError(
+          branchErrorDetails.E_1205(`${req.body.cateServiceId} out of company`),
+          HttpStatus.FORBIDDEN
         );
       }
       const staffIds = await StaffModel.findAll({
@@ -839,19 +828,18 @@ export class ServiceController {
         }
       });
       if (!service) {
-        return next(
-          new CustomError(serviceErrorDetails.E_1203(`Service ${params.serviceId} not exist`), HttpStatus.NOT_FOUND)
+        throw new CustomError(
+          serviceErrorDetails.E_1203(`Service ${params.serviceId} not exist`),
+          HttpStatus.NOT_FOUND
         );
       }
       transaction = await sequelize.transaction();
       if (body.locationIds && body.locationIds.length > 0) {
         const diff = _.difference(body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
         if (diff.length) {
-          return next(
-            new CustomError(
-              branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
-              HttpStatus.FORBIDDEN
-            )
+          throw new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${JSON.stringify(diff)}`),
+            HttpStatus.FORBIDDEN
           );
         }
         const curLocationServices = await LocationServiceModel.findAll({ where: { serviceId: params.serviceId } });

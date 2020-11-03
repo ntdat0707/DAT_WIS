@@ -168,11 +168,9 @@ export class CateServiceController {
         }
       });
       if (!serviceCategoryStoraged)
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1205(`Can not find cateService ${data.id} in company ${data.companyId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1205(`Can not find cateService ${data.id} in company ${data.companyId}`),
+          HttpStatus.NOT_FOUND
         );
       await CateServiceModel.update(data, { where: { id: data.id } });
       const cateService = await CateServiceModel.findOne({
@@ -224,11 +222,9 @@ export class CateServiceController {
         }
       });
       if (!cateService)
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1205(`Can not find cateService ${req.params.cateServiceId} in company ${companyId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1205(`Can not find cateService ${req.params.cateServiceId} in company ${companyId}`),
+          HttpStatus.NOT_FOUND
         );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(cateService));
     } catch (error) {
@@ -331,11 +327,9 @@ export class CateServiceController {
         }
       });
       if (!cateService)
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1205(`Can not find cateService ${cateServiceId} in company ${companyId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1205(`Can not find cateService ${cateServiceId} in company ${companyId}`),
+          HttpStatus.NOT_FOUND
         );
       await CateServiceModel.destroy({ where: { id: cateServiceId } });
       return res.status(HttpStatus.OK).send();
@@ -398,11 +392,9 @@ export class CateServiceController {
       });
 
       if (!existCateService) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1205(`Can not find cateService ${req.params.cateServiceId} in company ${companyId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1205(`Can not find cateService ${req.params.cateServiceId} in company ${companyId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       const query: FindOptions = {

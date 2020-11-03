@@ -120,9 +120,7 @@ export class DealController {
         where: { id: pipelineId, companyId: res.locals.staffPayload.companyId }
       });
       if (!checkPipeline) {
-        return next(
-          new CustomError(pipelineErrorDetails.E_3101(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
-        );
+        throw new CustomError(pipelineErrorDetails.E_3101(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND);
       }
       transaction = await sequelize.transaction();
       const pipelineStages = await PipelineStageModel.findAll({ where: { pipelineId: pipelineId } });
@@ -138,11 +136,9 @@ export class DealController {
           ]
         });
         if (!checkMovePipelineStage) {
-          return next(
-            new CustomError(
-              pipelineStageErrorDetails.E_3201(`movePipelineId ${movePipelineStageId} not found`),
-              httpStatus.NOT_FOUND
-            )
+          throw new CustomError(
+            pipelineStageErrorDetails.E_3201(`movePipelineId ${movePipelineStageId} not found`),
+            httpStatus.NOT_FOUND
           );
         }
         for (let i = 0; i < pipelineStages.length; i++) {
@@ -202,8 +198,9 @@ export class DealController {
         order: ['order']
       });
       if (!listPipelineStage) {
-        return next(
-          new CustomError(pipelineStageErrorDetails.E_3201(`pipelineId ${pipelineId} not found`), httpStatus.NOT_FOUND)
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3201(`pipelineId ${pipelineId} not found`),
+          httpStatus.NOT_FOUND
         );
       }
       for (let i = 0; i < listPipelineStage.length; i++) {
@@ -1030,21 +1027,17 @@ export class DealController {
       }
       const checkNewPipelineStage = await PipelineStageModel.findOne({ where: { id: newPipelineStageId } });
       if (!checkNewPipelineStage) {
-        return next(
-          new CustomError(
-            pipelineStageErrorDetails.E_3201(`newPipelineStageId ${newPipelineStageId} not found`),
-            httpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          pipelineStageErrorDetails.E_3201(`newPipelineStageId ${newPipelineStageId} not found`),
+          httpStatus.NOT_FOUND
         );
       }
       if (deal.pipelineStage.pipelineId !== checkNewPipelineStage.pipelineId) {
-        return next(
-          new CustomError(
-            dealErrorDetails.E_3302(
-              `newPipelineStageId ${newPipelineStageId} and oldPipelineStageId ${deal.pipelineStage.pipelineId} not same pipeline`
-            ),
-            httpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          dealErrorDetails.E_3302(
+            `newPipelineStageId ${newPipelineStageId} and oldPipelineStageId ${deal.pipelineStage.pipelineId} not same pipeline`
+          ),
+          httpStatus.BAD_REQUEST
         );
       }
       deal = await deal.update({ pipelineStageId: newPipelineStageId });

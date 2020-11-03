@@ -133,8 +133,9 @@ export class MarketPlaceFieldController {
       const location = await LocationModel.findOne({ where: { id: data.locationId } });
 
       if (!location) {
-        return next(
-          new CustomError(locationErrorDetails.E_1000(`locationId ${data.locationId} not found`), HttpStatus.NOT_FOUND)
+        throw new CustomError(
+          locationErrorDetails.E_1000(`locationId ${data.locationId} not found`),
+          HttpStatus.NOT_FOUND
         );
       }
 

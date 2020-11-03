@@ -119,11 +119,9 @@ export class AppointmentGroupController extends BaseController {
       }
       const { workingLocationIds } = res.locals.staffPayload;
       if (!workingLocationIds.includes(data.locationId)) {
-        return next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${data.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${data.locationId}`),
+          HttpStatus.FORBIDDEN
         );
       }
       const verifyAppointmentDetailTask = [];
@@ -150,8 +148,9 @@ export class AppointmentGroupController extends BaseController {
       const createAppointmentDetailStaffTasks = [];
       for (const apptData of data.appointments) {
         if (data.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
-          return next(
-            new CustomError(bookingErrorDetails.E_2014(`Appointment must have customer wisere`), HttpStatus.BAD_REQUEST)
+          throw new CustomError(
+            bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+            HttpStatus.BAD_REQUEST
           );
         }
         if (apptData.customerWisereId) {
@@ -162,11 +161,9 @@ export class AppointmentGroupController extends BaseController {
           });
 
           if (!customerWisere)
-            return next(
-              new CustomError(
-                customerErrorDetails.E_3001(`customerWisereId ${apptData.customerWisereId} not found`),
-                HttpStatus.NOT_FOUND
-              )
+            throw new CustomError(
+              customerErrorDetails.E_3001(`customerWisereId ${apptData.customerWisereId} not found`),
+              HttpStatus.NOT_FOUND
             );
         }
         let appointmentCode = '';
@@ -393,11 +390,9 @@ export class AppointmentGroupController extends BaseController {
         ]
       });
       if (!appointmentGroup) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2002(`Not found appointment-group ${req.params.appointmentGroupId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2002(`Not found appointment-group ${req.params.appointmentGroupId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentGroup));
@@ -537,11 +532,9 @@ export class AppointmentGroupController extends BaseController {
       }
       // const { workingLocationIds } = res.locals.staffPayload;
       // if (!workingLocationIds.includes(data.locationId)) {
-      //   return next(
-      //     new CustomError(
+      //   throw new CustomError(
       //       branchErrorDetails.E_1001(`You can not access to location ${data.locationId}`),
       //       HttpStatus.FORBIDDEN
-      //     )
       //   );
       // }
       const appointmentGroup = await AppointmentGroupModel.findOne({
@@ -550,11 +543,9 @@ export class AppointmentGroupController extends BaseController {
         }
       });
       if (!appointmentGroup) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2007(`Not found appointment-group ${req.params.appointmentGroupId}`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2007(`Not found appointment-group ${req.params.appointmentGroupId}`),
+          HttpStatus.NOT_FOUND
         );
       }
       const updateAppointmentIds = [];
@@ -568,11 +559,9 @@ export class AppointmentGroupController extends BaseController {
           }
           updateAppointmentIds.push(data.updateAppointments[i].appointmentId);
           if (data.deleteAppointments.includes(data.updateAppointments[i].appointmentId)) {
-            return next(
-              new CustomError(
-                bookingErrorDetails.E_2010(`Duplicate appointment id ${data.updateAppointments[i].appointmentId}`),
-                HttpStatus.NOT_FOUND
-              )
+            throw new CustomError(
+              bookingErrorDetails.E_2010(`Duplicate appointment id ${data.updateAppointments[i].appointmentId}`),
+              HttpStatus.NOT_FOUND
             );
           }
         }
@@ -615,13 +604,11 @@ export class AppointmentGroupController extends BaseController {
       }
 
       if (data.locationId !== appointmentGroup.locationId) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2008(
-              `Location ${data.locationId} incorrect in appointment-group ${data.appointmentGroupId}`
-            ),
-            HttpStatus.BAD_REQUEST
-          )
+        throw new CustomError(
+          bookingErrorDetails.E_2008(
+            `Location ${data.locationId} incorrect in appointment-group ${data.appointmentGroupId}`
+          ),
+          HttpStatus.BAD_REQUEST
         );
       }
       const bookingSource = await AppointmentModel.findOne({
@@ -690,12 +677,9 @@ export class AppointmentGroupController extends BaseController {
         const createAppointmentDetailStaffTasks = [];
         for (const apptData of data.createNewAppointments) {
           if (bookingSource.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
-            if (transaction) await transaction.rollback();
-            return next(
-              new CustomError(
-                bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
-                HttpStatus.BAD_REQUEST
-              )
+            throw new CustomError(
+              bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+              HttpStatus.BAD_REQUEST
             );
           }
           let appointmentCode = '';
@@ -770,12 +754,9 @@ export class AppointmentGroupController extends BaseController {
             }
           });
           if (!appointment) {
-            if (transaction) await transaction.rollback();
-            return next(
-              new CustomError(
-                bookingErrorDetails.E_2002(`Appointment ${data.updateAppointments[i].appointmentId} not exist`),
-                HttpStatus.NOT_FOUND
-              )
+            throw new CustomError(
+              bookingErrorDetails.E_2002(`Appointment ${data.updateAppointments[i].appointmentId} not exist`),
+              HttpStatus.NOT_FOUND
             );
           }
           arrApptCode.push(appointment.appointmentCode);
@@ -816,12 +797,9 @@ export class AppointmentGroupController extends BaseController {
         let index = 0;
         for (const apptData of data.updateAppointments) {
           if (bookingSource.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
-            if (transaction) await transaction.rollback();
-            return next(
-              new CustomError(
-                bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
-                HttpStatus.BAD_REQUEST
-              )
+            throw new CustomError(
+              bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+              HttpStatus.BAD_REQUEST
             );
           }
           const newAppointmentId = uuidv4();
@@ -882,12 +860,9 @@ export class AppointmentGroupController extends BaseController {
             }
           });
           if (!appointment) {
-            if (transaction) await transaction.rollback();
-            return next(
-              new CustomError(
-                bookingErrorDetails.E_2002(`Appointment ${data.deleteAppointments[i]} not exist`),
-                HttpStatus.NOT_FOUND
-              )
+            throw new CustomError(
+              bookingErrorDetails.E_2002(`Appointment ${data.deleteAppointments[i]} not exist`),
+              HttpStatus.NOT_FOUND
             );
           }
           await AppointmentModel.destroy({

@@ -353,9 +353,7 @@ export class ReceiptController {
         where: { id: paymentMethodId }
       });
       if (!paymentMethod) {
-        return next(
-          new CustomError(paymentErrorDetails.E_3601(`This payment method is not exist`), httpStatus.NOT_FOUND)
-        );
+        throw new CustomError(paymentErrorDetails.E_3601(`This payment method is not exist`), httpStatus.NOT_FOUND);
       }
       await PaymentMethodModel.destroy({
         where: { id: paymentMethodId }

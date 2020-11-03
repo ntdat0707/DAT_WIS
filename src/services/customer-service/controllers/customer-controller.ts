@@ -218,9 +218,7 @@ export class CustomerController {
           ]
         });
         if (!existStaff)
-          return next(
-            new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND)
-          );
+          throw new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND);
       }
       while (true) {
         const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
@@ -455,9 +453,7 @@ export class CustomerController {
           ]
         });
         if (!existStaff)
-          return next(
-            new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND)
-          );
+          throw new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND);
       }
       if (req.file) {
         data.avatarPath = (req.file as any).location;
@@ -642,18 +638,14 @@ export class CustomerController {
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({ where: { id: customerWisereId } });
       if (!customerWisere)
-        return next(
-          new CustomError(
-            customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
+          HttpStatus.NOT_FOUND
         );
       if (companyId !== customerWisere.companyId) {
-        return next(
-          new CustomError(
-            customerErrorDetails.E_3002(`You can not access to company ${customerWisere.companyId}`),
-            HttpStatus.FORBIDDEN
-          )
+        throw new CustomError(
+          customerErrorDetails.E_3002(`You can not access to company ${customerWisere.companyId}`),
+          HttpStatus.FORBIDDEN
         );
       }
       await CustomerWisereModel.destroy({ where: { id: customerWisereId } });
@@ -764,11 +756,9 @@ export class CustomerController {
         ]
       });
       if (!customerWisere)
-        return next(
-          new CustomError(
-            customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
-            HttpStatus.NOT_FOUND
-          )
+        throw new CustomError(
+          customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
+          HttpStatus.NOT_FOUND
         );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customerWisere));
     } catch (error) {
@@ -977,9 +967,7 @@ export class CustomerController {
         } else if (req.body.provider === ESocialType.FACEBOOK) {
           socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
           if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
-            return next(
-              new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST)
-            );
+            throw new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST);
           }
         }
         customer = await CustomerModel.findOne({ raw: true, where: { email: req.body.email } });
@@ -1243,9 +1231,7 @@ export class CustomerController {
       const clientSecret = await generateAppleToken();
       const response: any = await validateAppleCode(req.body.appleCode, clientSecret);
       if (response.response.error) {
-        return next(
-          new CustomError(customerErrorDetails.E_3006('Incorrect apple information'), HttpStatus.BAD_REQUEST)
-        );
+        throw new CustomError(customerErrorDetails.E_3006('Incorrect apple information'), HttpStatus.BAD_REQUEST);
       }
       const appleInfor = jwt.decode(response.response.id_token);
       if (appleInfor.sub !== req.body.appleId && response.expires_in !== 0) {
