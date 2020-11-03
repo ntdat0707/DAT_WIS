@@ -1,6 +1,6 @@
 import Joi from 'joi';
 import { EPaymentMethodType } from '../../../../utils/consts';
-const createInvoicePaymentSchema = Joi.object({
+const createReceiptSchema = Joi.object({
   invoiceId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -57,4 +57,4 @@ const deletePaymentMethodSchema = Joi.string()
   })
   .required()
   .label('paymentMethodId');
-export { createInvoicePaymentSchema, createPaymentMethodSchema, updatePaymentMethodSchema, deletePaymentMethodSchema };
+export { createReceiptSchema, createPaymentMethodSchema, updatePaymentMethodSchema, deletePaymentMethodSchema };

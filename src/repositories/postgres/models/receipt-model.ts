@@ -40,11 +40,6 @@ ReceiptModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    paymentId: {
-      field: 'payment_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
-    },
     locationId: {
       field: 'location_id',
       type: DataTypes.UUIDV4,

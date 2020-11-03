@@ -291,6 +291,7 @@ export {
   InvoiceDetailModel,
   InvoiceDetailStaffModel,
   ReceiptModel,
+  InvoiceReceiptModel,
   TeamStaffModel,
   DiscountModel,
   PaymentMethodModel,

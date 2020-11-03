@@ -4,11 +4,18 @@ import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
 import {
   createPaymentMethodSchema,
-  createInvoicePaymentSchema,
+  createReceiptSchema,
   deletePaymentMethodSchema,
   updatePaymentMethodSchema
 } from '../configs/validate-schemas';
-import { InvoiceModel, PaymentMethodModel, ProviderModel, sequelize } from '../../../repositories/postgres/models';
+import {
+  InvoiceModel,
+  PaymentMethodModel,
+  ProviderModel,
+  ReceiptModel,
+  InvoiceReceiptModel,
+  sequelize
+} from '../../../repositories/postgres/models';
 import { invoiceErrorDetails } from '../../../utils/response-messages/error-details';
 import { EBalanceType } from '../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,7 +45,7 @@ export class ReceiptController {
   /**
    * @swagger
    * definitions:
-   *   paymentCreate:
+   *   receiptCreate:
    *       properties:
    *           invoiceId:
    *               type: string
@@ -51,19 +58,19 @@ export class ReceiptController {
 
   /**
    * @swagger
-   * /sale/receipt/create-invoice-receipt:
+   * /sale/receipt/create-receipt:
    *   post:
    *     tags:
    *       - Sale
    *     security:
    *       - Bearer: []
-   *     name: createInvoicePayment
+   *     name: createReceipt
    *     parameters:
    *     - in: "body"
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/paymentCreate'
+   *         $ref: '#/definitions/receiptCreate'
    *     responses:
    *       200:
    *         description: success
@@ -72,10 +79,10 @@ export class ReceiptController {
    *       500:
    *         description:
    */
-  public createInvoicePayment = async (req: Request, res: Response, next: NextFunction) => {
+  public createReceipt = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      const validateErrors = validate(req.body, createInvoicePaymentSchema);
+      const validateErrors = validate(req.body, createReceiptSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
@@ -96,7 +103,7 @@ export class ReceiptController {
         balance: invoice.balance,
         paymentMethods: req.body.paymentMethods
       };
-      await this.createPaymentReceipt(data, transaction);
+      await this.createInvoiceReceipt(data, transaction);
       await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
@@ -107,11 +114,11 @@ export class ReceiptController {
     }
   };
 
-  public async createPaymentReceipt(data: any, transaction: any) {
+  public async createInvoiceReceipt(data: any, transaction: any) {
     try {
-      const payments = [];
       const providers = [];
       const receipts = [];
+      const invoiceReceipts = [];
       let balance = data.balance;
       let status: string;
       for (let i = 0; i < data.paymentMethods.length; i++) {
@@ -124,36 +131,35 @@ export class ReceiptController {
           };
           providers.push(dataProvider);
         }
-        const dataPayment = {
-          id: uuidv4(),
-          invoiceId: data.invoiceId,
-          paymentMethodId: data.paymentMethods[i].paymentMethodId,
-          amount: data.paymentMethods[i].amount,
-          providerId: dataProvider ? dataProvider.id : null
-        };
-        payments.push(dataPayment);
         let receiptCode = '';
         for (let j = 0; j < 10; j++) {
           const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           receiptCode = 'REC' + randomCode;
-          // const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
-          // if (!existReceiptCode) {
-          //   break;
-          // }
+          const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
+          if (!existReceiptCode) {
+            break;
+          }
         }
         const dataReceipt = {
+          id: uuidv4(),
           code: receiptCode,
           customerWisereId: data.customerWisereId,
           staffId: data.staffId,
           amount: data.paymentMethods[i].amount,
-          paymentId: dataPayment.id,
-          locationId: data.locationId
+          locationId: data.locationId,
+          paymentMethodId: data.paymentMethods[i].paymentMethodId,
+          providerId: dataProvider ? dataProvider.id : null
         };
         receipts.push(dataReceipt);
-        balance -= dataPayment.amount;
+        balance -= dataReceipt.amount;
         if (balance < 0) {
           balance = 0;
         }
+        const dataInvoiceReceipt = {
+          invoiceId: data.invoiceId,
+          receiptId: dataReceipt.id
+        };
+        invoiceReceipts.push(dataInvoiceReceipt);
       }
       if (balance === 0) {
         status = EBalanceType.PAID;
@@ -163,8 +169,8 @@ export class ReceiptController {
       if (providers.length > 0) {
         await ProviderModel.bulkCreate(providers, { transaction });
       }
-      // await InvoicePaymentModel.bulkCreate(payments, { transaction });
-      // await ReceiptModel.bulkCreate(receipts, { transaction });
+      await ReceiptModel.bulkCreate(receipts, { transaction });
+      await InvoiceReceiptModel.bulkCreate(invoiceReceipts, { transaction });
       await InvoiceModel.update({ balance: balance, status: status }, { where: { id: data.invoiceId }, transaction });
       return balance;
     } catch (error) {

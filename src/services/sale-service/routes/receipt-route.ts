@@ -8,7 +8,7 @@ export class ReceiptRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post('/create-invoice-receipt', isAuthenticated, this.paymentController.createInvoicePayment);
+    this.router.post('/create-invoice-receipt', isAuthenticated, this.paymentController.createReceipt);
     this.router.post('/create-payment-method', isAuthenticated, this.paymentController.createPaymentMethod);
     this.router.put(
       '/update-payment-method/:paymentMethodId',
