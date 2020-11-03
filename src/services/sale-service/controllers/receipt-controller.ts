@@ -4,25 +4,25 @@ import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
 import {
   createPaymentMethodSchema,
-  createPaymentSchema,
+  createReceiptSchema,
   deletePaymentMethodSchema,
   updatePaymentMethodSchema
 } from '../configs/validate-schemas';
 import {
   InvoiceModel,
   PaymentMethodModel,
-  PaymentModel,
   ProviderModel,
   ReceiptModel,
+  InvoiceReceiptModel,
   sequelize
 } from '../../../repositories/postgres/models';
-import { invoiceErrorDetails } from '../../../utils/response-messages/error-details/';
-import { EBalanceType } from './../../../utils/consts/index';
+import { invoiceErrorDetails } from '../../../utils/response-messages/error-details';
+import { EBalanceType } from '../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
 import HttpStatus from 'http-status-codes';
 import { buildSuccessMessage } from '../../../utils/response-messages/responses';
 import { paymentErrorDetails, paymentMethodErrorDetails } from '../../../utils/response-messages/error-details/sale';
-export class PaymentController {
+export class ReceiptController {
   /**
    * @swagger
    * definitions:
@@ -45,7 +45,7 @@ export class PaymentController {
   /**
    * @swagger
    * definitions:
-   *   paymentCreate:
+   *   receiptCreate:
    *       properties:
    *           invoiceId:
    *               type: string
@@ -58,19 +58,19 @@ export class PaymentController {
 
   /**
    * @swagger
-   * /sale/payment/create-payment:
+   * /sale/receipt/create-receipt:
    *   post:
    *     tags:
    *       - Sale
    *     security:
    *       - Bearer: []
-   *     name: createPayment
+   *     name: createInvoiceReceipt
    *     parameters:
    *     - in: "body"
    *       name: "body"
    *       required: true
    *       schema:
-   *         $ref: '#/definitions/paymentCreate'
+   *         $ref: '#/definitions/receiptCreate'
    *     responses:
    *       200:
    *         description: success
@@ -79,10 +79,10 @@ export class PaymentController {
    *       500:
    *         description:
    */
-  public createPayment = async (req: Request, res: Response, next: NextFunction) => {
+  public createInvoiceReceipt = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      const validateErrors = validate(req.body, createPaymentSchema);
+      const validateErrors = validate(req.body, createReceiptSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
@@ -96,14 +96,14 @@ export class PaymentController {
       transaction = await sequelize.transaction();
       const data = {
         invoiceId: req.body.invoiceId,
-        customerId: invoice.customerWisereId,
+        customerWisereId: invoice.customerWisereId,
         staffId: res.locals.staffPayload.id,
         locationId: invoice.locationId,
         total: invoice.total,
         balance: invoice.balance,
         paymentMethods: req.body.paymentMethods
       };
-      await this.createPaymentReceipt(data, transaction);
+      await this.generateInvoiceReceipt(data, transaction);
       await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
@@ -114,11 +114,11 @@ export class PaymentController {
     }
   };
 
-  public async createPaymentReceipt(data: any, transaction: any) {
+  public async generateInvoiceReceipt(data: any, transaction: any) {
     try {
-      const payments = [];
       const providers = [];
       const receipts = [];
+      const invoiceReceipts = [];
       let balance = data.balance;
       let status: string;
       for (let i = 0; i < data.paymentMethods.length; i++) {
@@ -131,14 +131,6 @@ export class PaymentController {
           };
           providers.push(dataProvider);
         }
-        const dataPayment = {
-          id: uuidv4(),
-          invoiceId: data.invoiceId,
-          paymentMethodId: data.paymentMethods[i].paymentMethodId,
-          amount: data.paymentMethods[i].amount,
-          providerId: dataProvider ? dataProvider.id : null
-        };
-        payments.push(dataPayment);
         let receiptCode = '';
         for (let j = 0; j < 10; j++) {
           const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -149,21 +141,25 @@ export class PaymentController {
           }
         }
         const dataReceipt = {
+          id: uuidv4(),
           code: receiptCode,
-          customerId: data.customerId,
+          customerWisereId: data.customerWisereId,
           staffId: data.staffId,
           amount: data.paymentMethods[i].amount,
-          paymentId: dataPayment.id,
-          locationId: data.locationId
+          locationId: data.locationId,
+          paymentMethodId: data.paymentMethods[i].paymentMethodId,
+          providerId: dataProvider ? dataProvider.id : null
         };
         receipts.push(dataReceipt);
-        balance -= dataPayment.amount;
+        balance -= dataReceipt.amount;
         if (balance < 0) {
-          throw new CustomError(
-            invoiceErrorDetails.E_3305(`amount is greater than the balance in the invoice`),
-            httpStatus.BAD_REQUEST
-          );
+          balance = 0;
         }
+        const dataInvoiceReceipt = {
+          invoiceId: data.invoiceId,
+          receiptId: dataReceipt.id
+        };
+        invoiceReceipts.push(dataInvoiceReceipt);
       }
       if (balance === 0) {
         status = EBalanceType.PAID;
@@ -173,8 +169,8 @@ export class PaymentController {
       if (providers.length > 0) {
         await ProviderModel.bulkCreate(providers, { transaction });
       }
-      await PaymentModel.bulkCreate(payments, { transaction });
       await ReceiptModel.bulkCreate(receipts, { transaction });
+      await InvoiceReceiptModel.bulkCreate(invoiceReceipts, { transaction });
       await InvoiceModel.update({ balance: balance, status: status }, { where: { id: data.invoiceId }, transaction });
       return balance;
     } catch (error) {
@@ -195,7 +191,7 @@ export class PaymentController {
 
   /**
    * @swagger
-   * /sale/payment/create-payment-method:
+   * /sale/receipt/create-payment-method:
    *   post:
    *     tags:
    *       - Sale
@@ -235,7 +231,7 @@ export class PaymentController {
 
   /**
    * @swagger
-   * /sale/payment/get-list-payment-method:
+   * /sale/receipt/get-list-payment-method:
    *   get:
    *     tags:
    *       - Sale
@@ -275,7 +271,7 @@ export class PaymentController {
 
   /**
    * @swagger
-   * /sale/payment/update-payment-method/{paymentMethodId}:
+   * /sale/receipt/update-payment-method/{paymentMethodId}:
    *   put:
    *     tags:
    *       - Sale
@@ -326,7 +322,7 @@ export class PaymentController {
 
   /**
    * @swagger
-   * /sale/payment/delete-payment-method/{paymentMethodId}:
+   * /sale/receipt/delete-payment-method/{paymentMethodId}:
    *   delete:
    *     tags:
    *       - Sale

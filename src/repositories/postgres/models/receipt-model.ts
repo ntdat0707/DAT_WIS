@@ -7,9 +7,10 @@ class ReceiptModel extends Model {
   public customerWisereId!: string;
   public staffId!: string;
   public amount: number;
-  public paymentId!: string;
   public locationId: string;
   public description: string;
+  public paymentMethodId: string;
+  public providerId: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -38,11 +39,6 @@ ReceiptModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    paymentId: {
-      field: 'payment_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
-    },
     locationId: {
       field: 'location_id',
       type: DataTypes.UUIDV4,
@@ -56,6 +52,16 @@ ReceiptModel.init(
     description: {
       field: 'description',
       type: DataTypes.STRING,
+      allowNull: true
+    },
+    paymentMethodId: {
+      field: 'payment_method_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    providerId: {
+      field: 'provider_id',
+      type: DataTypes.UUIDV4,
       allowNull: true
     },
     createdAt: {
