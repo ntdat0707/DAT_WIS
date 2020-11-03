@@ -8,13 +8,7 @@ import {
   deletePaymentMethodSchema,
   updatePaymentMethodSchema
 } from '../configs/validate-schemas';
-import {
-  InvoiceModel,
-  InvoicePaymentModel,
-  PaymentMethodModel,
-  ProviderModel,
-  sequelize
-} from '../../../repositories/postgres/models';
+import { InvoiceModel, PaymentMethodModel, ProviderModel, sequelize } from '../../../repositories/postgres/models';
 import { invoiceErrorDetails } from '../../../utils/response-messages/error-details';
 import { EBalanceType } from '../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
@@ -169,7 +163,7 @@ export class InvoicePaymentController {
       if (providers.length > 0) {
         await ProviderModel.bulkCreate(providers, { transaction });
       }
-      await InvoicePaymentModel.bulkCreate(payments, { transaction });
+      // await InvoicePaymentModel.bulkCreate(payments, { transaction });
       // await ReceiptModel.bulkCreate(receipts, { transaction });
       await InvoiceModel.update({ balance: balance, status: status }, { where: { id: data.invoiceId }, transaction });
       return balance;

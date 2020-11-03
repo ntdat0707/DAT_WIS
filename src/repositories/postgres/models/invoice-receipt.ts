@@ -1,16 +1,16 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class InvoicePaymentReceiptModel extends Model {
+class InvoiceReceiptModel extends Model {
   public id: string;
   public invoiceId!: string;
-  public paymentReceiptId!: string;
+  public receiptId!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-InvoicePaymentReceiptModel.init(
+InvoiceReceiptModel.init(
   {
     id: {
       field: 'id',
@@ -23,8 +23,8 @@ InvoicePaymentReceiptModel.init(
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    paymentReceiptId: {
-      field: 'payment_receipt_id',
+    receiptId: {
+      field: 'receipt_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
@@ -48,10 +48,10 @@ InvoicePaymentReceiptModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'invoice_payment_receipt',
+    tableName: 'invoice_receipt',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { InvoicePaymentReceiptModel };
+export { InvoiceReceiptModel };
