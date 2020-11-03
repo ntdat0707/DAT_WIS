@@ -20,5 +20,6 @@ export class TeamRoutes {
       this.teamController.updateTeam
     );
     this.router.get('/get-sub-teams/:parentId', isAuthenticated, this.teamController.getSubTeams);
+    this.router.get('/get-team/:teamId', isAuthenticated, this.teamController.getTeam);
   }
 }

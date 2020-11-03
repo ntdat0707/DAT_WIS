@@ -100,5 +100,5 @@ const parentIdSchema = Joi.string()
 const teamIdSchema = Joi.string()
   .guid({ version: ['uuidv4'] })
   .required()
-  .label('teamID');
+  .label('teamId');
 export { createTeamSchema, updateTeamSchema, parentIdSchema, teamIdSchema };

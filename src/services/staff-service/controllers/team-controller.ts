@@ -194,90 +194,7 @@ export class TeamController {
 
   /**
    * @swagger
-   * /staff/team/get-teams/{parentId}:
-   *   get:
-   *     tags:
-   *       - Staff
-   *     security:
-   *       - Bearer: []
-   *     name: getSubTeams
-   *     parameters:
-   *     - in: query
-   *       name: pageNum
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: searchValue
-   *       required: false
-   *       schema:
-   *          type: string
-   *     - in: path
-   *       name: parentId
-   *       required: true
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public getTeams = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const fullPath = req.headers['x-base-url'] + req.originalUrl;
-      const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
-      };
-      const validateErrors = validate(req.params.parentId, parentIdSchema);
-      const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validatePaginationErrors || validateErrors)
-        return next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
-      const subTeamIds: any = (
-        await TeamSubModel.findAll({
-          where: {
-            teamId: req.params.parentId
-          }
-        })
-      ).map((subTeamId: any) => subTeamId.teamSubId);
-      const query: FindOptions = {
-        where: {
-          id: { [Op.in]: subTeamIds }
-        },
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      };
-
-      if (req.query.searchValue) {
-        query.where = {
-          ...query.where,
-          ...{
-            [Op.or]: [Sequelize.literal(`unaccent("TeamModel"."name") ilike unaccent('%${req.query.searchValue}%')`)]
-          }
-        };
-      }
-      const teamSubs = await paginate(
-        TeamModel,
-        query,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
-        fullPath
-      );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(teamSubs));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * /staff/team/get-teams/{teamId}:
+   * /staff/team/get-team/{teamId}:
    *   get:
    *     tags:
    *       - Staff
@@ -302,6 +219,8 @@ export class TeamController {
     try {
       const validateErrors = validate(req.params.teamId, teamIdSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      let subTeams: any = [];
+      let parentTeam: any = {};
       let team: any = await TeamModel.findOne({
         where: {
           id: req.params.teamId
@@ -320,34 +239,39 @@ export class TeamController {
             through: { attributes: [] },
             required: true,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-          },
-          {
-            model: TeamSubModel,
-            as: 'teamSubs',
-            required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-            include: [
-              {
-                model: TeamModel,
-                as: 'teamParent',
-                required: true,
-                attributes: ['id', 'photo']
-              }
-            ]
           }
         ]
       });
       if (!team) {
         return next(new CustomError(teamErrorDetails.E_5001(`This team ${req.params.teamId} does not exist`)));
       }
-      const teamParent = await TeamModel.findOne({
-        where: { id: team.parentId },
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+      team = team.dataValues;
+      const subs: any = await TeamSubModel.findAll({
+        where: { teamId: team.id },
+        include: [
+          {
+            model: TeamModel,
+            as: 'teamDetail',
+            required: true,
+            attributes: ['id', 'photo']
+          }
+        ]
       });
-      team = {
-        ...team,
-        teamParent: teamParent
-      };
+      if (subs) {
+        subTeams = subs.map((sub: any) => ({
+          ...sub.dataValues
+        }));
+      }
+      if (team.parentId) {
+        const parent: any = await TeamModel.findOne({
+          where: { id: team.parentId },
+          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+        });
+        if (parent) {
+          parentTeam = parent.dataValues;
+        }
+      }
+      team = { ...team, subTeams, parentTeam };
       return res.status(HttpStatus.OK).send(buildSuccessMessage(team));
     } catch (error) {
       return next(error);

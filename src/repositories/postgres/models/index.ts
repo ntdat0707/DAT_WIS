@@ -250,7 +250,8 @@ TeamModel.belongsToMany(LocationModel, { through: TeamLocationModel, foreignKey:
 LocationModel.belongsToMany(TeamModel, { through: TeamLocationModel, foreignKey: 'locationId', as: 'teamLocations' });
 
 TeamModel.hasMany(TeamSubModel, { foreignKey: 'teamId', sourceKey: 'parentId', as: 'teamSubs' });
-TeamSubModel.belongsTo(TeamModel, { foreignKey: 'teamId', as: 'teamParent' });
+TeamSubModel.belongsTo(TeamModel, { foreignKey: 'teamId', as: 'teamDetail' });
+
 export {
   sequelize,
   StaffModel,
