@@ -24,7 +24,7 @@ import {
   LocationModel,
   PipelineModel,
   PipelineStageModel,
-  InvoicePaymentMethodModel
+  PaymentMethodModel
 } from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
@@ -147,7 +147,7 @@ export class AuthController {
         };
         paymentMethods.push(paymentMethodData);
       }
-      await InvoicePaymentMethodModel.bulkCreate(paymentMethods, { transaction });
+      await PaymentMethodModel.bulkCreate(paymentMethods, { transaction });
 
       const pipelineId1 = uuidv4();
       const pipelineId2 = uuidv4();

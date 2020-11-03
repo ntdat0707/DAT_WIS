@@ -11,13 +11,10 @@ import {
   InvoiceDetailStaffModel,
   InvoiceModel,
   LocationModel,
-  InvoicePaymentMethodModel,
-  InvoicePaymentModel,
-  ProviderModel,
-  ReceiptModel,
   sequelize,
   ServiceModel,
-  StaffModel
+  StaffModel,
+  PaymentReceiptModel
 } from '../../../repositories/postgres/models';
 import {
   bookingErrorDetails,
@@ -516,7 +513,7 @@ export class InvoiceController {
         ]
       };
       const receipts = await paginate(
-        ReceiptModel,
+        PaymentReceiptModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
@@ -557,25 +554,25 @@ export class InvoiceController {
           return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
         }
       }
-      const receipt = await ReceiptModel.findOne({
+      const receipt = await PaymentReceiptModel.findOne({
         where: { id: receiptId },
         include: [
-          {
-            model: InvoicePaymentModel,
-            as: 'invoicePayment',
-            include: [
-              {
-                model: InvoicePaymentMethodModel,
-                as: 'paymentMethod',
-                required: true
-              },
-              {
-                model: ProviderModel,
-                as: 'provider',
-                required: false
-              }
-            ]
-          },
+          // {
+          //   model: InvoicePaymentModel,
+          //   as: 'invoicePayment',
+          //   include: [
+          //     {
+          //       model: InvoicePaymentMethodModel,
+          //       as: 'paymentMethod',
+          //       required: true
+          //     },
+          //     {
+          //       model: ProviderModel,
+          //       as: 'provider',
+          //       required: false
+          //     }
+          //   ]
+          // },
           {
             model: StaffModel,
             as: 'staff',

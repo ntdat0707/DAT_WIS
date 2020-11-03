@@ -10,10 +10,9 @@ import {
 } from '../configs/validate-schemas';
 import {
   InvoiceModel,
-  InvoicePaymentMethodModel,
   InvoicePaymentModel,
+  PaymentMethodModel,
   ProviderModel,
-  ReceiptModel,
   sequelize
 } from '../../../repositories/postgres/models';
 import { invoiceErrorDetails } from '../../../utils/response-messages/error-details';
@@ -143,10 +142,10 @@ export class InvoicePaymentController {
         for (let j = 0; j < 10; j++) {
           const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           receiptCode = 'REC' + randomCode;
-          const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
-          if (!existReceiptCode) {
-            break;
-          }
+          // const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
+          // if (!existReceiptCode) {
+          //   break;
+          // }
         }
         const dataReceipt = {
           code: receiptCode,
@@ -171,7 +170,7 @@ export class InvoicePaymentController {
         await ProviderModel.bulkCreate(providers, { transaction });
       }
       await InvoicePaymentModel.bulkCreate(payments, { transaction });
-      await ReceiptModel.bulkCreate(receipts, { transaction });
+      // await ReceiptModel.bulkCreate(receipts, { transaction });
       await InvoiceModel.update({ balance: balance, status: status }, { where: { id: data.invoiceId }, transaction });
       return balance;
     } catch (error) {
@@ -223,7 +222,7 @@ export class InvoicePaymentController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const paymentMethod = await InvoicePaymentMethodModel.create(data);
+      const paymentMethod = await PaymentMethodModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
     } catch (error) {
       return next(error);
@@ -250,7 +249,7 @@ export class InvoicePaymentController {
   public getListPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
-      const paymentMethod = await InvoicePaymentMethodModel.findAll({
+      const paymentMethod = await PaymentMethodModel.findAll({
         where: { companyId: companyId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
@@ -307,7 +306,7 @@ export class InvoicePaymentController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const paymentMethod = await InvoicePaymentMethodModel.findOne({ where: { id: data.paymentMethodId } });
+      const paymentMethod = await PaymentMethodModel.findOne({ where: { id: data.paymentMethodId } });
       if (!paymentMethod) {
         throw new CustomError(
           paymentMethodErrorDetails.E_3700(`Payment method with id ${data.paymentMethodId} not found`),
@@ -350,7 +349,7 @@ export class InvoicePaymentController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const paymentMethod = await InvoicePaymentMethodModel.findOne({
+      const paymentMethod = await PaymentMethodModel.findOne({
         where: { id: paymentMethodId }
       });
       if (!paymentMethod) {
@@ -358,7 +357,7 @@ export class InvoicePaymentController {
           new CustomError(paymentErrorDetails.E_3601(`This payment method is not exist`), httpStatus.NOT_FOUND)
         );
       }
-      await InvoicePaymentMethodModel.destroy({
+      await PaymentMethodModel.destroy({
         where: { id: paymentMethodId }
       });
       return res.status(HttpStatus.OK).send();
