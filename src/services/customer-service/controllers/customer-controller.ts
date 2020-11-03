@@ -191,16 +191,16 @@ export class CustomerController {
       };
       const validateErrors = validate(data, createCustomerWisereSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       data.companyId = res.locals.staffPayload.companyId;
       const existPhone = await CustomerWisereModel.findOne({ where: { phone: data.phone, companyId: data.companyId } });
-      if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+      if (existPhone) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
       if (data.email) {
         const existEmail = await CustomerWisereModel.findOne({
           where: { email: data.email, companyId: data.companyId }
         });
-        if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+        if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       if (data.ownerId) {
         const existStaff = await StaffModel.findOne({
@@ -246,11 +246,11 @@ export class CustomerController {
           const existEmailCustomer = await CustomerWisereModel.findOne({
             where: { email: data.moreEmailContact[i].email, companyId: data.companyId }
           });
-          if (existEmailCustomer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+          if (existEmailCustomer) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
           const existEmailContact = await ContactModel.findOne({
             where: { email: data.moreEmailContact[i].email }
           });
-          if (existEmailContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          if (existEmailContact) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
           arrInsertEmailContact.push({
             email: data.moreEmailContact[i].email,
             type: data.moreEmailContact[i].type,
@@ -265,11 +265,11 @@ export class CustomerController {
           const existPhoneCustomer = await CustomerWisereModel.findOne({
             where: { phone: data.morePhoneContact[i].phone, companyId: data.companyId }
           });
-          if (existPhoneCustomer) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          if (existPhoneCustomer) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
           const existPhoneContact = await ContactModel.findOne({
             where: { phone: data.morePhoneContact[i].phone }
           });
-          if (existPhoneContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          if (existPhoneContact) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
           arrInsertPhoneContact.push({
             phone: data.morePhoneContact[i].phone,
             type: data.morePhoneContact[i].type,
@@ -431,13 +431,13 @@ export class CustomerController {
         const existPhone = await CustomerWisereModel.findOne({
           where: { phone: data.phone, companyId: companyId, id: { [Op.ne]: customerWisereId } }
         });
-        if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+        if (existPhone) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
       }
       if (data.email) {
         const existEmail = await CustomerWisereModel.findOne({
           where: { email: data.email, companyId: companyId, id: { [Op.ne]: customerWisereId } }
         });
-        if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+        if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       if (data.ownerId) {
         const existStaff = await StaffModel.findOne({
@@ -502,11 +502,11 @@ export class CustomerController {
                 id: { [Op.not]: customerWisereId }
               }
             });
-            if (existEmailCustomer) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+            if (existEmailCustomer) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
             const existEmailContact = await ContactModel.findOne({
               where: { email: addEmails[i].email, customerWisereId: { [Op.not]: customerWisereId } }
             });
-            if (existEmailContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            if (existEmailContact) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
             arrInsertEmailContact.push({
               email: addEmails[i].email,
               type: addEmails[i].type,
@@ -554,11 +554,11 @@ export class CustomerController {
                 id: { [Op.not]: customerWisereId }
               }
             });
-            if (existPhoneCustomer) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            if (existPhoneCustomer) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
             const existPhoneContact = await ContactModel.findOne({
               where: { phone: addPhones[i].phone, id: { [Op.not]: customerWisereId } }
             });
-            if (existPhoneContact) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+            if (existPhoneContact) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
             arrInsertPhoneContact.push({
               phone: addPhones[i].phone,
               type: addPhones[i].type,
@@ -639,7 +639,7 @@ export class CustomerController {
       const { companyId } = res.locals.staffPayload;
       const customerWisereId = req.params.customerWisereId;
       const validateErrors = validate(customerWisereId, customerWireseIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({ where: { id: customerWisereId } });
       if (!customerWisere)
         return next(
@@ -700,7 +700,7 @@ export class CustomerController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const query: FindOptions = {
         where: {
           companyId: companyId
@@ -744,7 +744,7 @@ export class CustomerController {
       const { companyId } = res.locals.staffPayload;
       const customerWisereId = req.params.customerWisereId;
       const validateErrors = validate(customerWisereId, customerWireseIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({
         where: {
           id: customerWisereId,
@@ -818,13 +818,12 @@ export class CustomerController {
         password: req.body.password
       };
       const validateErrors = validate(data, loginSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customer = await CustomerModel.findOne({ raw: true, where: { email: data.email } });
       if (!customer)
-        return next(new CustomError(customerErrorDetails.E_3004('Email or password invalid'), HttpStatus.NOT_FOUND));
+        throw new CustomError(customerErrorDetails.E_3004('Email or password invalid'), HttpStatus.NOT_FOUND);
       const match = await compare(data.password, customer.password);
-      if (!match)
-        return next(new CustomError(customerErrorDetails.E_3004('Email or password invalid'), HttpStatus.NOT_FOUND));
+      if (!match) throw new CustomError(customerErrorDetails.E_3004('Email or password invalid'), HttpStatus.NOT_FOUND);
       //create tokens
 
       const accessTokenData: IAccessTokenData = {
@@ -885,17 +884,17 @@ export class CustomerController {
   public verifyTokenCustomer = async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.body.token) {
-        return next(new CustomError(generalErrorDetails.E_0002()));
+        throw new CustomError(generalErrorDetails.E_0002());
       }
       const accessTokenData = await verifyAccessToken(req.body.token);
       if (accessTokenData instanceof CustomError) {
-        return next(new CustomError(generalErrorDetails.E_0003()));
+        throw new CustomError(generalErrorDetails.E_0003());
       } else {
         const customer = await CustomerModel.findOne({
           where: { id: accessTokenData.userId }
         });
         if (!customer) {
-          return next(new CustomError(generalErrorDetails.E_0003()));
+          throw new CustomError(generalErrorDetails.E_0003());
         }
         return res.status(HttpStatus.OK).send(buildSuccessMessage(customer));
       }
@@ -965,12 +964,15 @@ export class CustomerController {
       let mqttUserData: any;
       let mqttUserModel: any;
       const validateErrors = validate(req.body, loginSocialSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
+      transaction = await sequelize.transaction();
       if (req.body.email) {
         if (req.body.provider === ESocialType.GOOGLE) {
           socialInfor = await validateGoogleToken(req.body.token);
           if (socialInfor.response.email !== req.body.email || socialInfor.response.expires_in === 0) {
-            return next(new CustomError(customerErrorDetails.E_3006('Incorrect google token'), HttpStatus.BAD_REQUEST));
+            throw new CustomError(customerErrorDetails.E_3006('Incorrect google token'), HttpStatus.BAD_REQUEST);
           }
         } else if (req.body.provider === ESocialType.FACEBOOK) {
           socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
@@ -983,7 +985,7 @@ export class CustomerController {
         customer = await CustomerModel.findOne({ raw: true, where: { email: req.body.email } });
       } else {
         if (req.body.provider === ESocialType.GOOGLE) {
-          return next(new CustomError(customerErrorDetails.E_3007('Missing email'), HttpStatus.BAD_REQUEST));
+          throw new CustomError(customerErrorDetails.E_3007('Missing email'), HttpStatus.BAD_REQUEST);
         }
       }
       if (customer) {
@@ -996,7 +998,7 @@ export class CustomerController {
             await CustomerModel.update(data, { where: { email: req.body.email } });
           } else {
             if (customer.facebookId !== req.body.providerId) {
-              return next(new CustomError(customerErrorDetails.E_3005('providerId incorrect'), HttpStatus.BAD_REQUEST));
+              throw new CustomError(customerErrorDetails.E_3005('providerId incorrect'), HttpStatus.BAD_REQUEST);
             }
           }
           accessTokenData = {
@@ -1026,7 +1028,7 @@ export class CustomerController {
             await CustomerModel.update(data, { where: { email: req.body.email } });
           } else {
             if (customer.googleId !== req.body.providerId) {
-              return next(new CustomError(customerErrorDetails.E_3005('providerId incorrect'), HttpStatus.BAD_REQUEST));
+              throw new CustomError(customerErrorDetails.E_3005('providerId incorrect'), HttpStatus.BAD_REQUEST);
             }
           }
           accessTokenData = {
@@ -1053,11 +1055,7 @@ export class CustomerController {
       if (req.body.provider === ESocialType.FACEBOOK) {
         socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
         if (socialInfor.response.name !== req.body.fullName || socialInfor.response.id !== req.body.providerId) {
-          //rollback transaction
-          if (transaction) {
-            await transaction.rollback();
-          }
-          return next(new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
+          throw new CustomError(customerErrorDetails.E_3006('Incorrect facebook token'), HttpStatus.BAD_REQUEST);
         }
         customer = await CustomerModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!customer) {
@@ -1251,7 +1249,7 @@ export class CustomerController {
       }
       const appleInfor = jwt.decode(response.response.id_token);
       if (appleInfor.sub !== req.body.appleId && response.expires_in !== 0) {
-        return next(new CustomError(customerErrorDetails.E_3006('Incorrect apple id'), HttpStatus.BAD_REQUEST));
+        throw new CustomError(customerErrorDetails.E_3006('Incorrect apple id'), HttpStatus.BAD_REQUEST);
       }
       const customer = await CustomerModel.findOne({
         where: {
@@ -1388,13 +1386,13 @@ export class CustomerController {
       };
       const validateErrors = validate(data, registerCustomerSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const existPhone = await CustomerModel.findOne({ where: { phone: data.phone } });
-      if (existPhone) return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+      if (existPhone) throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
       if (req.body.email) {
         const existEmail = await CustomerModel.findOne({ where: { email: data.email } });
-        if (existEmail) return next(new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST));
+        if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
       // start transaction
@@ -1456,9 +1454,9 @@ export class CustomerController {
     try {
       const email = req.body.email;
       const validateErrors = validate({ email: email }, emailSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customer = await CustomerModel.findOne({ raw: true, where: { email: req.body.email } });
-      if (!customer) return next(new CustomError(customerErrorDetails.E_3001('Email not found'), HttpStatus.NOT_FOUND));
+      if (!customer) throw new CustomError(customerErrorDetails.E_3001('Email not found'), HttpStatus.NOT_FOUND);
       const uuidToken = uuidv4();
       const dataSendMail: ICustomerRecoveryPasswordTemplate = {
         customerEmail: email,
@@ -1529,13 +1527,12 @@ export class CustomerController {
         newPassword: req.body.newPassword
       };
       const validateErrors = validate(body, changePasswordSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const tokenStoraged = await redis.getData(`${EKeys.CUSTOMER_RECOVERY_PASSWORD_URL}-${body.token}`);
-      if (!tokenStoraged)
-        return next(new CustomError(customerErrorDetails.E_3009('Invalid token'), HttpStatus.UNAUTHORIZED));
+      if (!tokenStoraged) throw new CustomError(customerErrorDetails.E_3009('Invalid token'), HttpStatus.UNAUTHORIZED);
       const data = JSON.parse(tokenStoraged);
       const customer = await CustomerModel.findOne({ raw: true, where: { email: data.email } });
-      if (!customer) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
+      if (!customer) throw new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND);
       const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
       await CustomerModel.update(
         { password: password },
@@ -1614,7 +1611,7 @@ export class CustomerController {
       };
       let validateErrors = validate(data, changeProfileCustomerSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       if (data.phone) {
@@ -1625,7 +1622,7 @@ export class CustomerController {
           }
         });
         if (existPhone) {
-          return next(new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST));
+          throw new CustomError(customerErrorDetails.E_3003(), HttpStatus.BAD_REQUEST);
         }
       }
 
@@ -1647,16 +1644,16 @@ export class CustomerController {
         };
         validateErrors = validate(dataChangePassword, changePasswordCustomerSchema);
         if (validateErrors) {
-          return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+          throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
         }
 
         const match = await compare(dataChangePassword.currentPassword, existCustomer.password);
         if (!match) {
-          return next(new CustomError(customerErrorDetails.E_3010(), HttpStatus.BAD_REQUEST));
+          throw new CustomError(customerErrorDetails.E_3010(), HttpStatus.BAD_REQUEST);
         }
 
         if (dataChangePassword.newPassword !== dataChangePassword.confirmPassword) {
-          return next(new CustomError(customerErrorDetails.E_3011(), HttpStatus.BAD_REQUEST));
+          throw new CustomError(customerErrorDetails.E_3011(), HttpStatus.BAD_REQUEST);
         }
 
         data.password = await hash(dataChangePassword.newPassword, PASSWORD_SALT_ROUNDS);

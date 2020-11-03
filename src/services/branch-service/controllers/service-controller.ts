@@ -32,7 +32,6 @@ import { LocationServiceModel } from '../../../repositories/postgres/models/loca
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { SearchParams } from 'elasticsearch';
 import { elasticsearchClient } from '../../../repositories/elasticsearch';
-import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ServiceController {
@@ -134,7 +133,7 @@ export class ServiceController {
       }
       const validateErrors = validate(body, createServiceSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       let serviceCode: string = body.serviceCode;
@@ -145,7 +144,7 @@ export class ServiceController {
           }
         });
         if (countServiceCode > 0) {
-          return next(new CustomError(branchErrorDetails.E_1204(), HttpStatus.BAD_REQUEST));
+          throw new CustomError(branchErrorDetails.E_1204(), HttpStatus.BAD_REQUEST);
         }
       } else {
         const services: any = await ServiceModel.findAll({
@@ -222,7 +221,7 @@ export class ServiceController {
         // .then((staffs) => staffs.map((staff) => staff.id));
 
         if (!(body.staffIds as []).every((x) => staffIds.includes(x))) {
-          return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+          throw new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST);
         }
         const prepareServiceStaff = (body.staffIds as []).map((id) => ({
           serviceId: service.id,
@@ -235,68 +234,6 @@ export class ServiceController {
         await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       }
       await transaction.commit();
-
-      const serviceData = await ServiceModel.findOne({
-        where: {
-          id: data.id
-        },
-        include: [
-          {
-            model: LocationModel,
-            as: 'locations',
-            required: true,
-            through: {
-              attributes: {
-                exclude: ['updatedAt', 'createdAt', 'deletedAt']
-              }
-            }
-          },
-          {
-            model: CateServiceModel,
-            as: 'cateService',
-            required: true,
-            attributes: {
-              exclude: ['updatedAt', 'createdAt', 'deletedAt']
-            }
-          },
-          {
-            model: StaffModel,
-            as: 'staffs',
-            required: false,
-            through: {
-              attributes: {
-                exclude: ['updatedAt', 'createdAt', 'deletedAt']
-              }
-            }
-          },
-          {
-            model: ServiceImageModel,
-            as: 'images',
-            required: false
-          }
-        ]
-      }).then((item: any) => {
-        const serviceMapping = JSON.parse(JSON.stringify(item));
-        serviceMapping.locationService = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
-        serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
-        delete serviceMapping.locations;
-        delete serviceMapping.staffs;
-        return serviceMapping;
-      });
-      //require('array.prototype.flatmap').shim();
-      // const esData = serviceData.flatMap((doc:any) => [{ index: { _index: 'get_services' } }, doc]);
-      // await elasticsearchClient.index({
-      //   id: data.id,
-      //   index: 'get_services',
-      //   body: serviceData,
-      //   type: '_doc'
-      // });
-      await esClient.index({
-        id: data.id,
-        index: 'get_services',
-        body: serviceData,
-        type: '_doc'
-      });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
@@ -334,7 +271,7 @@ export class ServiceController {
       const { workingLocationIds } = res.locals.staffPayload;
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const service: any = await ServiceModel.findOne({
         where: { id: serviceId },
         include: [
@@ -393,7 +330,7 @@ export class ServiceController {
       const { workingLocationIds } = res.locals.staffPayload;
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const service: any = await ServiceModel.findOne({
         where: {
           id: serviceId
@@ -506,7 +443,7 @@ export class ServiceController {
         pageSize: +req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
 
       let locationIds: string;
       if (req.query.locationIds && typeof req.query.locationIds !== 'string' && req.query.locationIds.length > 0) {
@@ -609,7 +546,7 @@ export class ServiceController {
         staffId: req.query.staffId
       };
       const validateErrors = validate(data, getAllServiceSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const locationIdsDiff = _.difference(data.locationIds as string[], workingLocationIds);
       if (locationIdsDiff.length > 0) {
         return next(
@@ -720,7 +657,7 @@ export class ServiceController {
     try {
       const validateErrors = validate(req.body, createServicesSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
         return next(
@@ -757,7 +694,7 @@ export class ServiceController {
       }).then((staffs) => staffs.map((staff) => staff.id));
 
       if (!(req.body.staffIds as []).every((x) => staffIds.includes(x))) {
-        return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+        throw new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST);
       }
 
       transaction = await sequelize.transaction();
@@ -894,7 +831,7 @@ export class ServiceController {
       body.serviceId = params.serviceId;
       const validateErrors = validate(body, updateServiceSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const service = await ServiceModel.findOne({
         where: {
@@ -968,7 +905,7 @@ export class ServiceController {
           });
           const staffIds = staffs.map((staff) => staff.id);
           if (!(addStaffIds as []).every((x) => staffIds.includes(x))) {
-            return next(new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST));
+            throw new CustomError(branchErrorDetails.E_1201(), HttpStatus.BAD_REQUEST);
           }
           const prepareServiceStaff = (addStaffIds as []).map((id) => ({
             serviceId: service.id,
@@ -1023,7 +960,7 @@ export class ServiceController {
           }
         });
         if (body.deleteImages.length !== serviceImages.length) {
-          return next(new CustomError(serviceErrorDetails.E_1206(), HttpStatus.NOT_FOUND));
+          throw new CustomError(serviceErrorDetails.E_1206(), HttpStatus.NOT_FOUND);
         }
         await ServiceImageModel.destroy({ where: { id: body.deleteImages }, transaction });
       }
@@ -1158,7 +1095,7 @@ export class ServiceController {
   public getServicesByLocation = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validateErrors = validate(req.params.locationId, locationIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
 
       const serviceLocationIds: any = await LocationServiceModel.findAll({
         raw: true,

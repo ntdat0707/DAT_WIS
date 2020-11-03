@@ -115,7 +115,7 @@ export class AppointmentGroupController extends BaseController {
       };
       const validateErrors = validate(data, createAppointmentGroupSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       if (!workingLocationIds.includes(data.locationId)) {
@@ -133,13 +133,13 @@ export class AppointmentGroupController extends BaseController {
         verifyAppointmentDetailTask.push(this.verifyAppointmentDetails(apt.appointmentDetails, data.locationId));
       }
       if (countPrimary !== 1) {
-        return next(new CustomError(bookingErrorDetails.E_2006(), HttpStatus.BAD_REQUEST));
+        throw new CustomError(bookingErrorDetails.E_2006(), HttpStatus.BAD_REQUEST);
       }
       // veriry appointment details
       if (verifyAppointmentDetailTask.length > 0) {
         const verifyAppointmentDetailResults = await Promise.all(verifyAppointmentDetailTask);
         for (const verifyResult of verifyAppointmentDetailResults) {
-          if (verifyResult instanceof CustomError) return next(verifyResult);
+          if (verifyResult instanceof CustomError) throw verifyResult;
         }
       }
       const appointmentIds = [];
@@ -344,7 +344,7 @@ export class AppointmentGroupController extends BaseController {
     try {
       const validateErrors = validate(req.params.appointmentGroupId, appointmentGroupIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointmentGroup = await AppointmentGroupModel.findOne({
@@ -533,7 +533,7 @@ export class AppointmentGroupController extends BaseController {
       };
       const validateErrors = validate(data, updateAppointmentGroupSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       // const { workingLocationIds } = res.locals.staffPayload;
       // if (!workingLocationIds.includes(data.locationId)) {
@@ -611,7 +611,7 @@ export class AppointmentGroupController extends BaseController {
       }
 
       if (countPrimary !== 1) {
-        return next(new CustomError(bookingErrorDetails.E_2006(), HttpStatus.BAD_REQUEST));
+        throw new CustomError(bookingErrorDetails.E_2006(), HttpStatus.BAD_REQUEST);
       }
 
       if (data.locationId !== appointmentGroup.locationId) {
@@ -681,7 +681,7 @@ export class AppointmentGroupController extends BaseController {
         if (verifyAppointmentDetailTask.length > 0) {
           const verifyAppointmentDetailResults = await Promise.all(verifyAppointmentDetailTask);
           for (const verifyResult of verifyAppointmentDetailResults) {
-            if (verifyResult instanceof CustomError) return next(verifyResult);
+            if (verifyResult instanceof CustomError) throw verifyResult;
           }
         }
         //create appoinment
@@ -806,7 +806,7 @@ export class AppointmentGroupController extends BaseController {
         if (verifyAppointmentDetailTask.length > 0) {
           const verifyAppointmentDetailResults = await Promise.all(verifyAppointmentDetailTask);
           for (const verifyResult of verifyAppointmentDetailResults) {
-            if (verifyResult instanceof CustomError) return next(verifyResult);
+            if (verifyResult instanceof CustomError) throw verifyResult;
           }
         }
         //create appoinment

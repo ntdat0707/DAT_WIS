@@ -158,7 +158,7 @@ export class AppointmentController extends BaseController {
       //validate req.body
       const validateErrors = validate(dataInput, createAppointmentSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       // Check location
       const { workingLocationIds, companyId } = res.locals.staffPayload;
@@ -491,7 +491,7 @@ export class AppointmentController extends BaseController {
       };
       const validateErrors = validate(conditions, filterAppointmentDetailChema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       if (!workingLocationIds.includes(conditions.locationId)) {
@@ -637,7 +637,7 @@ export class AppointmentController extends BaseController {
       const data = { appointmentId: req.body.appointmentId, status: req.body.status };
       const validateErrors = validate(data, updateAppointmentStatusSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointment = await AppointmentModel.findOne({
@@ -672,7 +672,7 @@ export class AppointmentController extends BaseController {
           if (transaction) {
             await transaction.rollback();
           }
-          return next(new CustomError(validateReasonErrors, HttpStatus.BAD_REQUEST));
+          throw new CustomError(validateReasonErrors, HttpStatus.BAD_REQUEST);
         }
         await AppointmentModel.update(
           { status: data.status, cancelReason: req.body.cancelReason, isPrimary: false },
@@ -946,7 +946,7 @@ export class AppointmentController extends BaseController {
 
       const validateErrors = validate(data, updateAppointmentSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { companyId } = res.locals.staffPayload;
 
@@ -1355,7 +1355,7 @@ export class AppointmentController extends BaseController {
     try {
       const validateErrors = validate(req.params.appointmentId, appointmentIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointmentStoraged = await AppointmentModel.findOne({
@@ -1410,7 +1410,7 @@ export class AppointmentController extends BaseController {
     try {
       const validateErrors = validate(req.params.appointmentId, appointmentIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointment = await AppointmentModel.findOne({
@@ -1563,7 +1563,7 @@ export class AppointmentController extends BaseController {
       //validate req.body
       const validateErrors = validate(dataInput, customerCreateAppointmentSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       const location = await LocationModel.findOne({
@@ -1999,7 +1999,7 @@ export class AppointmentController extends BaseController {
       };
       const validateErrors = validate(data, appointmentCancelSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const appointment = await AppointmentModel.findOne({
         where: { id: data.appointmentId, customerId: res.locals.customerPayload.id }
@@ -2017,7 +2017,7 @@ export class AppointmentController extends BaseController {
         appointment.status !== EAppointmentStatus.CONFIRMED &&
         appointment.status !== EAppointmentStatus.ARRIVED
       ) {
-        return next(new CustomError(bookingErrorDetails.E_2003(`Can not cancel appointment`), HttpStatus.BAD_REQUEST));
+        throw new CustomError(bookingErrorDetails.E_2003(`Can not cancel appointment`), HttpStatus.BAD_REQUEST);
       }
       transaction = await sequelize.transaction();
       await appointment.update({ status: EAppointmentStatus.CANCEL, cancelReason: data.cancelReason }, { transaction });
@@ -2065,7 +2065,7 @@ export class AppointmentController extends BaseController {
     try {
       const validateErrors = validate(req.params.appointmentId, appointmentIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const appointment = await AppointmentModel.findOne({
         where: { id: req.params.appointmentId, customerId: res.locals.customerPayload.id },
@@ -2155,7 +2155,7 @@ export class AppointmentController extends BaseController {
     try {
       const validateErrors = validate(req.body, appointmentRescheduleSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const appointment = await AppointmentModel.findOne({
         where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }
@@ -2226,7 +2226,7 @@ export class AppointmentController extends BaseController {
       const appointmentId = req.body.appointmentId;
       const validateErrors = validate(appointmentId, appointmentIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const appointment = await AppointmentModel.findOne({
         where: { id: appointmentId, customerId: res.locals.customerPayload.id }
@@ -2304,7 +2304,7 @@ export class AppointmentController extends BaseController {
     try {
       const validateErrors = validate(req.body, ratingAppointmentSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       let appointment = await AppointmentModel.findOne({
         where: { id: req.body.appointmentId, customerId: res.locals.customerPayload.id }

@@ -66,7 +66,7 @@ export class CateServiceController {
       };
       const validateErrors = validate(data, createCateServiceSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       const cateService = await CateServiceModel.create(data);
@@ -159,7 +159,7 @@ export class CateServiceController {
       };
       const validateErrors = validate(data, updateCateServiceSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const serviceCategoryStoraged = await CateServiceModel.findOne({
         where: {
@@ -215,7 +215,7 @@ export class CateServiceController {
       const companyId = res.locals.staffPayload.companyId;
       const validateErrors = validate(req.params.cateServiceId, cateServiceIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const cateService = await CateServiceModel.findOne({
         where: {
@@ -274,7 +274,7 @@ export class CateServiceController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const query: FindOptions = {
         where: {
           companyId: companyId
@@ -322,7 +322,7 @@ export class CateServiceController {
       const cateServiceId = req.params.cateServiceId;
       const validateErrors = validate(req.params.cateServiceId, cateServiceIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const cateService = await CateServiceModel.findOne({
         where: {
@@ -382,14 +382,14 @@ export class CateServiceController {
       const companyId = res.locals.staffPayload.companyId;
       let validateErrors = validate(req.params.cateServiceId, cateServiceIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const paginateOptions = {
         pageNum: req.query.pageNum,
         pageSize: req.query.pageSize
       };
       validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const existCateService = await CateServiceModel.findOne({
         where: {
           companyId: companyId,

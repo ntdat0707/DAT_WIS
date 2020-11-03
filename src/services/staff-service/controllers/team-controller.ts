@@ -19,6 +19,7 @@ import {
 import { locationIdSchema } from '../../../services/branch-service/configs/validate-schemas';
 import { createTeamSchema, parentIdSchema, teamIdSchema, updateTeamSchema } from '../configs/validate-schemas/team';
 import { teamErrorDetails, teamSubErrorDetails } from '../../../utils/response-messages/error-details/team';
+import { branchErrorDetails } from 'src/utils/response-messages/error-details/branch';
 
 export class TeamController {
   /**
@@ -66,10 +67,23 @@ export class TeamController {
         pageNum: req.query.pageNum,
         pageSize: req.query.pageSize
       };
+
       const validateErrors = validate(req.params.locationId, locationIdSchema);
       const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validatePaginationErrors || validateErrors)
+      if (validatePaginationErrors) {
         return next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
+      }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
+      if (!res.locals.staffPayload.workingLocationIds.includes(req.params.locationId)) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
       const query: FindOptions = {
         include: [
           {
@@ -157,8 +171,12 @@ export class TeamController {
       };
       const validateErrors = validate(req.params.parentId, parentIdSchema);
       const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validatePaginationErrors || validateErrors)
+      if (validatePaginationErrors) {
         return next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
+      }
+      if (validateErrors) {
+        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const subTeamIds: any = (
         await TeamSubModel.findAll({
           where: {

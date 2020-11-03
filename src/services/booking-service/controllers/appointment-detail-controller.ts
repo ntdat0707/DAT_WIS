@@ -95,7 +95,7 @@ export class AppointmentDetailController extends BaseController {
       };
       const validateErrors = validate(data, createAppointmentDetailFullSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointment = await AppointmentModel.findOne({
@@ -110,7 +110,7 @@ export class AppointmentDetailController extends BaseController {
         );
       }
       const checkAppointmentDetail = await this.verifyAppointmentDetails([data], appointment.locationId);
-      if (checkAppointmentDetail instanceof CustomError) return next(checkAppointmentDetail);
+      if (checkAppointmentDetail instanceof CustomError) throw checkAppointmentDetail;
       // start transaction
       transaction = await sequelize.transaction();
       const appointmentDetail = await AppointmentDetailModel.create(
@@ -204,7 +204,7 @@ export class AppointmentDetailController extends BaseController {
       };
       const validateErrors = validate(data, updateAppointmentDetailSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointmentDetailStoraged = await AppointmentDetailModel.findOne({
@@ -231,7 +231,7 @@ export class AppointmentDetailController extends BaseController {
         [data],
         (appointmentDetailStoraged as any).appointment.locationId
       );
-      if (checkAppointmentDetail instanceof CustomError) return next(checkAppointmentDetail);
+      if (checkAppointmentDetail instanceof CustomError) throw checkAppointmentDetail;
       // start transaction
       transaction = await sequelize.transaction();
       await AppointmentDetailStaffModel.destroy({
@@ -342,7 +342,7 @@ export class AppointmentDetailController extends BaseController {
       const appointmentDetailId = req.params.appointmentDetailId;
       const validateErrors = validate(appointmentDetailId, appointmentDetailIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointmentDetailStoraged = await AppointmentDetailModel.findOne({
@@ -404,7 +404,7 @@ export class AppointmentDetailController extends BaseController {
       const appointmentDetailId = req.params.appointmentDetailId;
       const validateErrors = validate(appointmentDetailId, appointmentDetailIdSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointmentDetail = await AppointmentDetailModel.findOne({
@@ -499,7 +499,7 @@ export class AppointmentDetailController extends BaseController {
       const data = { appointmentDetailId: req.body.appointmentDetailId, status: req.body.status };
       const validateErrors = validate(data, updateAppointmentStatusDetailSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const { workingLocationIds } = res.locals.staffPayload;
       const appointmentDetail: any = await AppointmentDetailModel.findOne({
