@@ -1667,13 +1667,14 @@ export class StaffController {
         );
       }
       let cateServices: any = [];
-      cateServices = await CateServiceModel.findAll({
+      cateServices = await CateServiceModel.findAndCountAll({
         include: [
           {
             model: ServiceModel,
             as: 'services',
             required: true,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            separate: true,
             include: [
               {
                 model: StaffModel,
@@ -1688,6 +1689,28 @@ export class StaffController {
         ],
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
+      // let listServices: any = [];
+      // listServices = await StaffModel.findAll({
+      //   include: [
+      //     {
+      //       model: ServiceModel,
+      //       as: 'services',
+      //       required: true,
+      //       through: {attributes:[]},
+      //       attributes:{exclude: ['createdAt','uddatedAt','deletedAt']},
+      //       include: [
+      //         {
+      //           model: CateServiceModel,
+      //           as : 'cateService',
+      //           required:true,
+      //           attributes:{exclude: ['createdAt', 'updatedAt', 'deletedAt']}
+      //         }
+      //       ]
+      //     }
+      //   ],
+      //   attributes: [],
+      //   where: { id: req.params.staffId }
+      // });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
     } catch (error) {
       return next(error);

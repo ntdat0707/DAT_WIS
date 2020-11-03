@@ -173,6 +173,9 @@ DealModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: '
 PipelineStageModel.hasMany(DealModel, { foreignKey: 'pipelineStageId', sourceKey: 'id', as: 'deals' });
 DealModel.belongsTo(PipelineStageModel, { foreignKey: 'pipelineStageId', as: 'pipelineStage' });
 
+AppointmentModel.hasMany(DealModel, { foreignKey: 'appointmentId', sourceKey: 'id', as: 'deals' });
+DealModel.belongsTo(AppointmentModel, { foreignKey: 'appointmentId', as: 'appointment' });
+
 MarketPlaceFieldsModel.hasMany(MarketPlaceValueModel, {
   foreignKey: 'fieldId',
   sourceKey: 'id',
@@ -205,6 +208,13 @@ PositionModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
 InvoiceModel.hasMany(InvoiceDetailModel, { foreignKey: 'invoiceId', sourceKey: 'id', as: 'invoiceDetails' });
 InvoiceDetailModel.belongsTo(InvoiceModel, { foreignKey: 'invoiceId', as: 'invoice' });
+
+InvoiceDetailModel.hasMany(InvoiceDetailStaffModel, {
+  foreignKey: 'invoiceDetailId',
+  sourceKey: 'id',
+  as: 'invoiceDetailStaffs'
+});
+InvoiceDetailStaffModel.belongsTo(InvoiceDetailModel, { foreignKey: 'invoiceDetailId', as: 'invoiceDetail' });
 
 CustomerWisereModel.hasMany(InvoiceModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'invoices' });
 InvoiceModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
