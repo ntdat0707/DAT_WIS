@@ -16,7 +16,7 @@ class InvoiceModel extends Model {
   public balance!: number;
   public status!: string;
   public subTotal?: number;
-  public tpis?: number;
+  public tips?: number;
   public total: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;

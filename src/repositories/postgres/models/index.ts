@@ -247,7 +247,7 @@ ReceiptModel.belongsTo(StaffModel, { foreignKey: 'staffId', as: 'staff' });
 PaymentMethodModel.hasMany(ReceiptModel, {
   foreignKey: 'paymentMethodId',
   sourceKey: 'id',
-  as: 'paymentReceipts'
+  as: 'receipts'
 });
 ReceiptModel.belongsTo(PaymentMethodModel, { foreignKey: 'paymentMethodId', as: 'paymentMethod' });
 
@@ -257,8 +257,8 @@ ReceiptModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider'
 StaffModel.hasMany(CustomerWisereModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'customerWiseres' });
 CustomerWisereModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
 
-InvoiceModel.belongsToMany(ReceiptModel, { through: InvoiceReceiptModel, foreignKey: 'invoiceId', as: 'invoices' });
-ReceiptModel.belongsToMany(InvoiceModel, { through: InvoiceReceiptModel, foreignKey: 'receiptId', as: 'receipts' });
+InvoiceModel.belongsToMany(ReceiptModel, { through: InvoiceReceiptModel, foreignKey: 'invoiceId', as: 'receipts' });
+ReceiptModel.belongsToMany(InvoiceModel, { through: InvoiceReceiptModel, foreignKey: 'receiptId', as: 'invoices' });
 
 export {
   sequelize,

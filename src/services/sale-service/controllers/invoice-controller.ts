@@ -11,6 +11,8 @@ import {
   InvoiceDetailStaffModel,
   InvoiceModel,
   LocationModel,
+  PaymentMethodModel,
+  ProviderModel,
   ReceiptModel,
   sequelize,
   ServiceModel,
@@ -557,31 +559,36 @@ export class InvoiceController {
       const receipt = await ReceiptModel.findOne({
         where: { id: receiptId },
         include: [
-          // {
-          //   model: InvoicePaymentModel,
-          //   as: 'invoicePayment',
-          //   include: [
-          //     {
-          //       model: InvoicePaymentMethodModel,
-          //       as: 'paymentMethod',
-          //       required: true
-          //     },
-          //     {
-          //       model: ProviderModel,
-          //       as: 'provider',
-          //       required: false
-          //     }
-          //   ]
-          // },
+          {
+            model: InvoiceModel,
+            as: 'invoices',
+            through: { attributes: [] },
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          },
+          {
+            model: PaymentMethodModel,
+            as: 'paymentMethod',
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          },
+          {
+            model: ProviderModel,
+            as: 'provider',
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+          },
           {
             model: StaffModel,
             as: 'staff',
-            required: true
+            required: true,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
             model: CustomerWisereModel,
             as: 'customerWisere',
-            required: false
+            required: false,
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
             model: LocationModel,

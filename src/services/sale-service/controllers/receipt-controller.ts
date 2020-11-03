@@ -57,7 +57,7 @@ export class ReceiptController {
    *       - Sale
    *     security:
    *       - Bearer: []
-   *     name: createInvoicePayment
+   *     name: createInvoiceReceipt
    *     parameters:
    *     - in: "body"
    *       name: "body"

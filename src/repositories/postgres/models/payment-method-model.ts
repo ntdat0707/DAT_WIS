@@ -53,7 +53,7 @@ PaymentMethodModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'invoice_payment_method',
+    tableName: 'payment_method',
     timestamps: true,
     paranoid: true
   }
