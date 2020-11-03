@@ -1,17 +1,17 @@
 import { SaleRoutes } from './invoice-route';
 import * as express from 'express';
-import { InvoicePaymentRoutes } from './invoice-payment-route';
+import { ReceiptRoutes } from './receipt-route';
 class MainRoutes {
   public router: express.Router = express.Router();
 
   private saleRoutes = new SaleRoutes().router;
-  private paymentRoutes = new InvoicePaymentRoutes().router;
+  private receiptRoutes = new ReceiptRoutes().router;
   constructor() {
     this.config();
   }
   private config(): void {
     this.router.use('/', this.saleRoutes);
-    this.router.use('/payment', this.paymentRoutes);
+    this.router.use('/receipt', this.receiptRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;

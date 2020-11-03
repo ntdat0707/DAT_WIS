@@ -32,13 +32,13 @@ import { PositionModel } from './position-model';
 import { InvoiceModel } from './invoice-model';
 import { InvoiceDetailModel } from './invoice-detail-model';
 import { InvoiceDetailStaffModel } from './invoice-detail-staff-model';
-import { InvoicePaymentModel } from './invoice-payment-model';
 import { ReceiptModel } from './receipt-model';
 import { DiscountModel } from './discount-model';
 import { PaymentMethodModel } from './payment-method-model';
 import { ProviderModel } from './provider-model';
 import { TipsModel } from './tips-model';
 import { TeamStaffModel } from './team-staff-model';
+import { InvoiceReceiptModel } from './invoice-receipt';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -251,11 +251,14 @@ PaymentMethodModel.hasMany(ReceiptModel, {
 });
 ReceiptModel.belongsTo(PaymentMethodModel, { foreignKey: 'paymentMethodId', as: 'paymentMethod' });
 
-ProviderModel.hasMany(InvoicePaymentModel, { foreignKey: 'providerId', sourceKey: 'id', as: 'invoicePayments' });
-InvoicePaymentModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider' });
+ProviderModel.hasMany(ReceiptModel, { foreignKey: 'providerId', sourceKey: 'id', as: 'receipts' });
+ReceiptModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider' });
 
 StaffModel.hasMany(CustomerWisereModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'customerWiseres' });
 CustomerWisereModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
+
+InvoiceModel.belongsToMany(ReceiptModel, { through: InvoiceReceiptModel, foreignKey: 'invoiceId', as: 'invoices' });
+ReceiptModel.belongsToMany(InvoiceModel, { through: InvoiceReceiptModel, foreignKey: 'receiptId', as: 'receipts' });
 
 export {
   sequelize,
@@ -287,7 +290,6 @@ export {
   InvoiceModel,
   InvoiceDetailModel,
   InvoiceDetailStaffModel,
-  InvoicePaymentModel,
   ReceiptModel,
   TeamStaffModel,
   DiscountModel,

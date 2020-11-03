@@ -8,20 +8,14 @@ import {
   deletePaymentMethodSchema,
   updatePaymentMethodSchema
 } from '../configs/validate-schemas';
-import {
-  InvoiceModel,
-  InvoicePaymentModel,
-  PaymentMethodModel,
-  ProviderModel,
-  sequelize
-} from '../../../repositories/postgres/models';
+import { InvoiceModel, PaymentMethodModel, ProviderModel, sequelize } from '../../../repositories/postgres/models';
 import { invoiceErrorDetails } from '../../../utils/response-messages/error-details';
 import { EBalanceType } from '../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
 import HttpStatus from 'http-status-codes';
 import { buildSuccessMessage } from '../../../utils/response-messages/responses';
 import { paymentErrorDetails, paymentMethodErrorDetails } from '../../../utils/response-messages/error-details/sale';
-export class InvoicePaymentController {
+export class ReceiptController {
   /**
    * @swagger
    * definitions:
@@ -57,7 +51,7 @@ export class InvoicePaymentController {
 
   /**
    * @swagger
-   * /sale/payment/create-invoice-payment:
+   * /sale/receipt/create-invoice-receipt:
    *   post:
    *     tags:
    *       - Sale
@@ -169,7 +163,7 @@ export class InvoicePaymentController {
       if (providers.length > 0) {
         await ProviderModel.bulkCreate(providers, { transaction });
       }
-      await InvoicePaymentModel.bulkCreate(payments, { transaction });
+      // await InvoicePaymentModel.bulkCreate(payments, { transaction });
       // await ReceiptModel.bulkCreate(receipts, { transaction });
       await InvoiceModel.update({ balance: balance, status: status }, { where: { id: data.invoiceId }, transaction });
       return balance;
@@ -191,7 +185,7 @@ export class InvoicePaymentController {
 
   /**
    * @swagger
-   * /sale/payment/create-payment-method:
+   * /sale/receipt/create-payment-method:
    *   post:
    *     tags:
    *       - Sale
@@ -231,7 +225,7 @@ export class InvoicePaymentController {
 
   /**
    * @swagger
-   * /sale/payment/get-list-payment-method:
+   * /sale/receipt/get-list-payment-method:
    *   get:
    *     tags:
    *       - Sale
@@ -271,7 +265,7 @@ export class InvoicePaymentController {
 
   /**
    * @swagger
-   * /sale/payment/update-payment-method/{paymentMethodId}:
+   * /sale/receipt/update-payment-method/{paymentMethodId}:
    *   put:
    *     tags:
    *       - Sale
@@ -322,7 +316,7 @@ export class InvoicePaymentController {
 
   /**
    * @swagger
-   * /sale/payment/delete-payment-method/{paymentMethodId}:
+   * /sale/receipt/delete-payment-method/{paymentMethodId}:
    *   delete:
    *     tags:
    *       - Sale

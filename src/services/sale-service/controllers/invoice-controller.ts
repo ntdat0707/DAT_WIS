@@ -11,10 +11,10 @@ import {
   InvoiceDetailStaffModel,
   InvoiceModel,
   LocationModel,
+  ReceiptModel,
   sequelize,
   ServiceModel,
-  StaffModel,
-  ReceiptModel
+  StaffModel
 } from '../../../repositories/postgres/models';
 import {
   bookingErrorDetails,
@@ -32,7 +32,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
-import { InvoicePaymentController } from './invoice-payment-controller';
+import { ReceiptController } from './receipt-controller';
 import { createInvoiceLogSchema, getListInvoicesLog } from '../configs/validate-schemas/invoice';
 import { InvoiceLogModel } from '../../../repositories/mongo/models';
 export class InvoiceController {
@@ -296,7 +296,7 @@ export class InvoiceController {
           balance: totalAmount,
           paymentMethods: req.body.listPayment
         };
-        const paymentController = new InvoicePaymentController();
+        const paymentController = new ReceiptController();
         checkBalance = await paymentController.createPaymentReceipt(data, transaction);
       } else {
         checkBalance = dataInvoice.balance;

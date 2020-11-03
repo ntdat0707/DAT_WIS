@@ -1,14 +1,14 @@
 import * as express from 'express';
 import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
-import { InvoicePaymentController } from '../controllers/invoice-payment-controller';
-export class InvoicePaymentRoutes {
+import { ReceiptController } from '../controllers/receipt-controller';
+export class ReceiptRoutes {
   public router: express.Router = express.Router();
-  private paymentController = new InvoicePaymentController();
+  private paymentController = new ReceiptController();
   constructor() {
     this.config();
   }
   private config(): void {
-    this.router.post('/create-invoice-payment', isAuthenticated, this.paymentController.createInvoicePayment);
+    this.router.post('/create-invoice-receipt', isAuthenticated, this.paymentController.createInvoicePayment);
     this.router.post('/create-payment-method', isAuthenticated, this.paymentController.createPaymentMethod);
     this.router.put(
       '/update-payment-method/:paymentMethodId',
