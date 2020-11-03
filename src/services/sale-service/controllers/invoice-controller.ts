@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { baseValidateSchemas, validate } from '../../../utils/validator';
-import { createInvoiceSchema, receiptIdSchema } from '../configs/validate-schemas';
+import { createInvoiceSchema, receiptIdSchema, invoiceIdSchema } from '../configs/validate-schemas';
 import {
   AppointmentModel,
   CustomerWisereModel,
@@ -11,12 +11,10 @@ import {
   InvoiceDetailStaffModel,
   InvoiceModel,
   LocationModel,
-  PaymentMethodModel,
-  PaymentModel,
-  ReceiptModel,
   sequelize,
   ServiceModel,
-  StaffModel
+  StaffModel,
+  PaymentReceiptModel
 } from '../../../repositories/postgres/models';
 import {
   bookingErrorDetails,
@@ -34,9 +32,9 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
-import { InvoiceLogModel } from '../../../repositories/mongo/models/invoice-log-model';
-import { PaymentController } from './payment-controller';
-import { createInvoiceLogSchema, customerWisereIdSchema } from '../configs/validate-schemas/invoice';
+import { InvoicePaymentController } from './invoice-payment-controller';
+import { createInvoiceLogSchema, getListInvoicesLog } from '../configs/validate-schemas/invoice';
+import { InvoiceLogModel } from '../../../repositories/mongo/models';
 export class InvoiceController {
   /**
    * @swagger
@@ -189,7 +187,7 @@ export class InvoiceController {
         }
       }
       let invoiceCode = '';
-      for (let i = 0; i < 10; i++) {
+      while (true) {
         const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         invoiceCode = 'INV' + randomCode;
         const existInvoiceCode = await InvoiceModel.findOne({ where: { code: invoiceCode } });
@@ -198,7 +196,7 @@ export class InvoiceController {
         }
       }
       let dataInvoice: any = {
-        id: req.body.invoiceId,
+        id: req.body.invoiceId ? req.body.invoiceId : uuidv4(),
         code: invoiceCode,
         appointmentId: req.body.appointmentId,
         locationId: req.body.locationId,
@@ -291,14 +289,14 @@ export class InvoiceController {
       if (req.body.listPayment) {
         const data = {
           invoiceId: dataInvoice.id,
-          customerId: dataInvoice.customerWisereId,
+          customerWisereId: dataInvoice.customerWisereId,
           staffId: res.locals.staffPayload.id,
           locationId: dataInvoice.locationId,
           total: totalAmount,
           balance: totalAmount,
           paymentMethods: req.body.listPayment
         };
-        const paymentController = new PaymentController();
+        const paymentController = new InvoicePaymentController();
         checkBalance = await paymentController.createPaymentReceipt(data, transaction);
       } else {
         checkBalance = dataInvoice.balance;
@@ -309,8 +307,8 @@ export class InvoiceController {
           httpStatus.BAD_REQUEST
         );
       }
+      await InvoiceLogModel.deleteOne({ invoiceId: dataInvoice.id }).exec();
       await transaction.commit();
-      InvoiceLogModel.deleteOne({ invoiceId: dataInvoice.id });
       return res.status(httpStatus.OK).send();
     } catch (error) {
       //rollback transaction
@@ -388,6 +386,81 @@ export class InvoiceController {
 
   /**
    * @swagger
+   * /sale/get-invoice/{invoiceId}:
+   *   get:
+   *     tags:
+   *       - Sale
+   *     security:
+   *       - Bearer: []
+   *     name: getInvoice
+   *     parameters:
+   *     - in: path
+   *       name: invoiceId
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getInvoice = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const invoiceId = req.params.invoiceId;
+      const validateErrors = validate(invoiceId, invoiceIdSchema);
+      if (validateErrors) {
+        if (validateErrors) {
+          return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        }
+      }
+      const invoice = await InvoiceModel.findOne({
+        where: { id: invoiceId },
+        include: [
+          {
+            model: InvoiceDetailModel,
+            as: 'invoiceDetails',
+            include: [
+              {
+                attributes: ['id', 'name'],
+                model: ServiceModel,
+                as: 'service'
+              },
+              {
+                attributes: ['id'],
+                model: InvoiceDetailStaffModel,
+                as: 'invoiceDetailStaffs',
+                include: [
+                  {
+                    model: StaffModel,
+                    as: 'staff'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            model: CustomerWisereModel,
+            as: 'customerWisere',
+            required: false
+          },
+          {
+            model: LocationModel,
+            as: 'location'
+          }
+        ]
+      });
+      if (!invoice) {
+        throw new CustomError(invoiceErrorDetails.E_3300(`invoiceId ${invoiceId} not found`), httpStatus.NOT_FOUND);
+      }
+      return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
    * /sale/get-all-receipt:
    *   get:
    *     tags:
@@ -440,7 +513,7 @@ export class InvoiceController {
         ]
       };
       const receipts = await paginate(
-        ReceiptModel,
+        PaymentReceiptModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
@@ -481,18 +554,39 @@ export class InvoiceController {
           return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
         }
       }
-      const receipt = await ReceiptModel.findOne({
+      const receipt = await PaymentReceiptModel.findOne({
         where: { id: receiptId },
         include: [
+          // {
+          //   model: InvoicePaymentModel,
+          //   as: 'invoicePayment',
+          //   include: [
+          //     {
+          //       model: InvoicePaymentMethodModel,
+          //       as: 'paymentMethod',
+          //       required: true
+          //     },
+          //     {
+          //       model: ProviderModel,
+          //       as: 'provider',
+          //       required: false
+          //     }
+          //   ]
+          // },
           {
-            model: PaymentModel,
-            as: 'payment',
-            include: [
-              {
-                model: PaymentMethodModel,
-                as: 'paymentMethod'
-              }
-            ]
+            model: StaffModel,
+            as: 'staff',
+            required: true
+          },
+          {
+            model: CustomerWisereModel,
+            as: 'customerWisere',
+            required: false
+          },
+          {
+            model: LocationModel,
+            as: 'location',
+            required: true
           }
         ]
       });
@@ -508,7 +602,7 @@ export class InvoiceController {
   /**
    * @swagger
    * definitions:
-   *   listInvoiceDetailLog:
+   *   listInvoiceDetailsLog:
    *       properties:
    *           serviceId:
    *               type: string
@@ -527,10 +621,8 @@ export class InvoiceController {
   /**
    * @swagger
    * definitions:
-   *   invoiceCreateLog:
+   *   listInvoicesLog:
    *       properties:
-   *           locationId:
-   *               type: string
    *           appointmentId:
    *               type: string
    *           customerWisereId:
@@ -549,13 +641,25 @@ export class InvoiceController {
    *               type: number
    *           tax:
    *               type: number
-   *           listInvoiceDetail:
+   *           listInvoiceDetails:
    *               type: array
    *               items:
-   *                   $ref: '#/definitions/listInvoiceDetailLog'
+   *                   $ref: '#/definitions/listInvoiceDetailsLog'
    *
    */
-
+  /**
+   * @swagger
+   * definitions:
+   *   invoiceCreateLog:
+   *       properties:
+   *           locationId:
+   *               type: string
+   *           listInvoices:
+   *               type: array
+   *               items:
+   *                   $ref:'#/definitions/listInvoicesLog'
+   *
+   */
   /**
    * @swagger
    * /sale/create-invoice-log:
@@ -593,90 +697,60 @@ export class InvoiceController {
           httpStatus.FORBIDDEN
         );
       }
-      if (req.body.customerWisereId) {
-        const customerWisere = await CustomerWisereModel.findOne({ where: { id: req.body.customerWisereId } });
-        if (!customerWisere) {
-          throw new CustomError(
-            customerErrorDetails.E_3001(`customerWisereId ${req.body.customerWisereId} not found`),
-            httpStatus.NOT_FOUND
-          );
-        }
+      if (!(req.body.listInvoices as []).every((invoice) => req.body.listInvoices.includes(invoice))) {
+        return next(new CustomError(invoiceErrorDetails.E_3308(), httpStatus.BAD_REQUEST));
       }
-      if (req.body.appointmentId) {
-        const appointment = await AppointmentModel.findOne({ where: { id: req.body.appointmentId } });
-        if (!appointment) {
-          throw new CustomError(
-            bookingErrorDetails.E_2002(`appointment ${req.body.appointmentId} not found`),
-            httpStatus.NOT_FOUND
-          );
-        }
-        const checkAppointmentId = await InvoiceModel.findOne({ where: { appointmentId: req.body.appointmentId } });
-        if (checkAppointmentId) {
-          throw new CustomError(
-            invoiceErrorDetails.E_3304(`appointmentId ${req.body.appointmentId} existed in invoice`),
-            httpStatus.BAD_REQUEST
-          );
-        }
-      }
-      let dataInvoiceLog: any = {
-        invoiceId: uuidv4(),
-        appointmentId: req.body.appointmentId,
-        locationId: req.body.locationId,
-        customerWisereId: req.body.customerWisereId,
-        staffId: res.locals.staffPayload.id,
-        source: req.body.source,
-        note: req.body.note,
-        discountId: req.body.discountId,
-        tax: req.body.tax,
-        timestamp: new Date(),
-        subTotal: req.body.subTotal,
-        totalAmount: req.body.totalAmount,
-        totalQuantity: req.body.totalQuantity
-      };
-      const invoiceDetails = [];
-      for (let i = 0; i < req.body.listInvoiceDetail.length; i++) {
-        const service = await ServiceModel.findOne({ where: { id: req.body.listInvoiceDetail[i].serviceId } });
-        if (!service) {
-          throw new CustomError(
-            serviceErrorDetails.E_1203(`serviceId ${req.body.listInvoiceDetail[i].serviceId} not found`),
-            httpStatus.NOT_FOUND
-          );
-        }
-
-        const listStaff: any = [];
-        for (let j = 0; j < req.body.listInvoiceDetail[i].listStaff.length; j++) {
-          const staff = await StaffModel.findOne({
-            raw: true,
-            where: { id: req.body.listInvoiceDetail[i].listStaff[j].staffId }
-          });
-          if (!staff) {
-            throw new CustomError(
-              staffErrorDetails.E_4000(`staffId ${req.body.listInvoiceDetail[i].listStaff[j].staffId} not found`),
-              httpStatus.NOT_FOUND
-            );
-          }
-          listStaff.push(staff);
-        }
-        const dataInvoiceDetailLog = {
-          serviceId: req.body.listInvoiceDetail[i].serviceId,
-          unit: req.body.listInvoiceDetail[i].unit,
-          quantity: req.body.listInvoiceDetail[i].quantity,
-          price: service.salePrice,
-          listStaff: listStaff,
-          timestamp: new Date()
+      const listInvoices = [...req.body.listInvoices];
+      for (let i = 0; i < listInvoices.length; i++) {
+        let dataInvoiceLog: any = {
+          invoiceId: uuidv4(),
+          appointmentId: listInvoices[i].appointmentId,
+          locationId: req.body.locationId,
+          customerWisereId: listInvoices[i].customerWisereId,
+          staffId: res.locals.staffPayload.id,
+          source: listInvoices[i].source,
+          note: listInvoices[i].note,
+          discountId: listInvoices[i].discountId,
+          tax: listInvoices[i].tax,
+          timestamp: new Date(),
+          subTotal: listInvoices[i].subTotal,
+          totalAmount: listInvoices[i].totalAmount,
+          totalQuantity: listInvoices[i].totalQuantity
         };
-        const invoiceDetailLog = new InvoiceDetailLogModel(dataInvoiceDetailLog);
-        invoiceDetails.push(invoiceDetailLog);
+        const invoiceDetails = [];
+        for (let j = 0; j < listInvoices[i].listInvoiceDetails.length; j++) {
+          const service = await ServiceModel.findOne({
+            where: { id: listInvoices[i].listInvoiceDetails[j].serviceId }
+          });
+          const listStaff: any = [];
+          for (let k = 0; k < listInvoices[i].listInvoiceDetails[j].listStaff.length; k++) {
+            const staff = await StaffModel.findOne({
+              raw: true,
+              where: { id: listInvoices[i].listInvoiceDetails[j].listStaff[k].staffId }
+            });
+            listStaff.push(staff);
+          }
+          const dataInvoiceDetailLog = {
+            serviceId: listInvoices[i].listInvoiceDetails[j].serviceId,
+            unit: listInvoices[i].listInvoiceDetails[j].unit,
+            quantity: listInvoices[i].listInvoiceDetails[j].quantity,
+            price: service.salePrice,
+            listStaff: listStaff,
+            timestamp: new Date()
+          };
+          const invoiceDetailLog = new InvoiceDetailLogModel(dataInvoiceDetailLog);
+          invoiceDetails.push(invoiceDetailLog);
+        }
+        dataInvoiceLog = {
+          ...dataInvoiceLog,
+          invoiceDetail: invoiceDetails,
+          status: EBalanceType.UNPAID,
+          balance: listInvoices[i].subTotal
+        };
+        const invoiceLog = new InvoiceLogModel(dataInvoiceLog);
+        await invoiceLog.save();
       }
-      dataInvoiceLog = {
-        ...dataInvoiceLog,
-        invoiceDetail: invoiceDetails,
-        status: EBalanceType.UNPAID,
-        balance: req.body.subTotal
-      };
-      const invoiceLog = new InvoiceLogModel(dataInvoiceLog);
-      await invoiceLog.save();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(invoiceLog));
+      return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
@@ -684,7 +758,7 @@ export class InvoiceController {
 
   /**
    * @swagger
-   * /sale/get-list-invoice-log/{customerWisereId}:
+   * /sale/get-list-invoice-log/{locationId}:
    *   get:
    *     tags:
    *       - Sale
@@ -693,8 +767,9 @@ export class InvoiceController {
    *     name: getListInvoiceLog
    *     parameters:
    *     - in: path
-   *       name: customerWisereId
+   *       name: locationId
    *       required: true
+   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -703,24 +778,24 @@ export class InvoiceController {
    *       500:
    *         description:
    */
-  public getInvoiceLog = async (req: Request, res: Response, next: NextFunction) => {
+  public getListInvoicesLog = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validateErrors = validate(req.params.customerWisereId, customerWisereIdSchema);
+      const dataInput = {
+        staffId: res.locals.staffPayload.id,
+        locationId: req.params.locationId
+      };
+      const validateErrors = validate(dataInput, getListInvoicesLog);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const invoice = InvoiceLogModel.findOne({
-        staffId: res.locals.staffPayload.id
-      });
-      if (!invoice) {
-        return next(
-          new CustomError(
-            invoiceErrorDetails.E_3307(`Invoice log customer ${req.params.customerWisereId} not found`),
-            httpStatus.NOT_FOUND
-          )
-        );
+      const invoices = await InvoiceLogModel.find({
+        staffId: res.locals.staffPayload.id,
+        locationId: req.params.locationId
+      }).exec();
+      if (!invoices) {
+        return next(new CustomError(invoiceErrorDetails.E_3300(`Invoice log not found`), httpStatus.NOT_FOUND));
       }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(invoices));
     } catch (error) {
       return next(error);
     }

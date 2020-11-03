@@ -1,2 +1,1 @@
-import elasticsearchClient from './connector';
-export default elasticsearchClient;
+export { elasticsearchClient, esClient } from './connector';

@@ -4,7 +4,11 @@ import { v4 as uuidv4 } from 'uuid';
 require('dotenv').config();
 import { validate } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { branchErrorDetails, bookingErrorDetails } from '../../../utils/response-messages/error-details';
+import {
+  branchErrorDetails,
+  bookingErrorDetails,
+  customerErrorDetails
+} from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   sequelize,
@@ -17,7 +21,8 @@ import {
   ResourceModel,
   LocationModel,
   CustomerModel,
-  CustomerWisereModel
+  CustomerWisereModel,
+  DealModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -28,6 +33,8 @@ import {
 import { BaseController } from './base-controller';
 import { FindOptions, Op } from 'sequelize';
 import { IRequestOptions, request } from '../../../utils/request';
+import { EAppointmentBookingSource, EAppointmentStatus } from '../../../utils/consts';
+import { AppointmentController } from './appointment-controller';
 export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
@@ -54,9 +61,12 @@ export class AppointmentGroupController extends BaseController {
    *       required:
    *           - locationId
    *           - date
+   *           - bookingSource
    *           - appointments
    *       properties:
    *           locationId:
+   *               type: string
+   *           bookingSource:
    *               type: string
    *           date:
    *               type: string
@@ -100,7 +110,8 @@ export class AppointmentGroupController extends BaseController {
       const data = {
         locationId: req.body.locationId,
         date: req.body.date,
-        appointments: req.body.appointments
+        appointments: req.body.appointments,
+        bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED
       };
       const validateErrors = validate(data, createAppointmentGroupSchema);
       if (validateErrors) {
@@ -138,8 +149,28 @@ export class AppointmentGroupController extends BaseController {
       const createAppointmentDetailTasks = [];
       const createAppointmentDetailStaffTasks = [];
       for (const apptData of data.appointments) {
+        if (data.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
+          return next(
+            new CustomError(bookingErrorDetails.E_2014(`Appointment must have customer wisere`), HttpStatus.BAD_REQUEST)
+          );
+        }
+        if (apptData.customerWisereId) {
+          const customerWisere = await CustomerWisereModel.findOne({
+            where: {
+              id: apptData.customerWisereId
+            }
+          });
+
+          if (!customerWisere)
+            return next(
+              new CustomError(
+                customerErrorDetails.E_3001(`customerWisereId ${apptData.customerWisereId} not found`),
+                HttpStatus.NOT_FOUND
+              )
+            );
+        }
         let appointmentCode = '';
-        for (let i = 0; i < 10; i++) {
+        while (true) {
           const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
           const randomCode = random.toUpperCase();
           appointmentCode = randomCode;
@@ -154,6 +185,11 @@ export class AppointmentGroupController extends BaseController {
         }
         const newAppointmentId = uuidv4();
         appointmentIds.push(newAppointmentId);
+
+        let statusApp = EAppointmentStatus.NEW;
+        if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+          statusApp = EAppointmentStatus.CONFIRMED;
+        }
         createAppointmentTasks.push({
           id: newAppointmentId,
           appointmentGroupId: newAppointmentGroupId,
@@ -161,18 +197,25 @@ export class AppointmentGroupController extends BaseController {
           date: data.date,
           customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
           isPrimary: apptData.isPrimary === true ? true : false,
-          appointmentCode: appointmentCode
+          appointmentCode: appointmentCode,
+          bookingSource: data.bookingSource,
+          status: statusApp
         });
 
         //appointment detail data
         for (const apptDetailData of apptData.appointmentDetails) {
           const newAppointmentDetailId = uuidv4();
+          let statusAppDetail = EAppointmentStatus.NEW;
+          if (req.body.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusAppDetail = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentDetailTasks.push({
             id: newAppointmentDetailId,
             appointmentId: newAppointmentId,
             serviceId: apptDetailData.serviceId,
             startTime: apptDetailData.startTime,
-            resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+            resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+            status: statusAppDetail
           });
 
           // data appointment detail staff
@@ -193,57 +236,6 @@ export class AppointmentGroupController extends BaseController {
       await AppointmentModel.bulkCreate(createAppointmentTasks, { transaction });
       await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
       await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
-      await transaction.commit();
-      const isPortReachable = require('is-port-reachable');
-      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
-      if (isLiveHost) {
-        for (let i = 0; i < appointmentIds.length; i++) {
-          const options: IRequestOptions = {
-            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
-            method: 'post',
-            headers: {
-              accept: '*/*',
-              'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({ appointmentId: appointmentIds[i] })
-          };
-          await request(options);
-        }
-      }
-      // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
-      //   where: { id: newAppointmentGroupId },
-      //   include: [
-      //     { model: LocationModel, as: 'location', required: true },
-      //     {
-      //       model: AppointmentModel,
-      //       as: 'appointments',
-      //       required: true,
-      //       include: [
-      //         {
-      //           model: AppointmentDetailModel,
-      //           as: 'appointmentDetails',
-      //           required: true,
-      //           include: [
-      //             {
-      //               model: StaffModel.scope('safe'),
-      //               as: 'staffs',
-      //               required: true
-      //             },
-      //             {
-      //               model: ServiceModel,
-      //               as: 'service',
-      //               required: true
-      //             },
-      //             {
-      //               model: ResourceModel,
-      //               as: 'resource'
-      //             }
-      //           ]
-      //         }
-      //       ]
-      //     }
-      //   ]
-      // });
       const query: FindOptions = {
         include: [
           {
@@ -285,10 +277,37 @@ export class AppointmentGroupController extends BaseController {
             required: true,
             through: { attributes: [] }
           }
-        ]
+        ],
+        transaction
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      if (data.bookingSource === EAppointmentBookingSource.SCHEDULED) {
+        const appointmentController = new AppointmentController();
+        await appointmentController.convertApptToDeal(
+          listAppointmentDetail,
+          res.locals.staffPayload.companyId,
+          res.locals.staffPayload.id,
+          transaction
+        );
+      }
+      await transaction.commit();
+      const isPortReachable = require('is-port-reachable');
+      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      if (isLiveHost) {
+        for (let i = 0; i < appointmentIds.length; i++) {
+          const options: IRequestOptions = {
+            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            method: 'post',
+            headers: {
+              accept: '*/*',
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ appointmentId: appointmentIds[i] })
+          };
+          await request(options);
+        }
+      }
       res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();
@@ -525,14 +544,29 @@ export class AppointmentGroupController extends BaseController {
       //     )
       //   );
       // }
-      const updateAppointmentId = [];
+      const appointmentGroup = await AppointmentGroupModel.findOne({
+        where: {
+          id: data.appointmentGroupId
+        }
+      });
+      if (!appointmentGroup) {
+        return next(
+          new CustomError(
+            bookingErrorDetails.E_2007(`Not found appointment-group ${req.params.appointmentGroupId}`),
+            HttpStatus.NOT_FOUND
+          )
+        );
+      }
+      const updateAppointmentIds = [];
+      const arrAppointmentPrimary = [];
       const appointmentIds = [];
       let countPrimary = 0;
       if (data.updateAppointments && data.updateAppointments.length > 0) {
         for (let i = 0; i < data.updateAppointments.length; i++) {
           if (data.updateAppointments[i].isPrimary === true) {
-            updateAppointmentId.push(data.updateAppointments[i].appointmentId);
+            arrAppointmentPrimary.push(data.updateAppointments[i].appointmentId);
           }
+          updateAppointmentIds.push(data.updateAppointments[i].appointmentId);
           if (data.deleteAppointments.includes(data.updateAppointments[i].appointmentId)) {
             return next(
               new CustomError(
@@ -545,12 +579,12 @@ export class AppointmentGroupController extends BaseController {
         const countPrimaryInAppointment = await AppointmentModel.count({
           where: {
             appointmentGroupId: data.appointmentGroupId,
-            id: { [Op.notIn]: updateAppointmentId },
+            id: { [Op.notIn]: updateAppointmentIds },
             isPrimary: true
           }
         });
         countPrimary += countPrimaryInAppointment;
-        countPrimary += updateAppointmentId.length;
+        countPrimary += arrAppointmentPrimary.length;
       } else {
         const countPrimaryInAppointment = await AppointmentModel.count({
           where: {
@@ -579,19 +613,6 @@ export class AppointmentGroupController extends BaseController {
       if (countPrimary !== 1) {
         return next(new CustomError(bookingErrorDetails.E_2006(), HttpStatus.BAD_REQUEST));
       }
-      const appointmentGroup = await AppointmentGroupModel.findOne({
-        where: {
-          id: data.appointmentGroupId
-        }
-      });
-      if (!appointmentGroup) {
-        return next(
-          new CustomError(
-            bookingErrorDetails.E_2007(`Not found appointment-group ${req.params.appointmentGroupId}`),
-            HttpStatus.NOT_FOUND
-          )
-        );
-      }
 
       if (data.locationId !== appointmentGroup.locationId) {
         return next(
@@ -603,6 +624,12 @@ export class AppointmentGroupController extends BaseController {
           )
         );
       }
+      const bookingSource = await AppointmentModel.findOne({
+        where: {
+          appointmentGroupId: data.appointmentGroupId
+        },
+        attributes: ['bookingSource']
+      });
       //update appointment group here
       const appointmentGroupData: any = {
         date: req.body.date
@@ -613,6 +640,37 @@ export class AppointmentGroupController extends BaseController {
         where: { id: data.appointmentGroupId },
         transaction
       });
+
+      if (appointmentGroupData.date !== appointmentGroup.date) {
+        const listAppointmentShouldUpdate = await AppointmentModel.findAll({
+          where: {
+            appointmentGroupId: data.appointmentGroupId,
+            id: { [Op.notIn]: updateAppointmentIds }
+          }
+        });
+
+        if (listAppointmentShouldUpdate.length > 0) {
+          for (let i = 0; i < listAppointmentShouldUpdate.length; i++) {
+            listAppointmentShouldUpdate[i].date = appointmentGroupData.date;
+            await listAppointmentShouldUpdate[i].save({ transaction });
+          }
+        }
+      }
+      updateAppointmentIds.push(...data.deleteAppointments);
+      const appointmentHost = await AppointmentModel.findOne({
+        where: {
+          id: updateAppointmentIds,
+          isPrimary: true
+        }
+      });
+
+      if (appointmentHost) {
+        await DealModel.destroy({
+          where: { appointmentId: appointmentHost.id },
+          transaction
+        });
+      }
+
       if (data.createNewAppointments && data.createNewAppointments.length > 0) {
         const verifyAppointmentDetailTask = [];
         for (const apt of data.createNewAppointments) {
@@ -631,8 +689,17 @@ export class AppointmentGroupController extends BaseController {
         const createAppointmentDetailTasks = [];
         const createAppointmentDetailStaffTasks = [];
         for (const apptData of data.createNewAppointments) {
+          if (bookingSource.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
+            if (transaction) await transaction.rollback();
+            return next(
+              new CustomError(
+                bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+                HttpStatus.BAD_REQUEST
+              )
+            );
+          }
           let appointmentCode = '';
-          for (let i = 0; i < 10; i++) {
+          while (true) {
             const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
             const randomCode = random.toUpperCase();
             appointmentCode = randomCode;
@@ -647,6 +714,10 @@ export class AppointmentGroupController extends BaseController {
           }
           const newAppointmentId = uuidv4();
           appointmentIds.push(newAppointmentId);
+          let statusApp = EAppointmentStatus.NEW;
+          if (bookingSource.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusApp = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentTasks.push({
             id: newAppointmentId,
             appointmentGroupId: data.appointmentGroupId,
@@ -654,18 +725,25 @@ export class AppointmentGroupController extends BaseController {
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
-            appointmentCode: appointmentCode
+            appointmentCode: appointmentCode,
+            bookingSource: bookingSource.bookingSource,
+            status: statusApp
           });
 
           //appointment detail data
           for (const apptDetailData of apptData.appointmentDetails) {
             const newAppointmentDetailId = uuidv4();
+            let statusAppDetail = EAppointmentStatus.NEW;
+            if (bookingSource.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              statusAppDetail = EAppointmentStatus.CONFIRMED;
+            }
             createAppointmentDetailTasks.push({
               id: newAppointmentDetailId,
               appointmentId: newAppointmentId,
               serviceId: apptDetailData.serviceId,
               startTime: apptDetailData.startTime,
-              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+              status: statusAppDetail
             });
 
             // data appointment detail staff
@@ -682,7 +760,6 @@ export class AppointmentGroupController extends BaseController {
         await AppointmentDetailModel.bulkCreate(createAppointmentDetailTasks, { transaction });
         await AppointmentDetailStaffModel.bulkCreate(createAppointmentDetailStaffTasks, { transaction });
       }
-
       if (data.updateAppointments && data.updateAppointments.length > 0) {
         const arrApptCode = [];
         for (let i = 0; i < data.updateAppointments.length; i++) {
@@ -692,8 +769,8 @@ export class AppointmentGroupController extends BaseController {
               appointmentGroupId: data.appointmentGroupId
             }
           });
-
           if (!appointment) {
+            if (transaction) await transaction.rollback();
             return next(
               new CustomError(
                 bookingErrorDetails.E_2002(`Appointment ${data.updateAppointments[i].appointmentId} not exist`),
@@ -738,8 +815,21 @@ export class AppointmentGroupController extends BaseController {
         const createAppointmentDetailStaffTasks = [];
         let index = 0;
         for (const apptData of data.updateAppointments) {
+          if (bookingSource.bookingSource === EAppointmentBookingSource.SCHEDULED && !apptData.customerWisereId) {
+            if (transaction) await transaction.rollback();
+            return next(
+              new CustomError(
+                bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+                HttpStatus.BAD_REQUEST
+              )
+            );
+          }
           const newAppointmentId = uuidv4();
           appointmentIds.push(newAppointmentId);
+          let statusApp = EAppointmentStatus.NEW;
+          if (bookingSource.bookingSource === EAppointmentBookingSource.WALK_IN) {
+            statusApp = EAppointmentStatus.CONFIRMED;
+          }
           createAppointmentTasks.push({
             id: newAppointmentId,
             appointmentGroupId: data.appointmentGroupId,
@@ -747,19 +837,26 @@ export class AppointmentGroupController extends BaseController {
             date: data.date,
             customerWisereId: apptData.customerWisereId ? apptData.customerWisereId : null,
             isPrimary: apptData.isPrimary === true ? true : false,
-            appointmentCode: arrApptCode[index]
+            appointmentCode: arrApptCode[index],
+            bookingSource: bookingSource.bookingSource,
+            status: statusApp
           });
           index++;
 
           //appointment detail data
           for (const apptDetailData of apptData.appointmentDetails) {
             const newAppointmentDetailId = uuidv4();
+            let statusAppDetail = EAppointmentStatus.NEW;
+            if (bookingSource.bookingSource === EAppointmentBookingSource.WALK_IN) {
+              statusAppDetail = EAppointmentStatus.CONFIRMED;
+            }
             createAppointmentDetailTasks.push({
               id: newAppointmentDetailId,
               appointmentId: newAppointmentId,
               serviceId: apptDetailData.serviceId,
               startTime: apptDetailData.startTime,
-              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null
+              resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+              status: statusAppDetail
             });
 
             // data appointment detail staff
@@ -785,6 +882,7 @@ export class AppointmentGroupController extends BaseController {
             }
           });
           if (!appointment) {
+            if (transaction) await transaction.rollback();
             return next(
               new CustomError(
                 bookingErrorDetails.E_2002(`Appointment ${data.deleteAppointments[i]} not exist`),
@@ -813,57 +911,6 @@ export class AppointmentGroupController extends BaseController {
           });
         }
       }
-      await transaction.commit();
-      const isPortReachable = require('is-port-reachable');
-      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
-      if (isLiveHost) {
-        for (let i = 0; i < appointmentIds.length; i++) {
-          const options: IRequestOptions = {
-            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
-            method: 'post',
-            headers: {
-              accept: '*/*',
-              'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({ appointmentId: appointmentIds[i] })
-          };
-          await request(options);
-        }
-      }
-      // const appointmentGroupStoraged = await AppointmentGroupModel.findOne({
-      //   where: { id: data.appointmentGroupId },
-      //   include: [
-      //     { model: LocationModel, as: 'location', required: true },
-      //     {
-      //       model: AppointmentModel,
-      //       as: 'appointments',
-      //       required: true,
-      //       include: [
-      //         {
-      //           model: AppointmentDetailModel,
-      //           as: 'appointmentDetails',
-      //           required: true,
-      //           include: [
-      //             {
-      //               model: StaffModel.scope('safe'),
-      //               as: 'staffs',
-      //               required: true
-      //             },
-      //             {
-      //               model: ServiceModel,
-      //               as: 'service',
-      //               required: true
-      //             },
-      //             {
-      //               model: ResourceModel,
-      //               as: 'resource'
-      //             }
-      //           ]
-      //         }
-      //       ]
-      //     }
-      //   ]
-      // });
       const query: FindOptions = {
         include: [
           {
@@ -905,10 +952,39 @@ export class AppointmentGroupController extends BaseController {
             required: true,
             through: { attributes: [] }
           }
-        ]
+        ],
+        transaction
       };
       const listAppointmentDetail: any = await AppointmentDetailModel.findAll(query);
       await this.pushNotifyLockAppointmentData(listAppointmentDetail);
+      for (let i = 0; i < listAppointmentDetail.length; i++) {
+        if (listAppointmentDetail[i].appointment.isPrimary && listAppointmentDetail[i].appointment.customerWisere) {
+          const appointmentController = new AppointmentController();
+          await appointmentController.convertApptToDeal(
+            listAppointmentDetail,
+            res.locals.staffPayload.companyId,
+            res.locals.staffPayload.id,
+            transaction
+          );
+        }
+      }
+      await transaction.commit();
+      const isPortReachable = require('is-port-reachable');
+      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      if (isLiveHost) {
+        for (let i = 0; i < appointmentIds.length; i++) {
+          const options: IRequestOptions = {
+            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            method: 'post',
+            headers: {
+              accept: '*/*',
+              'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ appointmentId: appointmentIds[i] })
+          };
+          await request(options);
+        }
+      }
       res.status(HttpStatus.OK).send(buildSuccessMessage(listAppointmentDetail));
     } catch (error) {
       if (transaction) await transaction.rollback();

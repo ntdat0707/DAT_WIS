@@ -27,7 +27,7 @@ const createServiceSchema = Joi.object({
   ),
   name: Joi.string().required(),
   serviceCode: Joi.string().required().allow('', null),
-  isAllowedMarketplace: Joi.boolean().required().label('isAllowedMarketplace'),
+  isAllowedMarketplace: Joi.boolean().label('isAllowedMarketplace'),
   resourceIds: Joi.array().items(
     Joi.string().guid({
       version: ['uuidv4']

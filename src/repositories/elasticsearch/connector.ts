@@ -1,6 +1,7 @@
 import { logger } from '../../utils/logger';
 import elasticsearch, { ConfigOptions } from 'elasticsearch';
 import dotenv from 'dotenv';
+import { Client } from '@elastic/elasticsearch';
 
 const { parsed: env } = dotenv.config();
 
@@ -35,4 +36,23 @@ elasticsearchClient.ping(
   }
 );
 
-export default elasticsearchClient;
+const esClient = new Client({
+  node: `http://${env!.ELASTICSEARCH_HOST || 'localhost'}:${env!.ELASTICSEARCH_PORT || 9200}`,
+  ssl: { rejectUnauthorized: false }
+});
+
+esClient.ping({}, { requestTimeout: 3 * 60 * 1000 }, (error) => {
+  if (error) {
+    logger.error({
+      label: 'Elasticsearch',
+      message: `Elasticsearch connect to ${elsConfig.host} failed ${error}`
+    });
+  } else {
+    logger.info({
+      label: 'Elasticsearch',
+      message: `Elasticsearch connected to ${elsConfig.host}`
+    });
+  }
+});
+
+export { elasticsearchClient, esClient };

@@ -22,7 +22,7 @@ MarketPlaceFieldsModel.init(
     },
     type: {
       field: 'type',
-      type: DataTypes.ENUM(...Object.keys(ETypeMarketPlaceField)),
+      type: DataTypes.ENUM(...Object.values(ETypeMarketPlaceField)),
       allowNull: false
     },
     name: {

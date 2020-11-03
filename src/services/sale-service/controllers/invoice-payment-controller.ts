@@ -4,25 +4,24 @@ import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
 import {
   createPaymentMethodSchema,
-  createPaymentSchema,
+  createInvoicePaymentSchema,
   deletePaymentMethodSchema,
   updatePaymentMethodSchema
 } from '../configs/validate-schemas';
 import {
   InvoiceModel,
+  InvoicePaymentModel,
   PaymentMethodModel,
-  PaymentModel,
   ProviderModel,
-  ReceiptModel,
   sequelize
 } from '../../../repositories/postgres/models';
-import { invoiceErrorDetails } from '../../../utils/response-messages/error-details/';
-import { EBalanceType } from './../../../utils/consts/index';
+import { invoiceErrorDetails } from '../../../utils/response-messages/error-details';
+import { EBalanceType } from '../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
 import HttpStatus from 'http-status-codes';
 import { buildSuccessMessage } from '../../../utils/response-messages/responses';
 import { paymentErrorDetails, paymentMethodErrorDetails } from '../../../utils/response-messages/error-details/sale';
-export class PaymentController {
+export class InvoicePaymentController {
   /**
    * @swagger
    * definitions:
@@ -58,13 +57,13 @@ export class PaymentController {
 
   /**
    * @swagger
-   * /sale/payment/create-payment:
+   * /sale/payment/create-invoice-payment:
    *   post:
    *     tags:
    *       - Sale
    *     security:
    *       - Bearer: []
-   *     name: createPayment
+   *     name: createInvoicePayment
    *     parameters:
    *     - in: "body"
    *       name: "body"
@@ -79,10 +78,10 @@ export class PaymentController {
    *       500:
    *         description:
    */
-  public createPayment = async (req: Request, res: Response, next: NextFunction) => {
+  public createInvoicePayment = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      const validateErrors = validate(req.body, createPaymentSchema);
+      const validateErrors = validate(req.body, createInvoicePaymentSchema);
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
@@ -96,7 +95,7 @@ export class PaymentController {
       transaction = await sequelize.transaction();
       const data = {
         invoiceId: req.body.invoiceId,
-        customerId: invoice.customerWisereId,
+        customerWisereId: invoice.customerWisereId,
         staffId: res.locals.staffPayload.id,
         locationId: invoice.locationId,
         total: invoice.total,
@@ -143,14 +142,14 @@ export class PaymentController {
         for (let j = 0; j < 10; j++) {
           const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           receiptCode = 'REC' + randomCode;
-          const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
-          if (!existReceiptCode) {
-            break;
-          }
+          // const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
+          // if (!existReceiptCode) {
+          //   break;
+          // }
         }
         const dataReceipt = {
           code: receiptCode,
-          customerId: data.customerId,
+          customerWisereId: data.customerWisereId,
           staffId: data.staffId,
           amount: data.paymentMethods[i].amount,
           paymentId: dataPayment.id,
@@ -159,10 +158,7 @@ export class PaymentController {
         receipts.push(dataReceipt);
         balance -= dataPayment.amount;
         if (balance < 0) {
-          throw new CustomError(
-            invoiceErrorDetails.E_3305(`amount is greater than the balance in the invoice`),
-            httpStatus.BAD_REQUEST
-          );
+          balance = 0;
         }
       }
       if (balance === 0) {
@@ -173,8 +169,8 @@ export class PaymentController {
       if (providers.length > 0) {
         await ProviderModel.bulkCreate(providers, { transaction });
       }
-      await PaymentModel.bulkCreate(payments, { transaction });
-      await ReceiptModel.bulkCreate(receipts, { transaction });
+      await InvoicePaymentModel.bulkCreate(payments, { transaction });
+      // await ReceiptModel.bulkCreate(receipts, { transaction });
       await InvoiceModel.update({ balance: balance, status: status }, { where: { id: data.invoiceId }, transaction });
       return balance;
     } catch (error) {
@@ -219,6 +215,7 @@ export class PaymentController {
   public createPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data: any = {
+        companyId: res.locals.staffPayload.companyId,
         paymentType: req.body.paymentType
       };
       const validateErrors = validate(data, createPaymentMethodSchema);
@@ -312,11 +309,11 @@ export class PaymentController {
       const paymentMethod = await PaymentMethodModel.findOne({ where: { id: data.paymentMethodId } });
       if (!paymentMethod) {
         throw new CustomError(
-          paymentMethodErrorDetails.E_3700(`Payment method with id ${data.paymentMethod} not found`),
+          paymentMethodErrorDetails.E_3700(`Payment method with id ${data.paymentMethodId} not found`),
           httpStatus.NOT_FOUND
         );
       }
-      await PaymentMethodModel.update(data, { where: { id: data.paymentMethodId } });
+      await paymentMethod.update({ paymentType: data.paymentType });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);

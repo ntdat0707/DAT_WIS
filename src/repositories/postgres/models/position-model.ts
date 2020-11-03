@@ -3,6 +3,7 @@ import sequelize from '../configs/db-connector';
 class PositionModel extends Model {
   public id: string;
   public staffId: string;
+  public locationId: string;
   public ownerId: string;
   public index: string;
   public readonly createdAt!: Date;
@@ -31,6 +32,11 @@ PositionModel.init(
     index: {
       field: 'index',
       type: DataTypes.TINYINT,
+      allowNull: false
+    },
+    locationId: {
+      field: 'location_id',
+      type: DataTypes.UUIDV4,
       allowNull: false
     },
     createdAt: {

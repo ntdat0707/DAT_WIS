@@ -1,17 +1,18 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
-import { EPaymentMethodType } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
-class PaymentMethodModel extends Model {
+class InvoicePaymentModel extends Model {
   public id: string;
-  public companyId!: string;
-  public paymentType: string;
-  public paymentTypeNumber: number; //1:cash, 2:card, 3:waller, 4:other
+  public invoiceId!: string;
+  public paymentMethodId!: string;
+  public amount!: number;
+  public providerId: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
-PaymentMethodModel.init(
+
+InvoicePaymentModel.init(
   {
     id: {
       field: 'id',
@@ -19,19 +20,24 @@ PaymentMethodModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    companyId: {
-      field: 'company_id',
+    invoiceId: {
+      field: 'invoice_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    paymentType: {
-      field: 'payment_type',
-      type: DataTypes.ENUM(...Object.values(EPaymentMethodType)),
-      defaultValue: EPaymentMethodType.CASH
+    paymentMethodId: {
+      field: 'payment_method_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
-    paymentTypeNumber: {
-      field: 'payment_type_number',
+    amount: {
+      field: 'amount',
       type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    providerId: {
+      field: 'provider_id',
+      type: DataTypes.UUIDV4,
       allowNull: true
     },
     createdAt: {
@@ -53,10 +59,10 @@ PaymentMethodModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'invoice_payment_method',
+    tableName: 'invoice_payment',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { PaymentMethodModel };
+export { InvoicePaymentModel };

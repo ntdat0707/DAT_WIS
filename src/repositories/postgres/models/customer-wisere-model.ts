@@ -114,20 +114,13 @@ CustomerWisereModel.init(
       allowNull: true
     },
     source: {
-      type: DataTypes.ENUM(
-        ESource.FACEBOOK,
-        ESource.MARKETPLACE,
-        ESource.OTHER,
-        ESource.SHOPEE,
-        ESource.WISERE,
-        ESource.ZALO
-      ),
+      type: DataTypes.ENUM(...Object.values(ESource)),
       allowNull: true,
       field: 'source',
       defaultValue: ESource.OTHER
     },
     label: {
-      type: DataTypes.ENUM(ELabel.COLD_LEAD, ELabel.CUSTOMER, ELabel.HOT_LEAD, ELabel.NONE, ELabel.WARM_LEAD),
+      type: DataTypes.ENUM(...Object.values(ELabel)),
       allowNull: true,
       field: 'label',
       defaultValue: ELabel.NONE

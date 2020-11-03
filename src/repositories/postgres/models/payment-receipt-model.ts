@@ -1,18 +1,23 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class PaymentModel extends Model {
+class PaymentReceiptModel extends Model {
   public id: string;
-  public invoiceId!: string;
-  public paymentMethodId!: string;
-  public amount!: number;
+  public code: string;
+  public customerWisereId!: string;
+  public staffId!: string;
+  public amount: number;
+  public paymentId!: string;
+  public locationId: string;
+  public description: string;
+  public paymentMethodId: string;
   public providerId: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-PaymentModel.init(
+PaymentReceiptModel.init(
   {
     id: {
       field: 'id',
@@ -20,13 +25,28 @@ PaymentModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    invoiceId: {
-      field: 'invoice_id',
+    code: {
+      field: 'code',
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    customerWisereId: {
+      field: 'customer_wisere_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    paymentMethodId: {
-      field: 'payment_method_id',
+    staffId: {
+      field: 'staff_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    paymentId: {
+      field: 'payment_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    locationId: {
+      field: 'location_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
@@ -34,6 +54,16 @@ PaymentModel.init(
       field: 'amount',
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    description: {
+      field: 'description',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    paymentMethodId: {
+      field: 'payment_method_id',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     providerId: {
       field: 'provider_id',
@@ -59,10 +89,10 @@ PaymentModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'payment',
+    tableName: 'receipt',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { PaymentModel };
+export { PaymentReceiptModel };

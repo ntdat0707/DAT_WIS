@@ -1,12 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import _ from 'lodash';
-import shortId from 'shortid';
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-
 import {
   createServiceSchema,
   serviceIdSchema,
@@ -33,7 +31,8 @@ import { ServiceImageModel } from '../../../repositories/postgres/models/service
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { SearchParams } from 'elasticsearch';
-import elasticsearchClient from '../../../repositories/elasticsearch';
+import { elasticsearchClient } from '../../../repositories/elasticsearch';
+import { v4 as uuidv4 } from 'uuid';
 
 export class ServiceController {
   /**
@@ -96,7 +95,6 @@ export class ServiceController {
    *     - in: "formData"
    *       name: isAllowedMarketplace
    *       type: boolean
-   *       required: true
    *     - in: "formData"
    *       name: resourceIds
    *       type: array
@@ -149,10 +147,24 @@ export class ServiceController {
           return next(new CustomError(branchErrorDetails.E_1204(), HttpStatus.BAD_REQUEST));
         }
       } else {
-        serviceCode = shortId.generate();
+        const services: any = await ServiceModel.findAll({
+          include: [
+            {
+              model: LocationModel,
+              as: 'locations',
+              required: true,
+              where: {
+                id: res.locals.staffPayload.workingLocationIds
+              }
+            }
+          ]
+        });
+        const zeroPad = (num: number, places: number) => String(num).padStart(places, '0');
+        serviceCode = `SER${zeroPad(services.length, 5)}`;
       }
 
       const data: any = {
+        id: uuidv4(),
         description: body.description,
         salePrice: !isNaN(parseInt(body.salePrice, 10)) ? body.salePrice : null,
         duration: body.duration,
@@ -222,6 +234,7 @@ export class ServiceController {
         await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       }
       await transaction.commit();
+
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
       if (transaction) {
@@ -276,6 +289,12 @@ export class ServiceController {
         return next(
           new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND)
         );
+
+      await elasticsearchClient.delete({
+        id: serviceId,
+        index: 'get_services',
+        type: '_doc'
+      });
 
       await ServiceModel.destroy({ where: { id: serviceId } });
       return res.status(HttpStatus.OK).send();
@@ -680,6 +699,7 @@ export class ServiceController {
 
       transaction = await sequelize.transaction();
       for (let i = 0; i < req.body.serviceDetails.length; i++) {
+        const zeroPad = (num: number, places: number) => String(num).padStart(places, '0');
         const data = {
           salePrice: !isNaN(parseInt(req.body.serviceDetails[i].salePrice, 10))
             ? req.body.serviceDetails[i].salePrice
@@ -687,7 +707,7 @@ export class ServiceController {
           duration: req.body.serviceDetails[i].duration,
           cateServiceId: req.body.cateServiceId,
           name: req.body.serviceDetails[i].name,
-          serviceCode: shortId.generate()
+          serviceCode: `SER${zeroPad(i + 1, 5)}`
         };
         const service = await ServiceModel.create(data, { transaction });
         const serviceStaff = (req.body.staffIds as []).map((id) => ({
@@ -777,7 +797,6 @@ export class ServiceController {
    *     - in: "formData"
    *       name: isAllowedMarketplace
    *       type: boolean
-   *       required: true
    *     - in: "formData"
    *       name: status
    *       type: string
@@ -954,7 +973,6 @@ export class ServiceController {
         }));
         await ServiceImageModel.bulkCreate(images, { transaction: transaction });
       }
-
       await ServiceModel.update(data, {
         where: {
           id: params.serviceId
@@ -962,6 +980,65 @@ export class ServiceController {
         transaction
       });
       await transaction.commit();
+
+      const serviceData = await ServiceModel.findOne({
+        where: {
+          id: params.serviceId
+        },
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            through: {
+              attributes: {
+                exclude: ['updatedAt', 'createdAt', 'deletedAt']
+              }
+            }
+          },
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: true,
+            attributes: {
+              exclude: ['updatedAt', 'createdAt', 'deletedAt']
+            }
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: false,
+            through: {
+              attributes: {
+                exclude: ['updatedAt', 'createdAt', 'deletedAt']
+              }
+            }
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
+          }
+        ]
+      }).then((item: any) => {
+        const serviceMapping = JSON.parse(JSON.stringify(item));
+        serviceMapping.locationService = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
+        serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
+        delete serviceMapping.locations;
+        delete serviceMapping.staffs;
+        return serviceMapping;
+      });
+
+      await elasticsearchClient.update({
+        id: params.serviceId,
+        index: 'get_services',
+        body: {
+          doc: serviceData,
+          doc_as_upsert: true
+        },
+        type: '_doc'
+      });
+
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       if (transaction) {

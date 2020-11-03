@@ -23,7 +23,8 @@ import {
   CompanyModel,
   LocationModel,
   PipelineModel,
-  PipelineStageModel
+  PipelineStageModel,
+  PaymentMethodModel
 } from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
@@ -46,9 +47,9 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import { generatePWD } from '../../../utils/lib/generatePassword';
 import { v4 } from 'public-ip';
-import { LoginLogModel } from '../../../repositories/mongo/models/login-log-model';
+import { LoginLogModel } from '../../../repositories/mongo/models';
 import geoip from 'geoip-lite';
-import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
+import { MqttUserModel } from '../../../repositories/mongo/models';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
@@ -119,6 +120,34 @@ export class AuthController {
       data.onboardStep = 0;
       await StaffModel.create({ ...data, ...{ isBusinessAccount: true, id: staffId } }, { transaction });
       await CompanyModel.create({ id: companyId, ownerId: staffId }, { transaction });
+
+      //create paymentMethod
+      const paymentMethods = [];
+      for (let i = 1; i < 5; i++) {
+        let typeInfor: any = {};
+        switch (i) {
+          case 1:
+            typeInfor = { paymentType: 'cash', paymentTypeNumber: 1 };
+            break;
+          case 2:
+            typeInfor = { paymentType: 'card', paymentTypeNumber: 2 };
+            break;
+          case 3:
+            typeInfor = { paymentType: 'wallet', paymentTypeNumber: 3 };
+            break;
+          case 4:
+            typeInfor = { paymentType: 'other', paymentTypeNumber: 4 };
+            break;
+        } // 1:cash, 2:card, 3:waller, 4:other
+        const paymentMethodData = {
+          id: uuidv4(),
+          companyId: companyId,
+          paymentType: typeInfor.paymentType,
+          paymentTypeNumber: typeInfor.paymentTypeNumber
+        };
+        paymentMethods.push(paymentMethodData);
+      }
+      await PaymentMethodModel.bulkCreate(paymentMethods, { transaction });
 
       const pipelineId1 = uuidv4();
       const pipelineId2 = uuidv4();
@@ -232,18 +261,13 @@ export class AuthController {
         },
         {
           pipelineId: pipelineId4,
-          name: 'Confirmed',
+          name: 'Contact Made',
           order: 2
         },
         {
           pipelineId: pipelineId4,
-          name: 'Purchased',
+          name: 'Confirmed',
           order: 3
-        },
-        {
-          pipelineId: pipelineId4,
-          name: 'Treatment Planning',
-          order: 4
         }
       ];
 
@@ -962,25 +986,29 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
-          await transaction.rollback();
+          //rollback transaction
+          if (transaction) {
+            await transaction.rollback();
+          }
           return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
         staff = await StaffModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
           const password = await generatePWD(8);
           data = {
-            firstName: req.body.fullName.split(' ')[0],
-            lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
+            lastName: req.body.fullName.split(' ')[0],
+            firstName: req.body.fullName.split(' ').slice(1).join(' ')
+              ? req.body.fullName.split(' ').slice(1).join(' ')
+              : null,
             email: req.body.email ? req.body.email : null,
             facebookId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
-            isBusinessAccount: true
+            isBusinessAccount: true,
+            onboardStep: 0
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
           await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
-          //commit transaction
-          await transaction.commit();
           accessTokenData = {
             userId: newStaff.id,
             userName: `${newStaff.firstName} ${newStaff.lastName}`,
@@ -1002,7 +1030,8 @@ export class AuthController {
                 as: 'workingLocations',
                 through: { attributes: [] }
               }
-            ]
+            ],
+            transaction
           });
           loginData = {
             email: req.body.email,
@@ -1021,6 +1050,8 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
+          //commit transaction
+          await transaction.commit();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         accessTokenData = {
@@ -1044,7 +1075,8 @@ export class AuthController {
               as: 'workingLocations',
               through: { attributes: [] }
             }
-          ]
+          ],
+          transaction
         });
         loginData = {
           email: req.body.email,
@@ -1063,6 +1095,8 @@ export class AuthController {
         };
         loginLogModel = new LoginLogModel(loginData);
         await loginLogModel.save();
+        //commit transaction
+        await transaction.commit();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
       if (req.body.provider === ESocialType.GOOGLE) {
@@ -1070,12 +1104,15 @@ export class AuthController {
         if (!staff) {
           const password = await generatePWD(8);
           data = {
-            firstName: req.body.fullName.split(' ')[0],
-            lastName: req.body.fullName.split(' ')[1] ? req.body.fullName.split(' ')[1] : null,
+            lastName: req.body.fullName.split(' ')[0],
+            firstName: req.body.fullName.split(' ').slice(1).join(' ')
+              ? req.body.fullName.split(' ').slice(1).join(' ')
+              : null,
             email: req.body.email,
             googleId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null,
-            isBusinessAccount: true
+            isBusinessAccount: true,
+            onboardStep: 0
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
@@ -1103,7 +1140,8 @@ export class AuthController {
                 as: 'workingLocations',
                 through: { attributes: [] }
               }
-            ]
+            ],
+            transaction
           });
           loginData = {
             email: req.body.email,
@@ -1122,6 +1160,8 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
+          //commit transaction
+          await transaction.commit();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         accessTokenData = {
@@ -1145,7 +1185,8 @@ export class AuthController {
               as: 'workingLocations',
               through: { attributes: [] }
             }
-          ]
+          ],
+          transaction
         });
         loginData = {
           email: req.body.email,
@@ -1164,6 +1205,8 @@ export class AuthController {
         };
         loginLogModel = new LoginLogModel(loginData);
         await loginLogModel.save();
+        //commit transaction
+        await transaction.commit();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
     } catch (error) {

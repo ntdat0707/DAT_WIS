@@ -40,5 +40,5 @@ const InvoiceSchema = new mongoose.Schema({
 });
 
 //Model
-const InvoiceLogModel = mongoose.model<IInvoiceLog>('IInvoiceLog', InvoiceSchema, 'invoice_log');
-export { InvoiceLogModel, InvoiceSchema };
+const InvoiceLogModel = mongoose.model<IInvoiceLog>('InvoiceLog', InvoiceSchema, 'invoice_log');
+export { InvoiceLogModel, IInvoiceLog };
