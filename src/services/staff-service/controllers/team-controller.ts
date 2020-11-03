@@ -86,7 +86,8 @@ export class TeamController {
             attributes: ['id', 'avatarPath']
           }
         ],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+        order: [['createdAt', 'DESC']],
+        attributes: { exclude: ['updatedAt', 'deletedAt'] }
       };
 
       if (req.query.searchValue) {
