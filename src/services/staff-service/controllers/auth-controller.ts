@@ -108,10 +108,10 @@ export class AuthController {
       };
 
       const validateErrors = validate(data, createBusinessAccountSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
 
       const checkEmailExists = await StaffModel.findOne({ where: { email: data.email } });
-      if (checkEmailExists) return next(new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST));
+      if (checkEmailExists) throw new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST);
 
       //endscrypt password
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
@@ -364,7 +364,7 @@ export class AuthController {
       let loginData: any;
       let loginLogModel: any;
       const validateErrors = validate(data, loginSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff) {
         loginData = {
@@ -384,7 +384,7 @@ export class AuthController {
         };
         loginLogModel = new LoginLogModel(loginData);
         await loginLogModel.save();
-        return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
+        throw new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND);
       }
       if (!staff.isBusinessAccount) {
         loginData = {
@@ -404,7 +404,7 @@ export class AuthController {
         };
         loginLogModel = new LoginLogModel(loginData);
         await loginLogModel.save();
-        return next(new CustomError(staffErrorDetails.E_4008(), HttpStatus.NOT_FOUND));
+        throw new CustomError(staffErrorDetails.E_4008(), HttpStatus.NOT_FOUND);
       }
       const match = await compare(data.password, staff.password);
       if (!match) {
@@ -426,7 +426,7 @@ export class AuthController {
         loginLogModel = new LoginLogModel(loginData);
         await loginLogModel.save();
 
-        return next(new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND));
+        throw new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND);
       }
 
       const accessTokenData: IAccessTokenData = {
@@ -583,9 +583,9 @@ export class AuthController {
     try {
       const email = req.body.email;
       const validateErrors = validate({ email: email }, emailSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const staff = await StaffModel.findOne({ raw: true, where: { email: req.body.email } });
-      if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
+      if (!staff) throw new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND);
       const uuidToken = uuidv4();
       const dataSendMail: IStaffRecoveryPasswordTemplate = {
         staffEmail: email,
@@ -656,13 +656,13 @@ export class AuthController {
         newPassword: req.body.newPassword
       };
       const validateErrors = validate(body, changePasswordSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const tokenStoraged = await redis.getData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${body.token}`);
       if (!tokenStoraged)
-        return next(new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED));
+        throw new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED);
       const data = JSON.parse(tokenStoraged);
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
-      if (!staff) return next(new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND));
+      if (!staff) throw new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND);
       const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
       await StaffModel.update(
         { password: password },
@@ -749,7 +749,7 @@ export class AuthController {
       let loginData: any;
       let loginLogModel: any;
       const validateErrors = validate(req.body, loginSocialSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       if (req.body.email) {
         if (req.body.provider === ESocialType.GOOGLE) {
           socialInfor = await validateGoogleToken(req.body.token);
@@ -771,7 +771,7 @@ export class AuthController {
             };
             loginLogModel = new LoginLogModel(loginData);
             await loginLogModel.save();
-            return next(new CustomError(staffErrorDetails.E_4006('Incorrect google token'), HttpStatus.BAD_REQUEST));
+            throw new CustomError(staffErrorDetails.E_4006('Incorrect google token'), HttpStatus.BAD_REQUEST);
           }
         } else if (req.body.provider === ESocialType.FACEBOOK) {
           socialInfor = await validateFacebookToken(req.body.providerId, req.body.token);
@@ -793,7 +793,7 @@ export class AuthController {
             };
             loginLogModel = new LoginLogModel(loginData);
             await loginLogModel.save();
-            return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
+            throw new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST);
           }
         }
         staff = await StaffModel.findOne({ raw: true, where: { email: req.body.email } });
@@ -816,7 +816,7 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
-          return next(new CustomError(staffErrorDetails.E_4007('Missing email'), HttpStatus.BAD_REQUEST));
+          throw new CustomError(staffErrorDetails.E_4007('Missing email'), HttpStatus.BAD_REQUEST);
         }
       }
       if (staff) {
@@ -846,7 +846,7 @@ export class AuthController {
               };
               loginLogModel = new LoginLogModel(loginData);
               await loginLogModel.save();
-              return next(new CustomError(staffErrorDetails.E_4005('providerId incorrect'), HttpStatus.BAD_REQUEST));
+              throw new CustomError(staffErrorDetails.E_4005('providerId incorrect'), HttpStatus.BAD_REQUEST);
             }
           }
           accessTokenData = {
@@ -917,7 +917,7 @@ export class AuthController {
               };
               loginLogModel = new LoginLogModel(loginData);
               await loginLogModel.save();
-              return next(new CustomError(staffErrorDetails.E_4005('providerId incorrect'), HttpStatus.BAD_REQUEST));
+              throw new CustomError(staffErrorDetails.E_4005('providerId incorrect'), HttpStatus.BAD_REQUEST);
             }
           }
           accessTokenData = {
@@ -1255,11 +1255,11 @@ export class AuthController {
   public verifyTokenStaff = async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.body.token) {
-        return next(new CustomError(generalErrorDetails.E_0002()));
+        throw new CustomError(generalErrorDetails.E_0002());
       }
       const accessTokenData = await verifyAccessToken(req.body.token);
       if (accessTokenData instanceof CustomError) {
-        return next(new CustomError(generalErrorDetails.E_0003()));
+        throw new CustomError(generalErrorDetails.E_0003());
       } else {
         const staff = await StaffModel.findOne({
           where: { id: accessTokenData.userId },
@@ -1272,7 +1272,7 @@ export class AuthController {
           ]
         });
         if (!staff) {
-          return next(new CustomError(generalErrorDetails.E_0003()));
+          throw new CustomError(generalErrorDetails.E_0003());
         }
         return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
       }

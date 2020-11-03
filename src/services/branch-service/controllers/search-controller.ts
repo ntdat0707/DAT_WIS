@@ -138,7 +138,7 @@ export class SearchController {
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       const trimSpace = (text: string) =>
@@ -157,7 +157,7 @@ export class SearchController {
 
       const validateErrorsSearch = validate(search, searchSchema);
       if (validateErrorsSearch) {
-        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST);
       }
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
@@ -553,7 +553,7 @@ export class SearchController {
 
       const validateErrorsSearch = validate(search, suggestedSchema);
       if (validateErrorsSearch) {
-        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST);
       }
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
@@ -1048,7 +1048,7 @@ export class SearchController {
 
       const validateErrors = validate(data, getLocationMarketPlace);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       let staffs: any = [];
@@ -1223,7 +1223,7 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
-      // return next(new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR));
+      // throw new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR);
       return next(error);
     }
   };
@@ -1260,7 +1260,7 @@ export class SearchController {
 
       const validateErrors = validate(data, getLocationMarketPlacebyId);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       let staffs: any = [];
@@ -1470,7 +1470,7 @@ export class SearchController {
       };
       const validateErrors = validate(dataInput, deleteRecentViewSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       await RecentViewModel.destroy({
         where: { id: dataInput.recentViewId }
@@ -1511,7 +1511,7 @@ export class SearchController {
       };
       const validateErrors = validate(dataInput, deleteRecentBookingSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       await RecentBookingModel.destroy({
         where: { id: dataInput.recentBookingId }
@@ -1587,7 +1587,7 @@ export class SearchController {
 
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       const trimSpace = (text: string) => text.replace(/\s\s+/g, ' ').trim();
@@ -1602,7 +1602,7 @@ export class SearchController {
       };
       const validateErrorsSearch = validate(search, searchSchema);
       if (validateErrorsSearch) {
-        return next(new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrorsSearch, HttpStatus.BAD_REQUEST);
       }
 
       const keywords: string = search.keywords;

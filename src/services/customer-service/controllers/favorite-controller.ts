@@ -54,7 +54,7 @@ export class FavoriteController {
       };
       const validateErrors = validate(data, createFavoriteSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       let favorite = await FavoriteModel.findOne({
         where: { locationId: data.locationId, customerId: data.customerId }
@@ -103,7 +103,7 @@ export class FavoriteController {
     try {
       const validateErrors = validate(req.params.customerId, getListFavoriteSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const locationIds: any = (
         await FavoriteModel.findAll({
@@ -178,7 +178,7 @@ export class FavoriteController {
       const customerId = res.locals.customerPayload.id;
       const validateErrors = validate(customerId, getListFavoriteSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const locationIds: any = (
         await FavoriteModel.findAll({

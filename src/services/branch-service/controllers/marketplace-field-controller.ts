@@ -64,7 +64,7 @@ export class MarketPlaceFieldController {
       const validateErrors = validate(data, createMarketplaceField);
 
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       data.options = JSON.stringify(data.options);
@@ -127,7 +127,7 @@ export class MarketPlaceFieldController {
       const validateErrors = validate(data, createMarketplaceValue);
 
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
 
       const location = await LocationModel.findOne({ where: { id: data.locationId } });
@@ -145,7 +145,7 @@ export class MarketPlaceFieldController {
         validateValueByType(marketPlaceField)[marketPlaceField.type]
       );
       if (valueValidateErrors) {
-        return next(new CustomError(valueValidateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(valueValidateErrors, HttpStatus.BAD_REQUEST);
       }
 
       const marketplaceValue = await MarketPlaceValueModel.create(data);

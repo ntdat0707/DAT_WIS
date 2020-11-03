@@ -68,7 +68,7 @@ export class CompanyDetailController {
       };
       const validateErrors = validate(data, createCompanyDetailSchema);
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const companyDetail = await CompanyDetailModel.create({
         companyId: data.companyId,
