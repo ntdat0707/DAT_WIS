@@ -299,7 +299,7 @@ export class InvoiceController {
           paymentMethods: req.body.listPayment
         };
         const paymentController = new ReceiptController();
-        checkBalance = await paymentController.createPaymentReceipt(data, transaction);
+        checkBalance = await paymentController.generateInvoiceReceipt(data, transaction);
       } else {
         checkBalance = dataInvoice.balance;
       }
