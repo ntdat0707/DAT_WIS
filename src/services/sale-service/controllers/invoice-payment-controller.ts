@@ -10,7 +10,7 @@ import {
 } from '../configs/validate-schemas';
 import {
   InvoiceModel,
-  PaymentMethodModel,
+  InvoicePaymentMethodModel,
   InvoicePaymentModel,
   ProviderModel,
   ReceiptModel,
@@ -223,7 +223,7 @@ export class InvoicePaymentController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const paymentMethod = await PaymentMethodModel.create(data);
+      const paymentMethod = await InvoicePaymentMethodModel.create(data);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
     } catch (error) {
       return next(error);
@@ -250,7 +250,7 @@ export class InvoicePaymentController {
   public getListPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const companyId = res.locals.staffPayload.companyId;
-      const paymentMethod = await PaymentMethodModel.findAll({
+      const paymentMethod = await InvoicePaymentMethodModel.findAll({
         where: { companyId: companyId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
@@ -307,7 +307,7 @@ export class InvoicePaymentController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const paymentMethod = await PaymentMethodModel.findOne({ where: { id: data.paymentMethodId } });
+      const paymentMethod = await InvoicePaymentMethodModel.findOne({ where: { id: data.paymentMethodId } });
       if (!paymentMethod) {
         throw new CustomError(
           paymentMethodErrorDetails.E_3700(`Payment method with id ${data.paymentMethodId} not found`),
@@ -350,7 +350,7 @@ export class InvoicePaymentController {
       if (validateErrors) {
         return next(new CustomError(validateErrors, httpStatus.BAD_REQUEST));
       }
-      const paymentMethod = await PaymentMethodModel.findOne({
+      const paymentMethod = await InvoicePaymentMethodModel.findOne({
         where: { id: paymentMethodId }
       });
       if (!paymentMethod) {
@@ -358,7 +358,7 @@ export class InvoicePaymentController {
           new CustomError(paymentErrorDetails.E_3601(`This payment method is not exist`), httpStatus.NOT_FOUND)
         );
       }
-      await PaymentMethodModel.destroy({
+      await InvoicePaymentMethodModel.destroy({
         where: { id: paymentMethodId }
       });
       return res.status(HttpStatus.OK).send();

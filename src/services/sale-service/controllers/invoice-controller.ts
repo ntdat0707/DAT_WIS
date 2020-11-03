@@ -11,7 +11,7 @@ import {
   InvoiceDetailStaffModel,
   InvoiceModel,
   LocationModel,
-  PaymentMethodModel,
+  InvoicePaymentMethodModel,
   InvoicePaymentModel,
   ProviderModel,
   ReceiptModel,
@@ -425,8 +425,20 @@ export class InvoiceController {
             as: 'invoiceDetails',
             include: [
               {
+                attributes: ['id', 'name'],
+                model: ServiceModel,
+                as: 'service'
+              },
+              {
+                attributes: ['id'],
                 model: InvoiceDetailStaffModel,
-                as: 'invoiceDetailStaffs'
+                as: 'invoiceDetailStaffs',
+                include: [
+                  {
+                    model: StaffModel,
+                    as: 'staff'
+                  }
+                ]
               }
             ]
           },
@@ -553,7 +565,7 @@ export class InvoiceController {
             as: 'invoicePayment',
             include: [
               {
-                model: PaymentMethodModel,
+                model: InvoicePaymentMethodModel,
                 as: 'paymentMethod',
                 required: true
               },
