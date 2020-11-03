@@ -33,7 +33,7 @@ import { InvoiceModel } from './invoice-model';
 import { InvoiceDetailModel } from './invoice-detail-model';
 import { InvoiceDetailStaffModel } from './invoice-detail-staff-model';
 import { InvoicePaymentModel } from './invoice-payment-model';
-import { ReceiptModel } from './payment-receipt-model';
+import { ReceiptModel } from './receipt-model';
 import { DiscountModel } from './discount-model';
 import { PaymentMethodModel } from './payment-method-model';
 import { ProviderModel } from './provider-model';
