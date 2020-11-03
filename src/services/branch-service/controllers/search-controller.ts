@@ -1091,6 +1091,7 @@ export class SearchController {
             attributes: ['path', 'is_avatar']
           }
         ],
+        order: [[{ model: LocationImageModel, as: 'locationImages' }, 'is_avatar', 'DESC']],
         where: { pathName: data.pathName },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
@@ -1299,6 +1300,8 @@ export class SearchController {
             model: LocationImageModel,
             as: 'locationImages',
             required: false,
+            separate: true,
+            order: ['is_avatar', 'DESC'],
             attributes: ['path', 'is_avatar']
           }
         ],
@@ -1654,7 +1657,7 @@ export class SearchController {
         }
       };
 
-      let countTypeAvailable = 1;
+      const countTypeAvailable = 1;
       // if (search.addressInfor) {
       //   const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
       //   locationType.forEach((type: string) => {

@@ -986,8 +986,11 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
-          await transaction.rollback();
-          throw new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST);
+          //rollback transaction
+          if (transaction) {
+            await transaction.rollback();
+          }
+          return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
         }
         staff = await StaffModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
@@ -1006,8 +1009,6 @@ export class AuthController {
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
           await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
-          //commit transaction
-          await transaction.commit();
           accessTokenData = {
             userId: newStaff.id,
             userName: `${newStaff.firstName} ${newStaff.lastName}`,
@@ -1029,7 +1030,8 @@ export class AuthController {
                 as: 'workingLocations',
                 through: { attributes: [] }
               }
-            ]
+            ],
+            transaction
           });
           loginData = {
             email: req.body.email,
@@ -1048,6 +1050,8 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
+          //commit transaction
+          await transaction.commit();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         accessTokenData = {
@@ -1071,7 +1075,8 @@ export class AuthController {
               as: 'workingLocations',
               through: { attributes: [] }
             }
-          ]
+          ],
+          transaction
         });
         loginData = {
           email: req.body.email,
@@ -1090,6 +1095,8 @@ export class AuthController {
         };
         loginLogModel = new LoginLogModel(loginData);
         await loginLogModel.save();
+        //commit transaction
+        await transaction.commit();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
       if (req.body.provider === ESocialType.GOOGLE) {
@@ -1133,7 +1140,8 @@ export class AuthController {
                 as: 'workingLocations',
                 through: { attributes: [] }
               }
-            ]
+            ],
+            transaction
           });
           loginData = {
             email: req.body.email,
@@ -1152,6 +1160,8 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
+          //commit transaction
+          await transaction.commit();
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
         }
         accessTokenData = {
@@ -1175,7 +1185,8 @@ export class AuthController {
               as: 'workingLocations',
               through: { attributes: [] }
             }
-          ]
+          ],
+          transaction
         });
         loginData = {
           email: req.body.email,
@@ -1194,6 +1205,8 @@ export class AuthController {
         };
         loginLogModel = new LoginLogModel(loginData);
         await loginLogModel.save();
+        //commit transaction
+        await transaction.commit();
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
       }
     } catch (error) {

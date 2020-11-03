@@ -563,6 +563,7 @@ export class ServiceController {
           }
         });
       }
+
       const services = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
       services.data = services.data.map((item: any) => ({
         ...item._source
