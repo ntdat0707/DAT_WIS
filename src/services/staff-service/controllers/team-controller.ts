@@ -20,6 +20,7 @@ import { locationIdSchema } from '../../../services/branch-service/configs/valid
 import { createTeamSchema, parentIdSchema, teamIdSchema, updateTeamSchema } from '../configs/validate-schemas/team';
 import { teamErrorDetails, teamSubErrorDetails } from '../../../utils/response-messages/error-details/team';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details/branch';
+import _ from 'lodash';
 
 export class TeamController {
   /**
@@ -67,7 +68,6 @@ export class TeamController {
         pageNum: req.query.pageNum,
         pageSize: req.query.pageSize
       };
-
       const validateErrors = validate(req.params.locationId, locationIdSchema);
       const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validatePaginationErrors) {
@@ -371,8 +371,7 @@ export class TeamController {
       };
       if (req.file) {
         const dataImage = {
-          path: (req.file as any).location,
-          isAvatar: true
+          path: (req.file as any).location
         };
         dataTeam = { ...dataTeam, photo: dataImage.path };
       }
@@ -400,6 +399,14 @@ export class TeamController {
       const dataTeamLocations: any = [];
       const dataTeamStaffs: any = [];
       for (const locationId of req.body.locationIds) {
+        if (!res.locals.staffPayload.workingLocationIds.includes(locationId)) {
+          return next(
+            new CustomError(
+              branchErrorDetails.E_1001(`You can not access to location ${locationId}`),
+              HttpStatus.FORBIDDEN
+            )
+          );
+        }
         const teamLocation = {
           locationId: locationId,
           teamId: team.id
@@ -428,45 +435,12 @@ export class TeamController {
    * definitions:
    *   listMembers:
    *       properties:
-   *           id:
-   *               type: string
-   *           oldStaffId:
-   *               type: string
-   *           newStaffId:
+   *           staffId:
    *               type: string
    *           position:
    *               type: string
    *
    */
-
-  /**
-   * @swagger
-   * definitions:
-   *   listTeamLocationUpdate:
-   *       properties:
-   *           id:
-   *               type: string
-   *           oldLocationId:
-   *               type: string
-   *           newLocationId:
-   *               type: string
-   *
-   */
-
-  /**
-   * @swagger
-   * definitions:
-   *   listSubTeam:
-   *       properties:
-   *           id:
-   *               type: string
-   *           oldSubTeamId:
-   *               type: string
-   *           newSubTeamId:
-   *               type: string
-   *
-   */
-
   /**
    * @swagger
    * /staff/team/update-team/{teamId}:
@@ -490,10 +464,10 @@ export class TeamController {
    *       name: "name"
    *       type: string
    *     - in: "formData"
-   *       name: locationIdsUpdate
+   *       name: locationIds
    *       type: array
    *       items:
-   *           $ref: '#/definitions/listTeamLocationUpdate'
+   *           type: string
    *       required: true
    *     - in: "formData"
    *       name: "description"
@@ -502,12 +476,12 @@ export class TeamController {
    *       name: members
    *       type: array
    *       items:
-   *           $ref: '#/definitions/listMembers'
+   *            $ref: '#/definitions/listMembers'
    *     - in: "formData"
    *       name: "subTeamIds"
    *       type: array
    *       items:
-   *           $ref: '#/definitions/listSubTeam'
+   *           type: string
    *     - in: "formData"
    *       name: "parentId"
    *       type: string
@@ -522,43 +496,47 @@ export class TeamController {
   public updateTeam = async (req: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
-      const dataInput = { ...req.body, teamId: req.params.teamId };
+      let dataInput: any = { ...req.body, teamId: req.params.teamId };
       const validateErrors = validate(dataInput, updateTeamSchema);
       if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       transaction = await sequelize.transaction();
-      await this.UpdateTeamStaff(dataInput, transaction);
-      if (dataInput.subTeamIds) {
-        for (const subTeam of dataInput.subTeamIds) {
-          if (subTeam.newSubTeamId) {
-            const teamSub = await TeamModel.findOne({
-              where: { id: subTeam.newSubTeamId }
-            });
-            if (!teamSub) {
-              throw next(new CustomError(teamErrorDetails.E_5001(`This team ${subTeam.newSubTeamId} does not exist`)));
-            }
-            if (teamSub.parentId) {
-              throw next(
-                new CustomError(teamSubErrorDetails.E_5200(`This team ${subTeam.newSubTeamId} already has parent`))
-              );
-            }
+      if (dataInput.members && dataInput.members.length > 0) {
+        await this.UpdateTeamStaff(dataInput, transaction);
+      }
+      if (dataInput.locationIds && dataInput.locationIds > 0) {
+        for (const locationId of dataInput.locationIds) {
+          if (!res.locals.staffPayload.workingLocationIds.includes(locationId)) {
+            return next(
+              new CustomError(
+                branchErrorDetails.E_1001(`You can not access to location ${locationId}`),
+                HttpStatus.FORBIDDEN
+              )
+            );
           }
         }
+        await this.UpdateTeamLocation(dataInput, transaction);
       }
-      await this.UpdateTeamSub(dataInput, transaction);
-      let dataTeam: any = {
-        name: dataInput.name,
-        parentId: dataInput.parentId
-      };
+      if (dataInput.subTeamIds && dataInput.subTeamIds.length > 0) {
+        for (const subTeamId of dataInput.subTeamIds) {
+          const teamSub = await TeamModel.findOne({
+            where: { id: subTeamId }
+          });
+          if (!teamSub) {
+            throw next(new CustomError(teamErrorDetails.E_5001(`This team ${subTeamId} does not exist`)));
+          }
+          if (teamSub.parentId) {
+            throw next(new CustomError(teamSubErrorDetails.E_5200(`This team ${subTeamId} already has parent`)));
+          }
+        }
+        await this.UpdateTeamSub(dataInput, transaction);
+      }
       if (req.file) {
         const dataImage = {
-          path: (req.file as any).location,
-          isAvatar: true
+          path: (req.file as any).location
         };
-        dataTeam = { ...dataTeam, photo: dataImage.path };
+        dataInput = { ...dataInput, photo: dataImage.path };
       }
-      await TeamModel.update(dataTeam, { where: { id: dataInput.teamId } });
-      await this.UpdateTeamLocation(dataInput, transaction);
-      await this.UpdateTeamStaff(dataInput, transaction);
+      await TeamModel.update(dataInput, { where: { id: dataInput.teamId } });
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
     } catch (error) {
@@ -570,61 +548,86 @@ export class TeamController {
   };
 
   private async UpdateTeamLocation(dataInput: any, transaction: any) {
-    for (const locationId of dataInput.locationIdsUpdate) {
-      if (!locationId.newLocationId) {
-        await TeamLocationModel.destroy({ where: { id: locationId.id }, transaction });
-      }
-      if (!locationId.oldLocationId && !locationId.id) {
-        const teamLocationData = {
-          teamId: dataInput.teamId,
-          locationId: locationId.newLocationId
-        };
-        await TeamLocationModel.create(teamLocationData, { transaction });
-      } else {
-        await TeamLocationModel.update(
-          { locationId: locationId.newLocationId },
-          { where: { id: locationId.id }, transaction }
-        );
-      }
+    const currentTeamLocations = (
+      await TeamLocationModel.findAll({
+        where: { teamId: dataInput.teamId }
+      })
+    ).map((teamLocation: any) => teamLocation.locationId);
+    const removeTeamLocations = _.difference(currentTeamLocations, dataInput.locationIds);
+    if (removeTeamLocations.length > 0) {
+      await TeamLocationModel.destroy({
+        where: { teamId: dataInput.teamId, locationId: removeTeamLocations },
+        transaction
+      });
+    }
+    const addTeamLocations = _.difference(dataInput.locationIds, currentTeamLocations);
+    if (addTeamLocations.length > 0) {
+      const teamLocations = (addTeamLocations as []).map((locationId: string) => ({
+        teamId: dataInput.teamId,
+        locationId: locationId
+      }));
+      await TeamLocationModel.bulkCreate(teamLocations, { transaction });
     }
   }
 
   private async UpdateTeamStaff(dataInput: any, transaction: any) {
+    const staffIdsInput: any = [];
     for (const member of dataInput.members) {
-      if (!member.newStaffId) {
-        await TeamStaffModel.destroy({ where: { id: member.id }, transaction });
+      staffIdsInput.push(member.staffId);
+    }
+
+    const currentTeamStaffs = (
+      await TeamStaffModel.findAll({
+        where: { teamId: dataInput.teamId }
+      })
+    ).map((teamStaff: any) => teamStaff.staffId);
+
+    const removeTeamStaffs = _.difference(currentTeamStaffs, staffIdsInput);
+    if (removeTeamStaffs.length > 0) {
+      await TeamStaffModel.destroy({
+        where: { teamId: dataInput.teamId, staffId: removeTeamStaffs },
+        transaction
+      });
+    }
+    const addTeamStaffs = _.difference(staffIdsInput, currentTeamStaffs);
+    if (addTeamStaffs.length > 0) {
+      const teamStaffsData: any = [];
+      for (const teamStaffId of addTeamStaffs) {
+        for (const staff of dataInput.members) {
+          if (staff.staffId === teamStaffId) {
+            const teamStaff = {
+              teamId: dataInput.teamId,
+              teamSubId: teamStaffId
+            };
+            teamStaffsData.push(teamStaff);
+          }
+        }
       }
-      if (!member.oldStaffId && !member.id) {
-        const teamStaffData = {
-          teamId: dataInput.teamId,
-          staffId: member.newStaffId,
-          position: member.position
-        };
-        await TeamStaffModel.create(teamStaffData, { transaction });
-      } else {
-        const teamStaffData = {
-          teamId: dataInput.teamId,
-          staffId: member.newStaffId,
-          position: member.position
-        };
-        await TeamStaffModel.update(teamStaffData, { where: { id: member.id }, transaction });
-      }
+      await TeamStaffModel.bulkCreate(teamStaffsData, { transaction });
     }
   }
+
   private async UpdateTeamSub(dataInput: any, transaction: any) {
-    for (const subTeam of dataInput.subTeamIds) {
-      if (!subTeam.newSubTeamId) {
-        await TeamSubModel.destroy({ where: { id: subTeam.id }, transaction });
-      }
-      if (!subTeam.oldSubTeamId && !subTeam.id) {
-        const teamSubData = {
-          teamId: subTeam.teamId,
-          subTeamId: subTeam.newSubTeamId
-        };
-        await TeamSubModel.create(teamSubData, { transaction });
-      } else {
-        await TeamSubModel.update({ teamSubId: subTeam.newSubTeamId }, { where: { id: subTeam.id }, transaction });
-      }
+    const currentTeamSubs = (
+      await TeamSubModel.findAll({
+        where: { teamId: dataInput.teamId }
+      })
+    ).map((teamSub: any) => teamSub.teamSubId);
+    const removeTeamSubs = _.difference(currentTeamSubs, dataInput.subTeamIds);
+    if (removeTeamSubs.length > 0) {
+      await TeamSubModel.destroy({
+        where: { teamId: dataInput.teamId, teamSubId: removeTeamSubs },
+        transaction
+      });
+    }
+    const addTeamSubs = _.difference(dataInput.subTeamIds, currentTeamSubs);
+
+    if (addTeamSubs.length > 0) {
+      const teamSubs = (addTeamSubs as []).map((teamSubId: string) => ({
+        teamId: dataInput.teamId,
+        teamSubId: teamSubId
+      }));
+      await TeamSubModel.bulkCreate(teamSubs, { transaction });
     }
   }
 }

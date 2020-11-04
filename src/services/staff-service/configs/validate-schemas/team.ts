@@ -5,7 +5,11 @@ const createTeamSchema = Joi.object({
   locationIds: Joi.array()
     .min(1)
     .max(100)
-    .items(Joi.string().guid({ version: ['uuidv4'] }))
+    .items(
+      Joi.string()
+        .guid({ version: ['uuidv4'] })
+        .required()
+    )
     .required()
     .label('locationIds'),
   description: Joi.string().label('description'),
@@ -35,58 +39,29 @@ const updateTeamSchema = Joi.object({
   teamId: Joi.string()
     .guid({ version: ['uuidv4'] })
     .required()
-    .label('name'),
+    .label('teamId'),
   name: Joi.string().label('name'),
-  locationIdsUpdate: Joi.array()
+  locationIds: Joi.array()
     .min(1)
     .max(100)
-    .items(
-      Joi.object({
-        id: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('id'),
-        oldLocationId: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('oldLocationId'),
-        newLocationId: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('newLocationId')
-      }).label('locationIdsUpdate')
-    ),
+    .items(Joi.string().guid({ version: ['uuidv4'] }))
+    .label('locationIds'),
   description: Joi.string().label('description'),
   members: Joi.array()
     .min(1)
     .max(100)
     .items(
       Joi.object({
-        id: Joi.string()
+        staffId: Joi.string()
           .guid({ version: ['uuidv4'] })
-          .label('id'),
-        oldStaffId: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('oldStaffId'),
-        newStaffId: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('newStaffId'),
+          .label('staffId'),
         position: Joi.string().label('position')
       })
     ),
   subTeamIds: Joi.array()
     .min(1)
     .max(100)
-    .items(
-      Joi.object({
-        id: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('id'),
-        oldSubTeamId: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('oldSubTeamId'),
-        newSubTeamId: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('newSubTeamId')
-      })
-    )
+    .items(Joi.string().guid({ version: ['uuidv4'] }))
     .label('subTeamIds'),
   parentId: Joi.string()
     .guid({ version: ['uuidv4'] })
