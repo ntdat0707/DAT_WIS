@@ -398,15 +398,16 @@ export class TeamController {
       }
       const dataTeamLocations: any = [];
       const dataTeamStaffs: any = [];
+      const diffLocationId = _.difference(req.body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
+      if (diffLocationId.length) {
+        return next(
+          new CustomError(
+            branchErrorDetails.E_1001(`You can not access to location ${diffLocationId}`),
+            HttpStatus.FORBIDDEN
+          )
+        );
+      }
       for (const locationId of req.body.locationIds) {
-        if (!res.locals.staffPayload.workingLocationIds.includes(locationId)) {
-          return next(
-            new CustomError(
-              branchErrorDetails.E_1001(`You can not access to location ${locationId}`),
-              HttpStatus.FORBIDDEN
-            )
-          );
-        }
         const teamLocation = {
           locationId: locationId,
           teamId: team.id
