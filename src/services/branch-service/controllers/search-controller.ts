@@ -526,10 +526,6 @@ export class SearchController {
    *       name: keyword
    *       schema:
    *          type: integer
-   *     - in: query
-   *       name: cityName
-   *       schema:
-   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -558,7 +554,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = "'%%'";
+        keywordsQuery = '\'%%\'';
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -795,7 +791,7 @@ export class SearchController {
         await CateServiceModel.findAll({
           where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
           attributes: {
-            include: [[Sequelize.literal("'cateService'"), 'type']],
+            include: [[Sequelize.literal('\'cateService\''), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           limit: 3
@@ -810,7 +806,7 @@ export class SearchController {
       const companies: any = (
         await CompanyModel.findAll({
           attributes: {
-            include: [[Sequelize.literal("'company'"), 'type']],
+            include: [[Sequelize.literal('\'company\''), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
@@ -835,7 +831,7 @@ export class SearchController {
         await ServiceModel.findAll({
           where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
           attributes: {
-            include: [[Sequelize.literal("'service'"), 'type']],
+            include: [[Sequelize.literal('\'service\''), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           limit: 3
@@ -857,19 +853,27 @@ export class SearchController {
             ]
           },
           attributes: {
-            include: [[Sequelize.literal("'location'"), 'type']],
+            include: [[Sequelize.literal('\'location\''), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
-          limit: 3
+          limit: 3,
+          include: [
+            {
+              model: LocationImageModel,
+              as: 'locationImages'
+            }
+          ]
         })
-      ).map(({ id, type, title, description, pathName, photo }: any) => ({
+      ).map(({ id, type, name, description, pathName, locationImages }: any) => ({
         ...dataDefault,
         id,
         type,
-        title,
+        title: name,
         pathName,
         description,
-        image: photo
+        image: locationImages.filter((locationImage: any) => locationImage.is_avatar).length
+          ? locationImages.filter((locationImage: any) => locationImage.is_avatar)[0].path
+          : (locationImages.length ? locationImages[0].path : '')
       }));
       return {
         cateServices,
