@@ -985,11 +985,7 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
-          //rollback transaction
-          if (transaction) {
-            await transaction.rollback();
-          }
-          return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
+          throw new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST);
         }
         staff = await StaffModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
@@ -1116,8 +1112,6 @@ export class AuthController {
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
           await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
-          //commit transaction
-          await transaction.commit();
           accessTokenData = {
             userId: newStaff.id,
             userName: `${newStaff.firstName} ${newStaff.lastName}`,
