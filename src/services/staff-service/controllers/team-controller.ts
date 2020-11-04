@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
-import { FindOptions, Op, Sequelize } from 'sequelize';
+import { FindOptions, Op, Sequelize, Transaction } from 'sequelize';
 require('dotenv').config();
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
@@ -360,22 +360,16 @@ export class TeamController {
    *         description: Internal server errors
    */
   public createTeam = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction = null;
+    let transaction: Transaction;
     try {
       const validateErrors = validate(req.body, createTeamSchema);
       if (validateErrors) throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
-      transaction = await sequelize.transaction();
-      let dataTeam: any = {
-        name: req.body.name,
-        parentId: req.body.parentId
+      const dataTeam: any = {
+        ...req.body,
+        photo: req.file ? (req.file as any).location : null
       };
-      if (req.file) {
-        const dataImage = {
-          path: (req.file as any).location
-        };
-        dataTeam = { ...dataTeam, photo: dataImage.path };
-      }
-      const team = await TeamModel.create(dataTeam);
+      transaction = await sequelize.transaction();
+      const team = await TeamModel.create(dataTeam, { transaction });
       if (req.body.subTeamIds) {
         const dataTeamSubs: any = [];
         for (const subTeamId of req.body.subTeamIds) {
@@ -495,11 +489,12 @@ export class TeamController {
    *         description: Internal server errors
    */
   public updateTeam = async (req: Request, res: Response, next: NextFunction) => {
-    let transaction = null;
+    let transaction: Transaction;
     try {
       let dataInput: any = { ...req.body, teamId: req.params.teamId };
       const validateErrors = validate(dataInput, updateTeamSchema);
       if (validateErrors) throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      dataInput = { ...dataInput, photo: req.file ? (req.file as any).location : null };
       transaction = await sequelize.transaction();
       if (dataInput.members && dataInput.members.length > 0) {
         await this.UpdateTeamStaff(dataInput, transaction);
@@ -531,13 +526,7 @@ export class TeamController {
         }
         await this.UpdateTeamSub(dataInput, transaction);
       }
-      if (req.file) {
-        const dataImage = {
-          path: (req.file as any).location
-        };
-        dataInput = { ...dataInput, photo: dataImage.path };
-      }
-      await TeamModel.update(dataInput, { where: { id: dataInput.teamId } });
+      await TeamModel.update(dataInput, { where: { id: dataInput.teamId }, transaction });
       await transaction.commit();
       return res.status(HttpStatus.OK).send();
     } catch (error) {
