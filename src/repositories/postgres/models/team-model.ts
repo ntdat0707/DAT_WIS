@@ -1,18 +1,18 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
-import { ETeamStaffType } from '../../../utils/consts';
 
 import sequelize from '../configs/db-connector';
-class TeamStaffModel extends Model {
+class TeamModel extends Model {
   public id: string;
-  public staffId!: string;
-  public teamId!: string;
-  public position: string;
+  public name!: string;
+  public parentId: string;
+  public description: string;
+  public photo: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
 
-TeamStaffModel.init(
+TeamModel.init(
   {
     id: {
       field: 'id',
@@ -20,21 +20,25 @@ TeamStaffModel.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    staffId: {
-      field: 'staff_id',
+    name: {
+      field: 'name',
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    parentId: {
+      field: 'parent_id',
       type: DataTypes.UUIDV4,
       allowNull: false
     },
-    teamId: {
-      field: 'team_id',
-      type: DataTypes.UUIDV4,
-      allowNull: false
+    description: {
+      field: 'description',
+      type: DataTypes.STRING,
+      allowNull: true
     },
-    position: {
-      field: 'position',
-      type: DataTypes.ENUM(...Object.values(ETeamStaffType)),
-      allowNull: false,
-      defaultValue: ETeamStaffType.MEMBER
+    photo: {
+      field: 'photo',
+      type: DataTypes.TEXT,
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',
@@ -55,8 +59,8 @@ TeamStaffModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'team_staff'
+    tableName: 'team'
   }
 );
 
-export { TeamStaffModel };
+export { TeamModel };

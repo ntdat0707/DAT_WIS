@@ -8,7 +8,11 @@ require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { staffErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
+import {
+  staffErrorDetails,
+  branchErrorDetails,
+  teamStaffErrorDetails
+} from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
 import { iterator } from '../../../utils/iterator';
@@ -27,9 +31,10 @@ import {
   AppointmentDetailModel,
   CompanyModel,
   LocationWorkingHourModel,
-  TeamStaffModel,
+  TeamModel,
   CateServiceModel,
-  PositionModel
+  PositionModel,
+  TeamStaffModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -81,9 +86,10 @@ export class StaffController {
             through: { attributes: [] }
           },
           {
-            model: TeamStaffModel,
-            as: 'teamStaff',
-            required: false,
+            model: TeamModel,
+            as: 'teamStaffs',
+            through: { attributes: [] },
+            required: true,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
         ]
@@ -123,7 +129,7 @@ export class StaffController {
    *             type: string
    *       description: array of UUID v4
    *     - in: query
-   *       name: teamStaffIds
+   *       name: teamIds
    *       schema:
    *          type: array
    *          items:
@@ -159,7 +165,7 @@ export class StaffController {
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const filter = {
         workingLocationIds: req.query.workingLocationIds,
-        teamStaffIds: req.query.teamStaffIds,
+        teamIds: req.query.teamIds,
         isServiceProvider: req.query.isServiceProvider
       };
       const validateFilterErrors = validate(filter, filterStaffSchema);
@@ -231,19 +237,15 @@ export class StaffController {
           ]
         ];
       }
-      if (
-        filter.teamStaffIds &&
-        Array.isArray(filter.teamStaffIds) &&
-        filter.teamStaffIds.every((e: any) => typeof e === 'string')
-      ) {
+      if (filter.teamIds && Array.isArray(filter.teamIds) && filter.teamIds.every((e: any) => typeof e === 'string')) {
         query.include = [
           ...query.include,
           ...[
             {
-              model: TeamStaffModel,
-              as: 'teamStaff',
-              required: true,
-              where: { id: filter.teamStaffIds }
+              model: TeamModel,
+              as: 'teamStaffs',
+              required: false,
+              where: { id: filter.teamIds }
             }
           ]
         ];
@@ -289,7 +291,7 @@ export class StaffController {
    *       type: file
    *       description: The file to upload.
    *     - in: "formData"
-   *       name: teamStaffId
+   *       name: teamId
    *       type: string
    *     - in: "formData"
    *       name: firstName
@@ -354,7 +356,7 @@ export class StaffController {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const profile: any = {
-        teamStaffId: req.body.teamStaffId,
+        teamId: req.body.teamId,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
@@ -501,12 +503,11 @@ export class StaffController {
    *       name: color
    *       type: string
    *     - in: "formData"
-   *       name: teamStaffId
+   *       name: teamId
    *       type: string
    *     - in: "formData"
    *       name: isServiceProvider
    *       type: boolean
-   *       required: true
    *     - in: "formData"
    *       name: isAllowedMarketPlace
    *       type: boolean
@@ -563,14 +564,13 @@ export class StaffController {
         }
       }
 
-      if (req.body.teamStaffId) {
-        const teamStaffId = await TeamStaffModel.findOne({ where: { id: req.body.teamStaffId } });
-        if (!teamStaffId) {
-          throw new CustomError(staffErrorDetails.E_4011('Team staff has been not assign'));
+      if (req.body.teamId) {
+        const teamId = await TeamStaffModel.findOne({ where: { teamId: req.body.teamId } });
+        if (!teamId) {
+          throw next(new CustomError(teamStaffErrorDetails.E_5100(`Staff not found in this team ${req.body.teamId} `)));
         }
         profile = {
-          ...profile,
-          teamStaffId: teamStaffId.id
+          ...profile
         };
       }
       let staff = await StaffModel.findOne({
@@ -1615,146 +1615,6 @@ export class StaffController {
         await transaction.rollback();
       }
       return error;
-    }
-  };
-
-  /**
-   * @swagger
-   * /staff/get-teams-company:
-   *   get:
-   *     tags:
-   *       - Staff
-   *     security:
-   *       - Bearer: []
-   *     name: getTeamsStaff
-   *     parameters:
-   *     - in: query
-   *       name: pageNum
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: searchValue
-   *       required: false
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public getTeamsCompany = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const companyId = res.locals.staffPayload.companyId;
-      const fullPath = req.headers['x-base-url'] + req.originalUrl;
-      const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
-      };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
-      const query: FindOptions = {
-        where: { companyId: companyId },
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      };
-
-      if (req.query.searchValue) {
-        query.where = {
-          ...query.where,
-          ...{
-            [Op.or]: [
-              Sequelize.literal(`unaccent("TeamStaffModel"."name") ilike unaccent('%${req.query.searchValue}%')`)
-            ]
-          }
-        };
-      }
-      const teamStaffs = await paginate(
-        TeamStaffModel,
-        query,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
-        fullPath
-      );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(teamStaffs));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   *  @swagger
-   * /staff/get-staff-in-team:
-   *   get:
-   *     tags:
-   *       - Staff
-   *     security:
-   *       - Bearer: []
-   *     name: getStaffInTeam
-   *     parameters:
-   *     - in: query
-   *       name: pageNum
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: teamStaffId
-   *       required: true
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-  public getStaffInTeam = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const teamStaffId = req.query.teamStaffId;
-      const fullPath = req.headers['x-base-url'] + req.originalUrl;
-      const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
-      };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
-      const query: FindOptions = {
-        include: [],
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-      };
-      query.include = [
-        ...query.include,
-        ...[
-          {
-            model: TeamStaffModel,
-            as: 'teamStaff',
-            required: true,
-            where: { id: teamStaffId, companyId: res.locals.staffPayload.companyId }
-          }
-        ]
-      ];
-      const staffs = await paginate(
-        StaffModel,
-        query,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
-        fullPath
-      );
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
-    } catch (error) {
-      return next(error);
     }
   };
 
