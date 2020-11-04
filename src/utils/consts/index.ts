@@ -199,3 +199,8 @@ export enum ETeamStaffType {
   MANAGER = 'manager',
   MEMBER = 'member'
 }
+
+export enum ETypeOfReceipt {
+  INVOICE = 'invoice',
+  ORDER = 'order'
+}
