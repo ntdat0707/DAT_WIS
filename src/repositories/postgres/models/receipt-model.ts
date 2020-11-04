@@ -1,4 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+import { ETypeOfReceipt } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 
 class ReceiptModel extends Model {
@@ -11,6 +12,8 @@ class ReceiptModel extends Model {
   public description: string;
   public paymentMethodId: string;
   public providerId: string;
+  public typeOfReceipt: string;
+  public dateReceived: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -63,6 +66,16 @@ ReceiptModel.init(
       field: 'provider_id',
       type: DataTypes.UUIDV4,
       allowNull: true
+    },
+    typeOfReceipt: {
+      field: 'type_of_receipt',
+      type: DataTypes.ENUM(...Object.values(ETypeOfReceipt)),
+      allowNull: false
+    },
+    dateReceived: {
+      field: 'date_received',
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
     },
     createdAt: {
       field: 'created_at',

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { baseValidateSchemas, validate } from '../../../utils/validator';
-import { createInvoiceSchema, receiptIdSchema, invoiceIdSchema } from '../configs/validate-schemas';
+import { createInvoiceSchema, invoiceIdSchema } from '../configs/validate-schemas';
 import {
   AppointmentModel,
   CustomerWisereModel,
@@ -12,7 +12,6 @@ import {
   InvoiceModel,
   LocationModel,
   PaymentMethodModel,
-  ProviderModel,
   ReceiptModel,
   sequelize,
   ServiceModel,
@@ -24,7 +23,6 @@ import {
   customerErrorDetails,
   invoiceErrorDetails,
   staffErrorDetails,
-  receiptErrorDetails,
   discountErrorDetails
 } from '../../../utils/response-messages/error-details/';
 import { EBalanceType, EDiscountType } from './../../../utils/consts/index';
@@ -469,152 +467,6 @@ export class InvoiceController {
         throw new CustomError(invoiceErrorDetails.E_3300(`invoiceId ${invoiceId} not found`), httpStatus.NOT_FOUND);
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(invoice));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * /sale/get-all-receipt:
-   *   get:
-   *     tags:
-   *       - Sale
-   *     security:
-   *       - Bearer: []
-   *     name: getAllReceipt
-   *     parameters:
-   *       - in: query
-   *         name: pageNum
-   *         required: true
-   *         schema:
-   *            type: integer
-   *       - in: query
-   *         name: pageSize
-   *         required: true
-   *         schema:
-   *            type: integer
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public getAllReceipt = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const fullPath = req.headers['x-base-url'] + req.originalUrl;
-      const paginateOptions = {
-        pageNum: req.query.pageNum,
-        pageSize: req.query.pageSize
-      };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) {
-        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
-      }
-      const query: FindOptions = {
-        include: [
-          {
-            model: CustomerWisereModel,
-            as: 'customerWisere',
-            required: false
-          },
-          {
-            model: LocationModel,
-            as: 'location',
-            required: true
-          }
-        ]
-      };
-      const receipts = await paginate(
-        ReceiptModel,
-        query,
-        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
-        fullPath
-      );
-      return res.status(httpStatus.OK).send(buildSuccessMessage(receipts));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * /sale/get-receipt/{receiptId}:
-   *   get:
-   *     tags:
-   *       - Sale
-   *     security:
-   *       - Bearer: []
-   *     name: getReceipt
-   *     parameters:
-   *     - in: path
-   *       name: receiptId
-   *       required: true
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public getReceipt = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const receiptId = req.params.receiptId;
-      const validateErrors = validate(receiptId, receiptIdSchema);
-      if (validateErrors) {
-        if (validateErrors) {
-          throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
-        }
-      }
-      const receipt = await ReceiptModel.findOne({
-        where: { id: receiptId },
-        include: [
-          {
-            model: InvoiceModel,
-            as: 'invoices',
-            through: { attributes: [] },
-            required: true,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-          },
-          {
-            model: PaymentMethodModel,
-            as: 'paymentMethod',
-            required: true,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-          },
-          {
-            model: ProviderModel,
-            as: 'provider',
-            required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-          },
-          {
-            model: StaffModel,
-            as: 'staff',
-            required: true,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-          },
-          {
-            model: CustomerWisereModel,
-            as: 'customerWisere',
-            required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-          },
-          {
-            model: LocationModel,
-            as: 'location',
-            required: true
-          }
-        ],
-        logging: true
-      });
-      if (!receipt) {
-        throw new CustomError(receiptErrorDetails.E_3400(`receiptId ${receiptId} not found`), httpStatus.NOT_FOUND);
-      }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(receipt));
     } catch (error) {
       return next(error);
     }
