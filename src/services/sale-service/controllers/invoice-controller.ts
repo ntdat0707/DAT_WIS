@@ -575,7 +575,7 @@ export class InvoiceController {
           {
             model: ProviderModel,
             as: 'provider',
-            required: true,
+            required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
@@ -595,7 +595,8 @@ export class InvoiceController {
             as: 'location',
             required: true
           }
-        ]
+        ],
+        logging: true
       });
       if (!receipt) {
         throw new CustomError(receiptErrorDetails.E_3400(`receiptId ${receiptId} not found`), httpStatus.NOT_FOUND);
