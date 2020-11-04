@@ -19,7 +19,7 @@ import {
 import { locationIdSchema } from '../../../services/branch-service/configs/validate-schemas';
 import { createTeamSchema, parentIdSchema, teamIdSchema, updateTeamSchema } from '../configs/validate-schemas/team';
 import { teamErrorDetails, teamSubErrorDetails } from '../../../utils/response-messages/error-details/team';
-import { branchErrorDetails } from 'src/utils/response-messages/error-details/branch';
+import { branchErrorDetails } from '../../../utils/response-messages/error-details/branch';
 
 export class TeamController {
   /**

@@ -258,6 +258,7 @@ LocationModel.belongsToMany(TeamModel, { through: TeamLocationModel, foreignKey:
 
 TeamModel.hasMany(TeamSubModel, { foreignKey: 'teamId', sourceKey: 'parentId', as: 'teamSubs' });
 TeamSubModel.belongsTo(TeamModel, { foreignKey: 'teamId', as: 'teamDetail' });
+
 InvoiceModel.belongsToMany(ReceiptModel, { through: InvoiceReceiptModel, foreignKey: 'invoiceId', as: 'receipts' });
 ReceiptModel.belongsToMany(InvoiceModel, { through: InvoiceReceiptModel, foreignKey: 'receiptId', as: 'invoices' });
 
