@@ -658,8 +658,7 @@ export class AuthController {
       const validateErrors = validate(body, changePasswordSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const tokenStoraged = await redis.getData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${body.token}`);
-      if (!tokenStoraged)
-        throw new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED);
+      if (!tokenStoraged) throw new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED);
       const data = JSON.parse(tokenStoraged);
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff) throw new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND);
@@ -986,11 +985,7 @@ export class AuthController {
           };
           loginLogModel = new LoginLogModel(loginData);
           await loginLogModel.save();
-          //rollback transaction
-          if (transaction) {
-            await transaction.rollback();
-          }
-          return next(new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST));
+          throw new CustomError(staffErrorDetails.E_4006('Incorrect facebook token'), HttpStatus.BAD_REQUEST);
         }
         staff = await StaffModel.findOne({ raw: true, where: { facebookId: req.body.providerId } });
         if (!staff) {
@@ -1117,8 +1112,6 @@ export class AuthController {
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
           await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
-          //commit transaction
-          await transaction.commit();
           accessTokenData = {
             userId: newStaff.id,
             userName: `${newStaff.firstName} ${newStaff.lastName}`,

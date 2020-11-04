@@ -29,8 +29,6 @@ export class StaffRoutes {
     this.router.post('/get-staffs-multiple-service', this.staffController.getStaffsServices);
     this.router.post('/get-staff-available-time', this.staffController.getStaffAvailableTimeSlots);
     this.router.post('/get-random-available-time', this.staffController.getRandomAvailableTimeSlots);
-    this.router.get('/get-teams-company', isAuthenticated, this.staffController.getTeamsCompany);
-    this.router.get('/get-staff-in-team', isAuthenticated, this.staffController.getStaffInTeam);
     this.router.get('/list-service/:staffId', this.staffController.getServicesByStaff);
     this.router.post('/init-position-staff/:locationId', isAuthenticated, this.staffController.initPositionStaff);
     this.router.post('/setting-position-staff', isAuthenticated, this.staffController.settingPositionStaff);

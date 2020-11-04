@@ -37,7 +37,10 @@ import { DiscountModel } from './discount-model';
 import { PaymentMethodModel } from './payment-method-model';
 import { ProviderModel } from './provider-model';
 import { TipsModel } from './tips-model';
+import { TeamModel } from './team-model';
 import { TeamStaffModel } from './team-staff-model';
+import { TeamLocationModel } from './team-location-model';
+import { TeamSubModel } from './team-sub-model';
 import { InvoiceReceiptModel } from './invoice-receipt';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
@@ -225,17 +228,7 @@ InvoiceModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as
 LocationModel.hasMany(InvoiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'invoices' });
 InvoiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
-TeamStaffModel.hasOne(StaffModel, { foreignKey: 'teamStaffId', sourceKey: 'id', as: 'staff' });
-StaffModel.belongsTo(TeamStaffModel, { foreignKey: 'teamStaffId', as: 'teamStaff' });
-
-CompanyModel.hasMany(TeamStaffModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'teamStaffs' });
-TeamStaffModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'company' });
-
-CustomerWisereModel.hasMany(ReceiptModel, {
-  foreignKey: 'customerWisereId',
-  sourceKey: 'id',
-  as: 'paymentReceipts'
-});
+CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'receipts' });
 ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
 LocationModel.hasMany(ReceiptModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'paymentReceipts' });
@@ -256,6 +249,15 @@ ReceiptModel.belongsTo(ProviderModel, { foreignKey: 'providerId', as: 'provider'
 
 StaffModel.hasMany(CustomerWisereModel, { foreignKey: 'ownerId', sourceKey: 'id', as: 'customerWiseres' });
 CustomerWisereModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
+
+TeamModel.belongsToMany(StaffModel, { through: TeamStaffModel, as: 'staffs', foreignKey: 'teamId' });
+StaffModel.belongsToMany(TeamModel, { through: TeamStaffModel, as: 'teamStaffs', foreignKey: 'staffId' });
+
+TeamModel.belongsToMany(LocationModel, { through: TeamLocationModel, foreignKey: 'teamId', as: 'locations' });
+LocationModel.belongsToMany(TeamModel, { through: TeamLocationModel, foreignKey: 'locationId', as: 'teamLocations' });
+
+TeamModel.hasMany(TeamSubModel, { foreignKey: 'teamId', sourceKey: 'parentId', as: 'teamSubs' });
+TeamSubModel.belongsTo(TeamModel, { foreignKey: 'teamId', as: 'teamDetail' });
 
 InvoiceModel.belongsToMany(ReceiptModel, { through: InvoiceReceiptModel, foreignKey: 'invoiceId', as: 'receipts' });
 ReceiptModel.belongsToMany(InvoiceModel, { through: InvoiceReceiptModel, foreignKey: 'receiptId', as: 'invoices' });
@@ -291,11 +293,14 @@ export {
   InvoiceDetailModel,
   InvoiceDetailStaffModel,
   ReceiptModel,
+  TeamModel,
   InvoiceReceiptModel,
-  TeamStaffModel,
   DiscountModel,
   PaymentMethodModel,
   ProviderModel,
   TipsModel,
-  PositionModel
+  PositionModel,
+  TeamStaffModel,
+  TeamLocationModel,
+  TeamSubModel
 };

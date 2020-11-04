@@ -10,7 +10,6 @@ class StaffModel extends Model {
   public email: string;
   public birthDate: Date;
   public passportNumber: string;
-  public teamStaffId: string;
   public isBusinessAccount: boolean;
   public address: string;
   public color: string;
@@ -75,11 +74,6 @@ StaffModel.init(
     passportNumber: {
       type: DataTypes.STRING,
       field: 'passport_number'
-    },
-    teamStaffId: {
-      type: DataTypes.UUIDV4,
-      allowNull: true,
-      field: 'team_staff_id'
     },
     isBusinessAccount: {
       type: DataTypes.BOOLEAN,
