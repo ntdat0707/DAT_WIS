@@ -424,7 +424,7 @@ export class InvoiceController {
             as: 'invoiceDetails',
             include: [
               {
-                attributes: ['id', 'name'],
+                attributes: ['id', 'name', 'duration'],
                 model: ServiceModel,
                 as: 'service'
               },
@@ -438,6 +438,19 @@ export class InvoiceController {
                     as: 'staff'
                   }
                 ]
+              }
+            ]
+          },
+          {
+            model: ReceiptModel,
+            as: 'receipts',
+            through: { attributes: [] },
+            include: [
+              {
+                model: PaymentMethodModel,
+                as: 'paymentMethod',
+                required: true,
+                attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
               }
             ]
           },
