@@ -21,7 +21,7 @@ const createReceiptSchema = Joi.object({
         amount: Joi.number().integer().min(1).required().label('amount'),
         provider: Joi.object({
           name: Joi.string().required().label('name'),
-          accountNumber: Joi.number().integer().required().label('accountNumber')
+          accountNumber: Joi.number().integer().max(2147483647).required().label('accountNumber')
         })
           .allow(null)
           .label('provider')
