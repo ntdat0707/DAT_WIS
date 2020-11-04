@@ -71,13 +71,13 @@ export class TeamController {
       const validateErrors = validate(req.params.locationId, locationIdSchema);
       const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validatePaginationErrors) {
-        return next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
+        throw next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
       }
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       if (!res.locals.staffPayload.workingLocationIds.includes(req.params.locationId)) {
-        return next(
+        throw next(
           new CustomError(
             branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
             HttpStatus.FORBIDDEN
@@ -172,10 +172,10 @@ export class TeamController {
       const validateErrors = validate(req.params.parentId, parentIdSchema);
       const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validatePaginationErrors) {
-        return next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
+        throw next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
       }
       if (validateErrors) {
-        return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+        throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const subTeamIds: any = (
         await TeamSubModel.findAll({
@@ -237,7 +237,7 @@ export class TeamController {
   public getTeam = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validateErrors = validate(req.params.teamId, teamIdSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       let subTeams: any = [];
       let parentTeam: any = {};
       let team: any = await TeamModel.findOne({
@@ -262,7 +262,7 @@ export class TeamController {
         ]
       });
       if (!team) {
-        return next(new CustomError(teamErrorDetails.E_5001(`This team ${req.params.teamId} does not exist`)));
+        throw next(new CustomError(teamErrorDetails.E_5001(`This team ${req.params.teamId} does not exist`)));
       }
       team = team.dataValues;
       const subs: any = await TeamSubModel.findAll({
@@ -363,7 +363,7 @@ export class TeamController {
     let transaction = null;
     try {
       const validateErrors = validate(req.body, createTeamSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       transaction = await sequelize.transaction();
       let dataTeam: any = {
         name: req.body.name,
@@ -400,7 +400,7 @@ export class TeamController {
       const dataTeamStaffs: any = [];
       const diffLocationId = _.difference(req.body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
       if (diffLocationId.length) {
-        return next(
+        throw next(
           new CustomError(
             branchErrorDetails.E_1001(`You can not access to location ${diffLocationId}`),
             HttpStatus.FORBIDDEN
@@ -499,7 +499,7 @@ export class TeamController {
     try {
       let dataInput: any = { ...req.body, teamId: req.params.teamId };
       const validateErrors = validate(dataInput, updateTeamSchema);
-      if (validateErrors) return next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      if (validateErrors) throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       transaction = await sequelize.transaction();
       if (dataInput.members && dataInput.members.length > 0) {
         await this.UpdateTeamStaff(dataInput, transaction);
@@ -507,7 +507,7 @@ export class TeamController {
       if (dataInput.locationIds && dataInput.locationIds > 0) {
         for (const locationId of dataInput.locationIds) {
           if (!res.locals.staffPayload.workingLocationIds.includes(locationId)) {
-            return next(
+            throw next(
               new CustomError(
                 branchErrorDetails.E_1001(`You can not access to location ${locationId}`),
                 HttpStatus.FORBIDDEN
