@@ -424,7 +424,7 @@ export class InvoiceController {
             as: 'invoiceDetails',
             include: [
               {
-                attributes: ['id', 'name'],
+                attributes: ['id', 'name', 'duration'],
                 model: ServiceModel,
                 as: 'service'
               },
@@ -438,6 +438,19 @@ export class InvoiceController {
                     as: 'staff'
                   }
                 ]
+              }
+            ]
+          },
+          {
+            model: ReceiptModel,
+            as: 'receipts',
+            through: { attributes: [] },
+            include: [
+              {
+                model: PaymentMethodModel,
+                as: 'paymentMethod',
+                required: true,
+                attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
               }
             ]
           },
@@ -575,7 +588,7 @@ export class InvoiceController {
           {
             model: ProviderModel,
             as: 'provider',
-            required: true,
+            required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           },
           {
@@ -595,7 +608,8 @@ export class InvoiceController {
             as: 'location',
             required: true
           }
-        ]
+        ],
+        logging: true
       });
       if (!receipt) {
         throw new CustomError(receiptErrorDetails.E_3400(`receiptId ${receiptId} not found`), httpStatus.NOT_FOUND);
