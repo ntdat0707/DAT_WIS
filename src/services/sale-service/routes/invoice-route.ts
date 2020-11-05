@@ -11,8 +11,6 @@ export class SaleRoutes {
     this.router.post('/create-invoice', isAuthenticated, this.invoiceController.createInvoice);
     this.router.get('/get-all-invoice', isAuthenticated, this.invoiceController.getAllInvoice);
     this.router.get('/get-invoice/:invoiceId', isAuthenticated, this.invoiceController.getInvoice);
-    this.router.get('/get-all-receipt', isAuthenticated, this.invoiceController.getAllReceipt);
-    this.router.get('/get-receipt/:receiptId', isAuthenticated, this.invoiceController.getReceipt);
     this.router.post('/create-invoice-log', isAuthenticated, this.invoiceController.createInvoiceLog);
     this.router.get('/get-list-invoice-log/:locationId', isAuthenticated, this.invoiceController.getListInvoicesLog);
   }

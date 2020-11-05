@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EPaymentMethodType } from '../../../../utils/consts';
+import { EPaymentMethodType, ETypeOfReceipt } from '../../../../utils/consts';
 const createReceiptSchema = Joi.object({
   invoiceId: Joi.string()
     .guid({
@@ -57,4 +57,45 @@ const deletePaymentMethodSchema = Joi.string()
   })
   .required()
   .label('paymentMethodId');
-export { createReceiptSchema, createPaymentMethodSchema, updatePaymentMethodSchema, deletePaymentMethodSchema };
+
+const createNewReceiptSchema = Joi.object({
+  customerWisereId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('customerWisereId'),
+  amount: Joi.number().integer().min(1).required().label('amount'),
+  paymentMethodId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('paymentMethodId'),
+  typeOfReceipt: Joi.string()
+    .valid(...Object.values(ETypeOfReceipt))
+    .required()
+    .label('typeOfReceipt'),
+  staffId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('staffId'),
+  dateReceived: Joi.string().isoDate().allow(null).label('dateReceived'),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  description: Joi.string().allow(null, '').label('description')
+});
+
+export {
+  createReceiptSchema,
+  createPaymentMethodSchema,
+  updatePaymentMethodSchema,
+  deletePaymentMethodSchema,
+  createNewReceiptSchema
+};

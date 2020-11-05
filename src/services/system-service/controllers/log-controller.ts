@@ -5,7 +5,7 @@ import { LoggerModel, ILogger } from '../../../repositories/mongo/models';
 let open: any;
 export const writelog = async () => {
   try {
-    open = await amqp.connect(rabbitmqURL);
+    open = await amqp.connect(rabbitmqURL + '?heartbeat=60');
     const ch = await open.createChannel();
     await ch.assertQueue(EQueueNames.LOG, { durable: false });
     await ch.consume(

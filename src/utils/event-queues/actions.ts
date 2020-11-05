@@ -8,7 +8,7 @@ const warningColor = chalk.keyword('yellow');
 let ch: any = null;
 let connection: any = null;
 //tslint:disable-next-line
-amqp.connect(rabbitmqURL, function (_err, conn) {
+amqp.connect(rabbitmqURL + '?heartbeat=60', function (_err, conn) {
   connection = conn;
   //tslint:disable-next-line
   conn.createChannel(function (_err, channel) {

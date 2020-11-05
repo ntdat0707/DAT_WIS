@@ -7,7 +7,7 @@ import { excuteSendingEmail, IEmailOptions } from '../../../utils/emailer';
 let open: any;
 export const sendEmail = async () => {
   try {
-    open = await amqp.connect(rabbitmqURL);
+    open = await amqp.connect(rabbitmqURL + '?heartbeat=60');
     const ch = await open.createChannel();
     await ch.assertQueue(EQueueNames.EMAIL, { durable: false });
     await ch.consume(

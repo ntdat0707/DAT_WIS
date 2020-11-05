@@ -2,7 +2,6 @@
 import { logger } from '../utils/logger';
 import { EEnvironments } from '../utils/consts';
 import APIGateway from '../gateways/api-gateway/app';
-import RealTimeGateway from '../gateways/real-time-gateway/app';
 import CustomerService from '../services/customer-service/app';
 import SystemService from '../services/system-service/app';
 import NotificationService from '../services/notification-service/app';
@@ -14,7 +13,6 @@ import SaleService from '../services/sale-service/app';
 require('dotenv').config();
 const nodeName = process.env.NODE_NAME;
 const apiGatewayName = process.env.API_GTW_NAME;
-const realTimeGatewayName = process.env.REAL_TIME_GTW_NAME;
 
 /**
  * Start Express server.
@@ -40,17 +38,6 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
             )} `
           });
         });
-      break;
-    case realTimeGatewayName:
-      const realTimeGateway = new RealTimeGateway().app;
-      realTimeGateway.listen(realTimeGateway.get('port'), (): void => {
-        logger.info({
-          label: realTimeGatewayName,
-          message: `App is running at http://localhost:${process.env.REAL_TIME_GTW_PORT} in mode ${realTimeGateway.get(
-            'env'
-          )} `
-        });
-      });
       break;
     case 'customer-service':
       const customerService = new CustomerService().app;
@@ -128,17 +115,6 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
       message: `App is running at http://localhost:${apiGateway.get('port')} in mode ${apiGateway.get('env')} `
     });
   });
-
-  const realTimeGateway = new RealTimeGateway().app;
-  realTimeGateway.listen(realTimeGateway.get('port'), (): void => {
-    logger.info({
-      label: realTimeGatewayName,
-      message: `App is running at http://localhost:${process.env.REAL_TIME_GTW_PORT} in mode ${realTimeGateway.get(
-        'env'
-      )} `
-    });
-  });
-
   const systemService = new SystemService().app;
   logger.info({
     label: 'system-service',
