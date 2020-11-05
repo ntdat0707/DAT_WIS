@@ -28,7 +28,7 @@ import {
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { paginate } from '../../../utils/paginator';
-import { FindOptions, Transaction, Op } from 'sequelize';
+import { FindOptions, Transaction, Op, Sequelize } from 'sequelize';
 import { hash, compare } from 'bcryptjs';
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import {
@@ -675,6 +675,11 @@ export class CustomerController {
    *       required: true
    *       schema:
    *          type: integer
+   *     - in: query
+   *       name: searchValue
+   *       required: false
+   *       schema:
+   *          type: string
    *     responses:
    *       200:
    *         description: success
@@ -698,6 +703,22 @@ export class CustomerController {
           companyId: companyId
         }
       };
+
+      if (req.query.searchValue) {
+        query.where = {
+          ...query.where,
+          ...{
+            [Op.or]: [
+              Sequelize.literal(
+                `unaccent(concat("CustomerWisereModel"."first_name", ' ', "CustomerWisereModel"."last_name")) ilike unaccent('%${req.query.searchValue}%')`
+              ),
+              Sequelize.literal(`"CustomerWisereModel"."code" ilike '%${req.query.searchValue}%'`),
+              Sequelize.literal(`"CustomerWisereModel"."phone" like '%${req.query.searchValue}%'`),
+              Sequelize.literal(`"CustomerWisereModel"."email" ilike '%${req.query.searchValue}%'`)
+            ]
+          }
+        };
+      }
       const customer = await paginate(
         CustomerWisereModel,
         query,
