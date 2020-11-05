@@ -49,14 +49,39 @@ export class LocationRoutes {
       this.searchController.marketPlaceSuggestedRecent
     );
     this.router.delete(
+      '/market-place/delete-recent-search/:recentSearchId',
+      isAuthenticatedCustomer,
+      this.searchController.deleteRecentSearch
+    );
+    this.router.delete(
+      '/market-place/recent-search/delete-all',
+      isAuthenticatedCustomer,
+      this.searchController.deleteAllRecentSearch
+    );
+    this.router.delete(
       '/market-place/delete-recent-view/:recentViewId',
       isAuthenticatedCustomer,
       this.searchController.deleteRecentView
     );
     this.router.delete(
+      '/market-place/recent-view/delete-all',
+      isAuthenticatedCustomer,
+      this.searchController.deleteAllRecentView
+    );
+    this.router.delete(
       '/market-place/delete-recent-booking/:recentBookingId',
       isAuthenticatedCustomer,
       this.searchController.deleteRecentBooking
+    );
+    this.router.delete(
+      '/market-place/recent-booking/delete-all',
+      isAuthenticatedCustomer,
+      this.searchController.deleteAllRecentBooking
+    );
+    this.router.delete(
+      '/market-place/recent/delete-all',
+      isAuthenticatedCustomer,
+      this.searchController.deleteAllRecent
     );
     this.router.post('/market-place/search-new', this.searchController.searchNew);
   }

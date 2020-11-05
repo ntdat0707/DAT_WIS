@@ -554,7 +554,7 @@ export class SearchController {
       const keywords: string = (search.keywords || '') as string;
       let keywordsQuery: string = '';
       if (!keywords) {
-        keywordsQuery = '\'%%\'';
+        keywordsQuery = "'%%'";
       } else {
         keywordsQuery = `unaccent('%${keywords}%')`;
       }
@@ -703,7 +703,13 @@ export class SearchController {
             model: LocationModel,
             as: 'location',
             required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            include: [
+              {
+                model: LocationImageModel,
+                as: 'locationImages'
+              }
+            ]
           }
         ]
       });
@@ -730,12 +736,16 @@ export class SearchController {
           };
         },
         ['location'](data: any) {
-          const { name, fullAddress, pathName, photo } = data.dataValues;
+          const { name, fullAddress, pathName, locationImages } = data.dataValues;
           return {
             title: name,
             description: fullAddress,
             pathName,
-            image: photo
+            image: locationImages.filter((locationImage: any) => locationImage.is_avatar).length
+              ? locationImages.filter((locationImage: any) => locationImage.is_avatar)[0].path
+              : locationImages.length
+              ? locationImages[0].path
+              : ''
           };
         }
       };
@@ -791,7 +801,7 @@ export class SearchController {
         await CateServiceModel.findAll({
           where: Sequelize.literal(`unaccent("CateServiceModel"."name") ilike any(array[${keywords}])`),
           attributes: {
-            include: [[Sequelize.literal('\'cateService\''), 'type']],
+            include: [[Sequelize.literal("'cateService'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           limit: 3
@@ -806,7 +816,7 @@ export class SearchController {
       const companies: any = (
         await CompanyModel.findAll({
           attributes: {
-            include: [[Sequelize.literal('\'company\''), 'type']],
+            include: [[Sequelize.literal("'company'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
@@ -831,7 +841,7 @@ export class SearchController {
         await ServiceModel.findAll({
           where: Sequelize.literal(`unaccent("ServiceModel"."name") ilike any(array[${keywords}])`),
           attributes: {
-            include: [[Sequelize.literal('\'service\''), 'type']],
+            include: [[Sequelize.literal("'service'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           limit: 3
@@ -853,7 +863,7 @@ export class SearchController {
             ]
           },
           attributes: {
-            include: [[Sequelize.literal('\'location\''), 'type']],
+            include: [[Sequelize.literal("'location'"), 'type']],
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           },
           limit: 3,
@@ -873,7 +883,9 @@ export class SearchController {
         description,
         image: locationImages.filter((locationImage: any) => locationImage.is_avatar).length
           ? locationImages.filter((locationImage: any) => locationImage.is_avatar)[0].path
-          : (locationImages.length ? locationImages[0].path : '')
+          : locationImages.length
+          ? locationImages[0].path
+          : ''
       }));
       return {
         cateServices,
@@ -895,6 +907,7 @@ export class SearchController {
           limit: 4
         })
       ).map((recentBooking: any) => ({
+        id: recentBooking.id,
         locationId: recentBooking.locationId,
         staffId: recentBooking.staffId
       }));
@@ -922,6 +935,7 @@ export class SearchController {
         staff = {
           ...staff,
           ...staff.workingLocations[0].dataValues,
+          bookingId: recentBookings[i].id,
           ['workingLocations']: undefined
         };
         newStaff.push(staff);
@@ -934,7 +948,8 @@ export class SearchController {
           workingLocations: workingLocations,
           name: locationName,
           path_name: locationPath,
-          full_address: fullAddress
+          full_address: fullAddress,
+          bookingId
         }: any) => ({
           id,
           staffName,
@@ -942,7 +957,8 @@ export class SearchController {
           workingLocations,
           locationName,
           locationPath,
-          fullAddress
+          fullAddress,
+          bookingId
         })
       );
       return recentBookingHistory;
@@ -961,20 +977,17 @@ export class SearchController {
           order: [['createdAt', 'DESC']]
         })
       ).map((recentView: any) => ({
+        id: recentView.id,
         locationId: recentView.locationId
       }));
       if (!recentViews) {
         recentViews = [];
         return recentViews;
       }
-
-      const locationIds: any = [];
+      let locationViews: any = [];
       for (let i = 0; i < recentViews.length; i++) {
-        locationIds.push(recentViews[i].locationId);
-      }
-      const rawLocationViews: any = (
-        await LocationModel.findAll({
-          where: { id: { [Op.in]: locationIds } },
+        const rawLocationView = await LocationModel.findAll({
+          where: { id: recentViews[i].locationId },
           include: [
             {
               model: LocationImageModel,
@@ -985,15 +998,17 @@ export class SearchController {
             }
           ],
           attributes: ['id', 'name', 'address', 'district', 'ward', 'path_name', 'full_address']
-        })
-      ).map((locationView: any) => ({
-        ...locationView.dataValues,
-        ...locationView.locationDetail?.dataValues,
-        ...locationView.locationImages[0]?.dataValues,
-        ['locationDetail']: undefined,
-        ['locationImages']: undefined
-      }));
-      const locationViews = rawLocationViews.map(
+        }).then((locationView: any) => ({
+          ...locationView.dataValues,
+          ...locationView.locationDetail?.dataValues,
+          ...locationView.locationImages[0]?.dataValues,
+          viewId: recentViews[i],
+          ['locationDetail']: undefined,
+          ['locationImages']: undefined
+        }));
+        locationViews.push(rawLocationView);
+      }
+      locationViews = locationViews.map(
         ({
           id: id,
           name: locationName,
@@ -1002,7 +1017,8 @@ export class SearchController {
           ward: ward,
           path: locationImage,
           path_name: locationPath,
-          full_address: fullAddress
+          full_address: fullAddress,
+          viewId
         }: any) => ({
           id,
           locationName,
@@ -1011,7 +1027,8 @@ export class SearchController {
           ward,
           locationImage,
           locationPath,
-          fullAddress
+          fullAddress,
+          viewId
         })
       );
       return locationViews;
@@ -1446,6 +1463,86 @@ export class SearchController {
 
   /**
    * @swagger
+   * /branch/location/market-place/delete-recent-search/{recentSearchId}:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     parameters:
+   *     - in: path
+   *       name: recentSearchId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: deleteRecentSearch
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public deleteRecentSearch = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dataInput = {
+        customerId: res.locals.customerPayload.id,
+        recentSearchId: req.params.recentViewId
+      };
+      const validateErrors = validate(dataInput, deleteRecentViewSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
+      await RecentViewModel.destroy({
+        where: {
+          customerId: dataInput.customerId,
+          id: dataInput.recentSearchId
+        }
+      });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/recent-search/delete-all:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     parameters:
+   *     - in: path
+   *       name: recentSearchId
+   *       schema:
+   *          type: string
+   *       required: true
+   *     name: deleteAllRecentSearch
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public deleteAllRecentSearch = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = res.locals.customerPayload.id;
+      await RecentViewModel.destroy({
+        where: {
+          customerId: customerId
+        }
+      });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
    * /branch/location/market-place/delete-recent-view/{recentViewId}:
    *   delete:
    *     tags:
@@ -1477,7 +1574,39 @@ export class SearchController {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       await RecentViewModel.destroy({
-        where: { id: dataInput.recentViewId }
+        where: {
+          customerId: dataInput.customerId,
+          id: dataInput.recentViewId
+        }
+      });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/recent-view/delete-all:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: deleteAllRecentView
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+  public deleteAllRecentView = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = res.locals.customerPayload.id;
+      await RecentViewModel.destroy({
+        where: {
+          customerId: customerId
+        }
       });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
@@ -1517,14 +1646,97 @@ export class SearchController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      await RecentBookingModel.destroy({
-        where: { id: dataInput.recentBookingId }
+      const abc = await RecentBookingModel.destroy({
+        where: {
+          customerId: dataInput.customerId,
+          id: dataInput.recentBookingId
+        }
       });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
   };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/recent-booking/delete-all:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: deleteAllRecentBooking
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public deleteAllRecentBooking = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = res.locals.customerPayload.id;
+      await RecentBookingModel.destroy({
+        where: {
+          customerId: customerId
+        }
+      });
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/market-place/recent/delete-all:
+   *   delete:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: deleteAllRecent
+   *     responses:
+   *       200:
+   *         description: success
+   *       500:
+   *         description: Server internal errors
+   */
+
+  public deleteAllRecent = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction: any = null;
+    try {
+      transaction = await sequelize.transaction();
+      const customerId = res.locals.customerPayload.id;
+      await RecentBookingModel.destroy({
+        where: {
+          customerId: customerId
+        },
+        transaction
+      });
+      await RecentViewModel.destroy({
+        where: {
+          customerId: customerId
+        },
+        transaction
+      });
+      await CustomerSearchModel.destroy({
+        where: {
+          customerId: customerId
+        },
+        transaction
+      });
+      await transaction.commit();
+      return res.status(HttpStatus.OK).send();
+    } catch (error) {
+      if (transaction) {
+        await transaction.rollback();
+      }
+      return next(error);
+    }
+  };
+
   /**
    * @swagger
    * definitions:
