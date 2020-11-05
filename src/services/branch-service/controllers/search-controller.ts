@@ -39,7 +39,8 @@ import { RecentViewModel } from '../../../repositories/postgres/models/recent-vi
 import { parseDataByType } from '../utils';
 import {
   deleteRecentBookingSchema,
-  deleteRecentViewSchema
+  deleteRecentViewSchema,
+  deleteRecentSearchSchema
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
 import _ from 'lodash';
@@ -778,6 +779,7 @@ export class SearchController {
           return {
             ...dataDefault,
             ...searchData.dataValues,
+            searchId: searchData.dataValues.id,
             ...hideField,
             ...mapData[type](searchData[type])
           };
@@ -1482,14 +1484,13 @@ export class SearchController {
    *       500:
    *         description: Server internal errors
    */
-
   public deleteRecentSearch = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput = {
         customerId: res.locals.customerPayload.id,
-        recentSearchId: req.params.recentViewId
+        recentSearchId: req.params.recentSearchId
       };
-      const validateErrors = validate(dataInput, deleteRecentViewSchema);
+      const validateErrors = validate(dataInput, deleteRecentSearchSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
