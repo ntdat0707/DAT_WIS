@@ -148,7 +148,7 @@ export class ReceiptController {
           providers.push(dataProvider);
         }
         let receiptCode = '';
-        for (let j = 0; j < 10; j++) {
+        while (true) {
           const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           receiptCode = 'REC' + randomCode;
           const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
@@ -618,7 +618,7 @@ export class ReceiptController {
         );
       }
       let receiptCode = '';
-      for (let j = 0; j < 10; j++) {
+      while (true) {
         const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         receiptCode = 'REC' + randomCode;
         const existReceiptCode = await ReceiptModel.findOne({ where: { code: receiptCode } });
