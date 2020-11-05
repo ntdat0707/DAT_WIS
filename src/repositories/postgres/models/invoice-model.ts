@@ -18,6 +18,7 @@ class InvoiceModel extends Model {
   public subTotal?: number;
   public tips?: number;
   public total: number;
+  public createdBy: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -88,6 +89,11 @@ InvoiceModel.init(
     total: {
       field: 'total',
       type: DataTypes.INTEGER
+    },
+    createdBy: {
+      field: 'created_by',
+      type: DataTypes.UUIDV4,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',

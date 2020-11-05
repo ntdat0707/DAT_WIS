@@ -204,7 +204,8 @@ export class InvoiceController {
         source: req.body.source,
         note: req.body.note,
         discountId: req.body.discountId,
-        tax: req.body.tax
+        tax: req.body.tax,
+        createdBy: res.locals.staffPayload.id
       };
       let subTotal = 0;
       let totalQuantity = 0;
@@ -460,6 +461,11 @@ export class InvoiceController {
           {
             model: LocationModel,
             as: 'location'
+          },
+          {
+            model: StaffModel,
+            as: 'staff',
+            attributes: ['id', 'firstName', 'lastName']
           }
         ]
       });

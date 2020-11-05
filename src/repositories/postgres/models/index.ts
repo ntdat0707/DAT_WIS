@@ -262,6 +262,9 @@ TeamSubModel.belongsTo(TeamModel, { foreignKey: 'teamId', as: 'teamDetail' });
 InvoiceModel.belongsToMany(ReceiptModel, { through: InvoiceReceiptModel, foreignKey: 'invoiceId', as: 'receipts' });
 ReceiptModel.belongsToMany(InvoiceModel, { through: InvoiceReceiptModel, foreignKey: 'receiptId', as: 'invoices' });
 
+StaffModel.hasMany(InvoiceModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'invoices' });
+InvoiceModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
+
 export {
   sequelize,
   StaffModel,
