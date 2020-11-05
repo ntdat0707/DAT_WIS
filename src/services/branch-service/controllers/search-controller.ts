@@ -1646,7 +1646,7 @@ export class SearchController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      const abc = await RecentBookingModel.destroy({
+      await RecentBookingModel.destroy({
         where: {
           customerId: dataInput.customerId,
           id: dataInput.recentBookingId
