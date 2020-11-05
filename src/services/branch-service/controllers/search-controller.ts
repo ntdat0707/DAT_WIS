@@ -934,7 +934,7 @@ export class SearchController {
         staff = staff.dataValues;
         staff = {
           ...staff,
-          ...staff.workingLocations[0].dataValues,
+          ...(staff.workingLocations && staff.workingLocations.length ? staff.workingLocations[0].dataValues : {}),
           bookingId: recentBookings[i].id,
           ['workingLocations']: undefined
         };
@@ -986,7 +986,7 @@ export class SearchController {
       }
       let locationViews: any = [];
       for (let i = 0; i < recentViews.length; i++) {
-        const rawLocationView = await LocationModel.findAll({
+        const rawLocationView = await LocationModel.findOne({
           where: { id: recentViews[i].locationId },
           include: [
             {
@@ -1000,10 +1000,10 @@ export class SearchController {
           attributes: ['id', 'name', 'address', 'district', 'ward', 'path_name', 'full_address']
         }).then((locationView: any) => ({
           ...locationView.dataValues,
-          ...locationView.locationDetail?.dataValues,
-          ...locationView.locationImages[0]?.dataValues,
-          viewId: recentViews[i],
-          ['locationDetail']: undefined,
+          ...(locationView.locationImages && locationView.locationImages.length
+            ? locationView.locationImages[0].dataValues
+            : {}),
+          viewId: recentViews[i].id,
           ['locationImages']: undefined
         }));
         locationViews.push(rawLocationView);
@@ -1018,7 +1018,7 @@ export class SearchController {
           path: locationImage,
           path_name: locationPath,
           full_address: fullAddress,
-          viewId
+          viewId: viewId
         }: any) => ({
           id,
           locationName,
