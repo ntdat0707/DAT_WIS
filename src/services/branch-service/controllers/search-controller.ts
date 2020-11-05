@@ -823,7 +823,7 @@ export class SearchController {
         ...dataDefault,
         id,
         type,
-        name: businessName,
+        title: businessName,
         description
       }));
 
