@@ -89,7 +89,7 @@ export class StaffController {
             model: TeamModel,
             as: 'teamStaffs',
             through: { attributes: [] },
-            required: true,
+            required: false,
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
           }
         ]
