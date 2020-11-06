@@ -13,7 +13,8 @@ import {
   LocationWorkingHourModel,
   StaffModel,
   CompanyDetailModel,
-  LocationImageModel
+  LocationImageModel,
+  CompanyTypeDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -209,7 +210,13 @@ export class LocationController {
             model: CompanyDetailModel,
             as: 'companyDetail',
             required: false,
-            attributes: ['businessType', 'businessName']
+            attributes: ['businessName']
+          },
+          {
+            model: CompanyTypeDetailModel,
+            as: 'companyTypeDetails',
+            through: { attributes: [] },
+            required: false
           }
         ]
       });
@@ -221,7 +228,9 @@ export class LocationController {
           ['companyDetail']: undefined
         };
       }
-
+      if (company.companyTypeDetails) {
+        company.companyTypeDetails = company.companyTypeDetails.map((companyTypeDetail: any) => companyTypeDetail.name);
+      }
       const existLocation = await LocationModel.findOne({
         where: {
           companyId: company.id
