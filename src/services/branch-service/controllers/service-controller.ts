@@ -31,7 +31,7 @@ import { ServiceImageModel } from '../../../repositories/postgres/models/service
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { SearchParams } from 'elasticsearch';
-import { elasticsearchClient } from '../../../repositories/elasticsearch';
+import { elasticsearchClient, esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ServiceController {
@@ -286,7 +286,7 @@ export class ServiceController {
       if (!service)
         throw new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND);
 
-      await elasticsearchClient.delete({
+      await esClient.delete({
         id: serviceId,
         index: 'get_services',
         type: '_doc'
