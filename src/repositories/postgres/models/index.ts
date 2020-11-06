@@ -42,6 +42,9 @@ import { TeamStaffModel } from './team-staff-model';
 import { TeamLocationModel } from './team-location-model';
 import { TeamSubModel } from './team-sub-model';
 import { InvoiceReceiptModel } from './invoice-receipt';
+import { RoleModel } from './role-model';
+import { PermissionModel } from './permission-model';
+import { RolePermissionModel } from './role-permission-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -265,6 +268,9 @@ ReceiptModel.belongsToMany(InvoiceModel, { through: InvoiceReceiptModel, foreign
 StaffModel.hasMany(InvoiceModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'invoices' });
 InvoiceModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
 
+RoleModel.hasMany(StaffModel, { foreignKey: 'roleId', sourceKey: 'id', as: 'staffs' });
+StaffModel.belongsTo(RoleModel, { foreignKey: 'roleId', as: 'role' });
+
 export {
   sequelize,
   StaffModel,
@@ -305,5 +311,8 @@ export {
   PositionModel,
   TeamStaffModel,
   TeamLocationModel,
-  TeamSubModel
+  TeamSubModel,
+  RoleModel,
+  PermissionModel,
+  RolePermissionModel
 };
