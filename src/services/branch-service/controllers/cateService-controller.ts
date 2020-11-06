@@ -12,6 +12,7 @@ import { createCateServiceSchema, updateCateServiceSchema, cateServiceIdSchema }
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 import { ServiceModel } from '../../../repositories/postgres/models';
 import { FindOptions } from 'sequelize/types';
+import { Op, Sequelize } from 'sequelize';
 
 export class CateServiceController {
   /**
@@ -410,6 +411,79 @@ export class CateServiceController {
         fullPath
       );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/cate-service/search-cate-service:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: searchCateService
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: searchValue
+   *       required: false
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public searchCateService = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validatePaginationErrors) {
+        throw next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
+      }
+      const companyId = res.locals.staffPayload.companyId;
+      const query: FindOptions = {
+        where: { companyId: companyId },
+        order: [['name', 'DESC']],
+        attributes: { exclude: ['updatedAt', 'deletedAt'] }
+      };
+
+      if (req.query.searchValue) {
+        query.where = {
+          ...query.where,
+          ...{
+            [Op.or]: [
+              Sequelize.literal(`unaccent("CateServiceModel"."name") ilike unaccent('%${req.query.searchValue}%')`)
+            ]
+          }
+        };
+      }
+      const cateServices = await paginate(
+        CateServiceModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(cateServices));
     } catch (error) {
       return next(error);
     }

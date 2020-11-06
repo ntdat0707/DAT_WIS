@@ -19,5 +19,6 @@ export class CateServiceRoutes {
       isAuthenticated,
       this.cateServiceController.getServicesByCateService
     );
+    this.router.get('/search-cate-service', isAuthenticated, this.cateServiceController.searchCateService);
   }
 }
