@@ -462,7 +462,6 @@ export class CateServiceController {
       }
       const companyId = res.locals.staffPayload.companyId;
       const query: FindOptions = {
-        include: [],
         where: { companyId: companyId },
         order: [['name', 'DESC']],
         attributes: { exclude: ['updatedAt', 'deletedAt'] }
