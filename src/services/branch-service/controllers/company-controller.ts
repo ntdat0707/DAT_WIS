@@ -92,7 +92,10 @@ export class CompanyController {
           for (const companyTypeDetailId of data.companyTypeDetailIds) {
             const companyTypeDetail = await CompanyTypeDetailModel.findOne({ where: { id: companyTypeDetailId } });
             if (!companyTypeDetail) {
-              throw new CustomError(companyErrorDetails.E_4003(`Company type detail ${companyTypeDetailId} not found`));
+              throw new CustomError(
+                companyErrorDetails.E_4003(`Company type detail ${companyTypeDetailId} not found`),
+                HttpStatus.NOT_FOUND
+              );
             }
             const companyType = {
               companyId: company.id,
@@ -100,7 +103,7 @@ export class CompanyController {
             };
             companyTypeData.push(companyType);
           }
-          await CompanyTypeModel.bulkCreate(companyTypeData, { transaction });
+          await CompanyTypeModel.bulkCreate(companyTypeData);
         }
         await transaction.commit();
       }
@@ -205,12 +208,6 @@ export class CompanyController {
           },
           { where: { companyId: companyId }, transaction }
         );
-        for (const companyTypeDetailId of data.companyTypeDetailIds) {
-          const companyTypeDetail = await CompanyTypeDetailModel.findOne({ where: { id: companyTypeDetailId } });
-          if (!companyTypeDetail) {
-            throw new CustomError(companyErrorDetails.E_4003(`Company type detail ${companyTypeDetailId} not found`));
-          }
-        }
         const curCompanyTypeDetailIds = (
           await CompanyTypeModel.findAll({
             where: { companyId: companyId }
@@ -222,6 +219,15 @@ export class CompanyController {
         }
         const addCompanyTypeDetailIds = _.difference(data.companyTypeDetailIds, curCompanyTypeDetailIds as string[]);
         if (addCompanyTypeDetailIds.length > 0) {
+          for (const companyTypeDetailId of addCompanyTypeDetailIds) {
+            const companyTypeDetail = await CompanyTypeDetailModel.findOne({ where: { id: companyTypeDetailId } });
+            if (!companyTypeDetail) {
+              throw new CustomError(
+                companyErrorDetails.E_4003(`Company type detail ${companyTypeDetailId} not found`),
+                HttpStatus.NOT_FOUND
+              );
+            }
+          }
           const companyTypes = (addCompanyTypeDetailIds as []).map((companyTypeDetailId: any) => ({
             companyId: companyId,
             companyTypeDetailId: companyTypeDetailId
