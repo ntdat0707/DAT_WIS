@@ -86,6 +86,22 @@ export class CompanyController {
         };
         transaction = await sequelize.transaction();
         await CompanyDetailModel.create(companyDetailData, { transaction });
+
+        if (data.companyTypeDetailIds.length > 0) {
+          const companyTypeData: any = [];
+          for (const companyTypeDetailId of data.companyTypeDetailIds) {
+            const companyTypeDetail = await CompanyTypeDetailModel.findOne({ where: { id: companyTypeDetailId } });
+            if (!companyTypeDetail) {
+              throw new CustomError(companyErrorDetails.E_4003(`Company type detail ${companyTypeDetailId} not found`));
+            }
+            const companyType = {
+              companyId: company.id,
+              companyTypeDetailId: companyTypeDetailId
+            };
+            companyTypeData.push(companyType);
+          }
+          await CompanyTypeModel.bulkCreate(companyTypeData, { transaction });
+        }
         await transaction.commit();
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(company));
