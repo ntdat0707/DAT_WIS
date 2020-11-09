@@ -106,15 +106,6 @@ export {
   IManagementEditAppointmentDetailData
 };
 
-export enum EBusinessType {
-  DENTAL = 'DENTAL',
-  SPA = 'SPA',
-  BEAUTY_SALON = 'BEAUTY_SALON',
-  NAIL_SALON = 'NAIL_SALON',
-  BABER_SHOP = 'BABER_SHOP',
-  MASSAGE = 'MASSAGE'
-}
-
 export enum EAppointmentBookingSource {
   SCHEDULED = 'SCHEDULED',
   MARKETPLACE = 'MARKETPLACE',

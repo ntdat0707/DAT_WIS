@@ -15,9 +15,13 @@ import {
   TeamStaffModel,
   TeamSubModel
 } from '../../../repositories/postgres/models';
-
-import { locationIdSchema } from '../../../services/branch-service/configs/validate-schemas';
-import { createTeamSchema, parentIdSchema, teamIdSchema, updateTeamSchema } from '../configs/validate-schemas/team';
+import {
+  createTeamSchema,
+  locationIdsSchema,
+  parentIdSchema,
+  teamIdSchema,
+  updateTeamSchema
+} from '../configs/validate-schemas/team';
 import { teamErrorDetails, teamSubErrorDetails } from '../../../utils/response-messages/error-details/team';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details/branch';
 import _ from 'lodash';
@@ -25,7 +29,7 @@ import _ from 'lodash';
 export class TeamController {
   /**
    * @swagger
-   * /staff/team/get-teams-location/{locationId}:
+   * /staff/team/get-teams-location:
    *   get:
    *     tags:
    *       - Staff
@@ -48,10 +52,10 @@ export class TeamController {
    *       required: false
    *       schema:
    *          type: string
-   *     - in: path
-   *       name: locationId
-   *       required: true
-   *       schema:
+   *     - in: query
+   *       name: locationIds
+   *       type: array
+   *       items:
    *          type: string
    *     responses:
    *       200:
@@ -68,7 +72,7 @@ export class TeamController {
         pageNum: req.query.pageNum,
         pageSize: req.query.pageSize
       };
-      const validateErrors = validate(req.params.locationId, locationIdSchema);
+      const validateErrors = validate(req.params.locationId, locationIdsSchema);
       const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validatePaginationErrors) {
         throw next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
@@ -76,22 +80,8 @@ export class TeamController {
       if (validateErrors) {
         throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
-      if (!res.locals.staffPayload.workingLocationIds.includes(req.params.locationId)) {
-        throw next(
-          new CustomError(
-            branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-            HttpStatus.FORBIDDEN
-          )
-        );
-      }
       const query: FindOptions = {
         include: [
-          {
-            model: LocationModel,
-            as: 'locations',
-            through: { attributes: [] },
-            where: { id: req.params.locationId }
-          },
           {
             model: StaffModel,
             as: 'staffs',
@@ -104,6 +94,45 @@ export class TeamController {
         attributes: { exclude: ['updatedAt', 'deletedAt'] }
       };
 
+      if (req.query.locationIds) {
+        const diffLocation = _.difference(
+          req.query.locationIds as string[],
+          res.locals.staffPayload.workingLocationIds
+        );
+        if (diffLocation.length > 0) {
+          throw next(
+            new CustomError(
+              branchErrorDetails.E_1001(`You can not access to location ${req.query.locationId}`),
+              HttpStatus.FORBIDDEN
+            )
+          );
+        }
+        query.include = [
+          ...query.include,
+          ...[
+            {
+              model: LocationModel,
+              as: 'locations',
+              required: true,
+              through: { attributes: [] },
+              where: { id: req.query.locationIds }
+            }
+          ]
+        ];
+      } else {
+        query.include = [
+          ...query.include,
+          ...[
+            {
+              model: LocationModel,
+              as: 'locations',
+              through: { attributes: [] },
+              required: true,
+              where: { id: res.locals.staffPayload.workingLocationIds }
+            }
+          ]
+        ];
+      }
       if (req.query.searchValue) {
         query.where = {
           ...query.where,

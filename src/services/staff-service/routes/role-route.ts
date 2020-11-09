@@ -14,5 +14,6 @@ export class RoleRoutes {
     this.router.post('/create-role', isAuthenticated, this.roleController.createRole);
     this.router.post('/update-role/:roleId', isAuthenticated, this.roleController.updateRole);
     this.router.delete('/delete-role/:roleId', isAuthenticated, this.roleController.deleteRole);
+    this.router.get('/get-all-role', isAuthenticated, this.roleController.getAllRole);
   }
 }

@@ -76,4 +76,10 @@ const teamIdSchema = Joi.string()
   .guid({ version: ['uuidv4'] })
   .required()
   .label('teamId');
-export { createTeamSchema, updateTeamSchema, parentIdSchema, teamIdSchema };
+
+const locationIdsSchema = Joi.array()
+  .min(1)
+  .items(Joi.string().guid({ version: ['uuidv4'] }))
+  .allow(null)
+  .label('locationIds');
+export { createTeamSchema, updateTeamSchema, parentIdSchema, teamIdSchema, locationIdsSchema };

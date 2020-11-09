@@ -45,6 +45,8 @@ import { InvoiceReceiptModel } from './invoice-receipt';
 import { RoleModel } from './role-model';
 import { PermissionModel } from './permission-model';
 import { RolePermissionModel } from './role-permission-model';
+import { CompanyTypeDetailModel } from './company-type-detail-model';
+import { CompanyTypeModel } from './company-type-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -270,6 +272,16 @@ InvoiceModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
 
 RoleModel.hasMany(StaffModel, { foreignKey: 'roleId', sourceKey: 'id', as: 'staffs' });
 StaffModel.belongsTo(RoleModel, { foreignKey: 'roleId', as: 'role' });
+CompanyModel.belongsToMany(CompanyTypeDetailModel, {
+  through: CompanyTypeModel,
+  foreignKey: 'companyId',
+  as: 'companyTypeDetails'
+});
+CompanyTypeDetailModel.belongsToMany(CompanyModel, {
+  through: CompanyTypeModel,
+  foreignKey: 'companyTypeDetailId',
+  as: 'companies'
+});
 
 export {
   sequelize,
@@ -314,5 +326,7 @@ export {
   TeamSubModel,
   RoleModel,
   PermissionModel,
-  RolePermissionModel
+  RolePermissionModel,
+  CompanyTypeModel,
+  CompanyTypeDetailModel
 };

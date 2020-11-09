@@ -5,9 +5,10 @@ import { RoleModel, StaffModel } from '../../../repositories/postgres/models';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { roleErrorDetails } from '../../../utils/response-messages/error-details';
-import { validate } from '../../../utils/validator';
+import { baseValidateSchemas, validate } from '../../../utils/validator';
 import { createRoleSchema, updateRoleSchema, roleIdSchema } from '../configs/validate-schemas';
-import { Op } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
+import { paginate } from '../../../utils/paginator';
 
 export class RoleController {
   /**
@@ -188,6 +189,66 @@ export class RoleController {
       }
       await RoleModel.destroy({ where: { id: roleId } });
       return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /staff/role/get-all-role:
+   *   get:
+   *     tags:
+   *       - Staff
+   *     security:
+   *       - Bearer: []
+   *     name: getAllRole
+   *     parameters:
+   *       - in: query
+   *         name: pageNum
+   *         required: true
+   *         schema:
+   *            type: integer
+   *       - in: query
+   *         name: pageSize
+   *         required: true
+   *         schema:
+   *            type: integer
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllRole = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const query: FindOptions = {
+        include: [
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: false
+          }
+        ]
+      };
+      const roles = await paginate(
+        RoleModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
+      return res.status(httpStatus.OK).send(buildSuccessMessage(roles));
     } catch (error) {
       return next(error);
     }
