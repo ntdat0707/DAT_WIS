@@ -605,7 +605,7 @@ export class SearchController {
           'FROM service',
           'LEFT JOIN appointment_detail ON appointment_detail.service_id = service.id',
           `WHERE service.status LIKE 'active' and unaccent(service.name) ilike ${keywords}`,
-          'GROUP BY service.id, appointment_detail.id',
+          'GROUP BY service.id',
           'ORDER BY count(appointment_detail.id) desc',
           'LIMIT 10'
         ].join(' '),
