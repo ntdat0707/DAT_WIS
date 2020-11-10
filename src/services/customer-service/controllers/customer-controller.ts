@@ -28,7 +28,7 @@ import {
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { paginate } from '../../../utils/paginator';
-import { FindOptions, Transaction, Op, Sequelize } from 'sequelize';
+import { FindOptions, Transaction, Op, Sequelize, QueryTypes } from 'sequelize';
 import { hash, compare } from 'bcryptjs';
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
 import {
@@ -61,6 +61,7 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import { sendEmail } from '../../../utils/emailer';
 import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
+import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.MARKETPLACE_URL;
@@ -160,6 +161,10 @@ export class CustomerController {
    *       type: array
    *       items:
    *           $ref: '#/definitions/MorePhoneContact'
+   *     - in: "formData"
+   *       name: code
+   *       type: string
+   *       required: true
    *     responses:
    *       200:
    *         description: success
@@ -187,7 +192,8 @@ export class CustomerController {
         label: req.body.label,
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
-        morePhoneContact: req.body.morePhoneContact
+        morePhoneContact: req.body.morePhoneContact,
+        code: req.body.code
       };
       const validateErrors = validate(data, createCustomerWisereSchema);
       if (validateErrors) {
@@ -220,22 +226,34 @@ export class CustomerController {
         if (!existStaff)
           throw new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND);
       }
-      while (true) {
-        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
-        const randomCode = random.toUpperCase();
-        data.code = randomCode;
-        const existAppCode = await CustomerWisereModel.findOne({
-          where: {
-            code: data.code
-          }
-        });
-        if (!existAppCode) {
-          break;
-        }
-      }
       if (req.file) {
         data.avatarPath = (req.file as any).location;
       }
+      //check prefixCode
+      const prefixCodeLocation = await LocationModel.findOne({
+        where: {
+          prefixCode: data.code,
+          companyId: data.companyId
+        }
+      });
+      if (!prefixCodeLocation) {
+        throw new CustomError(
+          locationErrorDetails.E_1012(
+            `Prefix code ${data.prefixCode} is not existed on this company ${data.companyId}`
+          ),
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
+      const resultQuery: any = await sequelize.query(
+        'SELECT COUNT(id) FROM customer_wisere WHERE company_id =$companyId',
+        {
+          bind: { companyId: data.companyId },
+          type: QueryTypes.SELECT
+        }
+      );
+      const total = parseInt(resultQuery[0].count, 10) + 1;
+      data.code = data.code + total.toString().padStart(6, '0');
       transaction = await sequelize.transaction();
       const customerWisere = await CustomerWisereModel.create(data, { transaction });
       if (data.moreEmailContact && data.moreEmailContact.length > 0) {

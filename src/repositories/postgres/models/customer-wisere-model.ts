@@ -1,4 +1,4 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import { Model, Sequelize, DataTypes } from 'sequelize';
 import sequelize from '../configs/db-connector';
 import { ESource, ELabel, EGender } from '../../../utils/consts';
 class CustomerWisereModel extends Model {
