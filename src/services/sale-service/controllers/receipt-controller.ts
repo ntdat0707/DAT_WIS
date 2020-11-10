@@ -305,7 +305,7 @@ export class ReceiptController {
               {
                 model: InvoiceDetailModel,
                 as: 'invoiceDetails',
-                attributes: ['id'],
+                attributes: ['id', 'quantity'],
                 include: [
                   {
                     model: ServiceModel,
