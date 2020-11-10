@@ -126,6 +126,10 @@ export class LocationController {
    *       name: "placeId"
    *       type: string
    *     - in: "formData"
+   *       name: "prefixCode"
+   *       type: string
+   *       required: true
+   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -166,7 +170,8 @@ export class LocationController {
         openedAt: req.body.openedAt,
         placeId: req.body.placeId,
         addressInfor: req.body.addressInfor,
-        fullAddress: req.body.fullAddress
+        fullAddress: req.body.fullAddress,
+        prefixCode: req.body.prefixCode
       };
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
@@ -240,6 +245,19 @@ export class LocationController {
       if (!existLocation) {
         updateStaff = true;
       }
+      //check prefixCode
+      const prefixCode = await LocationModel.findOne({
+        where: {
+          prefixCode: data.prefixCode
+        }
+      });
+      if (prefixCode) {
+        throw new CustomError(
+          locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
@@ -490,6 +508,7 @@ export class LocationController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /branch/location/delete/{locationId}:
@@ -746,6 +765,10 @@ export class LocationController {
    *     - in: "formData"
    *       name: "fullAddress"
    *       type: string
+   *     - in: "formData"
+   *       name: "prefixCode"
+   *       type: string
+   *       required: true
    *     responses:
    *       200:
    *         description:
@@ -806,7 +829,8 @@ export class LocationController {
         fullAddress: body.fullAddress,
         country: location.country,
         province: location.province,
-        street: location.street
+        street: location.street,
+        prefixCode: body.prefixCode
       };
 
       if (body.placeId && body.placeId !== location.placeId) {
@@ -892,6 +916,18 @@ export class LocationController {
       if (file) {
         data.photo = (file as any).location;
       }
+      //check prefixCode
+      const prefixCode = await LocationModel.findOne({
+        where: {
+          prefixCode: data.prefixCode
+        }
+      });
+      if (prefixCode) {
+        throw new CustomError(
+          locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+          HttpStatus.BAD_REQUEST
+        );
+      }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
       await transaction.commit();
@@ -901,6 +937,39 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/get-prefix-codes:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getPrefixCodes
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getPrefixCodes = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const companyId = res.locals.staffPayload.companyId;
+      const prefixCodes = await LocationModel.findAll({
+        where: { companyId: companyId },
+        attributes: ['id', 'prefixCode']
+      });
+      if (!prefixCodes) {
+        throw new CustomError(locationErrorDetails.E_1012(`Prefix codes not existed`), HttpStatus.NOT_FOUND);
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(prefixCodes));
+    } catch (error) {
       return next(error);
     }
   };

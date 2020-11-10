@@ -19,7 +19,9 @@ import {
   sequelize,
   StaffModel,
   CustomerWisereModel,
-  LocationModel
+  LocationModel,
+  InvoiceDetailModel,
+  ServiceModel
 } from '../../../repositories/postgres/models';
 import {
   branchErrorDetails,
@@ -298,7 +300,21 @@ export class ReceiptController {
             as: 'invoices',
             through: { attributes: [] },
             required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            include: [
+              {
+                model: InvoiceDetailModel,
+                as: 'invoiceDetails',
+                attributes: ['id', 'quantity'],
+                include: [
+                  {
+                    model: ServiceModel,
+                    as: 'service',
+                    attributes: ['id', 'name', 'salePrice']
+                  }
+                ]
+              }
+            ]
           },
           {
             model: PaymentMethodModel,
