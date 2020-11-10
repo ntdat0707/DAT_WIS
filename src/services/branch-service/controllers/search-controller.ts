@@ -606,7 +606,7 @@ export class SearchController {
           'FROM service',
           'LEFT JOIN appointment_detail ON appointment_detail.service_id = service.id',
           `WHERE service.status LIKE 'active' and unaccent(service.name) ilike ${keywords}`,
-          'GROUP BY service.id, appointment_detail.id',
+          'GROUP BY service.id',
           'ORDER BY count(appointment_detail.id) desc',
           'LIMIT 10'
         ].join(' '),
@@ -1508,7 +1508,7 @@ export class SearchController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      await RecentViewModel.destroy({
+      await CustomerSearchModel.destroy({
         where: {
           customerId: dataInput.customerId,
           id: dataInput.recentSearchId
@@ -1545,7 +1545,7 @@ export class SearchController {
   public deleteAllRecentSearch = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = res.locals.customerPayload.id;
-      await RecentViewModel.destroy({
+      await CustomerSearchModel.destroy({
         where: {
           customerId: customerId
         }

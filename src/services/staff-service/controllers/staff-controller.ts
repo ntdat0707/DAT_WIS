@@ -8,11 +8,7 @@ require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import {
-  staffErrorDetails,
-  branchErrorDetails,
-  teamStaffErrorDetails
-} from '../../../utils/response-messages/error-details';
+import { staffErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
 import { iterator } from '../../../utils/iterator';
@@ -33,8 +29,7 @@ import {
   LocationWorkingHourModel,
   TeamModel,
   CateServiceModel,
-  PositionModel,
-  TeamStaffModel
+  PositionModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -503,9 +498,6 @@ export class StaffController {
    *       name: color
    *       type: string
    *     - in: "formData"
-   *       name: teamId
-   *       type: string
-   *     - in: "formData"
    *       name: isServiceProvider
    *       type: boolean
    *     - in: "formData"
@@ -540,7 +532,7 @@ export class StaffController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      let profile: any = {
+      const profile: any = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
@@ -564,15 +556,6 @@ export class StaffController {
         }
       }
 
-      if (req.body.teamId) {
-        const teamId = await TeamStaffModel.findOne({ where: { teamId: req.body.teamId } });
-        if (!teamId) {
-          throw next(new CustomError(teamStaffErrorDetails.E_5100(`Staff not found in this team ${req.body.teamId} `)));
-        }
-        profile = {
-          ...profile
-        };
-      }
       let staff = await StaffModel.findOne({
         where: {
           id: req.params.staffId
