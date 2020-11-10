@@ -234,6 +234,7 @@ export class RoleController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const query: FindOptions = {
+        where: { roleName: { [Op.ne]: ERoleDefault.SUPER_ADMIN } },
         include: [
           {
             model: StaffModel,

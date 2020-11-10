@@ -272,6 +272,7 @@ InvoiceModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
 
 RoleModel.hasMany(StaffModel, { foreignKey: 'roleId', sourceKey: 'id', as: 'staffs' });
 StaffModel.belongsTo(RoleModel, { foreignKey: 'roleId', as: 'role' });
+
 CompanyModel.belongsToMany(CompanyTypeDetailModel, {
   through: CompanyTypeModel,
   foreignKey: 'companyId',

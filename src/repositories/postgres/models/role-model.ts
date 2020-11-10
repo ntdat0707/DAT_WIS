@@ -1,12 +1,10 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
-import { EStatusRole } from '../../../utils/consts';
 
 class RoleModel extends Model {
   public id: string;
   public roleName!: string;
   public description: string;
-  public status!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -29,11 +27,6 @@ RoleModel.init(
       field: 'description',
       type: DataTypes.STRING(255),
       allowNull: true
-    },
-    status: {
-      field: 'status',
-      type: DataTypes.ENUM(...Object.values(EStatusRole)),
-      defaultValue: EStatusRole.INACTIVE
     },
     createdAt: {
       field: 'created_at',

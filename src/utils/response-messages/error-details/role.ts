@@ -17,6 +17,10 @@ const roleErrorDetails = {
   E_3803(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3803', 'Can not delete role', detail);
     return e;
+  },
+  E_3804(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3804', 'Can not assign role for staff', detail);
+    return e;
   }
 };
 
