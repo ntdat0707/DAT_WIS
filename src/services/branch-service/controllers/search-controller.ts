@@ -19,7 +19,8 @@ import {
   RecentBookingModel,
   MarketPlaceFieldsModel,
   MarketPlaceValueModel,
-  LocationStaffModel
+  LocationStaffModel,
+  CompanyTypeDetailModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -1103,7 +1104,14 @@ export class SearchController {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
                 required: false,
-                attributes: ['businessType', 'businessName']
+                attributes: { exclude: ['createdAt', 'updateAt', 'deletedAt'] }
+              },
+              {
+                model: CompanyTypeDetailModel,
+                as: 'companyTypeDetails',
+                through: { attributes: [] },
+                required: false,
+                attributes: { exclude: ['createdAt', 'updateAt', 'deletedAt'] }
               }
             ]
           },
@@ -1118,7 +1126,6 @@ export class SearchController {
         where: { pathName: data.pathName },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
-
       if (location) {
         locations = (
           await LocationModel.findAll({
@@ -1315,7 +1322,14 @@ export class SearchController {
                 model: CompanyDetailModel,
                 as: 'companyDetail',
                 required: false,
-                attributes: ['businessType', 'businessName']
+                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
+              },
+              {
+                model: CompanyTypeDetailModel,
+                as: 'companyTypeDetails',
+                through: { attributes: [] },
+                required: false,
+                attributes: { exclude: ['createdAt', 'updateAt', 'deletedAt'] }
               }
             ]
           },
