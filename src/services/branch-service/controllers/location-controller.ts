@@ -508,6 +508,7 @@ export class LocationController {
       return next(error);
     }
   };
+
   /**
    * @swagger
    * /branch/location/delete/{locationId}:
@@ -936,6 +937,39 @@ export class LocationController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /branch/location/get-prefix-codes:
+   *   get:
+   *     tags:
+   *       - Branch
+   *     security:
+   *       - Bearer: []
+   *     name: getPrefixCodes
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad request - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public getPrefixCodes = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const companyId = res.locals.staffPayload.companyId;
+      const prefixCodes = await LocationModel.findAll({
+        where: { companyId: companyId },
+        attributes: ['id', 'prefixCode']
+      });
+      if (!prefixCodes) {
+        throw new CustomError(locationErrorDetails.E_1012(`Prefix codes not existed`), HttpStatus.NOT_FOUND);
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(prefixCodes));
+    } catch (error) {
       return next(error);
     }
   };
