@@ -1,4 +1,4 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import { Model, Sequelize, DataTypes } from 'sequelize';
 import sequelize from '../configs/db-connector';
 import { ESource, ELabel, EGender } from '../../../utils/consts';
 class CustomerWisereModel extends Model {
@@ -20,6 +20,7 @@ class CustomerWisereModel extends Model {
   public label: string;
   public color: string;
   public job: string;
+  public prefixCode: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -124,6 +125,11 @@ CustomerWisereModel.init(
       allowNull: true,
       field: 'label',
       defaultValue: ELabel.NONE
+    },
+    prefixCode: {
+      field: 'prefix_code',
+      type: DataTypes.STRING,
+      allowNull: false
     },
     createdAt: {
       field: 'created_at',
