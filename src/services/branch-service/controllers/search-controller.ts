@@ -1494,7 +1494,7 @@ export class SearchController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      await RecentViewModel.destroy({
+      await CustomerSearchModel.destroy({
         where: {
           customerId: dataInput.customerId,
           id: dataInput.recentSearchId
@@ -1531,7 +1531,7 @@ export class SearchController {
   public deleteAllRecentSearch = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = res.locals.customerPayload.id;
-      await RecentViewModel.destroy({
+      await CustomerSearchModel.destroy({
         where: {
           customerId: customerId
         }
