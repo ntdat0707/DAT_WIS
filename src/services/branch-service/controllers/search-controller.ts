@@ -1890,63 +1890,21 @@ export class SearchController {
         }
       };
 
-      let countTypeAvailable = 1;
-      const countLocationTypes: Array<{
-        count: number,
-        type: string,
-        body: object,
-        size?: number,
-        from?: number
-      }> = [];
-      const locationTypesAvailable: string[] = [];
       if (search.addressInfor) {
         const locationTypes =  ['country', 'province', 'city', 'district', 'ward', 'street'];
+        searchParams.body.query.bool.should = [];
         locationTypes.forEach((type: string) => {
           if (search[type]) {
-            searchParams.body.query.bool.must.push({
+            searchParams.body.query.bool.should.push({
               query_string: {
                 fields: [type],
                 query: `${search[type]}~1`
               }
             });
-            locationTypesAvailable.push(type);
-            countTypeAvailable++;
           }
         });
       }
-      console.log(JSON.stringify(searchParams, null, 2));
-      if (search.order === EOrder.NEWEST) {
-        searchParams.body.sort = [{ openedAt: 'desc' }];
-      }
-      for (let i = 1; i < countTypeAvailable; i++) {
-        const searchCount = await elasticsearchClient.count({
-          index: INDEX_SEARCH_MARKETPLACE,
-          body: searchParams.body
-        });
-        countLocationTypes.push({
-          count: searchCount.count,
-          type: locationTypesAvailable.pop(),
-          body: searchParams.body
-        });
-        searchParams.body.query.bool.must.pop();
-      }
-      console.log(JSON.stringify(countLocationTypes, null, 2));
-      const locationTypesRequest = countLocationTypes.reduce((acc: any, item: any) => {
-        if (acc.maxCurrent < paginateOptions.pageNum * paginateOptions.pageSize &&
-          acc.maxCurrent < item.count) {
-          acc.locationTypes.push({
-            ...item,
-            from:  acc.maxCurrent,
-            size: Math.min(item.count, paginateOptions.pageNum * paginateOptions.pageSize)
-          })
-          acc.maxCurrent = Math.min(item.count, paginateOptions.pageNum * paginateOptions.pageSize);
-        }
-        return acc;
-      }, {
-        maxCurrent: (paginateOptions.pageNum - 1) * paginateOptions.pageSize,
-        locationTypes: []
-      }).locationTypes;
-      locationTypesRequest
+
       const result: any = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
 
       let locationResults = result.data;
