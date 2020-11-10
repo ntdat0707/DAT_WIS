@@ -33,11 +33,13 @@ import {
   customerErrorDetails
 } from '../../../utils/response-messages/error-details';
 import { FindOptions, Op } from 'sequelize';
-import { paginate } from '../../../utils/paginator';
-import { EAppointmentStatus, EStatusPipelineStage } from '../../../utils/consts';
+import { paginate, paginateElasicSearch } from '../../../utils/paginator';
+import { EAppointmentStatus, EOrder, EStatusPipelineStage } from '../../../utils/consts';
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
+import { SearchParams } from 'elasticsearch';
+import { elasticsearchClient } from '../../../repositories/elasticsearch/connector';
 export class DealController {
   /**
    * @swagger
@@ -547,7 +549,8 @@ export class DealController {
         include: [
           {
             model: CustomerWisereModel,
-            as: 'customerWisere'
+            as: 'customerWisere',
+            required: false
           },
           {
             model: StaffModel,
@@ -562,6 +565,7 @@ export class DealController {
           }
         ]
       };
+
       if (conditions.customerWisereId) {
         query.where = {
           ...query.where,
@@ -1225,6 +1229,94 @@ export class DealController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /customer/deal/search-deal:
+   *   get:
+   *     tags:
+   *       - Customer
+   *     security:
+   *       - Bearer: []
+   *     name: searchDeals
+   *     parameters:
+   *     - in: query
+   *       name: keyWords
+   *       schema:
+   *          type: string
+   *     - in: query
+   *       name: pageNum
+   *       schema:
+   *          type: integer
+   *       required: true
+   *     - in: query
+   *       name: pageSize
+   *       schema:
+   *          type: integer
+   *       required: true
+   *     - in: query
+   *       name: order
+   *       schema:
+   *          type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: Bad requests - input invalid format, header is invalid
+   *       500:
+   *         description: Internal server errors
+   */
+  public searchDeals = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions: any = {
+        pageNum: +req.query.pageNum,
+        pageSize: +req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const keywords = req.query.keyWords;
+      const searchParams: SearchParams = {
+        index: 'get_deals_dev',
+        body: {
+          query: {
+            bool: {
+              must: [
+                !keywords
+                  ? {
+                      match_all: {}
+                    }
+                  : {
+                      query_string: {
+                        fields: [
+                          'dealTitle',
+                          'customerWisere.firstName',
+                          'owner.firstName',
+                          'appointment.status',
+                          'pipeline_stage.name'
+                        ],
+                        query: `${(req.query.keyWords as string).replace(/  +/g, ' ').trim()}`
+                      }
+                    }
+              ]
+            }
+          }
+        }
+      };
+      if (req.body.order === EOrder.NEWEST) {
+        searchParams.body.sort = [{ createdAt: 'desc' }];
+      }
+      const deals = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      deals.data = deals.data.map((item: any) => ({
+        ...item._source
+      }));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(deals));
+    } catch (error) {
       return next(error);
     }
   };

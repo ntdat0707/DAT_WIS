@@ -6,7 +6,6 @@ require('dotenv').config();
 export class DealRoutes {
   public router: express.Router = express.Router();
   private dealController = new DealController();
-
   constructor() {
     this.config();
   }
@@ -32,5 +31,6 @@ export class DealRoutes {
     );
     this.router.post('/setting-pipeline', isAuthenticated, this.dealController.settingPipeline);
     this.router.put('/update-status-deal/:dealId?', isAuthenticated, this.dealController.updateStatusDeal);
+    this.router.get('/search-deal', isAuthenticated, this.dealController.searchDeals);
   }
 }
