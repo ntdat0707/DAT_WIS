@@ -248,7 +248,6 @@ export class LocationController {
       //check prefixCode
       const prefixCode = await LocationModel.findOne({
         where: {
-          companyId: data.companyId,
           prefixCode: data.prefixCode
         }
       });
@@ -919,7 +918,6 @@ export class LocationController {
       //check prefixCode
       const prefixCode = await LocationModel.findOne({
         where: {
-          companyId: res.locals.staffPayload.companyId,
           prefixCode: data.prefixCode
         }
       });
@@ -929,7 +927,6 @@ export class LocationController {
           HttpStatus.BAD_REQUEST
         );
       }
-
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
       await transaction.commit();
