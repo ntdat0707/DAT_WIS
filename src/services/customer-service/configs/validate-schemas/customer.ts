@@ -47,7 +47,7 @@ const createCustomerWisereSchema = Joi.object({
       })
     )
     .label('morePhoneContact'),
-  prefixCode: Joi.string().min(1).max(10).uppercase().required().label('prefixCode')
+  code: Joi.string().min(1).max(10).uppercase().required().label('code')
 });
 
 const updateCustomerWisereSchema = Joi.object({
@@ -100,8 +100,7 @@ const updateCustomerWisereSchema = Joi.object({
           .label('type')
       })
     )
-    .label('morePhoneContact'),
-  prefixCode: Joi.string().min(1).max(10).uppercase().required().label('prefixCode')
+    .label('morePhoneContact')
 });
 
 const customerWireseIdSchema = Joi.string()

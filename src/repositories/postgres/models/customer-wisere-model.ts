@@ -20,7 +20,6 @@ class CustomerWisereModel extends Model {
   public label: string;
   public color: string;
   public job: string;
-  public prefixCode: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -125,11 +124,6 @@ CustomerWisereModel.init(
       allowNull: true,
       field: 'label',
       defaultValue: ELabel.NONE
-    },
-    prefixCode: {
-      field: 'prefix_code',
-      type: DataTypes.STRING,
-      allowNull: false
     },
     createdAt: {
       field: 'created_at',

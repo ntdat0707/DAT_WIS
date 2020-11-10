@@ -162,7 +162,7 @@ export class CustomerController {
    *       items:
    *           $ref: '#/definitions/MorePhoneContact'
    *     - in: "formData"
-   *       name: prefixCode
+   *       name: code
    *       type: string
    *       required: true
    *     responses:
@@ -193,7 +193,7 @@ export class CustomerController {
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
         morePhoneContact: req.body.morePhoneContact,
-        prefixCode: req.body.prefixCode
+        code: req.body.code
       };
       const validateErrors = validate(data, createCustomerWisereSchema);
       if (validateErrors) {
@@ -226,26 +226,13 @@ export class CustomerController {
         if (!existStaff)
           throw new CustomError(staffErrorDetails.E_4000(`staffId ${data.ownerId} not found`), HttpStatus.NOT_FOUND);
       }
-      while (true) {
-        const random = Math.random().toString(36).substring(2, 4) + Math.random().toString(36).substring(2, 8);
-        const randomCode = random.toUpperCase();
-        data.code = randomCode;
-        const existAppCode = await CustomerWisereModel.findOne({
-          where: {
-            code: data.code
-          }
-        });
-        if (!existAppCode) {
-          break;
-        }
-      }
       if (req.file) {
         data.avatarPath = (req.file as any).location;
       }
       //check prefixCode
       const prefixCodeLocation = await LocationModel.findOne({
         where: {
-          prefixCode: data.prefixCode,
+          prefixCode: data.code,
           companyId: data.companyId
         }
       });
@@ -266,7 +253,7 @@ export class CustomerController {
         }
       );
       const total = parseInt(resultQuery[0].count, 10) + 1;
-      data.prefixCode = data.prefixCode + total.toString().padStart(6, '0');
+      data.code = data.code + total.toString().padStart(6, '0');
       transaction = await sequelize.transaction();
       const customerWisere = await CustomerWisereModel.create(data, { transaction });
       if (data.moreEmailContact && data.moreEmailContact.length > 0) {
@@ -413,10 +400,6 @@ export class CustomerController {
    *       type: array
    *       items:
    *           $ref: '#/definitions/MorePhoneContact'
-   *     - in: "formData"
-   *       name: prefixCode
-   *       type: string
-   *       required: true
    *     responses:
    *       200:
    *         description: success
@@ -445,8 +428,7 @@ export class CustomerController {
         label: req.body.label,
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
-        morePhoneContact: req.body.morePhoneContact,
-        prefixCode: req.body.prefixCode
+        morePhoneContact: req.body.morePhoneContact
       };
       const customerWisereId = req.params.customerWisereId;
       const validateErrors = validate({ ...data, customerWisereId: customerWisereId }, updateCustomerWisereSchema);
@@ -494,30 +476,6 @@ export class CustomerController {
       if (req.file) {
         data.avatarPath = (req.file as any).location;
       }
-
-      //check prefixCode
-      const prefixCodeLocation = await LocationModel.findOne({
-        where: {
-          prefixCode: data.prefixCode,
-          companyId: companyId
-        }
-      });
-      if (!prefixCodeLocation) {
-        throw new CustomError(
-          locationErrorDetails.E_1012(`Prefix code ${data.prefixCode} is not existed on this company ${companyId}`),
-          HttpStatus.BAD_REQUEST
-        );
-      }
-
-      const resultQuery: any = await sequelize.query(
-        'SELECT COUNT(id) FROM customer_wisere WHERE company_id =$companyId',
-        {
-          bind: { companyId: companyId },
-          type: QueryTypes.SELECT
-        }
-      );
-      const total = parseInt(resultQuery[0].count, 10);
-      data.prefixCode = data.prefixCode + total.toString().padStart(6, '0');
       transaction = await sequelize.transaction();
       await customerWisere.update(data, transaction);
       if (data.moreEmailContact && data.moreEmailContact.length > 0) {
