@@ -156,12 +156,6 @@ const getStaffAvailableTimeSlots = Joi.object({
 });
 
 const deleteStaffSchema = Joi.object({
-  locationId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .required()
-    .label('locationId'),
   staffId: Joi.string()
     .guid({
       version: ['uuidv4']
