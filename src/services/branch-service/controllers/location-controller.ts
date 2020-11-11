@@ -915,6 +915,7 @@ export class LocationController {
       if (file) {
         data.photo = (file as any).location;
       }
+
       //check prefixCode
       if (data.prefixCode) {
         const prefixCode = await LocationModel.findOne({
