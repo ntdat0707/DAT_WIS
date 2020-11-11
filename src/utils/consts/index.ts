@@ -195,3 +195,15 @@ export enum ETypeOfReceipt {
   INVOICE = 'invoice',
   ORDER = 'order'
 }
+
+export enum EStatusRole {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
+}
+
+export enum ERoleDefault {
+  SUPER_ADMIN = 'Super admin',
+  ADMIN = 'Admin',
+  STAFF = 'Staff',
+  NORMAL_USER = 'Normal user'
+}
