@@ -768,7 +768,6 @@ export class LocationController {
    *     - in: "formData"
    *       name: "prefixCode"
    *       type: string
-   *       required: true
    *     responses:
    *       200:
    *         description:
@@ -917,16 +916,18 @@ export class LocationController {
         data.photo = (file as any).location;
       }
       //check prefixCode
-      const prefixCode = await LocationModel.findOne({
-        where: {
-          prefixCode: data.prefixCode
+      if (data.prefixCode) {
+        const prefixCode = await LocationModel.findOne({
+          where: {
+            prefixCode: data.prefixCode
+          }
+        });
+        if (prefixCode) {
+          throw new CustomError(
+            locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+            HttpStatus.BAD_REQUEST
+          );
         }
-      });
-      if (prefixCode) {
-        throw new CustomError(
-          locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
-          HttpStatus.BAD_REQUEST
-        );
       }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
