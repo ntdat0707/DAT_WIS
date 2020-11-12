@@ -9,6 +9,7 @@ import StaffService from '../services/staff-service/app';
 import BranchService from '../services/branch-service/app';
 import BookingService from '../services/booking-service/app';
 import SaleService from '../services/sale-service/app';
+import TreatmentService from '../services/treatment-service/app';
 
 require('dotenv').config();
 const nodeName = process.env.NODE_NAME;
@@ -104,22 +105,34 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
         });
       });
       break;
+    case 'treatment-service':
+      const treatmentService = new TreatmentService().app;
+      treatmentService.listen(treatmentService.get('port'), (): void => {
+        logger.info({
+          label: 'treatment-service',
+          message: `App is running at http://localhost:${treatmentService.get('port')} in mode ${treatmentService.get(
+            'env'
+          )} `
+        });
+      });
+      break;
   }
 } else {
   // develop mode
   const apiGateway = new APIGateway().app;
-  const customerService = new CustomerService().app;
   apiGateway.listen(apiGateway.get('port'), (): void => {
     logger.info({
       label: apiGatewayName,
       message: `App is running at http://localhost:${apiGateway.get('port')} in mode ${apiGateway.get('env')} `
     });
   });
+
   const systemService = new SystemService().app;
   logger.info({
     label: 'system-service',
     message: `App is running in mode ${systemService.get('env')} `
   });
+
   const notificationService = new NotificationService().app;
   logger.info({
     label: 'notification-service',
@@ -134,6 +147,7 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
     });
   });
 
+  const customerService = new CustomerService().app;
   customerService.listen(customerService.get('port'), (): void => {
     logger.info({
       label: 'customer-service',
@@ -164,6 +178,16 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
     logger.info({
       label: 'sale-service',
       message: `App is running at http://localhost:${saleService.get('port')} in mode ${saleService.get('env')} `
+    });
+  });
+
+  const treatmentService = new TreatmentService().app;
+  treatmentService.listen(treatmentService.get('port'), (): void => {
+    logger.info({
+      label: 'treatment-service',
+      message: `App is running at http://localhost:${treatmentService.get('port')} in mode ${treatmentService.get(
+        'env'
+      )} `
     });
   });
 }
