@@ -13,8 +13,8 @@ import {
   LocationWorkingHourModel,
   StaffModel,
   CompanyDetailModel,
-  LocationImageModel,
-  CompanyTypeDetailModel
+  CompanyTypeDetailModel,
+  LocationImageModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -23,7 +23,7 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema
 } from '../configs/validate-schemas';
-import { FindOptions } from 'sequelize';
+import { FindOptions, QueryTypes } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -914,9 +914,28 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
-
+      // update photo avatar
       if (file) {
         data.photo = (file as any).location;
+      }
+      const photo: any = await LocationImageModel.findOne({
+        where: { locationId: params.locationId, isAvatar: true }
+      });
+
+      if (!photo) {
+        const newAvatar = {
+          locationId: params.locationId,
+          path: data.photo,
+          isAvatar: true
+        };
+        await LocationImageModel.create(newAvatar, { transaction });
+      } else {
+        photo.path = data.photo;
+        await sequelize.query('UPDATE location_image SET path =$photoPath WHERE id =$photoId', {
+          bind: { photoPath: data.photo, photoId: photo.id },
+          type: QueryTypes.UPDATE,
+          transaction: transaction
+        });
       }
       //check prefixCode
       if (data.prefixCode) {
