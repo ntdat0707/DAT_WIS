@@ -728,6 +728,9 @@ export class LocationController {
    *       type: file
    *       description: The file to upload.
    *     - in: "formData"
+   *       name: "description"
+   *       type: string
+   *     - in: "formData"
    *       name: "name"
    *       type: string
    *     - in: "formData"

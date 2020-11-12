@@ -133,6 +133,7 @@ const updateLocationSchema = Joi.object({
   address: Joi.string().label('address'),
   latitude: Joi.number().label('latitude'),
   longitude: Joi.number().label('longitude'),
+  description: Joi.string().label('description'),
   title: Joi.string().label('title'),
   deleteImages: Joi.array()
     .items(
