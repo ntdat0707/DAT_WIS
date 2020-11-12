@@ -6,7 +6,8 @@ import {
   staffServiceConfigs,
   branchServiceConfigs,
   bookingServiceConfigs,
-  saleServiceConfigs
+  saleServiceConfigs,
+  treatmentServiceConfigs
 } from './configs';
 import { API_BASE_PATH } from '../configs';
 
@@ -51,6 +52,8 @@ class ServiceRoutes {
       return `${API_BASE_PATH}${bookingServiceConfigs.route}`;
     if (originalUrl.startsWith(`${API_BASE_PATH}${saleServiceConfigs.route}`))
       return `${API_BASE_PATH}${saleServiceConfigs.route}`;
+    if (originalUrl.startsWith(`${API_BASE_PATH}${treatmentServiceConfigs.route}`))
+      return `${API_BASE_PATH}${treatmentServiceConfigs.route}`;
     else return '';
   };
 
@@ -103,6 +106,15 @@ class ServiceRoutes {
       saleServiceConfigs.route,
       createProxyMiddleware({
         ...saleServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq }
+      })
+    );
+
+    //TREATMENT SERVICE
+    this.router.use(
+      treatmentServiceConfigs.route,
+      createProxyMiddleware({
+        ...treatmentServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq }
       })
     );
