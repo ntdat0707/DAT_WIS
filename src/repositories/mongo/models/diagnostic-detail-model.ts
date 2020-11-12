@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
+import { ITeeth } from './teeth-model';
 
 interface IDiagnosticDetail extends mongoose.Document {
-  teeth: [string];
+  tooth: [ITeeth]; //[{number:26,facetooth:[{facename:xxxx,image:.....}]}]
   staffId: string;
   customerId: string;
   diagnosticId: string;
@@ -9,7 +10,7 @@ interface IDiagnosticDetail extends mongoose.Document {
 }
 
 const DiagnosticDetailSchema = new mongoose.Schema({
-  teeth: { type: Array, required: true },
+  tooth: { type: Array, required: true },
   staffId: { type: String, required: true },
   customerId: { type: String, required: true },
   diagnosticId: { type: String, required: true },

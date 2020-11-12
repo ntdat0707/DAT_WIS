@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { IDiagnosticDetail } from './diagnostis-detail-model';
+import { IDiagnosticDetail } from './diagnostic-detail-model';
 
 interface IDiagnostic extends mongoose.Document {
   diagnosticDetail: [IDiagnosticDetail];

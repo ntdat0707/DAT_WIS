@@ -207,3 +207,8 @@ export enum ERoleDefault {
   STAFF = 'Staff',
   NORMAL_USER = 'Normal user'
 }
+
+export enum ETeeth {
+  ADULT = 'adult',
+  KID = 'kid'
+}
