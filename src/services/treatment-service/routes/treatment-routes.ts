@@ -12,5 +12,10 @@ export class TreatmentRoutes {
 
   private config(): void {
     this.router.get('/get-all-medical-history', isAuthenticated, this.treatmentController.getAllMedicalHistory);
+    this.router.get(
+      '/get-medical-history-by-customer/:customerWisereId',
+      isAuthenticated,
+      this.treatmentController.getMedicalHistoryByCustomer
+    );
   }
 }
