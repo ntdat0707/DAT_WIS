@@ -42,6 +42,9 @@ import { TeamStaffModel } from './team-staff-model';
 import { TeamLocationModel } from './team-location-model';
 import { TeamSubModel } from './team-sub-model';
 import { InvoiceReceiptModel } from './invoice-receipt';
+import { RoleModel } from './role-model';
+import { PermissionModel } from './permission-model';
+import { RolePermissionModel } from './role-permission-model';
 import { CompanyTypeDetailModel } from './company-type-detail-model';
 import { CompanyTypeModel } from './company-type-model';
 import { MedicalHistoryModel } from './medical-history-model';
@@ -269,6 +272,9 @@ ReceiptModel.belongsToMany(InvoiceModel, { through: InvoiceReceiptModel, foreign
 StaffModel.hasMany(InvoiceModel, { foreignKey: 'createdBy', sourceKey: 'id', as: 'invoices' });
 InvoiceModel.belongsTo(StaffModel, { foreignKey: 'createdBy', as: 'staff' });
 
+RoleModel.hasMany(StaffModel, { foreignKey: 'roleId', sourceKey: 'id', as: 'staffs' });
+StaffModel.belongsTo(RoleModel, { foreignKey: 'roleId', as: 'role' });
+
 CompanyModel.belongsToMany(CompanyTypeDetailModel, {
   through: CompanyTypeModel,
   foreignKey: 'companyId',
@@ -321,6 +327,9 @@ export {
   TeamStaffModel,
   TeamLocationModel,
   TeamSubModel,
+  RoleModel,
+  PermissionModel,
+  RolePermissionModel,
   CompanyTypeModel,
   CompanyTypeDetailModel,
   MedicalHistoryModel,

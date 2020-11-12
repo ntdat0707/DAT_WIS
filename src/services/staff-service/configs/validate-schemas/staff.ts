@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EGender } from '../../../../utils/consts';
+import { EGender, EStatusRole } from '../../../../utils/consts';
 
 const staffIdSchema = Joi.string()
   .guid({
@@ -19,6 +19,14 @@ export const createStaffSchema = Joi.object({
   passportNumber: Joi.string().required(),
   address: Joi.string(),
   color: Joi.string(),
+  roleId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('roleId'),
+  statusRole: Joi.string()
+    .valid(...Object.values(EStatusRole))
+    .label('statusRole'),
   workingLocationIds: Joi.array()
     .min(1)
     .required()
@@ -42,12 +50,6 @@ export const createStaffSchema = Joi.object({
 });
 export const updateStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
-  staffId: Joi.string()
-    .guid({
-      version: ['uuidv4']
-    })
-    .required()
-    .label('staffId'),
   isAllowedMarketPlace: Joi.boolean().required().label('isAllowedMarketPlace'),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
@@ -58,6 +60,14 @@ export const updateStaffSchema = Joi.object({
   color: Joi.string(),
   phone: Joi.string().regex(/^\d+$/).disallow('', null).label('phone'),
   isServiceProvider: Joi.boolean().required().label('isServiceProvider'),
+  roleId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('roleId'),
+  statusRole: Joi.string()
+    .valid(...Object.values(EStatusRole))
+    .label('statusRole'),
   workingLocationIds: Joi.array()
     .min(1)
     .required()

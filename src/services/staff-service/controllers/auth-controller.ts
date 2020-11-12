@@ -386,26 +386,6 @@ export class AuthController {
         await loginLogModel.save();
         throw new CustomError(staffErrorDetails.E_4002('Email or password invalid'), HttpStatus.NOT_FOUND);
       }
-      if (!staff.isBusinessAccount) {
-        loginData = {
-          email: data.email,
-          location:
-            (geoip.lookup(await v4()).city ? geoip.lookup(await v4()).city : 'unknown') +
-            ' - ' +
-            geoip.lookup(await v4()).country +
-            ' ( country code )',
-          timestamp: new Date(),
-          browser: data.browser,
-          device: data.device,
-          os: data.os,
-          status: false,
-          source: data.source,
-          ip: await v4()
-        };
-        loginLogModel = new LoginLogModel(loginData);
-        await loginLogModel.save();
-        throw new CustomError(staffErrorDetails.E_4008(), HttpStatus.NOT_FOUND);
-      }
       const match = await compare(data.password, staff.password);
       if (!match) {
         loginData = {

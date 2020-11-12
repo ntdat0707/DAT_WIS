@@ -39,6 +39,7 @@ const getWorkingLocations = async (companyId: string, staffId: string, isOwner: 
           {
             model: StaffModel,
             required: true,
+            as: 'staffs',
             where: { id: staffId },
             through: { attributes: [], where: { staffId } }
           }
