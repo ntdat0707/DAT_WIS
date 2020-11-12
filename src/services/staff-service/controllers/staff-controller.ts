@@ -17,6 +17,7 @@ import { minutesToNum } from '../../../utils/minutes-to-number';
 import { dayOfWeek } from '../../../utils/day-of-week';
 import { getStaffUnavailTime } from '../../../utils/unavail-time-array';
 import { staffWithTime } from '../../../utils/staff-with-time';
+import { Unaccent } from '../../../utils/unaccent';
 import {
   sequelize,
   StaffModel,
@@ -246,10 +247,11 @@ export class StaffController {
         ];
       }
       if (req.query.searchValue) {
+        const unaccentSearchValue = Unaccent(req.query.searchValue);
         query.where = {
           [Op.or]: [
             Sequelize.literal(
-              `unaccent(concat("StaffModel"."first_name", ' ', "StaffModel"."last_name")) ilike unaccent('%${req.query.searchValue}%')`
+              `unaccent(concat("StaffModel"."last_name", ' ', "StaffModel"."first_name")) ilike '%${unaccentSearchValue}%'`
             ),
             Sequelize.literal(`"StaffModel"."staff_code" ilike '%${req.query.searchValue}%'`),
             Sequelize.literal(`"StaffModel"."phone" like '%${req.query.searchValue}%'`),
