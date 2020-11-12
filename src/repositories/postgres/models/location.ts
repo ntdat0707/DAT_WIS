@@ -1,4 +1,4 @@
-import { Model, DataTypes, Sequelize } from 'sequelize';
+import { Model, Sequelize, DataTypes } from 'sequelize';
 import sequelize from '../configs/db-connector';
 import { ELocationStatus } from '../../../utils/consts';
 
@@ -24,6 +24,7 @@ class LocationModel extends Model {
   public pathName?: string;
   public placeId?: string;
   public isoMarketplace: boolean;
+  public prefixCode: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -131,6 +132,12 @@ LocationModel.init(
       field: 'iso_marketplace',
       type: DataTypes.BOOLEAN,
       defaultValue: false
+    },
+    prefixCode: {
+      field: 'prefix_code',
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false
     },
     openedAt: {
       field: 'opened_at',

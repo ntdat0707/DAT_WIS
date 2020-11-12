@@ -86,6 +86,16 @@ const locationErrorDetails = {
   E_1010(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1010', 'full address required', detail);
     return e;
+  },
+
+  E_1011(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1011', 'prefix code is existed', detail);
+    return e;
+  },
+
+  E_1012(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1012', 'prefix code is not existed on this location', detail);
+    return e;
   }
 };
 

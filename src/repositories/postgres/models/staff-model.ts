@@ -1,4 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+import { EStatusRole } from '../../../utils/consts';
 import sequelize from '../configs/db-connector';
 class StaffModel extends Model {
   public id: string;
@@ -20,6 +21,8 @@ class StaffModel extends Model {
   public onboardStep: number;
   public staffCode: string;
   public isServiceProvider: boolean;
+  public roleId: string;
+  public statusRole: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -124,6 +127,16 @@ StaffModel.init(
       type: DataTypes.BOOLEAN,
       field: 'is_service_provider',
       defaultValue: false
+    },
+    roleId: {
+      field: 'role_id',
+      type: DataTypes.UUIDV4,
+      allowNull: true
+    },
+    statusRole: {
+      field: 'status_role',
+      type: DataTypes.ENUM(...Object.values(EStatusRole)),
+      allowNull: true
     },
     createdAt: {
       field: 'created_at',

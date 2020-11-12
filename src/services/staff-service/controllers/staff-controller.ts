@@ -8,7 +8,11 @@ require('dotenv').config();
 
 import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
-import { staffErrorDetails, branchErrorDetails } from '../../../utils/response-messages/error-details';
+import {
+  staffErrorDetails,
+  branchErrorDetails,
+  roleErrorDetails
+} from '../../../utils/response-messages/error-details';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { paginate } from '../../../utils/paginator';
 import { iterator } from '../../../utils/iterator';
@@ -29,7 +33,8 @@ import {
   LocationWorkingHourModel,
   TeamModel,
   CateServiceModel,
-  PositionModel
+  PositionModel,
+  RoleModel
 } from '../../../repositories/postgres/models';
 
 import {
@@ -43,6 +48,7 @@ import {
   settingPositionStaffSchema
 } from '../configs/validate-schemas';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
+import { ERoleDefault } from '../../../utils/consts';
 
 export class StaffController {
   /**
@@ -286,9 +292,6 @@ export class StaffController {
    *       type: file
    *       description: The file to upload.
    *     - in: "formData"
-   *       name: teamId
-   *       type: string
-   *     - in: "formData"
    *       name: firstName
    *       type: string
    *       required: true
@@ -317,6 +320,13 @@ export class StaffController {
    *     - in: "formData"
    *       name: color
    *       type: string
+   *     - in: "formData"
+   *       name: roleId
+   *       type: string
+   *     - in: "formData"
+   *       name: statusRole
+   *       type: string
+   *       enum: ['active', 'inactive']
    *     - in: "formData"
    *       name: isServiceProvider
    *       type: boolean
@@ -351,7 +361,6 @@ export class StaffController {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
       const profile: any = {
-        teamId: req.body.teamId,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
@@ -362,6 +371,8 @@ export class StaffController {
         address: req.body.address,
         color: req.body.color,
         isServiceProvider: req.body.isServiceProvider,
+        roleId: req.body.roleId,
+        statusRole: req.body.statusRole,
         id: uuidv4()
       };
 
@@ -379,6 +390,18 @@ export class StaffController {
         if (checkEmailExists) throw new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST);
       }
       if (req.file) profile.avatarPath = (req.file as any).location;
+      if (profile.roleId) {
+        const role = await RoleModel.findOne({ where: { id: profile.roleId } });
+        if (!role) {
+          throw new CustomError(roleErrorDetails.E_3801(`roleId ${profile.roleId} not found`), HttpStatus.NOT_FOUND);
+        }
+        if (role.roleName === ERoleDefault.SUPER_ADMIN) {
+          throw new CustomError(
+            roleErrorDetails.E_3804(`can not assign role ${role.roleName} for staff`),
+            HttpStatus.BAD_REQUEST
+          );
+        }
+      }
       const staff = await StaffModel.create(profile, { transaction });
 
       if (req.body.workingLocationIds) {
@@ -498,6 +521,13 @@ export class StaffController {
    *       name: color
    *       type: string
    *     - in: "formData"
+   *       name: roleId
+   *       type: string
+   *     - in: "formData"
+   *       name: statusRole
+   *       type: string
+   *       enum: ['active', 'inactive']
+   *     - in: "formData"
    *       name: isServiceProvider
    *       type: boolean
    *     - in: "formData"
@@ -542,7 +572,9 @@ export class StaffController {
         phone: req.body.phone,
         color: req.body.color,
         isAllowedMarketPlace: req.body.isAllowedMarketPlace,
-        isServiceProvider: req.body.isServiceProvider
+        isServiceProvider: req.body.isServiceProvider,
+        roleId: req.body.roleId,
+        statusRole: req.body.statusRole
       };
       if (req.file) profile.avatarPath = (req.file as any).location;
 
@@ -556,14 +588,38 @@ export class StaffController {
         }
       }
 
-      let staff = await StaffModel.findOne({
+      let staff: any = await StaffModel.findOne({
         where: {
           id: req.params.staffId
         },
         attributes: {
           exclude: ['password']
-        }
+        },
+        include: [
+          {
+            model: RoleModel,
+            as: 'role',
+            required: false
+          }
+        ]
       });
+      if (profile.roleId) {
+        const role = await RoleModel.findOne({ where: { id: profile.roleId } });
+        if (!role) {
+          throw new CustomError(roleErrorDetails.E_3801(`roleId ${profile.roleId} not found`), HttpStatus.NOT_FOUND);
+        }
+        if (
+          (staff.role &&
+            staff.role.roleName !== ERoleDefault.SUPER_ADMIN &&
+            role.roleName === ERoleDefault.SUPER_ADMIN) ||
+          (!staff.role && role.roleName === ERoleDefault.SUPER_ADMIN)
+        ) {
+          throw new CustomError(
+            roleErrorDetails.E_3804(`can not assign role ${role.roleName} for staff`),
+            HttpStatus.BAD_REQUEST
+          );
+        }
+      }
 
       staff = await staff.update(profile, {
         transaction: transaction

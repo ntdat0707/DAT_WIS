@@ -1861,8 +1861,10 @@ export class SearchController {
         });
       }
 
+      const INDEX_SEARCH_MARKETPLACE = 'marketplace_search';
+
       const searchParams: SearchParams = {
-        index: 'marketplace_search',
+        index: INDEX_SEARCH_MARKETPLACE,
         body: {
           query: {
             bool: {
@@ -1888,34 +1890,22 @@ export class SearchController {
         }
       };
 
-      const countTypeAvailable = 1;
-      // if (search.addressInfor) {
-      //   const locationType = ['country', 'province', 'city', 'district', 'ward', 'street'];
-      //   locationType.forEach((type: string) => {
-      //     if (search[type]) {
-      //       countTypeAvailable++;
-      //       searchParams.body.query.bool.must.push({
-      //         query_string: {
-      //           fields: [type],
-      //           query: `${search[type]}~1`
-      //         }
-      //       });
-      //     }
-      //   });
-      // }
-      if (search.order === EOrder.NEWEST) {
-        searchParams.body.sort = [{ openedAt: 'desc' }];
+      if (search.addressInfor) {
+        const locationTypes =  ['country', 'province', 'city', 'district', 'ward', 'street'];
+        searchParams.body.query.bool.should = [];
+        locationTypes.forEach((type: string) => {
+          if (search[type]) {
+            searchParams.body.query.bool.should.push({
+              query_string: {
+                fields: [type],
+                query: `${search[type]}~1`
+              }
+            });
+          }
+        });
       }
 
-      let result: any = null;
-      for (let i = 0; i < countTypeAvailable; i++) {
-        result = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
-        // if (result.meta.totalPages === 0 && countTypeAvailable > 1) {
-        //   searchParams.body.query.bool.must.pop();
-        // } else {
-        //   break;
-        // }
-      }
+      const result: any = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
 
       let locationResults = result.data;
       const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
