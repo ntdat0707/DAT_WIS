@@ -89,6 +89,12 @@ const customerErrorDetails = {
   E_3011(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3011', 'Passwords do not match', detail);
     return e;
+  },
+
+  //prefix Code error
+  E_3012(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3012', 'Customer code is already exist', detail);
+    return e;
   }
 };
 

@@ -164,7 +164,9 @@ export class CustomerController {
    *     - in: "formData"
    *       name: code
    *       type: string
-   *       required: true
+   *     - in: "formData"
+   *       name: prefixCode
+   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -193,6 +195,7 @@ export class CustomerController {
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
         morePhoneContact: req.body.morePhoneContact,
+        prefixCode: req.body.prefixCode,
         code: req.body.code
       };
       const validateErrors = validate(data, createCustomerWisereSchema);
@@ -230,30 +233,44 @@ export class CustomerController {
         data.avatarPath = (req.file as any).location;
       }
       //check prefixCode
-      const prefixCodeLocation = await LocationModel.findOne({
-        where: {
-          prefixCode: data.code,
-          companyId: data.companyId
+      if (data.prefixCode) {
+        const prefixCodeLocation = await LocationModel.findOne({
+          where: {
+            prefixCode: data.prefixCode,
+            companyId: data.companyId
+          }
+        });
+        if (!prefixCodeLocation) {
+          throw new CustomError(
+            locationErrorDetails.E_1012(
+              `Prefix code ${data.prefixCode} is not existed on this company ${data.companyId}`
+            ),
+            HttpStatus.BAD_REQUEST
+          );
         }
-      });
-      if (!prefixCodeLocation) {
-        throw new CustomError(
-          locationErrorDetails.E_1012(
-            `Prefix code ${data.prefixCode} is not existed on this company ${data.companyId}`
-          ),
-          HttpStatus.BAD_REQUEST
-        );
       }
-
-      const resultQuery: any = await sequelize.query(
-        'SELECT COUNT(id) FROM customer_wisere WHERE company_id =$companyId',
-        {
-          bind: { companyId: data.companyId },
-          type: QueryTypes.SELECT
+      //check customer code
+      if (data.code) {
+        const customerCode = await CustomerWisereModel.findOne({
+          where: { code: data.code }
+        });
+        if (customerCode) {
+          throw new CustomError(
+            customerErrorDetails.E_3012(`Customer code ${customerCode.code} is already exists`),
+            HttpStatus.NOT_FOUND
+          );
         }
-      );
-      const total = parseInt(resultQuery[0].count, 10) + 1;
-      data.code = data.code + total.toString().padStart(6, '0');
+      } else {
+        const resultQuery: any = await sequelize.query(
+          'SELECT COUNT(id) FROM customer_wisere WHERE company_id =$companyId',
+          {
+            bind: { companyId: data.companyId },
+            type: QueryTypes.SELECT
+          }
+        );
+        const total = parseInt(resultQuery[0].count, 10) + 1;
+        data.code = total.toString().padStart(6, '0');
+      }
       transaction = await sequelize.transaction();
       const customerWisere = await CustomerWisereModel.create(data, { transaction });
       if (data.moreEmailContact && data.moreEmailContact.length > 0) {
@@ -388,6 +405,12 @@ export class CustomerController {
    *       name: birthDate
    *       type: string
    *     - in: "formData"
+   *       name: code
+   *       type: string
+   *     - in: "formData"
+   *       name: prefixCode
+   *       type: string
+   *     - in: "formData"
    *       name: color
    *       type: string
    *     - in: "formData"
@@ -428,7 +451,9 @@ export class CustomerController {
         label: req.body.label,
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
-        morePhoneContact: req.body.morePhoneContact
+        morePhoneContact: req.body.morePhoneContact,
+        code: req.body.code,
+        prefixCode: req.body.prefixCode
       };
       const customerWisereId = req.params.customerWisereId;
       const validateErrors = validate({ ...data, customerWisereId: customerWisereId }, updateCustomerWisereSchema);
@@ -475,6 +500,31 @@ export class CustomerController {
       }
       if (req.file) {
         data.avatarPath = (req.file as any).location;
+      }
+      if (data.code) {
+        const customerCode = await CustomerWisereModel.findOne({
+          where: { code: data.code, companyId: companyId }
+        });
+        if (customerCode) {
+          throw new CustomError(
+            customerErrorDetails.E_3012(`Customer code ${customerCode.code} is already exists`),
+            HttpStatus.NOT_FOUND
+          );
+        }
+      }
+      if (data.prefixCode) {
+        const prefixCodeLocation = await LocationModel.findOne({
+          where: {
+            prefixCode: data.prefixCode,
+            companyId: companyId
+          }
+        });
+        if (!prefixCodeLocation) {
+          throw new CustomError(
+            locationErrorDetails.E_1012(`Prefix code ${data.prefixCode} is not existed on this company ${companyId}`),
+            HttpStatus.BAD_REQUEST
+          );
+        }
       }
       transaction = await sequelize.transaction();
       await customerWisere.update(data, transaction);

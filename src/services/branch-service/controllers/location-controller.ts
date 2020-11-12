@@ -128,7 +128,6 @@ export class LocationController {
    *     - in: "formData"
    *       name: "prefixCode"
    *       type: string
-   *       required: true
    *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
