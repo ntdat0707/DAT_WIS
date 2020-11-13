@@ -11,6 +11,7 @@ import { validate } from '../../../utils/validator';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import { languageSchema, customerWisereIdSchema, updateMedicalHistorySchema } from '../configs/validate-schemas';
 import { customerErrorDetails } from '../../../utils/response-messages/error-details';
+import _ from 'lodash';
 
 export class TreatmentController extends BaseController {
   /**
@@ -135,9 +136,9 @@ export class TreatmentController extends BaseController {
    *       required: true
    *       properties:
    *          medicalHistories:
-   *          type: array
-   *          items:
-   *             $ref: '#/definitions/medicalHistory'
+   *              type: array
+   *              items:
+   *                  $ref: '#/definitions/medicalHistory'
    *     responses:
    *       200:
    *         description: success
@@ -153,26 +154,57 @@ export class TreatmentController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const customerWisere = await CustomerWisereModel.findOne({ where: { id: customerWisereId } });
+      const customerWisere: any = await CustomerWisereModel.findOne({
+        where: { id: customerWisereId },
+        include: [
+          {
+            model: MedicalHistoryModel,
+            as: 'medicalHistories',
+            required: false,
+            attributes: ['id'],
+            through: { attributes: [] }
+          }
+        ]
+      });
       if (!customerWisere) {
         throw new CustomError(
           customerErrorDetails.E_3001(`customerWisereId ${customerWisereId} not found`),
           httpStatus.NOT_FOUND
         );
       }
-      await MedicalHistoryCustomerModel.destroy({ where: { customerWisereId: customerWisereId } });
-      if (req.body.medicalHistories.length > 0) {
-        const medicalHistoryCustomers = [];
-        for (let i = 0; i < req.body.medicalHistories.length; i++) {
-          const data = {
-            customerWisereId: customerWisereId,
-            medicalHistoryId: req.body.medicalHistories.medicalHistoryId,
-            note: req.body.note
-          };
-          medicalHistoryCustomers.push(data);
-        }
-        await MedicalHistoryCustomerModel.bulkCreate(medicalHistoryCustomers);
+      const currentMedicalhistory: string[] = customerWisere.medicalHistories.map((item: any) => item.id);
+      const dataInput: string[] = req.body.medicalHistories.map((item: any) => item.medicalHistoryId);
+      const remove = _.difference(currentMedicalhistory, dataInput);
+      if (remove.length > 0) {
+        await MedicalHistoryCustomerModel.destroy({
+          where: { customerWisereId: customerWisereId, medicalHistoryId: remove }
+        });
       }
+      const add = _.difference(dataInput, currentMedicalhistory);
+      if (add.length > 0) {
+        for (let i = 0; i < add.length; i++) {
+          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === add[i]);
+          await MedicalHistoryCustomerModel.create({
+            customerWisereId: customerWisereId,
+            medicalHistoryId: add[i],
+            note: req.body.medicalHistories[index].note
+          });
+        }
+      }
+      // const upadte = _.intersection(dataInput, currentMedicalhistory);
+      // if (upadte.length > 0) {
+      //   for (let j = 0; j < upadte.length; j++) {
+      //     const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === upadte[j]);
+      //     await MedicalHistoryCustomerModel.update(
+      //       {
+      //         note: req.body.medicalHistories[index].note
+      //       },
+      //       {
+      //         where: { customerWisereId: customerWisereId, medicalHistoryId: upadte[j] }
+      //       }
+      //     );
+      //   }
+      // }
       return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);

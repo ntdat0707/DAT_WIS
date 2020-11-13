@@ -17,5 +17,10 @@ export class TreatmentRoutes {
       isAuthenticated,
       this.treatmentController.getMedicalHistoryByCustomer
     );
+    this.router.put(
+      '/update-medical-history-of-customer/:customerWisereId',
+      isAuthenticated,
+      this.treatmentController.updateMedicalHistoryOfCustomer
+    );
   }
 }
