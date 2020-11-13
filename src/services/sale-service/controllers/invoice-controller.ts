@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { baseValidateSchemas, validate } from '../../../utils/validator';
-import { createInvoiceSchema, invoiceIdSchema } from '../configs/validate-schemas';
+import { createInvoiceSchema, invoiceIdSchema, filterInvoiceSchema } from '../configs/validate-schemas';
 import {
   AppointmentModel,
   CustomerWisereModel,
@@ -29,7 +29,7 @@ import { EBalanceType, EDiscountType } from './../../../utils/consts/index';
 import { v4 as uuidv4 } from 'uuid';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { FindOptions } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { InvoiceDetailLogModel } from '../../../repositories/mongo/models/invoice-detail-log-model';
 import { ReceiptController } from './receipt-controller';
@@ -331,6 +331,24 @@ export class InvoiceController {
    *     name: getAllInvoice
    *     parameters:
    *       - in: query
+   *         name: fromDate
+   *         schema:
+   *            type: string
+   *       - in: query
+   *         name: toDate
+   *         schema:
+   *            type: string
+   *       - in: query
+   *         name: status
+   *         schema:
+   *            type: array
+   *            items:
+   *                type: string
+   *       - in: query
+   *         name: locationId
+   *         schema:
+   *            type: string
+   *       - in: query
    *         name: pageNum
    *         required: true
    *         schema:
@@ -350,30 +368,68 @@ export class InvoiceController {
    */
   public getAllInvoice = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const conditions = {
+        fromDate: req.query.fromDate,
+        toDate: req.query.toDate,
+        status: req.query.status,
+        locationId: req.query.locationId
+      };
+      let validateErrors;
+      validateErrors = validate(conditions, filterInvoiceSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
         pageNum: req.query.pageNum,
         pageSize: req.query.pageSize
       };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
+      const { workingLocationIds } = res.locals.staffPayload;
       const query: FindOptions = {
         include: [
           {
             model: CustomerWisereModel,
             as: 'customerWisere',
             required: false
-          },
-          {
-            model: LocationModel,
-            as: 'location',
-            required: true
           }
         ],
         order: [['updatedAt', 'DESC']]
       };
+      if (conditions.fromDate || conditions.toDate) {
+        const createdAt: any = {};
+        if (conditions.fromDate) {
+          createdAt[Op.gte] = conditions.fromDate;
+        }
+        if (conditions.toDate) {
+          createdAt[Op.lte] = conditions.toDate;
+        }
+        query.where = {
+          ...query.where,
+          createdAt
+        };
+      }
+      if (conditions.status) {
+        query.where = {
+          ...query.where,
+          status: conditions.status
+        };
+      }
+      const conditionLocationId = conditions.locationId
+        ? {
+            model: LocationModel,
+            as: 'location',
+            where: { id: conditions.locationId }
+          }
+        : {
+            model: LocationModel,
+            as: 'location',
+            where: { id: workingLocationIds }
+          };
+      query.include.push(conditionLocationId);
       const invoices = await paginate(
         InvoiceModel,
         query,
