@@ -15,6 +15,12 @@ class LocationModel extends Model {
   public ward: string;
   public province: string;
   public street: string;
+  public countryCode: string;
+  public cityCode: string;
+  public districtCode: string;
+  public wardCode: string;
+  public provinceCode: string;
+  public streetCode: string;
   public address: string;
   public fullAddress: string;
   public latitude: number;
@@ -68,8 +74,18 @@ LocationModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
+    countryCode: {
+      field: 'country_code',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     city: {
       field: 'city',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    cityCode: {
+      field: 'city_code',
       type: DataTypes.STRING,
       allowNull: true
     },
@@ -78,8 +94,18 @@ LocationModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
+    provinceCode: {
+      field: 'province_code',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     district: {
       field: 'district',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    districtCode: {
+      field: 'district_code',
       type: DataTypes.STRING,
       allowNull: true
     },
@@ -88,8 +114,18 @@ LocationModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
+    wardCode: {
+      field: 'ward_code',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     street: {
       field: 'street',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    streetCode: {
+      field: 'street_code',
       type: DataTypes.STRING,
       allowNull: true
     },

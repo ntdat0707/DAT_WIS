@@ -96,6 +96,10 @@ const locationErrorDetails = {
   E_1012(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('1012', 'prefix code is not existed on this location', detail);
     return e;
+  },
+  E_1013(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('1013', 'locationImageId not exists', detail);
+    return e;
   }
 };
 
