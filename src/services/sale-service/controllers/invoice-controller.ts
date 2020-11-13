@@ -371,7 +371,8 @@ export class InvoiceController {
             as: 'location',
             required: true
           }
-        ]
+        ],
+        order: [['updatedAt', 'DESC']]
       };
       const invoices = await paginate(
         InvoiceModel,
@@ -667,10 +668,17 @@ export class InvoiceController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const invoices = await InvoiceLogModel.find({
-        staffId: res.locals.staffPayload.id,
-        locationId: req.params.locationId
-      }).exec();
+      const invoices = await InvoiceLogModel.find(
+        {
+          staffId: res.locals.staffPayload.id,
+          locationId: req.params.locationId
+        },
+        {
+          sort: {
+            timestamp: -1 //Sort by Date created DESC
+          }
+        }
+      ).exec();
       if (!invoices) {
         throw new CustomError(invoiceErrorDetails.E_3300(`Invoice log not found`), httpStatus.NOT_FOUND);
       }

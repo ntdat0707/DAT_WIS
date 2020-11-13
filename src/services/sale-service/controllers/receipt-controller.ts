@@ -248,7 +248,8 @@ export class ReceiptController {
             as: 'location',
             required: true
           }
-        ]
+        ],
+        order: [['updatedAt', 'DESC']]
       };
       const receipts = await paginate(
         ReceiptModel,
@@ -428,7 +429,8 @@ export class ReceiptController {
     try {
       const companyId = res.locals.staffPayload.companyId;
       const paymentMethod = await PaymentMethodModel.findAll({
-        where: { companyId: companyId }
+        where: { companyId: companyId },
+        order: [['updatedAt', 'DESC']]
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
     } catch (error) {

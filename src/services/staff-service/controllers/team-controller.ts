@@ -90,7 +90,7 @@ export class TeamController {
             attributes: ['id', 'avatarPath']
           }
         ],
-        order: [['createdAt', 'DESC']],
+        order: [['updatedAt', 'DESC']],
         attributes: { exclude: ['updatedAt', 'deletedAt'] }
       };
 
@@ -217,7 +217,8 @@ export class TeamController {
         where: {
           id: { [Op.in]: subTeamIds }
         },
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+        order: [['updatedAt', 'DESC']]
       };
 
       if (req.query.searchValue) {
