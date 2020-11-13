@@ -20,7 +20,7 @@ export class LocationRoutes {
     this.router.post(
       '/create-location',
       Staff.isAuthenticated,
-      uploadAsMiddleware('photo'),
+      uploadAsMiddleware({ name: 'photo[]', maxCount: 5 }),
       this.locationController.createLocation
     );
     this.router.get('/get-all-locations', Staff.isAuthenticated, this.locationController.getAllLocations);
@@ -35,7 +35,7 @@ export class LocationRoutes {
     this.router.put(
       '/update-location/:locationId?',
       Staff.isAuthenticated,
-      uploadAsMiddleware('photo'),
+      uploadAsMiddleware({ name: 'photo[]', maxCount: 5 }),
       this.locationController.updateLocation
     );
     this.router.get('/get-prefix-codes', Staff.isAuthenticated, this.locationController.getPrefixCodes);

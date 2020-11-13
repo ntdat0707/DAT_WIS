@@ -23,7 +23,7 @@ import {
   createLocationWorkingTimeSchema,
   updateLocationSchema
 } from '../configs/validate-schemas';
-import { FindOptions, QueryTypes } from 'sequelize';
+import { FindOptions } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import _ from 'lodash';
@@ -66,7 +66,10 @@ export class LocationController {
    *     parameters:
    *     - in: "formData"
    *       name: "photo"
-   *       type: file
+   *       type: array
+   *       items:
+   *          type: file
+   *       description: The file to upload.
    *     - in: "formData"
    *       name: "name"
    *       required: true
@@ -181,24 +184,30 @@ export class LocationController {
         switch (data.addressInfor[i].types[0]) {
           case 'route':
             data.street = data.addressInfor[i].long_name;
+            data.street_code = data.addressInfor[i].short_name;
             break;
           case 'administrative_area_level_2':
             data.district = data.addressInfor[i].long_name;
+            data.district_code = data.addressInfor[i].short_name;
             break;
           case 'administrative_area_level_1':
             data.province = data.addressInfor[i].long_name;
+            data.province_code = data.addressInfor[i].short_name;
             break;
           case 'country':
             data.country = data.addressInfor[i].long_name;
+            data.country_code = data.addressInfor[i].short_name;
             break;
           case 'locality':
             data.city = data.addressInfor[i].long_name;
+            data.city_code = data.addressInfor[i].short_name;
         }
         if (
           data.addressInfor[i].types.includes('sublocality') ||
           data.addressInfor[i].types.includes('sublocality_level_1')
         ) {
           data.ward = data.addressInfor[i].long_name;
+          data.ward_code = data.addressInfor[i].short_name;
         }
       }
 
@@ -260,8 +269,15 @@ export class LocationController {
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
-      if (req.file) {
-        data.photo = (req.file as any).location;
+
+      if (req.files.length) {
+        const images = (req.files as Express.Multer.File[]).map((x: any, index: number) => ({
+          locationId: location.id,
+          path: x.location,
+          isAvatar: index === 0 ? true : false
+        }));
+
+        await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
 
       let pathName = '';
@@ -724,7 +740,9 @@ export class LocationController {
    *       required: true
    *     - in: "formData"
    *       name: "photo"
-   *       type: file
+   *       type: array
+   *       items:
+   *          type: file
    *       description: The file to upload.
    *     - in: "formData"
    *       name: "description"
@@ -770,6 +788,11 @@ export class LocationController {
    *     - in: "formData"
    *       name: "prefixCode"
    *       type: string
+   *     - in: "formData"
+   *       name: deleteImages
+   *       type: array
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description:
@@ -780,7 +803,7 @@ export class LocationController {
    *       500:
    *         description:
    */
-  public updateLocation = async ({ params, body, file }: Request, res: Response, next: NextFunction) => {
+  public updateLocation = async ({ params, body, files }: Request, res: Response, next: NextFunction) => {
     let transaction = null;
     try {
       const { workingLocationIds, companyId } = res.locals.staffPayload;
@@ -811,10 +834,13 @@ export class LocationController {
         phone: body.phone,
         email: body.email,
         district: location.district,
+        districtCode: location.districtCode,
         title: body.title,
         description: body.description,
         city: location.city,
         ward: location.ward,
+        cityCode: location.cityCode,
+        wardCode: location.wardCode,
         address: body.address,
         latitude: body.latitude,
         longitude: body.longitude,
@@ -829,8 +855,10 @@ export class LocationController {
         addressInfor: body.addressInfor,
         fullAddress: body.fullAddress,
         country: location.country,
-        province: location.province,
+        countryCode: location.countryCode,
+        provinceCode: location.provinceCode,
         street: location.street,
+        streetCode: location.streetCode,
         prefixCode: body.prefixCode
       };
 
@@ -845,24 +873,30 @@ export class LocationController {
           switch (body.addressInfor[i].types[0]) {
             case 'route':
               data.street = body.addressInfor[i].long_name;
+              data.streetCode = body.addressInfor[i].short_name;
               break;
             case 'administrative_area_level_2':
               data.district = body.addressInfor[i].long_name;
+              data.districtCode = body.addressInfor[i].short_name;
               break;
             case 'administrative_area_level_1':
               data.province = body.addressInfor[i].long_name;
+              data.provinceCode = body.addressInfor[i].short_name;
               break;
             case 'country':
               data.country = body.addressInfor[i].long_name;
+              data.countryCode = body.addressInfor[i].short_name;
               break;
             case 'locality':
               data.city = body.addressInfor[i].long_name;
+              data.cityCode = body.addressInfor[i].short_name;
           }
           if (
             body.addressInfor[i].types.includes('sublocality') ||
             body.addressInfor[i].types.includes('sublocality_level_1')
           ) {
             data.ward = body.addressInfor[i].long_name;
+            data.wardCode = body.addressInfor[i].short_name;
           }
         }
 
@@ -913,28 +947,32 @@ export class LocationController {
           await LocationWorkingHourModel.bulkCreate(workingsTimes, { transaction });
         }
       }
-      // update photo avatar
-      if (file) {
-        data.photo = (file as any).location;
-      }
-      const photo: any = await LocationImageModel.findOne({
-        where: { locationId: params.locationId, isAvatar: true }
-      });
-
-      if (!photo) {
-        const newAvatar = {
-          locationId: params.locationId,
-          path: data.photo,
-          isAvatar: true
-        };
-        await LocationImageModel.create(newAvatar, { transaction });
-      } else {
-        photo.path = data.photo;
-        await sequelize.query('UPDATE location_image SET path =$photoPath WHERE id =$photoId', {
-          bind: { photoPath: data.photo, photoId: photo.id },
-          type: QueryTypes.UPDATE,
-          transaction: transaction
+      let isDeletedAvatar = false;
+      if (body.deleteImages && body.deleteImages.length > 0) {
+        const locationImages = await LocationImageModel.findAll({
+          where: {
+            id: body.deleteImages
+          }
         });
+        if (body.deleteImages.length !== locationImages.length) {
+          throw new CustomError(locationErrorDetails.E_1013(), HttpStatus.NOT_FOUND);
+        }
+
+        for (let i = 0; i < locationImages.length; i++) {
+          if (locationImages[i].isAvatar) {
+            isDeletedAvatar = true;
+          }
+        }
+        await LocationImageModel.destroy({ where: { id: body.deleteImages }, transaction });
+      }
+
+      if (files.length) {
+        const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
+          serviceId: location.id,
+          path: x.location,
+          isAvatar: index === 0 && isDeletedAvatar ? true : false
+        }));
+        await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
       //check prefixCode
       if (data.prefixCode) {
