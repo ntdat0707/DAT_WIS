@@ -62,7 +62,7 @@ import * as path from 'path';
 import { sendEmail } from '../../../utils/emailer';
 import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
-
+import { Unaccent } from '../../../utils/unaccent';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.MARKETPLACE_URL;
 export class CustomerController {
@@ -723,12 +723,13 @@ export class CustomerController {
       };
 
       if (req.query.searchValue) {
+        const unaccentSearchValue = Unaccent(req.query.searchValue);
         query.where = {
           ...query.where,
           ...{
             [Op.or]: [
               Sequelize.literal(
-                `unaccent(concat("CustomerWisereModel"."first_name", ' ', "CustomerWisereModel"."last_name")) ilike unaccent('%${req.query.searchValue}%')`
+                `unaccent(concat("CustomerWisereModel"."last_name", ' ', "CustomerWisereModel"."first_name")) ilike '%${unaccentSearchValue}%'`
               ),
               Sequelize.literal(`"CustomerWisereModel"."code" ilike '%${req.query.searchValue}%'`),
               Sequelize.literal(`"CustomerWisereModel"."phone" like '%${req.query.searchValue}%'`),
