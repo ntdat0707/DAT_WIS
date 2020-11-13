@@ -1,5 +1,6 @@
 import Joi from 'joi';
-import { EInvoiceSourceType } from '../../../../utils/consts';
+import { values } from 'lodash';
+import { EBalanceType, EInvoiceSourceType } from '../../../../utils/consts';
 
 const createInvoiceSchema = Joi.object({
   invoiceId: Joi.string()
@@ -213,11 +214,27 @@ const invoiceIdSchema = Joi.string()
   .required()
   .label('invoiceId');
 
+const filterInvoiceSchema = Joi.object({
+  fromDate: Joi.string().isoDate().allow(null).label('fromDate'),
+  toDate: Joi.string().isoDate().allow(null).label('toDate'),
+  status: Joi.array()
+    .items(Joi.string().valid(...Object(values(EBalanceType))))
+    .allow(null)
+    .label('status'),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .allow(null)
+    .label('locationId')
+});
+
 export {
   createInvoiceSchema,
   receiptIdSchema,
   customerWisereIdSchema,
   createInvoiceLogSchema,
   getListInvoicesLog,
-  invoiceIdSchema
+  invoiceIdSchema,
+  filterInvoiceSchema
 };

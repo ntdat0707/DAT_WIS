@@ -17,6 +17,7 @@ class CustomerWisereModel extends Model {
   public ownerId: string;
   public source: string;
   public code: string;
+  public prefixCode: string;
   public label: string;
   public color: string;
   public job: string;
@@ -64,6 +65,11 @@ CustomerWisereModel.init(
       unique: true,
       allowNull: true,
       field: 'code'
+    },
+    prefixCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'prefix_code'
     },
     birthDate: {
       type: DataTypes.DATE,

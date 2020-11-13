@@ -8,7 +8,8 @@ import {
   createReceiptSchema,
   deletePaymentMethodSchema,
   receiptIdSchema,
-  updatePaymentMethodSchema
+  updatePaymentMethodSchema,
+  filterReceiptSchema
 } from '../configs/validate-schemas';
 import {
   InvoiceModel,
@@ -38,7 +39,7 @@ import {
   paymentMethodErrorDetails,
   receiptErrorDetails
 } from '../../../utils/response-messages/error-details/sale';
-import { FindOptions } from 'sequelize/types';
+import { FindOptions, Op } from 'sequelize';
 import { paginate } from '../../../utils/paginator';
 export class ReceiptController {
   /**
@@ -208,6 +209,14 @@ export class ReceiptController {
    *     name: getAllReceipt
    *     parameters:
    *       - in: query
+   *         name: fromDate
+   *         schema:
+   *            type: string
+   *       - in: query
+   *         name: toDate
+   *         schema:
+   *            type: string
+   *       - in: query
    *         name: pageNum
    *         required: true
    *         schema:
@@ -227,12 +236,21 @@ export class ReceiptController {
    */
   public getAllReceipt = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const conditions = {
+        fromDate: req.query.fromDate,
+        toDate: req.query.toDate
+      };
+      let validateErrors;
+      validateErrors = validate(conditions, filterReceiptSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
         pageNum: req.query.pageNum,
         pageSize: req.query.pageSize
       };
-      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
@@ -251,6 +269,20 @@ export class ReceiptController {
         ],
         order: [['updatedAt', 'DESC']]
       };
+      if (conditions.fromDate || conditions.toDate) {
+        const createdAt: any = {};
+        if (conditions.fromDate) {
+          createdAt[Op.gte] = conditions.fromDate;
+        }
+        if (conditions.toDate) {
+          createdAt[Op.lte] = conditions.toDate;
+        }
+        query.where = {
+          ...query.where,
+          createdAt
+        };
+      }
+
       const receipts = await paginate(
         ReceiptModel,
         query,

@@ -1903,6 +1903,14 @@ export class SearchController {
             });
           }
         });
+        if (search['country']) {
+          searchParams.body.query.bool.must.push({
+            query_string: {
+              fields: ['country'],
+              query: `${search['country']}~1`
+            }
+          });
+        }
       }
 
       const result: any = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
