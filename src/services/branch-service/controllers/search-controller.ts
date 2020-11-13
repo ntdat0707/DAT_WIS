@@ -1895,7 +1895,7 @@ export class SearchController {
         searchParams.body.query.bool.should = [];
         locationTypes.forEach((type: string) => {
           if (search[type]) {
-            searchParams.body.query.bool.should.push({
+            searchParams.body.query.bool.must.push({
               query_string: {
                 fields: [type],
                 query: `${search[type]}~1`
@@ -1903,6 +1903,14 @@ export class SearchController {
             });
           }
         });
+        if (search['country']) {
+          searchParams.body.query.bool.should.push({
+            query_string: {
+              fields: ['country'],
+              query: `${search['country']}~1`
+            }
+          });
+        }
       }
 
       const result: any = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
