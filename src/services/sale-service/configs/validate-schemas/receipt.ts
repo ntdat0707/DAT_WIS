@@ -92,10 +92,16 @@ const createNewReceiptSchema = Joi.object({
   description: Joi.string().allow(null, '').label('description')
 });
 
+const filterReceiptSchema = Joi.object({
+  fromDate: Joi.string().isoDate().allow(null).label('fromDate'),
+  toDate: Joi.string().isoDate().allow(null).label('toDate')
+});
+
 export {
   createReceiptSchema,
   createPaymentMethodSchema,
   updatePaymentMethodSchema,
   deletePaymentMethodSchema,
-  createNewReceiptSchema
+  createNewReceiptSchema,
+  filterReceiptSchema
 };
