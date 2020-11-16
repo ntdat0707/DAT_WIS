@@ -36,7 +36,8 @@ interface IWebhookLinkClick extends IWebhook {
   link_id: number;
 }
 
-interface IWebhookUnsubscribe extends IWebhook { // Client opted-out
+interface IWebhookUnsubscribe extends IWebhook {
+  // Client opted-out
   task_id: string | number;
   from_all: number;
   reason: string | null;

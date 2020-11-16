@@ -30,7 +30,7 @@ import {
   getLocationMarketPlacebyId
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
-import { paginate, paginateElasicSearch } from '../../../utils/paginator';
+import { paginate, paginateElasticSearch } from '../../../utils/paginator';
 import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { v4 as uuidv4 } from 'uuid';
@@ -1897,7 +1897,7 @@ export class SearchController {
       };
 
       if (search.addressInfor) {
-        const locationTypes =  ['country', 'province', 'city', 'district', 'ward', 'street'];
+        const locationTypes = ['country', 'province', 'city', 'district', 'ward', 'street'];
         searchParams.body.query.bool.should = [];
         locationTypes.forEach((type: string) => {
           if (search[type]) {
@@ -1909,26 +1909,26 @@ export class SearchController {
             });
             searchParams.body.query.bool.should.push({
               query_string: {
-                fields: [type+'Code'],
-                query: `${search[type+'Code']}~1`
+                fields: [type + 'Code'],
+                query: `${search[type + 'Code']}~1`
               }
             });
           }
         });
-        if (search['country']) {
+        if (search.country) {
           searchParams.body.query.bool.must.push({
             bool: {
               should: [
                 {
                   query_string: {
                     fields: ['country'],
-                    query: `${search['country']}~1`
+                    query: `${search.country}~1`
                   }
                 },
                 {
                   query_string: {
                     fields: ['countryCode'],
-                    query: `${search['countryCode']}~1`
+                    query: `${search.countryCode}~1`
                   }
                 }
               ]
@@ -1937,7 +1937,7 @@ export class SearchController {
         }
       }
 
-      const result: any = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      const result: any = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
 
       let locationResults = result.data;
       const keywordRemoveAccents = removeAccents(keywords).toLowerCase();

@@ -1,14 +1,14 @@
 import * as express from 'express';
-import { TreatmentRoutes } from './treatment-routes';
+import { EmailRoutes } from './email-routes';
 
 class MainRoutes {
   public router: express.Router = express.Router();
-  private treatmentRoutes = new TreatmentRoutes().router;
+  private emailRoutes = new EmailRoutes().router;
   constructor() {
     this.config();
   }
   private config(): void {
-    this.router.use('/webhook', this.treatmentRoutes);
+    this.router.use('/webhook', this.emailRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;

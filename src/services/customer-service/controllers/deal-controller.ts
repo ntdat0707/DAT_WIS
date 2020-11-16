@@ -33,7 +33,7 @@ import {
   customerErrorDetails
 } from '../../../utils/response-messages/error-details';
 import { FindOptions, Op } from 'sequelize';
-import { paginate, paginateElasicSearch } from '../../../utils/paginator';
+import { paginate, paginateElasticSearch } from '../../../utils/paginator';
 import { EAppointmentStatus, EOrder, EStatusPipelineStage } from '../../../utils/consts';
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
@@ -1311,7 +1311,7 @@ export class DealController {
       if (req.body.order === EOrder.NEWEST) {
         searchParams.body.sort = [{ createdAt: 'desc' }];
       }
-      const deals = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      const deals = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
       deals.data = deals.data.map((item: any) => ({
         ...item._source
       }));

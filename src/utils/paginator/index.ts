@@ -184,7 +184,7 @@ const paginateRawData = <T extends Model<T>>(
   }
 };
 
-const paginateElasicSearch = async <T extends Model<T>>(
+const paginateElasticSearch = async <T extends Model<T>>(
   client: Client,
   searchParams: SearchParams,
   paginateOptions: IPaginateOptions,
@@ -273,4 +273,4 @@ const paginateElasicSearch = async <T extends Model<T>>(
   }
 };
 
-export { paginate, paginateRawData, paginateElasicSearch, IPagination, IPaginateOptions };
+export { paginate, paginateRawData, paginateElasticSearch, IPagination, IPaginateOptions };
