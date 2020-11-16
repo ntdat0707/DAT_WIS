@@ -1846,16 +1846,22 @@ export class SearchController {
             info.long_name = removeAccents(info.long_name);
             if (isTypesInclude(info)('route')) {
               search.street = info.long_name;
+              search.streetCode = info.short_name;
             } else if (isTypesInclude(info)('administrative_area_level_2')) {
               search.district = info.long_name;
+              search.districtCode = info.short_name;
             } else if (isTypesInclude(info)('administrative_area_level_1')) {
               search.province = info.long_name;
+              search.provinceCode = info.short_name;
             } else if (isTypesInclude(info)('country')) {
               search.country = info.long_name;
+              search.countryCode = info.short_name;
             } else if (isTypesInclude(info)('locality')) {
               search.city = info.long_name;
+              search.cityCode = info.short_name;
             } else if (isTypesInclude(info)('sublocality', 'sublocality_level_1')) {
               search.ward = info.long_name;
+              search.wardCode = info.short_name;
             }
           }
         });
@@ -1901,13 +1907,31 @@ export class SearchController {
                 query: `${search[type]}~1`
               }
             });
+            searchParams.body.query.bool.should.push({
+              query_string: {
+                fields: [type+'Code'],
+                query: `${search[type+'Code']}~1`
+              }
+            });
           }
         });
         if (search['country']) {
           searchParams.body.query.bool.must.push({
-            query_string: {
-              fields: ['country'],
-              query: `${search['country']}~1`
+            bool: {
+              should: [
+                {
+                  query_string: {
+                    fields: ['country'],
+                    query: `${search['country']}~1`
+                  }
+                },
+                {
+                  query_string: {
+                    fields: ['countryCode'],
+                    query: `${search['countryCode']}~1`
+                  }
+                }
+              ]
             }
           });
         }

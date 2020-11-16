@@ -529,7 +529,7 @@ export class TeamController {
       if (dataInput.members && dataInput.members.length > 0) {
         await this.UpdateTeamStaff(dataInput, transaction);
       }
-      if (dataInput.locationIds && dataInput.locationIds > 0) {
+      if (dataInput.locationIds && dataInput.locationIds.length > 0) {
         for (const locationId of dataInput.locationIds) {
           if (!res.locals.staffPayload.workingLocationIds.includes(locationId)) {
             throw next(

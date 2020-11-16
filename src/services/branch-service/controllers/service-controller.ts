@@ -941,6 +941,7 @@ export class ServiceController {
         extraTimeDuration: body.extraTimeDuration ? body.extraTimeDuration : service.extraTimeDuration
       };
 
+      let isDeletedAvatar = false;
       if (body.deleteImages && body.deleteImages.length > 0) {
         const serviceImages = await ServiceImageModel.findAll({
           where: {
@@ -950,6 +951,13 @@ export class ServiceController {
         if (body.deleteImages.length !== serviceImages.length) {
           throw new CustomError(serviceErrorDetails.E_1206(), HttpStatus.NOT_FOUND);
         }
+
+        for (let i = 0; i < serviceImages.length; i++) {
+          if (serviceImages[i].isAvatar) {
+            isDeletedAvatar = true;
+          }
+        }
+
         await ServiceImageModel.destroy({ where: { id: body.deleteImages }, transaction });
       }
 
@@ -957,7 +965,7 @@ export class ServiceController {
         const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
           serviceId: service.id,
           path: x.location,
-          isAvatar: index === 0 ? true : false
+          isAvatar: index === 0 && isDeletedAvatar ? true : false
         }));
         await ServiceImageModel.bulkCreate(images, { transaction: transaction });
       }
