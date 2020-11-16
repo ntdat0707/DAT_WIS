@@ -89,7 +89,7 @@ export class TreatmentController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const listMedicalHistory = await MedicalHistoryModel.findAll({
+      let listMedicalHistory: any = await MedicalHistoryModel.findAll({
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
         include: [
           {
@@ -101,6 +101,11 @@ export class TreatmentController extends BaseController {
           }
         ]
       });
+      listMedicalHistory = listMedicalHistory.map((medicalHistory: any) => ({
+        ...medicalHistory.dataValues,
+        ...medicalHistory.customers[0]?.MedicalHistoryCustomerModel?.dataValues,
+        customers: undefined
+      }));
       return res.status(httpStatus.OK).send(buildSuccessMessage(listMedicalHistory));
     } catch (error) {
       return next(error);
