@@ -3,7 +3,8 @@ import httpStatus from 'http-status';
 import {
   CustomerWisereModel,
   MedicalHistoryCustomerModel,
-  MedicalHistoryModel
+  MedicalHistoryModel,
+  sequelize
 } from '../../../repositories/postgres/models';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
@@ -148,6 +149,7 @@ export class TreatmentController extends BaseController {
    *         description:
    */
   public updateMedicalHistoryOfCustomer = async (req: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
       const customerWisereId = req.params.customerWisereId;
       const validateErrors = validate(req.body, updateMedicalHistorySchema);
@@ -174,39 +176,52 @@ export class TreatmentController extends BaseController {
       }
       const currentMedicalhistory: string[] = customerWisere.medicalHistories.map((item: any) => item.id);
       const dataInput: string[] = req.body.medicalHistories.map((item: any) => item.medicalHistoryId);
-      const remove = _.difference(currentMedicalhistory, dataInput);
-      if (remove.length > 0) {
+      const removeMedicalhistory = _.difference(currentMedicalhistory, dataInput);
+      transaction = await sequelize.transaction();
+      if (removeMedicalhistory.length > 0) {
         await MedicalHistoryCustomerModel.destroy({
-          where: { customerWisereId: customerWisereId, medicalHistoryId: remove }
+          where: { customerWisereId: customerWisereId, medicalHistoryId: removeMedicalhistory },
+          transaction
         });
       }
-      const add = _.difference(dataInput, currentMedicalhistory);
-      if (add.length > 0) {
-        for (let i = 0; i < add.length; i++) {
-          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === add[i]);
-          await MedicalHistoryCustomerModel.create({
+      const addMedicalhistory = _.difference(dataInput, currentMedicalhistory);
+      if (addMedicalhistory.length > 0) {
+        const listMedicalHistory = [];
+        for (let i = 0; i < addMedicalhistory.length; i++) {
+          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === addMedicalhistory[i]);
+          const data = {
             customerWisereId: customerWisereId,
-            medicalHistoryId: add[i],
+            medicalHistoryId: addMedicalhistory[i],
             note: req.body.medicalHistories[index].note
-          });
+          };
+          listMedicalHistory.push(data);
+        }
+        await MedicalHistoryCustomerModel.bulkCreate(listMedicalHistory, { transaction });
+      }
+      const upadateMedicalhistory = _.intersection(dataInput, currentMedicalhistory);
+      if (upadateMedicalhistory.length > 0) {
+        for (let j = 0; j < upadateMedicalhistory.length; j++) {
+          const index = req.body.medicalHistories.findIndex(
+            (x: any) => x.medicalHistoryId === upadateMedicalhistory[j]
+          );
+          await MedicalHistoryCustomerModel.update(
+            {
+              note: req.body.medicalHistories[index].note
+            },
+            {
+              where: { customerWisereId: customerWisereId, medicalHistoryId: upadateMedicalhistory[j] },
+              transaction
+            }
+          );
         }
       }
-      // const upadte = _.intersection(dataInput, currentMedicalhistory);
-      // if (upadte.length > 0) {
-      //   for (let j = 0; j < upadte.length; j++) {
-      //     const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === upadte[j]);
-      //     await MedicalHistoryCustomerModel.update(
-      //       {
-      //         note: req.body.medicalHistories[index].note
-      //       },
-      //       {
-      //         where: { customerWisereId: customerWisereId, medicalHistoryId: upadte[j] }
-      //       }
-      //     );
-      //   }
-      // }
+      await transaction.commit();
       return res.status(httpStatus.OK).send();
     } catch (error) {
+      //rollback transaction
+      if (transaction) {
+        await transaction.rollback();
+      }
       return next(error);
     }
   };
