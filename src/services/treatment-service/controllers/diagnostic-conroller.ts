@@ -93,12 +93,18 @@ export class DiagnosticController extends BaseController {
    * definitions:
    *   ToothNotation:
    *       required:
+   *           code
+   *           order
    *           toothName
    *           toothImage
    *       properties:
    *           toothName:
    *               type: string
    *           toothImage:
+   *               type: string
+   *           order:
+   *               type: string
+   *           code:
    *               type: string
    *
    */
@@ -109,6 +115,7 @@ export class DiagnosticController extends BaseController {
    *       required:
    *           toothNumber
    *           toothNotations
+   *           type
    *       properties:
    *           toothNumber:
    *               type: string
@@ -116,6 +123,8 @@ export class DiagnosticController extends BaseController {
    *               type: array
    *               items:
    *                   $ref: '#/definitions/ToothNotation'
+   *           type:
+   *              type: string
    */
   /**
    * @swagger
@@ -152,16 +161,14 @@ export class DiagnosticController extends BaseController {
    *           diagnostics
    *       properties:
    *           staffId:
-   *               type: array
-   *               items:
-   *                   type: string
+   *               type: string
    *           customerId:
    *               type: string
    *           type:
    *               type: string
    *               enum: ['adult','kid']
    *           teeth:
-   *               type: array
+   *               type: object
    *               items:
    *                   $ref: '#/definitions/TeethInformation'
    *           diagnostics:
