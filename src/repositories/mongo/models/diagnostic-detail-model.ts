@@ -10,7 +10,7 @@ interface IDiagnosticDetail extends mongoose.Document {
 }
 
 const DiagnosticDetailSchema = new mongoose.Schema({
-  code: { type: Array, required: true },
+  code: { type: String, required: true },
   name: { type: String, required: true },
   pathologicalImages: { type: Array, required: true },
   diagnosticSub: { type: Array, required: true },

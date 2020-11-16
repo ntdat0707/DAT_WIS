@@ -503,13 +503,11 @@ export class CustomerController {
       }
       if (data.code) {
         const customerCode = await CustomerWisereModel.findOne({
-          where: { code: data.code, companyId: companyId }
+          where: { code: data.code, companyId: companyId },
+          logging: true
         });
         if (customerCode) {
-          throw new CustomError(
-            customerErrorDetails.E_3012(`Customer code ${customerCode.code} is already exists`),
-            HttpStatus.NOT_FOUND
-          );
+          throw new CustomError(customerErrorDetails.E_3012(`Customer code is already exists`), HttpStatus.NOT_FOUND);
         }
       }
       if (data.prefixCode) {

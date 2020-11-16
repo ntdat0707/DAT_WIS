@@ -1,6 +1,6 @@
 import * as express from 'express';
+import { isAuthenticated } from '../../../utils/middlewares/staff/auth';
 import { isAuthenticated as isAuthenticatedCustomer } from '../../../utils/middlewares/customer/auth';
-
 import { DiagnosticController } from '../controllers/diagnostic-conroller';
 
 require('dotenv').config();
@@ -13,5 +13,6 @@ export class DiagnosticRoutes {
   }
   private config(): void {
     this.router.get('/get-all-medical-history', isAuthenticatedCustomer, this.diagnosticsController.getAllDiagnostic);
+    this.router.post('/create-diagnostic', isAuthenticated, this.diagnosticsController.createDiagnostic);
   }
 }

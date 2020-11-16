@@ -11,7 +11,7 @@ class MainRoutes {
   }
   private config(): void {
     this.router.use('/', this.treatmentRoutes);
-    this.router.use('/diagnostics', this.diagnosticsRoutes);
+    this.router.use('/diagnostic', this.diagnosticsRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;

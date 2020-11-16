@@ -1,20 +1,22 @@
 import mongoose from 'mongoose';
+import { ETeeth } from '../../../utils/consts';
 import { IDiagnosticDetail } from './diagnostic-detail-model';
 import { ITeeth } from './teeth-model';
 
 interface IDiagnostic extends mongoose.Document {
-  tooth: [ITeeth]; //[{number:26,facetooth:[{facename:xxxx,image:.....}]}]
+  teeth: [ITeeth];
   staffId: [string];
   customerId: string;
+  type: ETeeth;
   diagnostics: [IDiagnosticDetail];
   timestamp: Date;
 }
 
 const DiagnosticSchema = new mongoose.Schema({
-  tooth: { type: Array, required: true },
+  teeth: { type: Array, required: true },
   staffId: { type: Array, required: true },
   customerId: { type: String, required: true },
-  diagnosticDetail: { type: Array, required: true },
+  diagnostics: { type: Array, required: true },
   timestamp: { type: Date, default: Date.now }
 });
 
