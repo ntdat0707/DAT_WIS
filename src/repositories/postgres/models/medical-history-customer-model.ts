@@ -1,7 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class CustomerMedicalHistoryModel extends Model {
+class MedicalHistoryCustomerModel extends Model {
   public id: string;
   public customerWisereId!: string;
   public medicalHistoryId!: string;
@@ -10,7 +10,7 @@ class CustomerMedicalHistoryModel extends Model {
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
 }
-CustomerMedicalHistoryModel.init(
+MedicalHistoryCustomerModel.init(
   {
     id: {
       field: 'id',
@@ -52,10 +52,10 @@ CustomerMedicalHistoryModel.init(
   {
     sequelize,
     freezeTableName: true,
-    tableName: 'customer_medical_history',
+    tableName: 'medical_history_customer',
     timestamps: true,
     paranoid: true
   }
 );
 
-export { CustomerMedicalHistoryModel };
+export { MedicalHistoryCustomerModel };
