@@ -90,8 +90,7 @@ export class TeamController {
             attributes: ['id', 'avatarPath']
           }
         ],
-        order: [['updatedAt', 'DESC']],
-        attributes: { exclude: ['updatedAt', 'deletedAt'] }
+        order: [['updatedAt', 'DESC']]
       };
 
       if (req.query.locationIds) {
