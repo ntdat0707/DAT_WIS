@@ -7,7 +7,8 @@ import {
   branchServiceConfigs,
   bookingServiceConfigs,
   saleServiceConfigs,
-  treatmentServiceConfigs
+  treatmentServiceConfigs,
+  emailServiceConfigs
 } from './configs';
 import { API_BASE_PATH } from '../configs';
 
@@ -42,26 +43,35 @@ class ServiceRoutes {
   };
 
   private getServiceBasePath = (originalUrl: string): string => {
-    if (originalUrl.startsWith(`${API_BASE_PATH}${customerServiceConfigs.route}`))
+    if (originalUrl.startsWith(`${API_BASE_PATH}${customerServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${customerServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${staffServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${staffServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${staffServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${branchServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${branchServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${branchServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${bookingServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${bookingServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${bookingServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${saleServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${saleServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${saleServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${treatmentServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${treatmentServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${treatmentServiceConfigs.route}`;
-    else return '';
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${emailServiceConfigs.route}`)) {
+      return `${API_BASE_PATH}${emailServiceConfigs.route}`;
+    }
+    return '';
   };
 
   constructor() {
     if (buildingEnvs.includes(process.env.NODE_ENV)) {
       this.config();
-    } else {
-      if (this.nodeName === this.apiGatewayName) this.config();
+    } else if (this.nodeName === this.apiGatewayName) {
+      this.config();
     }
   }
   private config(): void {
@@ -115,6 +125,15 @@ class ServiceRoutes {
       treatmentServiceConfigs.route,
       createProxyMiddleware({
         ...treatmentServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq }
+      })
+    );
+
+    //EMAIL SERVICE
+    this.router.use(
+      emailServiceConfigs.route,
+      createProxyMiddleware({
+        ...emailServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq }
       })
     );
