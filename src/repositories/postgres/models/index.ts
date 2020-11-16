@@ -48,7 +48,7 @@ import { RolePermissionModel } from './role-permission-model';
 import { CompanyTypeDetailModel } from './company-type-detail-model';
 import { CompanyTypeModel } from './company-type-model';
 import { MedicalHistoryModel } from './medical-history-model';
-import { CustomerMedicalHistoryModel } from './customer-medical-history-model';
+import { MedicalHistoryCustomerModel } from './medical-history-customer-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -286,6 +286,17 @@ CompanyTypeDetailModel.belongsToMany(CompanyModel, {
   as: 'companies'
 });
 
+MedicalHistoryModel.belongsToMany(CustomerWisereModel, {
+  through: MedicalHistoryCustomerModel,
+  foreignKey: 'medicalHistoryId',
+  as: 'customers'
+});
+CustomerWisereModel.belongsToMany(MedicalHistoryModel, {
+  through: MedicalHistoryCustomerModel,
+  foreignKey: 'customerWisereId',
+  as: 'medicalHistories'
+});
+
 export {
   sequelize,
   StaffModel,
@@ -333,5 +344,5 @@ export {
   CompanyTypeModel,
   CompanyTypeDetailModel,
   MedicalHistoryModel,
-  CustomerMedicalHistoryModel
+  MedicalHistoryCustomerModel
 };
