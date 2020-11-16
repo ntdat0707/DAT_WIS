@@ -2,7 +2,7 @@ import amqp from 'amqplib';
 
 // const rabbitmqURL = `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
 import { EQueueNames, rabbitmqURL } from '../../../utils/event-queues';
-import { excuteSendingEmail, IEmailOptions } from '../../../utils/emailer';
+import { executeSendingEmail, IEmailOptions } from '../../../utils/emailer';
 
 let open: any;
 export const sendEmail = async () => {

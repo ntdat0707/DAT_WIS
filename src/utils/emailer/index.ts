@@ -29,7 +29,7 @@ function isEmailOptions(options: object): options is IEmailOptions {
 }
 
 /**
- * Push Email data <IEmailOptions> to messgae queue
+ * Push Email data <IEmailOptions> to message queue
  * return true if send push successful, return false if options is not IEmailOptions
  *
  * @param {IEmailOptions} options
@@ -54,7 +54,7 @@ const sendEmail = async (options: IEmailOptions): Promise<boolean> => {
  * @param {IEmailOptions} options
  * @returns {Promise<any>}
  */
-const excuteSendingEmail = async (options: IEmailOptions): Promise<any> => {
+const executeSendingEmail = async (options: IEmailOptions): Promise<any> => {
   try {
     const info = await sendEmailViaNodemailer(options);
     return info;
@@ -67,7 +67,6 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
     const receivers: string = Array.isArray(options.receivers) ? options.receivers.join(',') : options.receivers;
     let cc: string = null;
     if (options.cc) cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc;
-
     const auth = {
       auth: {
         api_key: process.env.MAIL_GUN_API_KEY,
@@ -95,7 +94,7 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
     } else {
       sendEmailOptions.text = options.message;
     }
-    if (cc) sendEmailOptions.cc = cc;
+    if (cc) { sendEmailOptions.cc = cc; }
 
     //send
     const info = await nodemailerMailgun.sendMail(sendEmailOptions);
@@ -105,4 +104,4 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
   }
 };
 
-export { sendEmail, IEmailOptions, excuteSendingEmail };
+export { sendEmail, IEmailOptions, executeSendingEmail };
