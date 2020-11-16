@@ -1,10 +1,10 @@
 import mongoose, { Schema } from 'mongoose';
 import { ETeeth } from '../../../utils/consts';
 import { IDiagnosticDetail } from './diagnostic-detail-model';
-import { ITeeth } from './teeth-model';
 
 interface IDiagnostic extends mongoose.Document {
-  teeth: ITeeth;
+  teethNumber: number;
+  teethId: string;
   staffId: string;
   //customerId: string;
   type: ETeeth;
@@ -13,7 +13,8 @@ interface IDiagnostic extends mongoose.Document {
 }
 
 const DiagnosticSchema = new mongoose.Schema({
-  teeth: [{ type: Schema.Types.ObjectId, ref: 'Teeth' }],
+  teethId: [{ type: Schema.Types.ObjectId, ref: 'Teeth' }],
+  teethNumber: { type: Number, required: true },
   staffId: { type: String, required: true },
   //customerId: { type: String, required: true },
   diagnostics: [{ type: Schema.Types.ObjectId, ref: 'DiagnosticDetail' }],
@@ -21,5 +22,5 @@ const DiagnosticSchema = new mongoose.Schema({
 });
 
 //Model
-const DiagnosticModel = mongoose.model<IDiagnostic>('Diagnostic', DiagnosticSchema);
+const DiagnosticModel = mongoose.model<IDiagnostic>('Diagnostic', DiagnosticSchema, 'diagnostic');
 export { DiagnosticModel, IDiagnostic };

@@ -1,12 +1,11 @@
 import mongoose, { Schema } from 'mongoose';
-import { IToothNotation } from './tooth-notation-model';
 import { v4 as uuidv4 } from 'uuid';
 interface IDiagnosticDetail extends mongoose.Document {
   _id: string;
   code: string;
   name: string;
-  pathologicalImages: [IToothNotation];
-  diagnosticSub: [IDiagnosticDetail];
+  pathologicalImages: [string];
+  diagnosticSub: [string];
   color: string;
   colorText: string;
   timestamp: Date;

@@ -4,6 +4,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import { DiagnosticModel } from '../../../repositories/mongo/models';
 import { TeethModel } from '../../../repositories/mongo/models/teeth-model';
+import { ToothNotationModel } from '../../../repositories/mongo/models/tooth-notation-model';
 export class DiagnosticController extends BaseController {
   /**
    * @swagger
@@ -96,8 +97,14 @@ export class DiagnosticController extends BaseController {
   public createTeeth = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput = req.body;
-      const teethData = new TeethModel(dataInput);
-      await teethData.save();
+      for (const tooth of dataInput.toothNotations) {
+        const toothData = new ToothNotationModel(tooth);
+        await toothData.save();
+      }
+
+      const teethData = { type: dataInput.type, toothNumber: dataInput.toothNumber };
+      const teeth = new TeethModel(teethData);
+      await teeth.save();
       return res.status(httpStatus.OK).send(buildSuccessMessage(teethData));
     } catch (error) {
       return next(error);
