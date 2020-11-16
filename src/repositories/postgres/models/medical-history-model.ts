@@ -4,6 +4,7 @@ import sequelize from '../configs/db-connector';
 class MedicalHistoryModel extends Model {
   public id: string;
   public name!: string;
+  public nameVi!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -18,6 +19,11 @@ MedicalHistoryModel.init(
     },
     name: {
       field: 'name',
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    nameVi: {
+      field: 'name_vi',
       type: DataTypes.STRING,
       allowNull: false
     },

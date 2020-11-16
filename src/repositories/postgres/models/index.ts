@@ -286,6 +286,17 @@ CompanyTypeDetailModel.belongsToMany(CompanyModel, {
   as: 'companies'
 });
 
+MedicalHistoryModel.belongsToMany(CustomerWisereModel, {
+  through: MedicalHistoryCustomerModel,
+  foreignKey: 'medicalHistoryId',
+  as: 'customers'
+});
+CustomerWisereModel.belongsToMany(MedicalHistoryModel, {
+  through: MedicalHistoryCustomerModel,
+  foreignKey: 'customerWisereId',
+  as: 'medicalHistories'
+});
+
 export {
   sequelize,
   StaffModel,
