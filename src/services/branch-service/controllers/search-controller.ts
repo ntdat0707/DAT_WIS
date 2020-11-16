@@ -1135,7 +1135,6 @@ export class SearchController {
                 model: LocationWorkingHourModel,
                 as: 'workingTimes',
                 required: true,
-                where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
                 order: [['weekday', 'DESC']],
                 attributes: ['weekday', 'startTime', 'endTime']
               }
@@ -1891,7 +1890,7 @@ export class SearchController {
       };
 
       if (search.addressInfor) {
-        const locationTypes =  ['country', 'province', 'city', 'district', 'ward', 'street'];
+        const locationTypes = ['country', 'province', 'city', 'district', 'ward', 'street'];
         searchParams.body.query.bool.should = [];
         locationTypes.forEach((type: string) => {
           if (search[type]) {
