@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
 interface IToothNotation extends mongoose.Document {
   _id: string;
   toothCode: string;
@@ -11,7 +10,6 @@ interface IToothNotation extends mongoose.Document {
 }
 
 const ToothNotationSchema = new mongoose.Schema({
-  _id: { type: String, default: uuidv4() },
   toothCode: { type: String, required: true },
   toothName: { type: String, required: true },
   toothImage: { type: String, required: true },

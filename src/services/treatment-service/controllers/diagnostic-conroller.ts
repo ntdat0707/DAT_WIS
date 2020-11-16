@@ -3,6 +3,7 @@ import httpStatus from 'http-status';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import { DiagnosticModel } from '../../../repositories/mongo/models';
+import { TeethModel } from '../../../repositories/mongo/models/teeth-model';
 export class DiagnosticController extends BaseController {
   /**
    * @swagger
@@ -35,6 +36,8 @@ export class DiagnosticController extends BaseController {
    * definitions:
    *   ToothNotation:
    *       required:
+   *           code
+   *           order
    *           toothName
    *           toothImage
    *       properties:
@@ -42,7 +45,29 @@ export class DiagnosticController extends BaseController {
    *               type: string
    *           toothImage:
    *               type: string
+   *           order:
+   *               type: string
+   *           code:
+   *               type: string
    *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   TeethInformation:
+   *       required:
+   *           toothNumber
+   *           toothNotations
+   *           type
+   *       properties:
+   *           toothNumber:
+   *               type: string
+   *           toothNotations:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/ToothNotation'
+   *           type:
+   *              type: string
    */
   /**
    * @swagger
@@ -53,24 +78,13 @@ export class DiagnosticController extends BaseController {
    *     security:
    *       - Bearer: []
    *     name: createTeeth
-   *     consumes:
-   *     - multipart/form-data
    *     parameters:
-   *     - in: "formData"
-   *       name: "toothNumber"
+   *     - in: "body"
+   *       name: "body"
    *       required: true
    *       type: string
-   *     - in: "formData"
-   *       name: "type"
-   *       required: true
-   *       type: string
-   *       enum: ['adult','kid']
-   *     - in: "formData"
-   *       name: "toothNotations"
-   *       required: true
-   *       type: array
-   *       items:
-   *            $ref: '#/definitions/ToothNotation'
+   *       schema:
+   *            $ref: '#/definitions/TeethInformation'
    *     responses:
    *       200:
    *         description: success
@@ -81,8 +95,10 @@ export class DiagnosticController extends BaseController {
    */
   public createTeeth = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const diagnostics = await DiagnosticModel.find().exec();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(diagnostics));
+      const dataInput = req.body;
+      const teethData = new TeethModel(dataInput);
+      await teethData.save();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(teethData));
     } catch (error) {
       return next(error);
     }
@@ -169,7 +185,7 @@ export class DiagnosticController extends BaseController {
    *               enum: ['adult','kid']
    *           teeth:
    *               type: object
-   *               items:
+   *               schema:
    *                   $ref: '#/definitions/TeethInformation'
    *           diagnostics:
    *               type: array

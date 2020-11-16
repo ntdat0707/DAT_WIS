@@ -7,6 +7,8 @@ interface IDiagnosticDetail extends mongoose.Document {
   name: string;
   pathologicalImages: [IToothNotation];
   diagnosticSub: [IDiagnosticDetail];
+  color: string;
+  colorText: string;
   timestamp: Date;
 }
 
@@ -16,6 +18,8 @@ const DiagnosticDetailSchema = new mongoose.Schema({
   name: { type: String, required: true },
   pathologicalImages: [{ type: Schema.Types.ObjectId, ref: 'ToothNotation' }],
   diagnosticSub: [{ type: Schema.Types.ObjectId, ref: 'DiagnosticDetail' }],
+  color: { type: String, required: false },
+  colorText: { type: String, required: false },
   timestamp: { type: Date, default: Date.now }
 });
 
