@@ -5,6 +5,9 @@ import { BaseController } from '../../../services/booking-service/controllers/ba
 import { DiagnosticModel } from '../../../repositories/mongo/models';
 import { TeethModel } from '../../../repositories/mongo/models/teeth-model';
 import { ToothNotationModel } from '../../../repositories/mongo/models/tooth-notation-model';
+import { DiagnosticDetailModel } from '../../../repositories/mongo/models/diagnostic-detail-model';
+import mongoose from 'mongoose';
+
 export class DiagnosticController extends BaseController {
   /**
    * @swagger
@@ -37,7 +40,7 @@ export class DiagnosticController extends BaseController {
    * definitions:
    *   ToothNotation:
    *       required:
-   *           code
+   *           toothCode
    *           order
    *           toothName
    *           toothImage
@@ -48,7 +51,7 @@ export class DiagnosticController extends BaseController {
    *               type: string
    *           order:
    *               type: string
-   *           code:
+   *           toothCode:
    *               type: string
    *
    */
@@ -97,15 +100,26 @@ export class DiagnosticController extends BaseController {
   public createTeeth = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput = req.body;
+      const teethData: any = {
+        _id: new mongoose.Types.ObjectId(),
+        type: dataInput.type,
+        toothNumber: dataInput.toothNumber
+      };
+      const toothNotationsId: any = [];
       for (const tooth of dataInput.toothNotations) {
+        tooth.teethId = teethData._id;
         const toothData = new ToothNotationModel(tooth);
+        toothNotationsId.push(toothData._id);
         await toothData.save();
       }
-
-      const teethData = { type: dataInput.type, toothNumber: dataInput.toothNumber };
+      teethData.toothNotationsId = toothNotationsId;
       const teeth = new TeethModel(teethData);
       await teeth.save();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(teethData));
+      //let result = await ToothNotationModel.find({ teethId: teethData._id }).populate('teeth').exec();
+      const result2 = await TeethModel.find({ toothNotationsId: teethData.toothNotationsId })
+        .populate('toothNotation')
+        .exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(result2));
     } catch (error) {
       return next(error);
     }
@@ -114,106 +128,44 @@ export class DiagnosticController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   ToothNotation:
-   *       required:
-   *           code
-   *           order
-   *           toothName
-   *           toothImage
-   *       properties:
-   *           toothName:
-   *               type: string
-   *           toothImage:
-   *               type: string
-   *           order:
-   *               type: string
-   *           code:
-   *               type: string
-   *
-   */
-  /**
-   * @swagger
-   * definitions:
-   *   TeethInformation:
-   *       required:
-   *           toothNumber
-   *           toothNotations
-   *           type
-   *       properties:
-   *           toothNumber:
-   *               type: string
-   *           toothNotations:
-   *               type: array
-   *               items:
-   *                   $ref: '#/definitions/ToothNotation'
-   *           type:
-   *              type: string
-   */
-  /**
-   * @swagger
-   * definitions:
    *   CreateDiagnosticDetail:
    *       required:
    *           code
    *           name
-   *           pathologicalImages
-   *           diagnosticSub
+   *           pathologicalTeethIds
+   *           diagnosticSubs
+   *           color
+   *           colorText
    *       properties:
    *           code:
    *               type: string
    *           name:
    *               type: string
-   *           pathologicalImages:
+   *           pathologicalTeethIds:
    *               type: array
    *               items:
-   *                   $ref: '#/definitions/ToothNotation'
-   *           diagnosticSub:
-   *               type: array
-   *               items:
-   *                   $ref: '#/definitions/CreateDiagnosticDetail'
-   */
-  /**
-   * @swagger
-   * definitions:
-   *   CreateDiagnostic:
-   *       required:
-   *           staffId
-   *           customerId
-   *           type
-   *           teeth
-   *           diagnostics
-   *       properties:
-   *           staffId:
-   *               type: string
-   *           customerId:
-   *               type: string
-   *           type:
-   *               type: string
-   *               enum: ['adult','kid']
-   *           teeth:
-   *               type: object
-   *               schema:
-   *                   $ref: '#/definitions/TeethInformation'
-   *           diagnostics:
+   *                   type: string
+   *           diagnosticSubs:
    *               type: array
    *               items:
    *                   $ref: '#/definitions/CreateDiagnosticDetail'
-   *
+   *           color:
+   *               type: string
+   *           colorText:
+   *               type: string
    */
   /**
    * @swagger
-   * /treatment/diagnostic/create-diagnostic:
+   * /treatment/diagnostic/create-diagnostic-detail:
    *   post:
    *     tags:
    *       - Treatment
-   *     security:
-   *       - Bearer: []
-   *     name: createDiagnostic
+   *     name: createDiagnosticDetail
    *     parameters:
    *     - in: "body"
    *       name: "body"
    *       schema:
-   *            $ref: '#/definitions/CreateDiagnostic'
+   *            $ref: '#/definitions/CreateDiagnosticDetail'
    *     responses:
    *       200:
    *         description: success
@@ -222,22 +174,86 @@ export class DiagnosticController extends BaseController {
    *       500:
    *         description:
    */
-  public createDiagnostic = async (req: Request, res: Response, next: NextFunction) => {
+  public createDiagnosticDetail = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput = req.body;
-      // const validateErrors = validate(dataInput, createDiagnostic);
-      // if (validateErrors) {
-      //   throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
-      // }
-
-      // for (let diagSub1 of dataInput.diagnosticsSub) {
-      //   if (diagSub1.pathologicalImages.length > 0) {
-      //     //   let diagData = [...diag];
-      //   }
-      // }
-      const diagnosticsData = new DiagnosticModel(dataInput);
-      await diagnosticsData.save();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(diagnosticsData));
+      const diagData: any = {
+        _id: new mongoose.Types.ObjectId(),
+        code: dataInput.code,
+        name: dataInput.name,
+        color: dataInput.color,
+        colorText: dataInput.colorText
+      };
+      if (dataInput.pathologicalTeethIds.length > 0) {
+        const teethIds: any = [];
+        for (const pathologicalTeethId of dataInput.pathologicalTeethIds) {
+          const teethId = new mongoose.Types.ObjectId(pathologicalTeethId);
+          teethIds.push(teethId);
+        }
+        diagData.pathologicalTeethIds = teethIds;
+      }
+      const diagnosticSubs: any = [];
+      if (dataInput.diagnosticSubs.length > 0) {
+        for (const diagnosticSubLevel1 of dataInput.diagnosticSubs) {
+          const diagDataSubsLevel1: any = [];
+          const diagDatalevel1: any = {
+            _id: new mongoose.Types.ObjectId(),
+            code: diagnosticSubLevel1.code,
+            name: diagnosticSubLevel1.name,
+            color: diagnosticSubLevel1.color,
+            colorText: diagnosticSubLevel1.colorText
+          };
+          if (diagnosticSubLevel1.diagnosticSubs.length === 0) {
+            const teethIds: any = [];
+            for (const pathologicalTeethId of diagnosticSubLevel1.pathologicalTeethIds) {
+              const teethId = new mongoose.Types.ObjectId(pathologicalTeethId);
+              teethIds.push(teethId);
+            }
+            diagnosticSubLevel1.pathologicalTeethIds = teethIds;
+            const newDiagnosticDetailData = {
+              _id: new mongoose.Types.ObjectId(),
+              code: diagnosticSubLevel1.code,
+              name: diagnosticSubLevel1.name,
+              pathologicalTeethIds: diagnosticSubLevel1.pathologicalTeethIds,
+              color: diagnosticSubLevel1.color,
+              colorText: diagnosticSubLevel1.colorText
+            };
+            const diagnosticDetail = new DiagnosticDetailModel(newDiagnosticDetailData);
+            diagnosticSubs.push(diagnosticDetail);
+          } else {
+            const diagnosticDataSubsLevel1: any = [];
+            for (const diagnosticSubLevel2 of diagnosticSubLevel1.diagnosticSubs) {
+              if (diagnosticSubLevel2.diagnosticSubs.length === 0) {
+                const teethIds: any = [];
+                for (const pathologicalTeethId of diagnosticSubLevel2.pathologicalTeethIds) {
+                  const teethId = new mongoose.Types.ObjectId(pathologicalTeethId);
+                  teethIds.push(teethId);
+                }
+                diagnosticSubLevel2.pathologicalTeethIds = teethIds;
+                const newDiagnosticDetail = {
+                  _id: new mongoose.Types.ObjectId(),
+                  code: diagnosticSubLevel2.code,
+                  name: diagnosticSubLevel2.name,
+                  pathologicalTeethIds: diagnosticSubLevel2.pathologicalTeethIds,
+                  color: diagnosticSubLevel2.color,
+                  colorText: diagnosticSubLevel2.colorText
+                };
+                const diagDetail = new DiagnosticDetailModel(newDiagnosticDetail);
+                diagnosticDataSubsLevel1.push(diagDetail);
+              }
+            }
+            diagDataSubsLevel1.push(diagnosticDataSubsLevel1);
+            diagDatalevel1.diagnosticSubs = diagDataSubsLevel1;
+          }
+          diagnosticSubs.push(diagDatalevel1);
+        }
+        diagData.diagnosticSubs = diagnosticSubs;
+        const diagDetailData = new DiagnosticDetailModel(diagData);
+        await diagDetailData.save();
+      } else {
+        //create level 0
+      }
+      return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
