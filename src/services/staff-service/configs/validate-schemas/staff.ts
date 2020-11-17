@@ -50,6 +50,12 @@ export const createStaffSchema = Joi.object({
 });
 export const updateStaffSchema = Joi.object({
   // groupStaffId: Joi.string().required(),
+  staffId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('staffId'),
   isAllowedMarketPlace: Joi.boolean().required().label('isAllowedMarketPlace'),
   firstName: Joi.string().required().label('firstName'),
   lastName: Joi.string().required().label('lastName'),
