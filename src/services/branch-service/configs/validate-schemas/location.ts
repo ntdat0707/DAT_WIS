@@ -142,8 +142,6 @@ const updateLocationSchema = Joi.object({
       })
     )
     .allow(null),
-  // payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
-  // parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
   status: Joi.string().required().valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE).label('status'),
   workingTimes: Joi.array()
     .length(7)
