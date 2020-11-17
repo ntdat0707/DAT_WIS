@@ -49,6 +49,9 @@ import { CompanyTypeDetailModel } from './company-type-detail-model';
 import { CompanyTypeModel } from './company-type-model';
 import { MedicalHistoryModel } from './medical-history-model';
 import { CustomerMedicalHistoryModel } from './customer-medical-history-model';
+import { PlanWisereModel } from './plan-wisere-model';
+import { SmsUsageModel } from './sms-usage-model';
+import { EmailUsageModel } from './email-usage-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -285,6 +288,12 @@ CompanyTypeDetailModel.belongsToMany(CompanyModel, {
   foreignKey: 'companyTypeDetailId',
   as: 'companies'
 });
+
+PlanWisereModel.hasOne(SmsUsageModel, { foreignKey: 'planId', sourceKey: 'id', as: 'hasSms' });
+SmsUsageModel.belongsTo(PlanWisereModel, { foreignKey: 'planId', as: 'smsOwner' });
+
+PlanWisereModel.hasOne(EmailUsageModel, { foreignKey: 'planId', sourceKey: 'id', as: 'hasEmail' });
+EmailUsageModel.belongsTo(PlanWisereModel, { foreignKey: 'planId', as: 'emailOwner' });
 
 export {
   sequelize,

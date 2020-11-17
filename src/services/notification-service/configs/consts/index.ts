@@ -1,1 +1,1 @@
-export * from './email';
+export * from './sendpulse/email';
