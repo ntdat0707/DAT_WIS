@@ -21,8 +21,7 @@ const getToken = async () => {
       }
     };
     const authRequest: IResponse = await request(option);
-    TOKEN = authRequest.response.data.access_token;
-    console.log(TOKEN);
+    TOKEN = authRequest.response.access_token;
   } catch (error) {
     throw error;
   }

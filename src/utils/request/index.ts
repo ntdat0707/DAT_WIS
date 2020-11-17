@@ -20,6 +20,7 @@ interface IResponse {
     data?: any;
     errors?: any;
     message?: string;
+    [name: string]: any;
   };
 }
 
@@ -33,7 +34,7 @@ const request = async (options: IRequestOptions): Promise<IResponse> => {
     };
   } catch (e) {
     if (e.response) {
-      const {status, headers, data} = e.response;
+      const { status, headers, data } = e.response;
       return {
         status,
         headers,

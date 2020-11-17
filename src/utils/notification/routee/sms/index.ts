@@ -1,51 +1,51 @@
 // import { request } from '../../request';k
 interface ISMSOptions {
-  from: string,
-  body: string,
-  to: string,
-  flash: boolean,
-  label: string,
+  from: string;
+  body: string;
+  to: string;
+  flash: boolean;
+  label: string;
   callback: {
-    url: string,
-    strategy: string
-  },
-  ttl: number,
-  transcode: boolean,
+    url: string;
+    strategy: string;
+  };
+  ttl: number;
+  transcode: boolean;
   urlShortener: {
-    urlValidity: string
-  },
+    urlValidity: string;
+  };
   restrictions: {
     india: {
-      templateId: number,
-      entityId: number
-    }
-  }
+      templateId: number;
+      entityId: number;
+    };
+  };
 }
 
 interface ISMSResponse {
-  trackingId: string,
-  createdAt: Date,
-  from: string,
-  to: string,
-  body: string,
-  status: string,
-  label: string,
+  trackingId: string;
+  createdAt: Date;
+  from: string;
+  to: string;
+  body: string;
+  status: string;
+  label: string;
   bodyAnalysis: {
-    characters: number,
-    parts: number,
+    characters: number;
+    parts: number;
     transcode: {
-      message: string,
-      parts: string
-    },
-    unicode: string,
-    unsupportedGSMCharacters: string
-  },
-  flash: string,
+      message: string;
+      parts: string;
+    };
+    unicode: string;
+    unsupportedGSMCharacters: string;
+  };
+  flash: string;
   callback: {
-    url: string,
-    strategy: string
-  },
-  ttl: number // [1 - 4320]
+    url: string;
+    strategy: string;
+  };
+  ttl: number; // [1 - 4320]
 }
 
 /**

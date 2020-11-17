@@ -6,7 +6,7 @@ import { sendEmail } from './controllers/email-action';
 import { handleCustomError, handleException } from '../../utils/error-handlers';
 require('dotenv').config();
 
-export default class SystemService {
+export default class NotificationService {
   public app: express.Application;
 
   constructor() {

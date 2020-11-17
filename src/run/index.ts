@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { logger } from '../utils/logger';
 import { EEnvironments } from '../utils/consts';
 import APIGateway from '../gateways/api-gateway/app';
@@ -63,7 +62,9 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
       notificationService.listen(notificationService.get('port'), (): void => {
         logger.info({
           label: 'notification-service',
-          message: `App is running at http://localhost:${notificationService.get('port')} in mode ${notificationService.get('env')} `
+          message: `App is running at http://localhost:${notificationService.get(
+            'port'
+          )} in mode ${notificationService.get('env')} `
         });
       });
       break;
@@ -139,7 +140,9 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
   notificationService.listen(notificationService.get('port'), (): void => {
     logger.info({
       label: 'notification-service',
-      message: `App is running at http://localhost:${notificationService.get('port')} in mode ${notificationService.get('env')} `
+      message: `App is running at http://localhost:${notificationService.get('port')} in mode ${notificationService.get(
+        'env'
+      )} `
     });
   });
 

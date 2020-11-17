@@ -94,7 +94,9 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
     } else {
       sendEmailOptions.text = options.message;
     }
-    if (cc) { sendEmailOptions.cc = cc; }
+    if (cc) {
+      sendEmailOptions.cc = cc;
+    }
 
     //send
     const info = await nodemailerMailgun.sendMail(sendEmailOptions);

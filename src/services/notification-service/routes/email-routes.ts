@@ -5,6 +5,7 @@ require('dotenv').config();
 export class EmailRoutes {
   public router: express.Router = express.Router();
   private emailController = new EmailController();
+
   constructor() {
     this.config();
   }
