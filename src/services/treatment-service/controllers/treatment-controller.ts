@@ -52,7 +52,7 @@ export class TreatmentController extends BaseController {
         });
       } else {
         listMedicalHistory = await MedicalHistoryModel.findAll({
-          attributes: ['id', 'name_vi']
+          attributes: ['id', 'nameVi']
         });
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(listMedicalHistory));
