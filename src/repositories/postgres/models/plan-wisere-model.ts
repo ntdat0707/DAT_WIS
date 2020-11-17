@@ -10,7 +10,7 @@ class PlanWisereModel extends Model {
   public startedPlanAt!: Date;
   public endPlantAt!: Date;
   public isActivated: boolean;
-  public deletedAt: Date;
+  public readonly deletedAt: Date;
 }
 PlanWisereModel.init(
   {
