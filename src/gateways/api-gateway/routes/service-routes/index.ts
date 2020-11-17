@@ -129,7 +129,7 @@ class ServiceRoutes {
       })
     );
 
-    //EMAIL SERVICE
+    //NOTIFICATION SERVICE
     this.router.use(
       notificationServiceConfigs.route,
       createProxyMiddleware({

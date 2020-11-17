@@ -45,4 +45,4 @@ const request = async (options: IRequestOptions): Promise<IResponse> => {
   }
 };
 
-export { request, IRequestOptions, IHeaders };
+export { request, IRequestOptions, IHeaders, IResponse };

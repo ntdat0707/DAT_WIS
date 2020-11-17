@@ -1,7 +1,7 @@
 import { IServiceConfigs, API_BASE_PATH } from '../../configs';
 require('dotenv').config();
 
-const ROUTE = '/email';
+const ROUTE = '/notification';
 
 const notificationServiceConfigs: IServiceConfigs = {
   route: ROUTE,

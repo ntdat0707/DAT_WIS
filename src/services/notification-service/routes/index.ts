@@ -8,7 +8,7 @@ class MainRoutes {
     this.config();
   }
   private config(): void {
-    this.router.use('/webhook', this.emailRoutes);
+    this.router.use('/', this.emailRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;

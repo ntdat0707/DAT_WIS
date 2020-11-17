@@ -15,15 +15,15 @@ export default class SystemService {
   }
 
   private async config(): Promise<void> {
-    // this.app.set('port', process.env.SVC_NOTIFICATION_PORT);
+    this.app.set('port', process.env.SVC_NOTIFICATION_PORT);
 
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
 
     this.app.use(cors());
     // this.app.use(passport.session());
-    await sendEmail();
     this.app.use('/', mainRoutes);
+    await sendEmail();
 
     //https://expressjs.com/en/guide/error-handling.html
     this.app.use(handleCustomError);

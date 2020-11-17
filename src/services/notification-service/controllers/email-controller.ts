@@ -3,14 +3,15 @@ import { logger } from '../../../utils/logger';
 import { Request, Response, NextFunction } from 'express';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
+import { Sendpulse } from '../../../utils/notification';
 
 export class EmailController extends BaseController {
   /**
    * @swagger
-   * /webhooks:
-   *   get:
+   * /notification/webhooks:
+   *   post:
    *     tags:
-   *       - Email
+   *       - Notification
    *     name: webhooks
    *     responses:
    *       200:
@@ -26,6 +27,30 @@ export class EmailController extends BaseController {
         label: 'webhooks',
         message: JSON.stringify(req.body, null, 2)
       });
+      return res.status(httpStatus.OK).send(buildSuccessMessage({}));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /notification/test-notification:
+   *   get:
+   *     tags:
+   *       - Notification
+   *     name: notificationTest
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public notificationTest = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      await Sendpulse.getToken();
       return res.status(httpStatus.OK).send(buildSuccessMessage({}));
     } catch (error) {
       return next(error);

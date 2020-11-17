@@ -11,5 +11,6 @@ export class EmailRoutes {
 
   private config(): void {
     this.router.post('/', this.emailController.webhooks);
+    this.router.get('/test-notification', this.emailController.notificationTest);
   }
 }
