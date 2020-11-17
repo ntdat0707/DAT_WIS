@@ -50,7 +50,10 @@ export class EmailController extends BaseController {
    */
   public notificationTest = async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      await Sendpulse.getToken();
+      await Sendpulse.sendRequest({
+        path: 'blacklist',
+        method: 'get'
+      });
       return res.status(httpStatus.OK).send(buildSuccessMessage({}));
     } catch (error) {
       return next(error);
