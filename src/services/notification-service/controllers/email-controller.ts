@@ -16,7 +16,7 @@ export const sendEmail = async () => {
         // mail send here
         const msg = messageObj.content.toString();
         const data: IEmailOptions = JSON.parse(msg);
-        await excuteSendingEmail(data);
+        await executeSendingEmail(data);
         // ch.ack(messageObj);
       },
       { noAck: true }
