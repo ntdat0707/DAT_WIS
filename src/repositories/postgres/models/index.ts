@@ -288,6 +288,8 @@ CompanyTypeDetailModel.belongsToMany(CompanyModel, {
   foreignKey: 'companyTypeDetailId',
   as: 'companies'
 });
+CompanyModel.hasOne(PlanWisereModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'hasPlan' });
+PlanWisereModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'planOwner' });
 
 PlanWisereModel.hasOne(SmsUsageModel, { foreignKey: 'planId', sourceKey: 'id', as: 'hasSms' });
 SmsUsageModel.belongsTo(PlanWisereModel, { foreignKey: 'planId', as: 'smsOwner' });
