@@ -8,7 +8,7 @@ import {
   bookingServiceConfigs,
   saleServiceConfigs,
   treatmentServiceConfigs,
-  emailServiceConfigs
+  notificationServiceConfigs
 } from './configs';
 import { API_BASE_PATH } from '../configs';
 
@@ -61,8 +61,8 @@ class ServiceRoutes {
     if (originalUrl.startsWith(`${API_BASE_PATH}${treatmentServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${treatmentServiceConfigs.route}`;
     }
-    if (originalUrl.startsWith(`${API_BASE_PATH}${emailServiceConfigs.route}`)) {
-      return `${API_BASE_PATH}${emailServiceConfigs.route}`;
+    if (originalUrl.startsWith(`${API_BASE_PATH}${notificationServiceConfigs.route}`)) {
+      return `${API_BASE_PATH}${notificationServiceConfigs.route}`;
     }
     return '';
   };
@@ -131,9 +131,9 @@ class ServiceRoutes {
 
     //EMAIL SERVICE
     this.router.use(
-      emailServiceConfigs.route,
+      notificationServiceConfigs.route,
       createProxyMiddleware({
-        ...emailServiceConfigs.options,
+        ...notificationServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq }
       })
     );

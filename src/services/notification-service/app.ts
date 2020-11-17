@@ -1,8 +1,8 @@
-import { sendEmail } from './controllers/email-controller';
-
+import cors from 'cors';
 import express from 'express';
 import * as bodyParser from 'body-parser';
-import cors from 'cors';
+import { mainRoutes } from './routes/index';
+import { sendEmail } from './controllers/email-action';
 import { handleCustomError, handleException } from '../../utils/error-handlers';
 require('dotenv').config();
 
@@ -23,6 +23,7 @@ export default class SystemService {
     this.app.use(cors());
     // this.app.use(passport.session());
     await sendEmail();
+    this.app.use('/', mainRoutes);
 
     //https://expressjs.com/en/guide/error-handling.html
     this.app.use(handleCustomError);

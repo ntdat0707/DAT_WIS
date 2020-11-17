@@ -3,10 +3,10 @@ require('dotenv').config();
 
 const ROUTE = '/email';
 
-const emailServiceConfigs: IServiceConfigs = {
+const notificationServiceConfigs: IServiceConfigs = {
   route: ROUTE,
   options: {
-    target: 'http://' + process.env.SVC_EMAIL_HOST + ':' + process.env.SVC_EMAIL_PORT,
+    target: 'http://' + process.env.SVC_NOTIFICATION_HOST + ':' + process.env.SVC_NOTIFICATION_PORT,
     changeOrigin: true,
     secure: false,
     logLevel: 'debug',
@@ -17,4 +17,4 @@ const emailServiceConfigs: IServiceConfigs = {
   }
 };
 
-export { emailServiceConfigs };
+export { notificationServiceConfigs };

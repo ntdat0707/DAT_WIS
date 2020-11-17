@@ -33,10 +33,11 @@ const request = async (options: IRequestOptions): Promise<IResponse> => {
     };
   } catch (e) {
     if (e.response) {
+      const {status, headers, data} = e.response;
       return {
-        status: e.response.status,
-        headers: e.response.headers,
-        response: e.response.data
+        status,
+        headers,
+        response: data
       };
     } else {
       throw e;

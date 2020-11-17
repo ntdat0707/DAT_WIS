@@ -4,4 +4,4 @@ export * from './branch';
 export * from './booking';
 export * from './sale';
 export * from './treatment';
-export * from './email';
+export * from './notification';
