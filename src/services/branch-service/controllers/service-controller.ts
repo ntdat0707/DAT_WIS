@@ -26,7 +26,7 @@ import { branchErrorDetails } from '../../../utils/response-messages/error-detai
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 import { FindOptions, Transaction } from 'sequelize';
-import { paginateElasicSearch } from '../../../utils/paginator';
+import { paginateElasticSearch } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
@@ -493,7 +493,7 @@ export class ServiceController {
         });
       }
 
-      const services = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      const services = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
       services.data = services.data.map((item: any) => ({
         ...item._source
       }));

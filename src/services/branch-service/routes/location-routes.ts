@@ -41,7 +41,6 @@ export class LocationRoutes {
     this.router.get('/get-prefix-codes', Staff.isAuthenticated, this.locationController.getPrefixCodes);
     this.router.get('/market-place/get-location/:pathName', this.searchController.getLocationMarketPlace);
     this.router.get('/market-place/get-location-by-id/:locationId', this.searchController.getLocationMarketPlaceById);
-    this.router.get('/get-location-by-service-provider', this.searchController.getLocationByServiceProvider);
     this.router.get('/market-place/search', this.searchController.marketPlaceSearch);
     this.router.get('/market-place/suggested', this.searchController.marketPlaceSuggested);
     this.router.get(

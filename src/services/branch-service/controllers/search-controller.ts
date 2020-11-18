@@ -30,7 +30,7 @@ import {
   getLocationMarketPlacebyId
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
-import { paginate, paginateElasicSearch } from '../../../utils/paginator';
+import { paginate, paginateElasticSearch } from '../../../utils/paginator';
 import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { v4 as uuidv4 } from 'uuid';
@@ -453,66 +453,6 @@ export class SearchController {
       await CustomerSearchModel.create(customerSearch);
     } catch (error) {
       throw error;
-    }
-  };
-
-  /**
-   * @swagger
-   * /branch/location/get-location-by-service-provider:
-   *   get:
-   *     tags:
-   *       - Branch
-   *     name: getLocationByServiceProvider
-   *     parameters:
-   *     - in: query
-   *       name: keyword
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: pageNum
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: pageSize
-   *       required: true
-   *       schema:
-   *          type: integer
-   *     - in: query
-   *       name: latitude
-   *       schema:
-   *          type: number
-   *     - in: query
-   *       name: longitude
-   *       schema:
-   *          type: number
-   *     - in: query
-   *       name: cityName
-   *       schema:
-   *          type: string
-   *     - in: query
-   *       name: customerId
-   *       schema:
-   *          type: string
-   *     - in: query
-   *       name: order
-   *       schema:
-   *          type: string
-   *          enum: [ nearest, newest, price_lowest, price_highest ]
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: Bad requests - input invalid format, header is invalid
-   *       500:
-   *         description: Internal server errors
-   */
-
-  public getLocationByServiceProvider = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      return await this.marketPlaceSearch(req, res, next);
-    } catch (error) {
-      return next(error);
     }
   };
 
@@ -1135,7 +1075,6 @@ export class SearchController {
                 model: LocationWorkingHourModel,
                 as: 'workingTimes',
                 required: true,
-                where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
                 order: [['weekday', 'DESC']],
                 attributes: ['weekday', 'startTime', 'endTime']
               }
@@ -1355,7 +1294,6 @@ export class SearchController {
                 model: LocationWorkingHourModel,
                 as: 'workingTimes',
                 required: true,
-                where: { [Op.or]: [{ weekday: 'monday' }, { weekday: 'friday' }] },
                 order: [['weekday', 'DESC']],
                 attributes: ['weekday', 'startTime', 'endTime']
               }
@@ -1897,7 +1835,7 @@ export class SearchController {
       };
 
       if (search.addressInfor) {
-        const locationTypes =  ['country', 'province', 'city', 'district', 'ward', 'street'];
+        const locationTypes = ['country', 'province', 'city', 'district', 'ward', 'street'];
         searchParams.body.query.bool.should = [];
         locationTypes.forEach((type: string) => {
           if (search[type]) {
@@ -1909,26 +1847,26 @@ export class SearchController {
             });
             searchParams.body.query.bool.should.push({
               query_string: {
-                fields: [type+'Code'],
-                query: `${search[type+'Code']}~1`
+                fields: [type + 'Code'],
+                query: `${search[type + 'Code']}~1`
               }
             });
           }
         });
-        if (search['country']) {
+        if (search.country) {
           searchParams.body.query.bool.must.push({
             bool: {
               should: [
                 {
                   query_string: {
                     fields: ['country'],
-                    query: `${search['country']}~1`
+                    query: `${search.country}~1`
                   }
                 },
                 {
                   query_string: {
                     fields: ['countryCode'],
-                    query: `${search['countryCode']}~1`
+                    query: `${search.countryCode}~1`
                   }
                 }
               ]
@@ -1937,7 +1875,7 @@ export class SearchController {
         }
       }
 
-      const result: any = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      const result: any = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
 
       let locationResults = result.data;
       const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
