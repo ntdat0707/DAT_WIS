@@ -275,13 +275,18 @@ export class CustomerController {
         const company: any = await CompanyDetailModel.findOne({
           where: { companyId: data.companyId }
         });
-        if (company.lengthCode === 0 || company.lengthCode < total) {
-          throw new CustomError(
-            customerErrorDetails.E_3013(`Length code ${company.lengthCode} is smaller than total customer-wisere`),
-            HttpStatus.BAD_REQUEST
-          );
+        if (!company) {
+          data.code = 0;
+        } else {
+          if (company.lengthCode === 0 || company.lengthCode < total) {
+            throw new CustomError(
+              customerErrorDetails.E_3013(`Length code ${company.lengthCode} is smaller than total customer-wisere`),
+              HttpStatus.BAD_REQUEST
+            );
+          } else {
+            data.code = total.toString().padStart(company.lengthCode, '0'); //
+          }
         }
-        data.code = total.toString().padStart(company.lengthCode, '0'); //
       }
       transaction = await sequelize.transaction();
       const customerWisere = await CustomerWisereModel.create(data, { transaction });
