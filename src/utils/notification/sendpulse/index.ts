@@ -95,8 +95,13 @@ const sendRequest = async (options: ISendpulseRequestOptions) => {
       optionsRequest.data = options.data;
     }
 
-    // const req = await request(optionsRequest);
-    // console.log(req, optionsRequest);
+    let req = await request(optionsRequest);
+    if (req.status === 401) {
+      getToken();
+      optionsRequest.headers.Authorization = 'Bearer ' + TOKEN;
+      req =  await request(optionsRequest);
+    }
+    return req;
   } catch (error) {
     throw error;
   }
