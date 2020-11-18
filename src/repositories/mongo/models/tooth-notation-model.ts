@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 interface IToothNotation extends mongoose.Document {
   _id: string;
   toothCode: string;
-  toothNumber: string;
+  teethId: string;
   toothName: string;
   toothImage: string;
   order: number;
@@ -11,7 +11,7 @@ interface IToothNotation extends mongoose.Document {
 }
 
 const ToothNotationSchema = new mongoose.Schema({
-  toothNumber: { type: Schema.Types.ObjectId, ref: 'Teeth' },
+  teethId: { type: Schema.Types.ObjectId, ref: 'Teeth' },
   toothCode: { type: String, required: true },
   toothName: { type: String, required: true },
   toothImage: { type: String, required: true },
@@ -21,5 +21,5 @@ const ToothNotationSchema = new mongoose.Schema({
 });
 
 //Model
-const ToothNotationModel = mongoose.model<IToothNotation>('ToothNotation', ToothNotationSchema, 'tooth-notation');
+const ToothNotationModel = mongoose.model<IToothNotation>('ToothNotation', ToothNotationSchema, 'toothNotation');
 export { ToothNotationModel, IToothNotation };

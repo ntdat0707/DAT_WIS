@@ -20,11 +20,20 @@ const TeethInformation = Joi.array()
     })
   );
 
-const DiagnosticDetail = Joi.object({
-  code: Joi.string().label('code'),
-  name: Joi.string().label('name'),
-  pathologicalImages: ToothNotation
-});
+const DiagnosticDetail = Joi.array().items(
+  Joi.object({
+    code: Joi.string().label('code'),
+    name: Joi.string().required().label('name'),
+    color: Joi.string().label('color'),
+    colorText: Joi.string().label('colorText'),
+    pathologicalTeethId: Joi.array()
+      .min(1)
+      .required()
+      .items(Joi.string().guid({ version: ['uuidv4'] }))
+      .label('pathologicalTeethId'),
+    diagnosticSub: Joi.array().items(Joi.link('#DiagnosticDetail'))
+  })
+);
 
 const createDiagnostic = Joi.object({
   staffId: Joi.array()
@@ -41,4 +50,21 @@ const createDiagnostic = Joi.object({
   diagnostics: Joi.array().min(1).items(DiagnosticDetail)
 });
 
-export { createDiagnostic };
+const createDiagnosticDetail = Joi.array()
+  .required()
+  .items(
+    Joi.object({
+      code: Joi.string().label('code'),
+      name: Joi.string().required().label('name'),
+      color: Joi.string().label('color'),
+      colorText: Joi.string().label('colorText'),
+      pathologicalTeethId: Joi.array()
+        .min(1)
+        .required()
+        .items(Joi.string().guid({ version: ['uuidv4'] }))
+        .label('pathologicalTeethId'),
+      diagnosticSub: Joi.array().items(Joi.link('#DiagnosticDetail'))
+    })
+  );
+
+export { createDiagnostic, createDiagnosticDetail };

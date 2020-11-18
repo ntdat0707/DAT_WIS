@@ -6,7 +6,7 @@ interface IDiagnostic extends mongoose.Document {
   teethNumber: number;
   teethId: string;
   staffId: string;
-  //customerId: string;
+  procedureId: string;
   type: ETeeth;
   diagnostics: [IDiagnosticDetail];
   timestamp: Date;
@@ -16,7 +16,7 @@ const DiagnosticSchema = new mongoose.Schema({
   teethId: [{ type: Schema.Types.ObjectId, ref: 'Teeth' }],
   teethNumber: { type: Number, required: true },
   staffId: { type: String, required: true },
-  //customerId: { type: String, required: true },
+  //procedureId: { type: String, required: true },
   diagnostics: [{ type: Schema.Types.ObjectId, ref: 'DiagnosticDetail' }],
   timestamp: { type: Date, default: Date.now }
 });
