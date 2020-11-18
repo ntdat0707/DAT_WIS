@@ -173,7 +173,7 @@ LocationModel.init(
       field: 'prefix_code',
       type: DataTypes.STRING,
       unique: true,
-      allowNull: false
+      allowNull: true
     },
     openedAt: {
       field: 'opened_at',
