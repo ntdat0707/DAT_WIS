@@ -1,6 +1,17 @@
 import { sendRequest } from '../index';
 import moment from 'moment';
 
+
+enum EType {
+  FUNCTION = 'function',
+  BOOLEAN = 'boolean',
+  NUMBER = 'number',
+  STRING = 'string',
+  ARRAY = 'array',
+  OBJECT = 'object',
+  UNDEFINED = 'undefined'
+};
+
 const formatDate = (date: Date): string  => {
   return moment(date).format('YYYY-MM-DD HH:MM:SS');
 };
@@ -11,7 +22,7 @@ const formatDate = (date: Date): string  => {
  * @param addressBookId
  * @param phones
  */
-const addPhones = async (addressBookId: string, phones: string) => {
+const addPhones = async (addressBookId: string, phones: string[]) => {
     return await sendRequest({
       path: 'sms/numbers',
       method: 'post',
@@ -22,17 +33,26 @@ const addPhones = async (addressBookId: string, phones: string) => {
     });
 };
 
+
 /**
- * update phone from address book
+ * Update phones variables from the address book
  *
  * @param addressBookId
  * @param phones
  * @param variables
  */
-const updatePhones = async (addressBookId: string, phones: string, variables: any[]) => {
+const updatePhonesVariables = async (
+  addressBookId: string,
+  phones: string[],
+  variables: {
+    name: string,
+    type: EType,
+    value: any
+  }[]
+) => {
     return await sendRequest({
       path: 'sms/numbers',
-      method: 'post',
+      method: 'put',
       data: {
         addressBookId,
         phones,
@@ -40,6 +60,26 @@ const updatePhones = async (addressBookId: string, phones: string, variables: an
       }
     });
 };
+
+
+
+/**
+ * Remove phones from address book
+ *
+ * @param addressBookId
+ * @param phones
+ */
+const removePhones = async (addressBookId: string, phones: string[]) => {
+    return await sendRequest({
+      path: 'sms/numbers',
+      method: 'delete',
+      data: {
+        addressBookId,
+        phones
+      }
+    });
+};
+
 
 /**
  * Add new phones to address book with variables
@@ -59,34 +99,6 @@ const addPhonesWithVariables = async (addressBookId: string, phones: string[]) =
 };
 
 /**
- * Remove phones from address book
- *
- * @param addressBookId
- * @param phones
- */
-const removePhones = async (addressBookId: string, phones: string[]) => {
-    return await sendRequest({
-      path: 'sms/numbers',
-      method: 'delete',
-      data: {
-        addressBookId,
-        phones
-      }
-    });
-};
-
-/**
- * Get all phones from blacklist
- *
- */
-const getBlackList = async () => {
-    return sendRequest({
-      path: 'sms/black_list',
-      method: 'get'
-    });
-};
-
-/**
  * Get information about phone from the address book
  *
  * @param addressBookId
@@ -94,27 +106,8 @@ const getBlackList = async () => {
  */
 const getPhoneInfo = async (addressBookId: string, phone: string) =>  {
     return await sendRequest({
-      path: 'sms/numbers/info/' + addressBookId + '/' + phone,
+      path: `sms/numbers/info/${addressBookId}/${phone}`,
       method: 'get'
-    });
-};
-
-/**
- * Update phones variables from the address book
- *
- * @param addressBookId
- * @param phones
- * @param variables
- */
-const updatePhonesVariables = async (addressBookId: string, phones: string[], variables: string[]) => {
-    return await sendRequest({
-      path: 'sms/numbers',
-      method: 'put',
-      data: {
-        addressBookId,
-        phones,
-        variables
-      }
     });
 };
 
@@ -124,12 +117,24 @@ const updatePhonesVariables = async (addressBookId: string, phones: string[], va
  * @param phones
  */
 const getPhonesInfoFromBlacklist = async (phones: string[]) => {
-    return sendRequest({
+    return await sendRequest({
       path: 'sms/black_list/by_numbers',
       method: 'get',
       data: {
         phones
       }
+    });
+};
+
+
+/**
+ * Get all phones from blacklist
+ *
+ */
+const getBlackList = async () => {
+    return sendRequest({
+      path: 'sms/black_list',
+      method: 'get'
     });
 };
 
@@ -314,7 +319,6 @@ const deleteCampaign = async (campaignId: string) => {
 
 export {
   addPhones,
-  updatePhones,
   addPhonesWithVariables,
   removePhones,
   getBlackList,
