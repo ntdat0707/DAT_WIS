@@ -19,7 +19,7 @@ import {
 } from '../../../repositories/postgres/models';
 import {
   createCustomerWisereSchema,
-  customerWireseIdSchema,
+  customerWisereIdSchema,
   updateCustomerWisereSchema,
   loginSchema,
   loginSocialSchema,
@@ -702,7 +702,7 @@ export class CustomerController {
     try {
       const { companyId } = res.locals.staffPayload;
       const customerWisereId = req.params.customerWisereId;
-      const validateErrors = validate(customerWisereId, customerWireseIdSchema);
+      const validateErrors = validate(customerWisereId, customerWisereIdSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({ where: { id: customerWisereId } });
       if (!customerWisere)
@@ -824,7 +824,7 @@ export class CustomerController {
     try {
       const { companyId } = res.locals.staffPayload;
       const customerWisereId = req.params.customerWisereId;
-      const validateErrors = validate(customerWisereId, customerWireseIdSchema);
+      const validateErrors = validate(customerWisereId, customerWisereIdSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({
         where: {

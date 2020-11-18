@@ -106,7 +106,7 @@ const updateCustomerWisereSchema = Joi.object({
   prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
 });
 
-const customerWireseIdSchema = Joi.string()
+const customerWisereIdSchema = Joi.string()
   .guid({
     version: ['uuidv4']
   })
@@ -169,7 +169,7 @@ const changeProfileCustomerSchema = Joi.object({
 
 export {
   createCustomerWisereSchema,
-  customerWireseIdSchema,
+  customerWisereIdSchema,
   loginSchema,
   loginSocialSchema,
   updateCustomerWisereSchema,
