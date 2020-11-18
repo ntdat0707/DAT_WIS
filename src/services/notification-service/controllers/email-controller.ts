@@ -52,8 +52,8 @@ export class EmailController extends BaseController {
   public notificationTest = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       // await Sendpulse.sendRequest({
-        // path: 'blacklist',
-        // method: 'get'
+      // path: 'blacklist',
+      // method: 'get'
       // });
       const options: IEmailOptions = {
         receivers: 'longvox98@gmail.com',
@@ -62,9 +62,8 @@ export class EmailController extends BaseController {
         type: 'text'
       };
       const mail = await executeSendingEmail(options);
-      return res.status(httpStatus.OK).send(buildSuccessMessage({status: mail}));
+      return res.status(httpStatus.OK).send(buildSuccessMessage({ status: mail }));
     } catch (error) {
-      console.log(error);
       return next(error);
     }
   };

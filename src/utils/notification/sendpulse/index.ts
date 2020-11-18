@@ -4,9 +4,9 @@ import fs from 'fs';
 require('dotenv').config();
 
 interface ISendpulseRequestOptions {
-  path: string,
-  method: 'get' | 'post' | 'put' | 'delete',
-  data?: any
+  path: string;
+  method: 'get' | 'post' | 'put' | 'delete';
+  data?: any;
 }
 
 let TOKEN = '';
@@ -19,9 +19,9 @@ const TOKEN_STORAGE = process.env.SENDPULSE_TOKEN_STORAGE;
  * @return string
  */
 const md5 = (data: any) => {
-    const md5sum = crypto.createHash('md5');
-    md5sum.update(data);
-    return md5sum.digest('hex');
+  const md5sum = crypto.createHash('md5');
+  md5sum.update(data);
+  return md5sum.digest('hex');
 };
 
 /**
@@ -40,10 +40,11 @@ const storeToken = (token: string) => {
  * @param token
  */
 const syncToken = () => {
-  if (TOKEN) { return; }
   const hashName = md5(process.env.SENDPULSE_API_USER_ID + '::' + process.env.SENDPULSE_API_SECRET);
   if (fs.existsSync(TOKEN_STORAGE + hashName)) {
-    TOKEN = fs.readFileSync(TOKEN_STORAGE + hashName, {encoding: 'utf8'});
+    TOKEN = fs.readFileSync(TOKEN_STORAGE + hashName, { encoding: 'utf8' });
+  } else {
+    getToken();
   }
 };
 
@@ -77,10 +78,9 @@ const getToken = async () => {
  */
 const sendRequest = async (options: ISendpulseRequestOptions) => {
   try {
-    syncToken();
 
     if (!TOKEN) {
-      getToken();
+      syncToken();
     }
 
     const optionsRequest: IRequestOptions = {
@@ -89,7 +89,7 @@ const sendRequest = async (options: ISendpulseRequestOptions) => {
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + TOKEN
-      },
+      }
     };
     if (options.data) {
       optionsRequest.data = options.data;
@@ -102,8 +102,4 @@ const sendRequest = async (options: ISendpulseRequestOptions) => {
   }
 };
 
-export {
-  getToken,
-  sendRequest,
-  ISendpulseRequestOptions
-};
+export { getToken, sendRequest, ISendpulseRequestOptions };

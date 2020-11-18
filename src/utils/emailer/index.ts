@@ -65,7 +65,9 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
   try {
     const receivers: string = Array.isArray(options.receivers) ? options.receivers.join(',') : options.receivers;
     let cc: string = null;
-    if (options.cc) { cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc; }
+    if (options.cc) {
+      cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc;
+    }
     const auth = {
       auth: {
         user: process.env.GMAIL_USER,
