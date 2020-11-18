@@ -3,7 +3,8 @@ import { logger } from '../../../utils/logger';
 import { Request, Response, NextFunction } from 'express';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
-import { Sendpulse } from '../../../utils/notification';
+// import { Sendpulse } from '../../../utils/notification';
+import { executeSendingEmail, IEmailOptions } from '../../../utils/emailer';
 
 export class EmailController extends BaseController {
   /**
@@ -50,12 +51,20 @@ export class EmailController extends BaseController {
    */
   public notificationTest = async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      await Sendpulse.sendRequest({
-        path: 'blacklist',
-        method: 'get'
-      });
-      return res.status(httpStatus.OK).send(buildSuccessMessage({}));
+      // await Sendpulse.sendRequest({
+        // path: 'blacklist',
+        // method: 'get'
+      // });
+      const options: IEmailOptions = {
+        receivers: 'longvox98@gmail.com',
+        subject: 'hello',
+        message: 'hello',
+        type: 'text'
+      };
+      const mail = await executeSendingEmail(options);
+      return res.status(httpStatus.OK).send(buildSuccessMessage({status: mail}));
     } catch (error) {
+      console.log(error);
       return next(error);
     }
   };

@@ -74,7 +74,8 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
       // proxy: 'http://user:pass@localhost:8080' // optional proxy, default is false
     };
     const nodemailerTransporter = nodemailer.createTransport({
-      host: 'gmail',
+      service: 'gmail',
+      host: 'smtp.gmail.com',
       auth: auth.auth
     });
 
