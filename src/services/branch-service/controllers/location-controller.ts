@@ -261,11 +261,12 @@ export class LocationController {
       //     );
       //   }
       // }
+
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
 
-      if (req.files.length) {
+      if (req.files?.length) {
         const images = (req.files as Express.Multer.File[]).map((x: any, index: number) => ({
           locationId: location.id,
           path: x.location,
