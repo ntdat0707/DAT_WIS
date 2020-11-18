@@ -1023,7 +1023,7 @@ export class CustomerController {
    *       200:
    *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -1141,9 +1141,9 @@ export class CustomerController {
             firstName: req.body.fullName.split(' ').slice(1).join(' ')
               ? req.body.fullName.split(' ').slice(1).join(' ')
               : null,
-            email: req.body.email ? req.body.email : null,
+            email: req.body.email ? req.body.email : '',
             facebookId: req.body.providerId,
-            avatarPath: req.body.avatarPath ? req.body.avatarPath : null
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : ''
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newCustomer = await CustomerModel.create(data, { transaction });
@@ -1204,8 +1204,8 @@ export class CustomerController {
             lastName: req.body.fullName.split(' ')[0],
             firstName: req.body.fullName.split(' ').slice(1).join(' ')
               ? req.body.fullName.split(' ').slice(1).join(' ')
-              : null,
-            email: req.body.email,
+              : '',
+            email: req.body.email || '',
             googleId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
@@ -1757,7 +1757,7 @@ export class CustomerController {
    *       500:
    *         description: Internal server errors
    */
-  public getProfileCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  public getProfileCustomer = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = res.locals.customerPayload.id;
       const profile = await CustomerModel.findOne({
