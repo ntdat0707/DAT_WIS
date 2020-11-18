@@ -30,7 +30,7 @@ class LocationModel extends Model {
   public pathName?: string;
   public placeId?: string;
   public isoMarketplace: boolean;
-  public prefixCode: string;
+  //public prefixCode: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -169,12 +169,12 @@ LocationModel.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    prefixCode: {
-      field: 'prefix_code',
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: true
-    },
+    // prefixCode: {
+    //   field: 'prefix_code',
+    //   type: DataTypes.STRING,
+    //   unique: true,
+    //   allowNull: true
+    // },
     openedAt: {
       field: 'opened_at',
       type: 'TIMESTAMP',
