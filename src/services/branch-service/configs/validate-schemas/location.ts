@@ -48,8 +48,8 @@ const createLocationSchema = Joi.object({
   openedAt: Joi.string().isoDate(),
   placeId: Joi.string().label('placeId'),
   fullAddress: Joi.string().label('fullAddress'),
-  addressInfor: Joi.array().required().min(3).items(Joi.object().required()).label('addressInfor'),
-  prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
+  addressInfor: Joi.array().required().min(3).items(Joi.object().required()).label('addressInfor')
+  // prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
 });
 
 const locationIdSchema = Joi.string()
@@ -142,8 +142,6 @@ const updateLocationSchema = Joi.object({
       })
     )
     .allow(null),
-  // payment: Joi.string().valid(EPayment.CASH, EPayment.CARD, EPayment.ALL).label('payment'),
-  // parking: Joi.string().valid(EParkingStatus.ACTIVE, EParkingStatus.INACTIVE).label('parking'),
   status: Joi.string().required().valid(ELocationStatus.ACTIVE, ELocationStatus.INACTIVE).label('status'),
   workingTimes: Joi.array()
     .length(7)
@@ -177,8 +175,8 @@ const updateLocationSchema = Joi.object({
     .label('workingTimes'),
   placeId: Joi.string().label('placeId'),
   fullAddress: Joi.string().label('fullAddress'),
-  addressInfor: Joi.array().items(Joi.object().required()).label('addressInfor'),
-  prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
+  addressInfor: Joi.array().items(Joi.object().required()).label('addressInfor')
+  // prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
 });
 
 const searchSchema = Joi.object({

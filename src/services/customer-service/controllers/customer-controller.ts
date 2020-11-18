@@ -15,7 +15,8 @@ import {
   StaffModel,
   sequelize,
   ContactModel,
-  LocationModel
+  LocationModel,
+  CompanyDetailModel
 } from '../../../repositories/postgres/models';
 import {
   createCustomerWisereSchema,
@@ -61,7 +62,6 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import { sendEmail } from '../../../utils/emailer';
 import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
-import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.MARKETPLACE_URL;
@@ -164,9 +164,6 @@ export class CustomerController {
    *     - in: "formData"
    *       name: code
    *       type: string
-   *     - in: "formData"
-   *       name: prefixCode
-   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -195,7 +192,7 @@ export class CustomerController {
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
         morePhoneContact: req.body.morePhoneContact,
-        prefixCode: req.body.prefixCode,
+        // prefixCode: req.body.prefixCode,
         code: req.body.code
       };
       const validateErrors = validate(data, createCustomerWisereSchema);
@@ -233,22 +230,22 @@ export class CustomerController {
         data.avatarPath = (req.file as any).location;
       }
       //check prefixCode
-      if (data.prefixCode) {
-        const prefixCodeLocation = await LocationModel.findOne({
-          where: {
-            prefixCode: data.prefixCode,
-            companyId: data.companyId
-          }
-        });
-        if (!prefixCodeLocation) {
-          throw new CustomError(
-            locationErrorDetails.E_1012(
-              `Prefix code ${data.prefixCode} is not existed on this company ${data.companyId}`
-            ),
-            HttpStatus.BAD_REQUEST
-          );
-        }
-      }
+      // if (data.prefixCode) {
+      //   const prefixCodeLocation = await LocationModel.findOne({
+      //     where: {
+      //       prefixCode: data.prefixCode,
+      //       companyId: data.companyId
+      //     }
+      //   });
+      //   if (!prefixCodeLocation) {
+      //     throw new CustomError(
+      //       locationErrorDetails.E_1012(
+      //         `Prefix code ${data.prefixCode} is not existed on this company ${data.companyId}`
+      //       ),
+      //       HttpStatus.BAD_REQUEST
+      //     );
+      //   }
+      // }
       //check customer code
       if (data.code) {
         const customerCode = await CustomerWisereModel.findOne({
@@ -261,6 +258,7 @@ export class CustomerController {
           );
         }
       } else {
+        //count customer-wisere in company
         const resultQuery: any = await sequelize.query(
           'SELECT COUNT(id) FROM customer_wisere WHERE company_id =$companyId',
           {
@@ -269,7 +267,22 @@ export class CustomerController {
           }
         );
         const total = parseInt(resultQuery[0].count, 10) + 1;
-        data.code = total.toString().padStart(6, '0');
+        //check LengthCode company
+        const company: any = await CompanyDetailModel.findOne({
+          where: { companyId: data.companyId }
+        });
+        if (!company) {
+          data.code = 0;
+        } else {
+          if (company.lengthCode === 0 || company.lengthCode < total) {
+            throw new CustomError(
+              customerErrorDetails.E_3013(`Length code ${company.lengthCode} is smaller than total customer-wisere`),
+              HttpStatus.BAD_REQUEST
+            );
+          } else {
+            data.code = total.toString().padStart(company.lengthCode, '0'); //
+          }
+        }
       }
       transaction = await sequelize.transaction();
       const customerWisere = await CustomerWisereModel.create(data, { transaction });
@@ -405,12 +418,6 @@ export class CustomerController {
    *       name: birthDate
    *       type: string
    *     - in: "formData"
-   *       name: code
-   *       type: string
-   *     - in: "formData"
-   *       name: prefixCode
-   *       type: string
-   *     - in: "formData"
    *       name: color
    *       type: string
    *     - in: "formData"
@@ -451,9 +458,8 @@ export class CustomerController {
         label: req.body.label,
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
-        morePhoneContact: req.body.morePhoneContact,
-        code: req.body.code,
-        prefixCode: req.body.prefixCode
+        morePhoneContact: req.body.morePhoneContact
+        // prefixCode: req.body.prefixCode
       };
       const customerWisereId = req.params.customerWisereId;
       const validateErrors = validate({ ...data, customerWisereId: customerWisereId }, updateCustomerWisereSchema);
@@ -501,31 +507,34 @@ export class CustomerController {
       if (req.file) {
         data.avatarPath = (req.file as any).location;
       }
-      if (data.code) {
-        const customerCode = await CustomerWisereModel.findOne({
-          where: { code: data.code, companyId: companyId }
-        });
-        if (customerCode) {
-          throw new CustomError(
-            customerErrorDetails.E_3012(`Customer code ${customerCode.code} is already exists`),
-            HttpStatus.NOT_FOUND
-          );
-        }
-      }
-      if (data.prefixCode) {
-        const prefixCodeLocation = await LocationModel.findOne({
-          where: {
-            prefixCode: data.prefixCode,
-            companyId: companyId
-          }
-        });
-        if (!prefixCodeLocation) {
-          throw new CustomError(
-            locationErrorDetails.E_1012(`Prefix code ${data.prefixCode} is not existed on this company ${companyId}`),
-            HttpStatus.BAD_REQUEST
-          );
-        }
-      }
+      //update code customer-wisere
+
+      // if (data.code) {
+      //   const customerCode = await CustomerWisereModel.findOne({
+      //     where: { code: data.code, companyId: companyId }
+      //   });
+      //   if (customerCode) {
+      //     throw new CustomError(
+      //       customerErrorDetails.E_3012(`Customer code ${customerCode.code} is already exists`),
+      //       HttpStatus.NOT_FOUND
+      //     );
+      //   }
+      // }
+
+      // if (data.prefixCode) {
+      //   const prefixCodeLocation = await LocationModel.findOne({
+      //     where: {
+      //       prefixCode: data.prefixCode,
+      //       companyId: companyId
+      //     }
+      //   });
+      //   if (!prefixCodeLocation) {
+      //     throw new CustomError(
+      //       locationErrorDetails.E_1012(`Prefix code ${data.prefixCode} is not existed on this company ${companyId}`),
+      //       HttpStatus.BAD_REQUEST
+      //     );
+      //   }
+      // }
       transaction = await sequelize.transaction();
       await customerWisere.update(data, transaction);
       if (data.moreEmailContact && data.moreEmailContact.length > 0) {

@@ -6,6 +6,7 @@ class CompanyDetailModel extends Model {
   public companyId: string;
   public businessName: string;
   public phone: string;
+  public lengthCode: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -38,6 +39,12 @@ CompanyDetailModel.init(
       field: 'description',
       type: DataTypes.STRING,
       allowNull: false
+    },
+    lengthCode: {
+      field: 'length_code',
+      type: DataTypes.NUMBER,
+      allowNull: false,
+      defaultValue: 0
     },
     createdAt: {
       field: 'created_at',

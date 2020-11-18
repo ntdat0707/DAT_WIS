@@ -173,7 +173,10 @@ export class ReceiptController {
         receipts.push(dataReceipt);
         balance -= dataReceipt.amount;
         if (balance < 0) {
-          balance = 0;
+          throw new CustomError(
+            invoiceErrorDetails.E_3305(`amount is greater than the balance in the invoice`),
+            httpStatus.BAD_REQUEST
+          );
         }
         const dataInvoiceReceipt = {
           invoiceId: data.invoiceId,
@@ -254,7 +257,9 @@ export class ReceiptController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
+      const { workingLocationIds } = res.locals.staffPayload;
       const query: FindOptions = {
+        where: { locationId: workingLocationIds },
         include: [
           {
             model: CustomerWisereModel,
