@@ -1,6 +1,7 @@
+import fs from 'fs';
 import * as crypto from 'crypto';
 import { request, IRequestOptions, IResponse } from '../../request';
-import fs from 'fs';
+import * as sms from './sms';
 require('dotenv').config();
 
 interface ISendpulseRequestOptions {
@@ -101,10 +102,15 @@ const sendRequest = async (options: ISendpulseRequestOptions) => {
       optionsRequest.headers.Authorization = 'Bearer ' + TOKEN;
       req =  await request(optionsRequest);
     }
-    return req;
   } catch (error) {
     throw error;
   }
 };
 
-export { getToken, sendRequest, ISendpulseRequestOptions };
+export {
+  getToken,
+  sendRequest,
+  ISendpulseRequestOptions,
+  sms
+};
+
