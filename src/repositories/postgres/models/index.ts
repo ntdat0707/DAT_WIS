@@ -49,6 +49,7 @@ import { CompanyTypeDetailModel } from './company-type-detail-model';
 import { CompanyTypeModel } from './company-type-model';
 import { MedicalHistoryModel } from './medical-history-model';
 import { MedicalHistoryCustomerModel } from './medical-history-customer-model';
+import { MedicineModel } from './medicine-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -344,5 +345,6 @@ export {
   CompanyTypeModel,
   CompanyTypeDetailModel,
   MedicalHistoryModel,
-  MedicalHistoryCustomerModel
+  MedicalHistoryCustomerModel,
+  MedicineModel
 };

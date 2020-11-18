@@ -1,28 +1,42 @@
 import mongoose from 'mongoose';
 
 interface ITreatmentDetail extends mongoose.Document {
-  teeth: [string];
+  teethId: [string];
+  serviceId: string;
+  serviceName: string;
+  price: number;
   staffId: string;
-  customerId: string;
-  service: { serviceId: string; price: number };
+  procedureId: string;
   status: string;
-  quantity: number;
-  totalPrice: number;
+  diagnoseId: string;
   note: string;
-  prescription: string;
-  timestamp: Date;
+  createDate: Date;
+  startDate: Date;
+  endDate: Date;
+  prescription: [
+    {
+      medicineId: string;
+      quantity: number;
+      noteMedicine: string;
+      notePrescription: string;
+    }
+  ];
 }
 
 const TreatmentDetailSchema = new mongoose.Schema({
-  teeth: { type: Array, required: true },
+  teethId: { type: [String], required: true },
+  serviceId: { type: String, required: true },
+  serviceName: { type: String, required: true },
+  price: { type: Number, required: true },
   staffId: { type: String, required: true },
-  customerId: { type: String, required: true },
-  service: { type: Object, required: true },
-  status: { type: String, required: true },
-  quantity: { type: String, required: true },
-  totalPrice: { type: String, required: true },
+  procedureId: { type: String, required: true },
+  status: { type: String, enum: ['Planned', 'Completed'], required: true },
+  diagnoseId: { type: String, required: true },
   note: { type: String, required: false },
-  timestamp: { type: Date, required: true }
+  createDate: { type: Date, default: Date.now },
+  startDate: { type: Date, default: Date.now },
+  endDate: { type: Date, required: false },
+  prescription: { type: Array, required: false }
 });
 
 //Model

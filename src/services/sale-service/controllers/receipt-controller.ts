@@ -257,7 +257,9 @@ export class ReceiptController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
+      const { workingLocationIds } = res.locals.staffPayload;
       const query: FindOptions = {
+        where: { locationId: workingLocationIds },
         include: [
           {
             model: CustomerWisereModel,

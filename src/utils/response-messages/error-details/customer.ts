@@ -95,6 +95,10 @@ const customerErrorDetails = {
   E_3012(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3012', 'Customer code is already exist', detail);
     return e;
+  },
+  E_3013(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3013', 'Length code is smaller than total customer', detail);
+    return e;
   }
 };
 

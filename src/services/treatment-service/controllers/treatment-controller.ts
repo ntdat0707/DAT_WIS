@@ -4,15 +4,29 @@ import {
   CustomerWisereModel,
   MedicalHistoryCustomerModel,
   MedicalHistoryModel,
-  sequelize
+  MedicineModel,
+  sequelize,
+  ServiceModel,
+  StaffModel
 } from '../../../repositories/postgres/models';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { validate } from '../../../utils/validator';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
-import { languageSchema, customerWisereIdSchema, updateMedicalHistorySchema } from '../configs/validate-schemas';
-import { customerErrorDetails } from '../../../utils/response-messages/error-details';
+import {
+  languageSchema,
+  customerWisereIdSchema,
+  updateMedicalHistorySchema,
+  createTreatmentSchema
+} from '../configs/validate-schemas';
+import {
+  customerErrorDetails,
+  staffErrorDetails,
+  medicineErrorDetails
+} from '../../../utils/response-messages/error-details';
 import _ from 'lodash';
+import { TreatmentDetailModel } from '../../../repositories/mongo/models';
+import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 
 export class TreatmentController extends BaseController {
   /**
@@ -52,7 +66,7 @@ export class TreatmentController extends BaseController {
         });
       } else {
         listMedicalHistory = await MedicalHistoryModel.findAll({
-          attributes: ['id', 'name_vi']
+          attributes: ['id', 'nameVi']
         });
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(listMedicalHistory));
@@ -89,7 +103,7 @@ export class TreatmentController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const listMedicalHistory = await MedicalHistoryModel.findAll({
+      let listMedicalHistory: any = await MedicalHistoryModel.findAll({
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
         include: [
           {
@@ -101,6 +115,11 @@ export class TreatmentController extends BaseController {
           }
         ]
       });
+      listMedicalHistory = listMedicalHistory.map((medicalHistory: any) => ({
+        ...medicalHistory.dataValues,
+        ...medicalHistory.customers[0]?.MedicalHistoryCustomerModel?.dataValues,
+        customers: undefined
+      }));
       return res.status(httpStatus.OK).send(buildSuccessMessage(listMedicalHistory));
     } catch (error) {
       return next(error);
@@ -222,6 +241,131 @@ export class TreatmentController extends BaseController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   prescriptionDetail:
+   *       properties:
+   *           medicineId:
+   *               type: string
+   *           quantity:
+   *               type: integer
+   *           noteMedicine:
+   *               type: string
+   *           notePrescription:
+   *               type: string
+   *
+   */
+
+  /**
+   * @swagger
+   * definitions:
+   *   treatmentCreate:
+   *       properties:
+   *           teethId:
+   *               type: array
+   *               items:
+   *                   type: string
+   *           serviceId:
+   *               type: string
+   *           staffId:
+   *               type: string
+   *           procedureId:
+   *               type: string
+   *           status:
+   *               type: string
+   *           diagnoseId:
+   *               type: string
+   *           note:
+   *               type: string
+   *           startDate:
+   *               type: string
+   *           endDate:
+   *               type: string
+   *           prescription:
+   *               type: array
+   *               items:
+   *                   $ref: '#/definitions/prescriptionDetail'
+   *
+   */
+  /**
+   * @swagger
+   * /treatment/create-treatment:
+   *   post:
+   *     tags:
+   *       - Treatment
+   *     security:
+   *       - Bearer: []
+   *     name: createTreatment
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       properties:
+   *           treatments:
+   *               type: array
+   *               items:
+   *                    $ref: '#/definitions/treatmentCreate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public createTreatment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.body, createTreatmentSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const dataTreatments = [];
+      for (let i = 0; i < req.body.treatments.length; i++) {
+        const service = await ServiceModel.findOne({ where: { id: req.body.treatments[i].serviceId } });
+
+        if (!service) {
+          throw new CustomError(
+            serviceErrorDetails.E_1203(`serviceId ${req.body.treatments[i].serviceId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        const staff = await StaffModel.findOne({ where: { id: req.body.treatments[i].staffId } });
+        if (!staff) {
+          throw new CustomError(
+            staffErrorDetails.E_4000(`staffId ${req.body.treatments[i].staffId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        if (req.body.treatments[i].prescription) {
+          for (let j = 0; j < req.body.treatments[i].prescription.length; j++) {
+            const medicine = await MedicineModel.findOne({
+              where: { id: req.body.treatments[i].prescription[j].medicineId }
+            });
+            if (!medicine) {
+              throw new CustomError(
+                medicineErrorDetails.E_3900(
+                  `medicineId ${req.body.treatments[i].prescription[j].medicineId} not found`
+                ),
+                httpStatus.NOT_FOUND
+              );
+            }
+          }
+        }
+        const data = {
+          serviceName: service.name,
+          price: service.salePrice,
+          ...req.body.treatments[i]
+        };
+        dataTreatments.push(data);
+      }
+      const treatment = await TreatmentDetailModel.insertMany(dataTreatments);
+      return res.status(httpStatus.OK).send(buildSuccessMessage(treatment));
+    } catch (error) {
       return next(error);
     }
   };

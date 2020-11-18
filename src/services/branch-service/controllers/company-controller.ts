@@ -21,6 +21,7 @@ export class CompanyController {
    *       required:
    *           - businessName
    *           - phone
+   *           - lengthCode
    *       properties:
    *           businessName:
    *               type: string
@@ -28,6 +29,8 @@ export class CompanyController {
    *               type: string
    *           description:
    *               type: string
+   *           lengthCode:
+   *               type: number
    *           companyTypeDetailIds:
    *               type: array
    *               items: string
@@ -82,7 +85,8 @@ export class CompanyController {
           companyId: company.id,
           description: data.description,
           businessName: data.businessName,
-          phone: data.phone
+          phone: data.phone,
+          lengthCode: data.lengthCode
         };
         transaction = await sequelize.transaction();
         await CompanyDetailModel.create(companyDetailData, { transaction });
@@ -125,6 +129,8 @@ export class CompanyController {
    *               type: string
    *           description:
    *               type: string
+   *           lengthCode:
+   *               type: number
    *           companyTypeDetailIds:
    *               type: array
    *               items: string
@@ -196,18 +202,14 @@ export class CompanyController {
       if (!company) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       } else {
+        //update Company Detail
         company.phone = !data.phone ? company.phone : data.phone;
         company.businessName = !data.businessName ? company.businessName : data.businessName;
         company.description = !data.description ? company.description : data.description;
+        company.lengthCode = !data.lengthCode ? company.lengthCode : data.lengthCode;
         transaction = await sequelize.transaction();
-        await CompanyDetailModel.update(
-          {
-            phone: company.phone,
-            businessName: company.businessName,
-            description: company.description
-          },
-          { where: { companyId: companyId }, transaction }
-        );
+        await CompanyDetailModel.update(company, { where: { companyId: companyId }, transaction });
+        //update companyTypeDetail
         const curCompanyTypeDetailIds = (
           await CompanyTypeModel.findAll({
             where: { companyId: companyId }
