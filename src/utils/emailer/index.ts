@@ -1,5 +1,4 @@
 import * as nodemailer from 'nodemailer';
-import mailgun from 'nodemailer-mailgun-transport';
 require('dotenv').config();
 
 import { emit, EQueueNames } from '../event-queues';
@@ -69,12 +68,15 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
     if (options.cc) cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc;
     const auth = {
       auth: {
-        api_key: process.env.MAIL_GUN_API_KEY,
-        domain: process.env.MAIL_GUN_DOMAIN
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS
       }
       // proxy: 'http://user:pass@localhost:8080' // optional proxy, default is false
     };
-    const nodemailerMailgun = nodemailer.createTransport(mailgun(auth));
+    const nodemailerTransporter = nodemailer.createTransport({
+      host: 'gmail',
+      auth: auth.auth
+    });
 
     const sendEmailOptions: {
       from: string;
@@ -99,7 +101,7 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
     }
 
     //send
-    const info = await nodemailerMailgun.sendMail(sendEmailOptions);
+    const info = await nodemailerTransporter.sendMail(sendEmailOptions);
     return info;
   } catch (error) {
     throw error;
