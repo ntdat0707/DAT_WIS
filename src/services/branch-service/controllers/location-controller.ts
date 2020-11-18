@@ -179,7 +179,6 @@ export class LocationController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-
       for (let i = 0; i < data.addressInfor.length; i++) {
         switch (data.addressInfor[i].types[0]) {
           case 'route':
@@ -210,12 +209,11 @@ export class LocationController {
           data.ward_code = data.addressInfor[i].short_name;
         }
       }
-
       if (!data.street) {
         throw new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST);
       }
-      data.companyId = res.locals.staffPayload.companyId;
 
+      data.companyId = res.locals.staffPayload.companyId;
       let company: any = await CompanyModel.findOne({
         where: { id: data.companyId },
         include: [
@@ -254,18 +252,19 @@ export class LocationController {
         updateStaff = true;
       }
       //check prefixCode
-      const prefixCode = await LocationModel.findOne({
-        where: {
-          prefixCode: data.prefixCode
+      if (data.prefixCode) {
+        const prefixCode = await LocationModel.findOne({
+          where: {
+            prefixCode: data.prefixCode
+          }
+        });
+        if (prefixCode) {
+          throw new CustomError(
+            locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+            HttpStatus.BAD_REQUEST
+          );
         }
-      });
-      if (prefixCode) {
-        throw new CustomError(
-          locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
-          HttpStatus.BAD_REQUEST
-        );
       }
-
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
