@@ -26,6 +26,7 @@ class LocationModel extends Model {
   public latitude: number;
   public longitude: number;
   public description: string;
+  public shortDescription: string;
   public title?: string;
   public pathName?: string;
   public placeId?: string;
@@ -151,6 +152,11 @@ LocationModel.init(
     },
     description: {
       field: 'description',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    shortDescription: {
+      field: 'short_description',
       type: DataTypes.STRING,
       allowNull: true
     },
