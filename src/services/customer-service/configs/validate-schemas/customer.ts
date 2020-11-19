@@ -47,8 +47,8 @@ const createCustomerWisereSchema = Joi.object({
       })
     )
     .label('morePhoneContact'),
-  code: Joi.string().min(1).max(10).uppercase().label('code'),
-  prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
+  code: Joi.string().min(1).max(10).uppercase().label('code')
+  //prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
 });
 
 const updateCustomerWisereSchema = Joi.object({
@@ -101,12 +101,11 @@ const updateCustomerWisereSchema = Joi.object({
           .label('type')
       })
     )
-    .label('morePhoneContact'),
-  code: Joi.string().min(1).max(10).uppercase().label('code'),
-  prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
+    .label('morePhoneContact')
+  //prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
 });
 
-const customerWireseIdSchema = Joi.string()
+const customerWisereIdSchema = Joi.string()
   .guid({
     version: ['uuidv4']
   })
@@ -169,7 +168,7 @@ const changeProfileCustomerSchema = Joi.object({
 
 export {
   createCustomerWisereSchema,
-  customerWireseIdSchema,
+  customerWisereIdSchema,
   loginSchema,
   loginSocialSchema,
   updateCustomerWisereSchema,

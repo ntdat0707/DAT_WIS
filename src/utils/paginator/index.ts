@@ -1,6 +1,6 @@
 import { Model } from 'sequelize';
-import { Client, SearchParams } from 'elasticsearch';
-
+// import { Client, SearchParams } from 'elasticsearch';
+import { Client } from '@elastic/elasticsearch';
 type NonAbstract<T> = { [P in keyof T]: T[P] };
 type Constructor<T> = new () => T;
 type NonAbstractTypeOfModel<T> = Constructor<T> & NonAbstract<typeof Model>;
@@ -50,7 +50,7 @@ const paginate = async <T extends Model<T>>(
     // const dataFinds = await model.findAndCountAll({ ...queryFindData, ...{ distinct: true } });
     // const data = dataFinds.rows;
 
-    // caculate links
+    // calculate links
     let firstURL: URL = null;
     let prevURL: URL = null;
     let nextURL: URL = null;
@@ -125,7 +125,7 @@ const paginateRawData = <T extends Model<T>>(
     // get data
     const data = dataRaw.slice(offset, limit);
 
-    // caculate links
+    // calculate links
     let firstURL: URL = null;
     let prevURL: URL = null;
     let nextURL: URL = null;
@@ -186,7 +186,7 @@ const paginateRawData = <T extends Model<T>>(
 
 const paginateElasticSearch = async <T extends Model<T>>(
   client: Client,
-  searchParams: SearchParams,
+  searchParams: any,
   paginateOptions: IPaginateOptions,
   currentUrl: string
 ): Promise<IPagination> => {
@@ -201,7 +201,7 @@ const paginateElasticSearch = async <T extends Model<T>>(
       searchParams.body = { from, size };
     }
 
-    searchParams.ignore = [404];
+    //searchParams.ignore = [404];
 
     if (searchParams.body.sort) {
       searchParams.body.sort.push('_score');
@@ -210,11 +210,11 @@ const paginateElasticSearch = async <T extends Model<T>>(
     }
     let data: any = await client.search(searchParams);
     // Count meta totalPages
-    const totalRecords: number = data.hits.total.value;
+    const totalRecords: number = data.body.hits.total.value;
     const totalPages: number = Math.ceil(totalRecords / paginateOptions.pageSize);
-    data = data.hits.hits;
+    data = data.body?.hits?.hits.map((item: any) => item._source) || [];
 
-    // caculate links
+    // calculate links
     let firstURL: URL = null;
     let prevURL: URL = null;
     let nextURL: URL = null;

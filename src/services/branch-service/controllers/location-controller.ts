@@ -129,9 +129,6 @@ export class LocationController {
    *       name: "placeId"
    *       type: string
    *     - in: "formData"
-   *       name: "prefixCode"
-   *       type: string
-   *     - in: "formData"
    *       name: "workingTimes"
    *       type: array
    *       items:
@@ -172,14 +169,12 @@ export class LocationController {
         openedAt: req.body.openedAt,
         placeId: req.body.placeId,
         addressInfor: req.body.addressInfor,
-        fullAddress: req.body.fullAddress,
-        prefixCode: req.body.prefixCode
+        fullAddress: req.body.fullAddress
       };
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-
       for (let i = 0; i < data.addressInfor.length; i++) {
         switch (data.addressInfor[i].types[0]) {
           case 'route':
@@ -210,12 +205,11 @@ export class LocationController {
           data.ward_code = data.addressInfor[i].short_name;
         }
       }
-
       if (!data.street) {
         throw new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST);
       }
-      data.companyId = res.locals.staffPayload.companyId;
 
+      data.companyId = res.locals.staffPayload.companyId;
       let company: any = await CompanyModel.findOne({
         where: { id: data.companyId },
         include: [
@@ -254,23 +248,25 @@ export class LocationController {
         updateStaff = true;
       }
       //check prefixCode
-      const prefixCode = await LocationModel.findOne({
-        where: {
-          prefixCode: data.prefixCode
-        }
-      });
-      if (prefixCode) {
-        throw new CustomError(
-          locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
-          HttpStatus.BAD_REQUEST
-        );
-      }
+      // if (data.prefixCode) {
+      //   const prefixCode = await LocationModel.findOne({
+      //     where: {
+      //       prefixCode: data.prefixCode
+      //     }
+      //   });
+      //   if (prefixCode) {
+      //     throw new CustomError(
+      //       locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+      //       HttpStatus.BAD_REQUEST
+      //     );
+      //   }
+      // }
 
       // start transaction
       transaction = await sequelize.transaction();
       const location = await LocationModel.create(data, { transaction });
 
-      if (req.files.length) {
+      if (req.files?.length) {
         const images = (req.files as Express.Multer.File[]).map((x: any, index: number) => ({
           locationId: location.id,
           path: x.location,
@@ -308,8 +304,8 @@ export class LocationController {
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
         };
-        const checkValidWoringTime = await req.body.workingTimes.some(even);
-        if (checkValidWoringTime) {
+        const checkValidWorkingTime = await req.body.workingTimes.some(even);
+        if (checkValidWorkingTime) {
           throw new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST);
         }
 
@@ -786,9 +782,6 @@ export class LocationController {
    *       name: "fullAddress"
    *       type: string
    *     - in: "formData"
-   *       name: "prefixCode"
-   *       type: string
-   *     - in: "formData"
    *       name: deleteImages
    *       type: array
    *       items:
@@ -858,8 +851,8 @@ export class LocationController {
         countryCode: location.countryCode,
         provinceCode: location.provinceCode,
         street: location.street,
-        streetCode: location.streetCode,
-        prefixCode: body.prefixCode
+        streetCode: location.streetCode
+        // prefixCode: body.prefixCode
       };
 
       if (body.placeId && body.placeId !== location.placeId) {
@@ -975,19 +968,20 @@ export class LocationController {
         await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
       //check prefixCode
-      if (data.prefixCode) {
-        const prefixCode = await LocationModel.findOne({
-          where: {
-            prefixCode: data.prefixCode
-          }
-        });
-        if (prefixCode) {
-          throw new CustomError(
-            locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
-            HttpStatus.BAD_REQUEST
-          );
-        }
-      }
+
+      // if (data.prefixCode) {
+      //   const prefixCode = await LocationModel.findOne({
+      //     where: {
+      //       prefixCode: data.prefixCode
+      //     }
+      //   });
+      //   if (prefixCode) {
+      //     throw new CustomError(
+      //       locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+      //       HttpStatus.BAD_REQUEST
+      //     );
+      //   }
+      // }
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
       await transaction.commit();
@@ -1026,7 +1020,7 @@ export class LocationController {
         attributes: ['id', 'prefixCode']
       });
       if (!prefixCodes) {
-        throw new CustomError(locationErrorDetails.E_1012(`Prefix codes not existed`), HttpStatus.NOT_FOUND);
+        throw new CustomError(locationErrorDetails.E_1012('Prefix codes not existed'), HttpStatus.NOT_FOUND);
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(prefixCodes));
     } catch (error) {

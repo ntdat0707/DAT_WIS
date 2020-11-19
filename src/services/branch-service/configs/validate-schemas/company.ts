@@ -9,17 +9,19 @@ const initCompanySchema = Joi.object({
     .items({
       Joi: string().guid({ version: ['uuidv4'] })
     })
-    .label('companyDetailIds')
+    .label('companyDetailIds'),
+  lengthCode: Joi.number().min(1).required().label('lengthCode')
 });
 
 const updateCompanyDetailSchema = Joi.object({
-  description: Joi.string().required(),
-  phone: Joi.string().required(),
-  businessName: Joi.string().required(),
+  description: Joi.string().label('description'),
+  phone: Joi.string().label('phone'),
+  businessName: Joi.string().label('businessName'),
   companyTypeDetailIds: Joi.array()
     .min(1)
     .items(Joi.string().guid({ version: ['uuidv4'] }))
-    .label('companyTypeDetailIds')
+    .label('companyTypeDetailIds'),
+  lengthCode: Joi.number().min(1).label('lengthCode')
 });
 
 export { initCompanySchema, updateCompanyDetailSchema };

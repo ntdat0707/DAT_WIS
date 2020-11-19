@@ -15,11 +15,12 @@ import {
   StaffModel,
   sequelize,
   ContactModel,
-  LocationModel
+  LocationModel,
+  CompanyDetailModel
 } from '../../../repositories/postgres/models';
 import {
   createCustomerWisereSchema,
-  customerWireseIdSchema,
+  customerWisereIdSchema,
   updateCustomerWisereSchema,
   loginSchema,
   loginSocialSchema,
@@ -61,7 +62,6 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import { sendEmail } from '../../../utils/emailer';
 import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
-import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.MARKETPLACE_URL;
@@ -164,9 +164,6 @@ export class CustomerController {
    *     - in: "formData"
    *       name: code
    *       type: string
-   *     - in: "formData"
-   *       name: prefixCode
-   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -195,7 +192,7 @@ export class CustomerController {
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
         morePhoneContact: req.body.morePhoneContact,
-        prefixCode: req.body.prefixCode,
+        // prefixCode: req.body.prefixCode,
         code: req.body.code
       };
       const validateErrors = validate(data, createCustomerWisereSchema);
@@ -212,7 +209,7 @@ export class CustomerController {
         if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       if (data.ownerId) {
-        const existStaff = await StaffModel.findOne({
+        const existStaff = await StaffModel.scope('safe').findOne({
           where: { id: data.ownerId },
           include: [
             {
@@ -233,22 +230,22 @@ export class CustomerController {
         data.avatarPath = (req.file as any).location;
       }
       //check prefixCode
-      if (data.prefixCode) {
-        const prefixCodeLocation = await LocationModel.findOne({
-          where: {
-            prefixCode: data.prefixCode,
-            companyId: data.companyId
-          }
-        });
-        if (!prefixCodeLocation) {
-          throw new CustomError(
-            locationErrorDetails.E_1012(
-              `Prefix code ${data.prefixCode} is not existed on this company ${data.companyId}`
-            ),
-            HttpStatus.BAD_REQUEST
-          );
-        }
-      }
+      // if (data.prefixCode) {
+      //   const prefixCodeLocation = await LocationModel.findOne({
+      //     where: {
+      //       prefixCode: data.prefixCode,
+      //       companyId: data.companyId
+      //     }
+      //   });
+      //   if (!prefixCodeLocation) {
+      //     throw new CustomError(
+      //       locationErrorDetails.E_1012(
+      //         `Prefix code ${data.prefixCode} is not existed on this company ${data.companyId}`
+      //       ),
+      //       HttpStatus.BAD_REQUEST
+      //     );
+      //   }
+      // }
       //check customer code
       if (data.code) {
         const customerCode = await CustomerWisereModel.findOne({
@@ -261,6 +258,7 @@ export class CustomerController {
           );
         }
       } else {
+        //count customer-wisere in company
         const resultQuery: any = await sequelize.query(
           'SELECT COUNT(id) FROM customer_wisere WHERE company_id =$companyId',
           {
@@ -269,7 +267,22 @@ export class CustomerController {
           }
         );
         const total = parseInt(resultQuery[0].count, 10) + 1;
-        data.code = total.toString().padStart(6, '0');
+        //check LengthCode company
+        const company: any = await CompanyDetailModel.findOne({
+          where: { companyId: data.companyId }
+        });
+        if (!company) {
+          data.code = 0;
+        } else {
+          if (company.lengthCode === 0 || company.lengthCode < total) {
+            throw new CustomError(
+              customerErrorDetails.E_3013(`Length code ${company.lengthCode} is smaller than total customer-wisere`),
+              HttpStatus.BAD_REQUEST
+            );
+          } else {
+            data.code = total.toString().padStart(company.lengthCode, '0'); //
+          }
+        }
       }
       transaction = await sequelize.transaction();
       const customerWisere = await CustomerWisereModel.create(data, { transaction });
@@ -405,12 +418,6 @@ export class CustomerController {
    *       name: birthDate
    *       type: string
    *     - in: "formData"
-   *       name: code
-   *       type: string
-   *     - in: "formData"
-   *       name: prefixCode
-   *       type: string
-   *     - in: "formData"
    *       name: color
    *       type: string
    *     - in: "formData"
@@ -451,9 +458,8 @@ export class CustomerController {
         label: req.body.label,
         color: req.body.color,
         moreEmailContact: req.body.moreEmailContact,
-        morePhoneContact: req.body.morePhoneContact,
-        code: req.body.code,
-        prefixCode: req.body.prefixCode
+        morePhoneContact: req.body.morePhoneContact
+        // prefixCode: req.body.prefixCode
       };
       const customerWisereId = req.params.customerWisereId;
       const validateErrors = validate({ ...data, customerWisereId: customerWisereId }, updateCustomerWisereSchema);
@@ -481,7 +487,7 @@ export class CustomerController {
         if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       if (data.ownerId) {
-        const existStaff = await StaffModel.findOne({
+        const existStaff = await StaffModel.scope('safe').findOne({
           where: { id: data.ownerId },
           include: [
             {
@@ -501,31 +507,34 @@ export class CustomerController {
       if (req.file) {
         data.avatarPath = (req.file as any).location;
       }
-      if (data.code) {
-        const customerCode = await CustomerWisereModel.findOne({
-          where: { code: data.code, companyId: companyId }
-        });
-        if (customerCode) {
-          throw new CustomError(
-            customerErrorDetails.E_3012(`Customer code ${customerCode.code} is already exists`),
-            HttpStatus.NOT_FOUND
-          );
-        }
-      }
-      if (data.prefixCode) {
-        const prefixCodeLocation = await LocationModel.findOne({
-          where: {
-            prefixCode: data.prefixCode,
-            companyId: companyId
-          }
-        });
-        if (!prefixCodeLocation) {
-          throw new CustomError(
-            locationErrorDetails.E_1012(`Prefix code ${data.prefixCode} is not existed on this company ${companyId}`),
-            HttpStatus.BAD_REQUEST
-          );
-        }
-      }
+      //update code customer-wisere
+
+      // if (data.code) {
+      //   const customerCode = await CustomerWisereModel.findOne({
+      //     where: { code: data.code, companyId: companyId }
+      //   });
+      //   if (customerCode) {
+      //     throw new CustomError(
+      //       customerErrorDetails.E_3012(`Customer code ${customerCode.code} is already exists`),
+      //       HttpStatus.NOT_FOUND
+      //     );
+      //   }
+      // }
+
+      // if (data.prefixCode) {
+      //   const prefixCodeLocation = await LocationModel.findOne({
+      //     where: {
+      //       prefixCode: data.prefixCode,
+      //       companyId: companyId
+      //     }
+      //   });
+      //   if (!prefixCodeLocation) {
+      //     throw new CustomError(
+      //       locationErrorDetails.E_1012(`Prefix code ${data.prefixCode} is not existed on this company ${companyId}`),
+      //       HttpStatus.BAD_REQUEST
+      //     );
+      //   }
+      // }
       transaction = await sequelize.transaction();
       await customerWisere.update(data, transaction);
       if (data.moreEmailContact && data.moreEmailContact.length > 0) {
@@ -702,7 +711,7 @@ export class CustomerController {
     try {
       const { companyId } = res.locals.staffPayload;
       const customerWisereId = req.params.customerWisereId;
-      const validateErrors = validate(customerWisereId, customerWireseIdSchema);
+      const validateErrors = validate(customerWisereId, customerWisereIdSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({ where: { id: customerWisereId } });
       if (!customerWisere)
@@ -824,7 +833,7 @@ export class CustomerController {
     try {
       const { companyId } = res.locals.staffPayload;
       const customerWisereId = req.params.customerWisereId;
-      const validateErrors = validate(customerWisereId, customerWireseIdSchema);
+      const validateErrors = validate(customerWisereId, customerWisereIdSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({
         where: {
@@ -918,7 +927,7 @@ export class CustomerController {
         accessToken
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
-      const profile = await CustomerModel.findOne({
+      const profile = await CustomerModel.scope('safe').findOne({
         where: { email: data.email }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1023,7 +1032,7 @@ export class CustomerController {
    *       200:
    *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -1090,7 +1099,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1120,7 +1129,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1141,9 +1150,9 @@ export class CustomerController {
             firstName: req.body.fullName.split(' ').slice(1).join(' ')
               ? req.body.fullName.split(' ').slice(1).join(' ')
               : null,
-            email: req.body.email ? req.body.email : null,
+            email: req.body.email ? req.body.email : '',
             facebookId: req.body.providerId,
-            avatarPath: req.body.avatarPath ? req.body.avatarPath : null
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : ''
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newCustomer = await CustomerModel.create(data, { transaction });
@@ -1167,7 +1176,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { facebookId: newCustomer.facebookId },
             transaction
           });
@@ -1188,7 +1197,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { facebookId: customer.facebookId },
           transaction
         });
@@ -1204,8 +1213,8 @@ export class CustomerController {
             lastName: req.body.fullName.split(' ')[0],
             firstName: req.body.fullName.split(' ').slice(1).join(' ')
               ? req.body.fullName.split(' ').slice(1).join(' ')
-              : null,
-            email: req.body.email,
+              : '',
+            email: req.body.email || '',
             googleId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
@@ -1231,7 +1240,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { googleId: newCustomer.googleId },
             transaction
           });
@@ -1252,7 +1261,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { googleId: customer.googleId },
           transaction
         });
@@ -1363,7 +1372,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { appleId: newCustomer.appleId }
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1381,7 +1390,7 @@ export class CustomerController {
         accessToken
       };
       refreshToken = await createRefreshToken(refreshTokenData);
-      profile = await CustomerModel.findOne({
+      profile = await CustomerModel.scope('safe').findOne({
         where: { appleId: customer.appleId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1757,7 +1766,7 @@ export class CustomerController {
    *       500:
    *         description: Internal server errors
    */
-  public getProfileCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  public getProfileCustomer = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = res.locals.customerPayload.id;
       const profile = await CustomerModel.findOne({

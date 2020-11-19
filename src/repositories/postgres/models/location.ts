@@ -26,11 +26,12 @@ class LocationModel extends Model {
   public latitude: number;
   public longitude: number;
   public description: string;
+  public shortDescription: string;
   public title?: string;
   public pathName?: string;
   public placeId?: string;
   public isoMarketplace: boolean;
-  public prefixCode: string;
+  //public prefixCode: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -154,6 +155,11 @@ LocationModel.init(
       type: DataTypes.STRING,
       allowNull: true
     },
+    shortDescription: {
+      field: 'short_description',
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     pathName: {
       field: 'path_name',
       type: DataTypes.STRING,
@@ -169,12 +175,12 @@ LocationModel.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    prefixCode: {
-      field: 'prefix_code',
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: false
-    },
+    // prefixCode: {
+    //   field: 'prefix_code',
+    //   type: DataTypes.STRING,
+    //   unique: true,
+    //   allowNull: true
+    // },
     openedAt: {
       field: 'opened_at',
       type: 'TIMESTAMP',
