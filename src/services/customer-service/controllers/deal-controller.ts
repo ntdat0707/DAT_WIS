@@ -1311,9 +1311,6 @@ export class DealController {
         searchParams.body.sort = [{ createdAt: 'desc' }];
       }
       const deals = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
-      deals.data = deals.data.map((item: any) => ({
-        ...item._source
-      }));
       return res.status(httpStatus.OK).send(buildSuccessMessage(deals));
     } catch (error) {
       return next(error);

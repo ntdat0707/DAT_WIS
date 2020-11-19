@@ -365,7 +365,7 @@ export class AuthController {
       let loginLogModel: any;
       const validateErrors = validate(data, loginSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
-      const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: data.email } });
+      const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff) {
         loginData = {
           email: data.email,

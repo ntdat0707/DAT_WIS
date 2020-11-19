@@ -212,7 +212,7 @@ const paginateElasticSearch = async <T extends Model<T>>(
     // Count meta totalPages
     const totalRecords: number = data.body.hits.total.value;
     const totalPages: number = Math.ceil(totalRecords / paginateOptions.pageSize);
-    data = data.body.hits.hits;
+    data = data.body?.hits?.hits.map((item: any) => item._source) || [];
 
     // calculate links
     let firstURL: URL = null;
