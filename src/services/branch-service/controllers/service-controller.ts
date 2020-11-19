@@ -494,9 +494,6 @@ export class ServiceController {
       }
 
       const services = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
-      services.data = services.data.map((item: any) => ({
-        ...item._source
-      }));
       return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
     } catch (error) {
       return next(error);
