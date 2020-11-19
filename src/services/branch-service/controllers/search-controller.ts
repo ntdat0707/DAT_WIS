@@ -1400,7 +1400,7 @@ export class SearchController {
               'workingTimes.start_time',
               'workingTimes.end_time',
               'workingTimes.weekday'
-            ],
+            ]
           })
         ).map((locate: any) => ({
           ...locate.dataValues
