@@ -16,7 +16,7 @@ export const createStaffSchema = Joi.object({
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   phone: Joi.string().regex(/^\d+$/).required().label('phone'),
   birthDate: Joi.string().isoDate(),
-  passportNumber: Joi.string().required(),
+  passportNumber: Joi.string(),
   address: Joi.string(),
   color: Joi.string(),
   roleId: Joi.string()
@@ -61,7 +61,7 @@ export const updateStaffSchema = Joi.object({
   lastName: Joi.string().required().label('lastName'),
   gender: Joi.number().integer().required().valid(EGender.FEMALE, EGender.MALE, EGender.UNISEX).label('gender'),
   birthDate: Joi.string().isoDate(),
-  passportNumber: Joi.string().required(),
+  passportNumber: Joi.string(),
   address: Joi.string(),
   color: Joi.string(),
   phone: Joi.string().regex(/^\d+$/).disallow('', null).label('phone'),
