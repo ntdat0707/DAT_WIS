@@ -20,7 +20,7 @@ import {
 } from '../../../repositories/postgres/models';
 import {
   createCustomerWisereSchema,
-  customerWireseIdSchema,
+  customerWisereIdSchema,
   updateCustomerWisereSchema,
   loginSchema,
   loginSocialSchema,
@@ -209,7 +209,7 @@ export class CustomerController {
         if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       if (data.ownerId) {
-        const existStaff = await StaffModel.findOne({
+        const existStaff = await StaffModel.scope('safe').findOne({
           where: { id: data.ownerId },
           include: [
             {
@@ -487,7 +487,7 @@ export class CustomerController {
         if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       if (data.ownerId) {
-        const existStaff = await StaffModel.findOne({
+        const existStaff = await StaffModel.scope('safe').findOne({
           where: { id: data.ownerId },
           include: [
             {
@@ -711,7 +711,7 @@ export class CustomerController {
     try {
       const { companyId } = res.locals.staffPayload;
       const customerWisereId = req.params.customerWisereId;
-      const validateErrors = validate(customerWisereId, customerWireseIdSchema);
+      const validateErrors = validate(customerWisereId, customerWisereIdSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({ where: { id: customerWisereId } });
       if (!customerWisere)
@@ -834,7 +834,7 @@ export class CustomerController {
     try {
       const { companyId } = res.locals.staffPayload;
       const customerWisereId = req.params.customerWisereId;
-      const validateErrors = validate(customerWisereId, customerWireseIdSchema);
+      const validateErrors = validate(customerWisereId, customerWisereIdSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       const customerWisere = await CustomerWisereModel.findOne({
         where: {
@@ -928,7 +928,7 @@ export class CustomerController {
         accessToken
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
-      const profile = await CustomerModel.findOne({
+      const profile = await CustomerModel.scope('safe').findOne({
         where: { email: data.email }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1033,7 +1033,7 @@ export class CustomerController {
    *       200:
    *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -1100,7 +1100,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1130,7 +1130,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1151,9 +1151,9 @@ export class CustomerController {
             firstName: req.body.fullName.split(' ').slice(1).join(' ')
               ? req.body.fullName.split(' ').slice(1).join(' ')
               : null,
-            email: req.body.email ? req.body.email : null,
+            email: req.body.email ? req.body.email : '',
             facebookId: req.body.providerId,
-            avatarPath: req.body.avatarPath ? req.body.avatarPath : null
+            avatarPath: req.body.avatarPath ? req.body.avatarPath : ''
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newCustomer = await CustomerModel.create(data, { transaction });
@@ -1177,7 +1177,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { facebookId: newCustomer.facebookId },
             transaction
           });
@@ -1198,7 +1198,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { facebookId: customer.facebookId },
           transaction
         });
@@ -1214,8 +1214,8 @@ export class CustomerController {
             lastName: req.body.fullName.split(' ')[0],
             firstName: req.body.fullName.split(' ').slice(1).join(' ')
               ? req.body.fullName.split(' ').slice(1).join(' ')
-              : null,
-            email: req.body.email,
+              : '',
+            email: req.body.email || '',
             googleId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
@@ -1241,7 +1241,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { googleId: newCustomer.googleId },
             transaction
           });
@@ -1262,7 +1262,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { googleId: customer.googleId },
           transaction
         });
@@ -1373,7 +1373,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { appleId: newCustomer.appleId }
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1391,7 +1391,7 @@ export class CustomerController {
         accessToken
       };
       refreshToken = await createRefreshToken(refreshTokenData);
-      profile = await CustomerModel.findOne({
+      profile = await CustomerModel.scope('safe').findOne({
         where: { appleId: customer.appleId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1767,7 +1767,7 @@ export class CustomerController {
    *       500:
    *         description: Internal server errors
    */
-  public getProfileCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  public getProfileCustomer = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = res.locals.customerPayload.id;
       const profile = await CustomerModel.findOne({

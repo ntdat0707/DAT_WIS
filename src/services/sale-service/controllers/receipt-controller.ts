@@ -662,7 +662,7 @@ export class ReceiptController {
           httpStatus.NOT_FOUND
         );
       }
-      const staff = await StaffModel.findOne({ where: { id: data.staffId } });
+      const staff = await StaffModel.scope('safe').findOne({ where: { id: data.staffId } });
       if (!staff) {
         throw new CustomError(staffErrorDetails.E_4000(`staff Id ${data.staffId} not found`), HttpStatus.NOT_FOUND);
       }

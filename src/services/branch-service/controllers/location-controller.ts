@@ -304,8 +304,8 @@ export class LocationController {
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
         };
-        const checkValidWoringTime = await req.body.workingTimes.some(even);
-        if (checkValidWoringTime) {
+        const checkValidWorkingTime = await req.body.workingTimes.some(even);
+        if (checkValidWorkingTime) {
           throw new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST);
         }
 
@@ -1021,7 +1021,7 @@ export class LocationController {
         attributes: ['id', 'prefixCode']
       });
       if (!prefixCodes) {
-        throw new CustomError(locationErrorDetails.E_1012(`Prefix codes not existed`), HttpStatus.NOT_FOUND);
+        throw new CustomError(locationErrorDetails.E_1012('Prefix codes not existed'), HttpStatus.NOT_FOUND);
       }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(prefixCodes));
     } catch (error) {
