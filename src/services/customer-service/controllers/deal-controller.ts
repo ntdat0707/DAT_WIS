@@ -32,14 +32,13 @@ import {
   staffErrorDetails,
   customerErrorDetails
 } from '../../../utils/response-messages/error-details';
+import { esClient } from '../../../repositories/elasticsearch';
 import { FindOptions, Op } from 'sequelize';
 import { paginate, paginateElasticSearch } from '../../../utils/paginator';
 import { EAppointmentStatus, EOrder, EStatusPipelineStage } from '../../../utils/consts';
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
-import { SearchParams } from 'elasticsearch';
-import { elasticsearchClient } from '../../../repositories/elasticsearch/connector';
 export class DealController {
   /**
    * @swagger
@@ -1281,7 +1280,7 @@ export class DealController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const keywords = req.query.keyWords;
-      const searchParams: SearchParams = {
+      const searchParams: any = {
         index: 'get_deals_dev',
         body: {
           query: {
@@ -1311,7 +1310,7 @@ export class DealController {
       if (req.body.order === EOrder.NEWEST) {
         searchParams.body.sort = [{ createdAt: 'desc' }];
       }
-      const deals = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      const deals = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
       deals.data = deals.data.map((item: any) => ({
         ...item._source
       }));

@@ -30,7 +30,6 @@ import { paginateElasticSearch } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
-import { SearchParams } from 'elasticsearch';
 import { elasticsearchClient, esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -232,6 +231,60 @@ export class ServiceController {
         await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       }
       await transaction.commit();
+      // const serviceData = await ServiceModel.findOne({
+      //   where: {
+      //     id: data.id
+      //   },
+      //   include: [
+      //     {
+      //       model: LocationModel,
+      //       as: 'locations',
+      //       required: true,
+      //       through: {
+      //         attributes: {
+      //           exclude: ['updatedAt', 'createdAt', 'deletedAt']
+      //         }
+      //       }
+      //     },
+      //     {
+      //       model: CateServiceModel,
+      //       as: 'cateService',
+      //       required: true,
+      //       attributes: {
+      //         exclude: ['updatedAt', 'createdAt', 'deletedAt']
+      //       }
+      //     },
+      //     {
+      //       model: StaffModel,
+      //       as: 'staffs',
+      //       required: false,
+      //       through: {
+      //         attributes: {
+      //           exclude: ['updatedAt', 'createdAt', 'deletedAt']
+      //         }
+      //       }
+      //     },
+      //     {
+      //       model: ServiceImageModel,
+      //       as: 'images',
+      //       required: false
+      //     }
+      //   ]
+      // }).then((item: any) => {
+      //   const serviceMapping = JSON.parse(JSON.stringify(item));
+      //   serviceMapping.locationService = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
+      //   serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
+      //   delete serviceMapping.locations;
+      //   delete serviceMapping.staffs;
+      //   return serviceMapping;
+      // });
+
+      // await esClient.create({
+      //   id: data.id,
+      //   index: 'get_services_dev',
+      //   body: serviceData,
+      //   type: '_doc'
+      // });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
@@ -270,6 +323,7 @@ export class ServiceController {
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+
       const service: any = await ServiceModel.findOne({
         where: { id: serviceId },
         include: [
@@ -283,16 +337,36 @@ export class ServiceController {
           }
         ]
       });
-      if (!service)
-        throw new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND);
-
-      await esClient.delete({
-        id: serviceId,
-        index: 'get_services',
-        type: '_doc'
-      });
-
-      await ServiceModel.destroy({ where: { id: serviceId } });
+      // if (!service)
+      //   throw new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND);
+      if (service) {
+        await ServiceModel.destroy({ where: { id: serviceId } });
+        await esClient.delete({
+          index: 'get_services_dev',
+          type: '_doc',
+          id: serviceId
+        });
+      } else {
+        const isServiceRemain = await esClient.search({
+          index: 'get_services_dev',
+          type: '_doc',
+          body: {
+            query: {
+              match: {
+                id: serviceId
+              }
+            }
+          }
+        });
+        if (isServiceRemain.body.hits.total.value === 1) {
+          await esClient.delete({
+            index: 'get_services_dev',
+            type: '_doc',
+            id: serviceId
+          });
+        } else
+          throw new CustomError(serviceErrorDetails.E_1203(`serviceId ${serviceId} not found`), HttpStatus.NOT_FOUND);
+      }
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
@@ -444,8 +518,8 @@ export class ServiceController {
         locationIds = workingLocationIds.join(' OR ');
       }
 
-      const searchParams: SearchParams = {
-        index: 'get_services',
+      const searchParams: any = {
+        index: 'get_services_dev',
         body: {
           query: {
             bool: {
@@ -493,7 +567,7 @@ export class ServiceController {
         });
       }
 
-      const services = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      const services = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
       services.data = services.data.map((item: any) => ({
         ...item._source
       }));
@@ -1027,7 +1101,7 @@ export class ServiceController {
 
       await elasticsearchClient.update({
         id: params.serviceId,
-        index: 'get_services',
+        index: 'get_services_dev',
         body: {
           doc: serviceData,
           doc_as_upsert: true

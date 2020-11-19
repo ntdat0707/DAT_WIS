@@ -22,6 +22,7 @@ import {
   LocationStaffModel,
   CompanyTypeDetailModel
 } from '../../../repositories/postgres/models';
+import { esClient } from '../../../repositories/elasticsearch';
 
 import {
   searchSchema,
@@ -45,8 +46,6 @@ import {
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
 import _ from 'lodash';
-import { elasticsearchClient } from '../../../repositories/elasticsearch';
-import { SearchParams } from 'elasticsearch';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -1807,7 +1806,7 @@ export class SearchController {
 
       const INDEX_SEARCH_MARKETPLACE = 'marketplace_search';
 
-      const searchParams: SearchParams = {
+      const searchParams: any = {
         index: INDEX_SEARCH_MARKETPLACE,
         body: {
           query: {
@@ -1875,7 +1874,7 @@ export class SearchController {
         }
       }
 
-      const result: any = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      const result: any = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
 
       let locationResults = result.data;
       const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
