@@ -212,3 +212,9 @@ export enum ETeeth {
   ADULT = 'adult',
   KID = 'kid'
 }
+
+export enum EDiagnosis {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  RESOLVED = 'resolved'
+}
