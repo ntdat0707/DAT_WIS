@@ -22,6 +22,7 @@ import {
   LocationStaffModel,
   CompanyTypeDetailModel
 } from '../../../repositories/postgres/models';
+import { elasticsearchClient, esClient } from '../../../repositories/elasticsearch';
 
 import {
   searchSchema,
@@ -45,8 +46,6 @@ import {
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
 import _ from 'lodash';
-import { elasticsearchClient } from '../../../repositories/elasticsearch';
-import { SearchParams } from 'elasticsearch';
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -1066,7 +1065,6 @@ export class SearchController {
             model: LocationWorkingHourModel,
             as: 'workingTimes',
             required: true,
-            order: [['weekday', 'DESC']],
             attributes: ['weekday', 'startTime', 'endTime']
           }
         ],
@@ -1083,11 +1081,21 @@ export class SearchController {
                 model: LocationWorkingHourModel,
                 as: 'workingTimes',
                 required: true,
-                order: [['weekday', 'DESC']],
                 attributes: ['weekday', 'startTime', 'endTime']
               }
             ],
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+            order: Sequelize.literal(`
+              CASE
+                 WHEN "workingTimes".weekday = 'sunday' THEN 8
+                 WHEN "workingTimes".weekday = 'monday' THEN 2
+                 WHEN "workingTimes".weekday = 'tuesday' THEN 3
+                 WHEN "workingTimes".weekday = 'wednesday' THEN 4
+                 WHEN "workingTimes".weekday = 'thursday' THEN 5
+                 WHEN "workingTimes".weekday = 'friday' THEN 6
+                 WHEN "workingTimes".weekday = 'saturday' THEN 7
+              END ASC
+            `),
             group: [
               'LocationModel.id',
               'workingTimes.id',
@@ -1157,57 +1165,60 @@ export class SearchController {
           ],
           group: ['CateServiceModel.id', 'services.id']
         });
-        nearLocation = await elasticsearchClient.search({
-          index: 'marketplace_search',
-          body: {
-            query: {
-              bool: {
-                must_not: [
-                  {
-                    match: {
-                      id: location.id
+        nearLocation = await elasticsearchClient
+          .search({
+            index: 'marketplace_search',
+            body: {
+              query: {
+                bool: {
+                  must_not: [
+                    {
+                      match: {
+                        id: location.id
+                      }
+                    }
+                  ],
+                  must: {
+                    bool: {
+                      should: [
+                        {
+                          query_string: {
+                            fields: ['country'],
+                            query: `${location.country}~1`
+                          }
+                        },
+                        {
+                          query_string: {
+                            fields: ['countryCode'],
+                            query: `${location.countryCode}~1`
+                          }
+                        }
+                      ]
                     }
                   }
-                ],
-                must: {
-                  bool: {
-                    should: [
-                      {
-                        query_string: {
-                          fields: ['country'],
-                          query: `${location.country}~1`
-                        }
-                      },
-                      {
-                        query_string: {
-                          fields: ['countryCode'],
-                          query: `${location.countryCode}~1`
-                        }
-                      }
-                    ]
+                }
+              },
+              sort: [
+                {
+                  _geo_distance: {
+                    location: {
+                      lat: location.latitude,
+                      lon: location.longitude
+                    },
+                    order: 'asc',
+                    unit: 'km',
+                    distance_type: 'arc',
+                    ignore_unmapped: true
                   }
                 }
-              }
-            },
-            sort: [
-              {
-                '_geo_distance': {
-                  location: {
-                    lat: location.latitude,
-                    lon: location.longitude
-                  },
-                  order: 'asc',
-                  unit: 'km',
-                  'distance_type': 'arc',
-                  'ignore_unmapped': true
-                }
-              }
-            ],
-            from: 0,
-            size: 10,
-          }
-        }).then((result: any) => result.hits?.hits.map((item: any) => ({...item._source, distance: item.sort[0] })) || []);
-
+              ],
+              from: 0,
+              size: 10
+            }
+          })
+          .then(
+            (result: any) => result.hits?.hits.map((item: any) => ({ ...item._source, distance: item.sort[0] })) || []
+          );
       } else {
         location = {};
       }
@@ -1867,7 +1878,7 @@ export class SearchController {
 
       const INDEX_SEARCH_MARKETPLACE = 'marketplace_search';
 
-      const searchParams: SearchParams = {
+      const searchParams: any = {
         index: INDEX_SEARCH_MARKETPLACE,
         body: {
           query: {
@@ -1935,7 +1946,7 @@ export class SearchController {
         }
       }
 
-      const result: any = await paginateElasticSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
+      const result: any = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
 
       let locationResults = result.data;
       const keywordRemoveAccents = removeAccents(keywords).toLowerCase();
