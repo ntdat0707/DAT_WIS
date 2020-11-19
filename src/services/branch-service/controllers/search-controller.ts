@@ -1060,6 +1060,13 @@ export class SearchController {
             as: 'locationImages',
             required: false,
             attributes: ['path', 'is_avatar']
+          },
+          {
+            model: LocationWorkingHourModel,
+            as: 'workingTimes',
+            required: true,
+            order: [['weekday', 'DESC']],
+            attributes: ['weekday', 'startTime', 'endTime']
           }
         ],
         order: [[{ model: LocationImageModel, as: 'locationImages' }, 'is_avatar', 'DESC']],
