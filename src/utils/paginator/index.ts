@@ -50,7 +50,7 @@ const paginate = async <T extends Model<T>>(
     // const dataFinds = await model.findAndCountAll({ ...queryFindData, ...{ distinct: true } });
     // const data = dataFinds.rows;
 
-    // caculate links
+    // calculate links
     let firstURL: URL = null;
     let prevURL: URL = null;
     let nextURL: URL = null;
@@ -125,7 +125,7 @@ const paginateRawData = <T extends Model<T>>(
     // get data
     const data = dataRaw.slice(offset, limit);
 
-    // caculate links
+    // calculate links
     let firstURL: URL = null;
     let prevURL: URL = null;
     let nextURL: URL = null;
@@ -212,9 +212,9 @@ const paginateElasticSearch = async <T extends Model<T>>(
     // Count meta totalPages
     const totalRecords: number = data.hits.total.value;
     const totalPages: number = Math.ceil(totalRecords / paginateOptions.pageSize);
-    data = data.hits.hits;
+    data = data.hits?.hits.map((item: any) => ({ ...item._source })) || [];
 
-    // caculate links
+    // calculate links
     let firstURL: URL = null;
     let prevURL: URL = null;
     let nextURL: URL = null;

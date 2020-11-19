@@ -1018,6 +1018,7 @@ export class SearchController {
       let staffs: any = [];
       let locations: any = [];
       let cateServices: any = [];
+      let nearLocation: any = [];
       let location: any = await LocationModel.findOne({
         include: [
           {
@@ -1156,6 +1157,57 @@ export class SearchController {
           ],
           group: ['CateServiceModel.id', 'services.id']
         });
+        nearLocation = await elasticsearchClient.search({
+          index: 'marketplace_search',
+          body: {
+            query: {
+              bool: {
+                must_not: [
+                  {
+                    match: {
+                      id: location.id
+                    }
+                  }
+                ],
+                must: {
+                  bool: {
+                    should: [
+                      {
+                        query_string: {
+                          fields: ['country'],
+                          query: `${location.country}~1`
+                        }
+                      },
+                      {
+                        query_string: {
+                          fields: ['countryCode'],
+                          query: `${location.countryCode}~1`
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            sort: [
+              {
+                '_geo_distance': {
+                  location: {
+                    lat: location.latitude,
+                    lon: location.longitude
+                  },
+                  order: 'asc',
+                  unit: 'km',
+                  'distance_type': 'arc',
+                  'ignore_unmapped': true
+                }
+              }
+            ],
+            from: 0,
+            size: 10,
+          }
+        }).then((result: any) => result.hits?.hits.map((item: any) => ({...item._source, distance: item.sort[0] })) || []);
+
       } else {
         location = {};
       }
@@ -1194,7 +1246,8 @@ export class SearchController {
         locations: locations,
         locationInformation: location,
         cateServices: cateServices,
-        staffs: staffs
+        staffs: staffs,
+        nearLocation: nearLocation
       };
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
@@ -1891,7 +1944,6 @@ export class SearchController {
       let searchServiceItem: any = null;
       let searchLocationItem: any = null;
       locationResults = locationResults.map((location: any) => {
-        location = location._source;
         if (
           !searchLocationItem &&
           location.name &&
