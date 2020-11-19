@@ -40,3 +40,4 @@ export const validateValueByType = (marketPlaceField: MarketPlaceFieldsModel): a
     [ETypeMarketPlaceField.BOOLEAN]: Joi.boolean().required().label('value')
   };
 };
+

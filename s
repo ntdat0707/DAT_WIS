@@ -32,7 +32,7 @@ import {
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate, paginateElasticSearch } from '../../../utils/paginator';
-import { EOrder, ETypeMarketPlaceField } from '../../../utils/consts';
+import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
@@ -1068,7 +1068,20 @@ export class SearchController {
             attributes: ['weekday', 'startTime', 'endTime']
           }
         ],
-        order: [[{ model: LocationImageModel, as: 'locationImages' }, 'is_avatar', 'DESC']],
+        order: [
+          [{ model: LocationImageModel, as: 'locationImages' }, 'is_avatar', 'DESC'],
+          Sequelize.literal(`
+            CASE
+               WHEN "workingTimes".weekday = 'sunday' THEN 8
+               WHEN "workingTimes".weekday = 'monday' THEN 2
+               WHEN "workingTimes".weekday = 'tuesday' THEN 3
+               WHEN "workingTimes".weekday = 'wednesday' THEN 4
+               WHEN "workingTimes".weekday = 'thursday' THEN 5
+               WHEN "workingTimes".weekday = 'friday' THEN 6
+               WHEN "workingTimes".weekday = 'saturday' THEN 7
+            END ASC
+          `)
+        ],
         where: { pathName: data.pathName },
         attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
       });
@@ -1082,48 +1095,7 @@ export class SearchController {
                 as: 'workingTimes',
                 required: true,
                 attributes: ['weekday', 'startTime', 'endTime']
-              },
-              {
-                model: MarketPlaceValueModel,
-                as: 'marketplaceValues',
-                required: false,
-                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
-                include: [
-                  {
-                    model: MarketPlaceFieldsModel,
-                    as: 'marketplaceField',
-                    required: false,
-                    attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
-                  }
-                ]
-              },
-              {
-                model: CompanyModel,
-                as: 'company',
-                required: true,
-                attributes: ['ownerId'],
-                include: [
-                  {
-                    model: CompanyDetailModel,
-                    as: 'companyDetail',
-                    required: false,
-                    attributes: { exclude: ['createdAt', 'updateAt', 'deletedAt'] }
-                  },
-                  {
-                    model: CompanyTypeDetailModel,
-                    as: 'companyTypeDetails',
-                    through: { attributes: [] },
-                    required: false,
-                    attributes: { exclude: ['createdAt', 'updateAt', 'deletedAt'] }
-                  }
-                ]
-              },
-              {
-                model: LocationImageModel,
-                as: 'locationImages',
-                required: false,
-                attributes: ['path', 'is_avatar']
-              },
+              }
             ],
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
             order: Sequelize.literal(`
@@ -1136,26 +1108,34 @@ export class SearchController {
                  WHEN "workingTimes".weekday = 'friday' THEN 6
                  WHEN "workingTimes".weekday = 'saturday' THEN 7
               END ASC
-            `)
+            `),
+            group: [
+              'LocationModel.id',
+              'workingTimes.id',
+              'workingTimes.start_time',
+              'workingTimes.end_time',
+              'workingTimes.weekday'
+            ]
           })
         ).map((loc: any) => {
-          loc = JSON.parse(JSON.stringify(loc));
-          const locationDetailField = loc.marketplaceValues.reduce(
-            (acc: any, { value, marketplaceField: { name, type } }: any) => ({
+            const locationDetailField = loc.marketplaceValues.reduce(
+              (acc: any, { value, marketplaceField: { name, type } }: any) => ({
                 ...acc,
                 [name]: parseDataByType[type](value)
-            }),
-            {}
-          );
+              }),
+              {}
+            );
 
-          return {
-            ...loc,
-            ...locationDetailField,
-            ...loc.company,
-            ['marketplaceValues']: undefined,
-            distance: this.calcCrow(location.latitude, location.longitude, loc.latitude, loc.longitude)
-          };
-        });
+            return {
+              ...loc,
+              ...locationDetailField,
+              ...loc.locationImages?.dataValues,
+              ...loc.company?.dataValues,
+              ['marketplaceValues']: undefined,
+              ['company']: undefined,
+              distance: this.calcCrow(location.latitude, location.longitude, loc.latitude, loc.longitude)
+            };
+          });
 
         const locationDetail = location.marketplaceValues.reduce(
           (acc: any, { value, marketplaceField: { name, type } }: any) => ({
@@ -1165,12 +1145,12 @@ export class SearchController {
           {}
         );
 
-        location = JSON.parse(JSON.stringify(location.dataValues));
+        location = location.dataValues;
         location = {
           ...location,
           ...locationDetail,
-          ...location.locationImages,
-          ...location.company,
+          ...location.locationImages?.dataValues,
+          ...location.company?.dataValues,
           ['marketplaceValues']: undefined,
           ['company']: undefined
         };
@@ -1269,7 +1249,7 @@ export class SearchController {
             (result: any) => result.hits?.hits.map((item: any) => ({ ...item._source, distance: item.sort[0] })) || []
           );
           nearLocation = nearLocation.map((loc: any) => {
-            const locationDetailField = loc.marketplaceValues.filter((item: any) => item.id).reduce(
+            const locationDetailField = loc.marketplaceValues.reduce(
               (acc: any, { value, marketplaceField: { name, type } }: any) => ({
                 ...acc,
                 [name]: parseDataByType[type](value)
@@ -1280,6 +1260,7 @@ export class SearchController {
             return {
               ...loc,
               ...locationDetailField,
+              ...loc.locationImages,
               ...loc.company,
               ['marketplaceValues']: undefined,
               ['company']: undefined
@@ -1329,7 +1310,6 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
-      console.log(error);
       // throw new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR);
       return next(error);
     }
@@ -2010,25 +1990,6 @@ export class SearchController {
               ]
             }
           });
-        }
-      }
-
-      if (search.latitude && search.longitude) {
-        console.log(search);
-        searchParams.body = {
-          ...searchParams.body,
-          'stored_fields' : [ '_source' ],
-          'script_fields': {
-            distance : {
-              script : {
-                inline: 'doc[\'location\'].arcDistance(params.lat,params.lon) * 0.001',
-                params: {
-                  lat: search.latitude,
-                  lon: search.longitude
-                }
-              }
-            }
-          }
         }
       }
 
