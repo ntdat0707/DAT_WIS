@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { EStatusProcedure } from '../../../../utils/consts';
 
 const languageSchema = Joi.string().valid('en', 'vi').required().label('language');
 
@@ -25,12 +26,19 @@ const updateMedicalHistorySchema = Joi.object({
     .label('medicalHistories')
 });
 
-const createTreatmentSchema = Joi.object({
-  treatments: Joi.array()
+const createProcedureSchema = Joi.object({
+  procedures: Joi.array()
     .min(1)
     .required()
     .items(
       Joi.object({
+        treatmentId: Joi.string().required().label('treatmentId'),
+        staffId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .required()
+          .label('staffId'),
         teethId: Joi.array().items(Joi.string()).required().label('teethId'),
         serviceId: Joi.string()
           .guid({
@@ -38,35 +46,16 @@ const createTreatmentSchema = Joi.object({
           })
           .required()
           .label('serviceId'),
-        staffId: Joi.string()
-          .guid({
-            version: ['uuidv4']
-          })
+        quantity: Joi.number().integer().min(1).required().label('quantity'),
+        discount: Joi.number().integer().min(0).allow(null).label('discount'),
+        totalPrice: Joi.number().integer().min(1).required().label('totalPrice'),
+        status: Joi.string()
+          .valid(...Object.values(EStatusProcedure))
           .required()
-          .label('staffId'),
-        procedureId: Joi.string().required().label('procedureId'),
-        status: Joi.string().valid('Planned', 'Completed').required().label('status'),
-        diagnoseId: Joi.string().required().label('diagnoseId'),
-        note: Joi.string().allow(null, '').label('note'),
-        startDate: Joi.string().isoDate().allow(null).label('startDate'),
-        endDate: Joi.string().isoDate().allow(null).label('endDate'),
-        prescription: Joi.array()
-          .allow(null)
-          .items(
-            Joi.object({
-              medicineId: Joi.string()
-                .guid({
-                  version: ['uuidv4']
-                })
-                .required()
-                .label('medicineId'),
-              quantity: Joi.number().integer().required().label('quantity'),
-              noteMedicine: Joi.string().allow(null, '').label('noteMedicine'),
-              notePrescription: Joi.string().allow(null, '').label('notePrescription')
-            })
-          )
+          .label('status'),
+        note: Joi.string().allow(null, '').label('note')
       })
     )
-    .label('treatments')
+    .label('procedures')
 });
-export { languageSchema, customerWisereIdSchema, updateMedicalHistorySchema, createTreatmentSchema };
+export { languageSchema, customerWisereIdSchema, updateMedicalHistorySchema, createProcedureSchema };

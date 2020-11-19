@@ -212,3 +212,9 @@ export enum ETeeth {
   ADULT = 'adult',
   KID = 'kid'
 }
+
+export enum EStatusProcedure {
+  CONFIRMED = 'confirmed',
+  REJECTED = 'rejected',
+  COMPLETE = 'complete'
+}
