@@ -209,7 +209,7 @@ export class CustomerController {
         if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       if (data.ownerId) {
-        const existStaff = await StaffModel.findOne({
+        const existStaff = await StaffModel.scope('safe').findOne({
           where: { id: data.ownerId },
           include: [
             {
@@ -487,7 +487,7 @@ export class CustomerController {
         if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       if (data.ownerId) {
-        const existStaff = await StaffModel.findOne({
+        const existStaff = await StaffModel.scope('safe').findOne({
           where: { id: data.ownerId },
           include: [
             {
@@ -927,7 +927,7 @@ export class CustomerController {
         accessToken
       };
       const refreshToken = await createRefreshToken(refreshTokenData);
-      const profile = await CustomerModel.findOne({
+      const profile = await CustomerModel.scope('safe').findOne({
         where: { email: data.email }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1099,7 +1099,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1129,7 +1129,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { email: req.body.email }
           });
           return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1176,7 +1176,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { facebookId: newCustomer.facebookId },
             transaction
           });
@@ -1197,7 +1197,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { facebookId: customer.facebookId },
           transaction
         });
@@ -1240,7 +1240,7 @@ export class CustomerController {
             accessToken
           };
           refreshToken = await createRefreshToken(refreshTokenData);
-          profile = await CustomerModel.findOne({
+          profile = await CustomerModel.scope('safe').findOne({
             where: { googleId: newCustomer.googleId },
             transaction
           });
@@ -1261,7 +1261,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { googleId: customer.googleId },
           transaction
         });
@@ -1372,7 +1372,7 @@ export class CustomerController {
           accessToken
         };
         refreshToken = await createRefreshToken(refreshTokenData);
-        profile = await CustomerModel.findOne({
+        profile = await CustomerModel.scope('safe').findOne({
           where: { appleId: newCustomer.appleId }
         });
         return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
@@ -1390,7 +1390,7 @@ export class CustomerController {
         accessToken
       };
       refreshToken = await createRefreshToken(refreshTokenData);
-      profile = await CustomerModel.findOne({
+      profile = await CustomerModel.scope('safe').findOne({
         where: { appleId: customer.appleId }
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage({ accessToken, refreshToken, profile }));
