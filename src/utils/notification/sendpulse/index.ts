@@ -79,7 +79,6 @@ const getToken = async () => {
  */
 const sendRequest = async (options: ISendpulseRequestOptions) => {
   try {
-
     if (!TOKEN) {
       syncToken();
     }
@@ -100,17 +99,11 @@ const sendRequest = async (options: ISendpulseRequestOptions) => {
     if (req.status === 401) {
       getToken();
       optionsRequest.headers.Authorization = 'Bearer ' + TOKEN;
-      req =  await request(optionsRequest);
+      req = await request(optionsRequest);
     }
   } catch (error) {
     throw error;
   }
 };
 
-export {
-  getToken,
-  sendRequest,
-  ISendpulseRequestOptions,
-  sms
-};
-
+export { getToken, sendRequest, ISendpulseRequestOptions, sms };
