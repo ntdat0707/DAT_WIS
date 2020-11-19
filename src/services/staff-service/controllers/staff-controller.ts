@@ -78,7 +78,7 @@ export class StaffController {
       const staffId = req.params.staffId;
       const validateErrors = validate(staffId, staffIdSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
-      const staff: any = await StaffModel.findOne({
+      const staff: any = await StaffModel.scope('safe').findOne({
         where: { id: staffId },
         include: [
           {
@@ -386,7 +386,7 @@ export class StaffController {
         }
       }
       if (req.body.email) {
-        const checkEmailExists = await StaffModel.findOne({ where: { email: req.body.email } });
+        const checkEmailExists = await StaffModel.scope('safe').findOne({ where: { email: req.body.email } });
         if (checkEmailExists) throw new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST);
       }
       if (req.file) profile.avatarPath = (req.file as any).location;
@@ -588,7 +588,7 @@ export class StaffController {
         }
       }
 
-      let staff: any = await StaffModel.findOne({
+      let staff: any = await StaffModel.scope('safe').findOne({
         where: {
           id: req.params.staffId
         },
@@ -908,7 +908,7 @@ export class StaffController {
       };
       const validateErrors = validate(dataDelete, deleteStaffSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
-      const staff = await StaffModel.findOne({ where: { id: dataDelete.staffId } });
+      const staff = await StaffModel.scope('safe').findOne({ where: { id: dataDelete.staffId } });
       if (!staff)
         throw new CustomError(
           staffErrorDetails.E_4000(`staffId ${dataDelete.staffId} not found`),
@@ -1199,7 +1199,7 @@ export class StaffController {
       const durationTime = minutesToNum(serviceDuration);
       const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
-      const workingTime = await StaffModel.findOne({
+      const workingTime = await StaffModel.scope('safe').findOne({
         attributes: [],
         include: [
           {
@@ -1685,7 +1685,7 @@ export class StaffController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
-      const staff = await StaffModel.findOne({
+      const staff = await StaffModel.scope('safe').findOne({
         where: { id: req.params.staffId }
       });
       if (!staff) {

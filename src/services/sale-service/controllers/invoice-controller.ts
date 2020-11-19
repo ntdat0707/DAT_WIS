@@ -232,7 +232,9 @@ export class InvoiceController {
         subTotal += dataInvoiceDetail.quantity * dataInvoiceDetail.price;
         totalQuantity += dataInvoiceDetail.quantity;
         for (let j = 0; j < req.body.listInvoiceDetail[i].listStaff.length; j++) {
-          const staff = await StaffModel.findOne({ where: { id: req.body.listInvoiceDetail[i].listStaff[j].staffId } });
+          const staff = await StaffModel.scope('safe').findOne({
+            where: { id: req.body.listInvoiceDetail[i].listStaff[j].staffId }
+          });
           if (!staff) {
             throw new CustomError(
               staffErrorDetails.E_4000(`staffId ${req.body.listInvoiceDetail[i].listStaff[j].staffId} not found`),
@@ -660,7 +662,7 @@ export class InvoiceController {
           });
           const listStaff: any = [];
           for (let k = 0; k < listInvoices[i].listInvoiceDetails[j].listStaff.length; k++) {
-            const staff = await StaffModel.findOne({
+            const staff = await StaffModel.scope('safe').findOne({
               raw: true,
               where: { id: listInvoices[i].listInvoiceDetails[j].listStaff[k].staffId }
             });

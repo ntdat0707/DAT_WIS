@@ -692,7 +692,7 @@ export class DealController {
         createdBy: res.locals.staffPayload.id
       };
       if (data.ownerId) {
-        const checkOwnerId = await StaffModel.findOne({ where: { id: data.ownerId } });
+        const checkOwnerId = await StaffModel.scope('safe').findOne({ where: { id: data.ownerId } });
         if (!checkOwnerId) {
           throw new CustomError(staffErrorDetails.E_4000(`ownerId ${data.ownerId} not found`), httpStatus.NOT_FOUND);
         }
