@@ -60,7 +60,7 @@ import { redis, EKeys } from '../../../repositories/redis';
 import { ICustomerRecoveryPasswordTemplate } from '../../../utils/emailer/templates/customer-recovery-password';
 import * as ejs from 'ejs';
 import * as path from 'path';
-import { sendEmail } from '../../../utils/emailer';
+import { executeSendingEmail } from '../../../utils/emailer';
 import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
@@ -1552,7 +1552,7 @@ export class CustomerController {
       const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/customer-recovery-password.ejs');
       ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
         if (!err) {
-          await sendEmail({
+          await executeSendingEmail({
             receivers: email,
             subject: 'Change your account password',
             type: 'html',
