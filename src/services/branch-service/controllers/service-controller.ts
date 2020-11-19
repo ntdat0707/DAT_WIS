@@ -21,11 +21,12 @@ import {
   ResourceModel,
   CompanyModel
 } from '../../../repositories/postgres/models';
+import { Unaccent } from '../../../utils/unaccent';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-import { FindOptions, Transaction } from 'sequelize';
+import { FindOptions, Sequelize, Op, Transaction } from 'sequelize';
 import { paginateElasticSearch } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
@@ -281,7 +282,7 @@ export class ServiceController {
 
       // await esClient.create({
       //   id: data.id,
-      //   index: 'get_services',
+      //   index: 'get_services_alpha',
       //   body: serviceData,
       //   type: '_doc'
       // });
@@ -342,13 +343,13 @@ export class ServiceController {
       if (service) {
         await ServiceModel.destroy({ where: { id: serviceId } });
         await esClient.delete({
-          index: 'get_services',
+          index: 'get_services_alpha',
           type: '_doc',
           id: serviceId
         });
       } else {
         const isServiceRemain = await esClient.search({
-          index: 'get_services',
+          index: 'get_services_alpha',
           type: '_doc',
           body: {
             query: {
@@ -360,7 +361,7 @@ export class ServiceController {
         });
         if (isServiceRemain.body.hits.total.value === 1) {
           await esClient.delete({
-            index: 'get_services',
+            index: 'get_services_alpha',
             type: '_doc',
             id: serviceId
           });
@@ -519,7 +520,7 @@ export class ServiceController {
       }
 
       const searchParams: any = {
-        index: 'get_services',
+        index: 'get_services_alpha',
         body: {
           query: {
             bool: {
@@ -541,10 +542,21 @@ export class ServiceController {
       };
 
       if (req.query.searchValue) {
+        const unaccentSearchValue = Unaccent(req.query.searchValue);
+        const servicesSearch = await ServiceModel.findAndCountAll({
+          where: {
+            [Op.or]: [
+              Sequelize.literal(`unaccent("ServiceModel"."name") ilike '%${unaccentSearchValue}%'`),
+              Sequelize.literal(`unaccent("ServiceModel"."name_en") ilike '%${unaccentSearchValue}%'`),
+              Sequelize.literal(`"ServiceModel"."service_code" ilike '%${req.query.searchValue}%'`)
+            ]
+          }
+        });
+        const servicesIds: any = [...servicesSearch.rows.map((ids: any) => ids.id)];
         searchParams.body.query.bool.must.push({
           query_string: {
-            fields: ['name', 'serviceCode'],
-            query: `${(req.query.searchValue as string).replace(/  +/g, ' ').trim()}`
+            query: servicesIds.join(' OR ')
+            //fields: ['locationServices.serviceId']
           }
         });
       }
@@ -1098,7 +1110,7 @@ export class ServiceController {
 
       await elasticsearchClient.update({
         id: params.serviceId,
-        index: 'get_services',
+        index: 'get_services_alpha',
         body: {
           doc: serviceData,
           doc_as_upsert: true
