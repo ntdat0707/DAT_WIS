@@ -153,7 +153,7 @@ export enum EInvoiceSourceType {
 export enum EPaymentType {
   CASH = 'cash',
   CARD = 'card',
-  TRANFER = 'tranfer',
+  TRANSFER = 'transfer',
   GIFT_CARD = 'gift_card'
 }
 

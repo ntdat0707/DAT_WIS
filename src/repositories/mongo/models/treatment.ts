@@ -10,7 +10,7 @@ interface ITreatment extends mongoose.Document {
   creatorId: string;
   diagnosisIds: [string];
   procedureIds: [string];
-  treamentProcessIds: [string];
+  treatmentProcessIds: [string];
 }
 
 const TreatmentSchema = new mongoose.Schema({
@@ -22,7 +22,7 @@ const TreatmentSchema = new mongoose.Schema({
   creatorId: { type: String, required: true },
   diagnosisIds: [{ type: Schema.Types.ObjectId, ref: 'Diagnosis' }],
   procedureIds: [{ type: Schema.Types.ObjectId, ref: 'Procedure' }],
-  treamentProcessIds: [{ type: Schema.Types.ObjectId, ref: 'TreatmentProcess' }]
+  treatmentProcessIds: [{ type: Schema.Types.ObjectId, ref: 'TreatmentProcess' }]
 });
 
 //Model
