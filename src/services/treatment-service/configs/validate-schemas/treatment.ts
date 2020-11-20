@@ -53,7 +53,7 @@ const createProcedureSchema = Joi.object({
           .valid(...Object.values(EStatusProcedure))
           .required()
           .label('status'),
-        note: Joi.string().allow(null, '').label('note')
+        note: Joi.string().max(150).allow(null, '').label('note')
       })
     )
     .label('procedures')

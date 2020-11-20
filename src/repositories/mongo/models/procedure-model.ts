@@ -31,5 +31,5 @@ const ProcedureSchema = new mongoose.Schema({
 });
 
 //Model
-const ProcedureModel = mongoose.model<IProcedure>('Procedure', ProcedureSchema);
+const ProcedureModel = mongoose.model<IProcedure>('Procedure', ProcedureSchema, 'procedure');
 export { ProcedureModel, IProcedure };
