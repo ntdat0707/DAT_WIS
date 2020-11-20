@@ -32,7 +32,7 @@ import {
 } from '../configs/validate-schemas';
 import { FindOptions, Op, Sequelize, QueryTypes } from 'sequelize';
 import { paginate, paginateElasticSearch } from '../../../utils/paginator';
-import { EOrder, ETypeMarketPlaceField } from '../../../utils/consts';
+import { EOrder } from '../../../utils/consts';
 import { LocationImageModel } from '../../../repositories/postgres/models/location-image';
 import { v4 as uuidv4 } from 'uuid';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
@@ -1123,7 +1123,7 @@ export class SearchController {
                 as: 'locationImages',
                 required: false,
                 attributes: ['path', 'is_avatar']
-              },
+              }
             ],
             attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
             order: Sequelize.literal(`
@@ -1142,8 +1142,8 @@ export class SearchController {
           loc = JSON.parse(JSON.stringify(loc));
           const locationDetailField = loc.marketplaceValues.reduce(
             (acc: any, { value, marketplaceField: { name, type } }: any) => ({
-                ...acc,
-                [name]: parseDataByType[type](value)
+              ...acc,
+              [name]: parseDataByType[type](value)
             }),
             {}
           );
@@ -1267,8 +1267,10 @@ export class SearchController {
           .then(
             (result: any) => result.hits?.hits.map((item: any) => ({ ...item._source, distance: item.sort[0] })) || []
           );
-          nearLocation = nearLocation.map((loc: any) => {
-            const locationDetailField = loc.marketplaceValues.filter((item: any) => item.id).reduce(
+        nearLocation = nearLocation.map((loc: any) => {
+          const locationDetailField = loc.marketplaceValues
+            .filter((item: any) => item.id)
+            .reduce(
               (acc: any, { value, marketplaceField: { name, type } }: any) => ({
                 ...acc,
                 [name]: parseDataByType[type](value)
@@ -1276,14 +1278,14 @@ export class SearchController {
               {}
             );
 
-            return {
-              ...loc,
-              ...locationDetailField,
-              ...loc.company,
-              ['marketplaceValues']: undefined,
-              ['company']: undefined
-            };
-          });
+          return {
+            ...loc,
+            ...locationDetailField,
+            ...loc.company,
+            ['marketplaceValues']: undefined,
+            ['company']: undefined
+          };
+        });
       } else {
         location = {};
       }
@@ -1328,7 +1330,6 @@ export class SearchController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
-      console.log(error);
       // throw new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR);
       return next(error);
     }
@@ -2013,13 +2014,12 @@ export class SearchController {
       }
 
       if (search.latitude && search.longitude) {
-        console.log(search);
         searchParams.body = {
           ...searchParams.body,
-          'stored_fields' : [ '_source' ],
-          'script_fields': {
-            distance : {
-              script : {
+          stored_fields: ['_source'],
+          script_fields: {
+            distance: {
+              script: {
                 inline: 'doc[\'location\'].arcDistance(params.lat,params.lon) * 0.001',
                 params: {
                   lat: search.latitude,
@@ -2028,7 +2028,7 @@ export class SearchController {
               }
             }
           }
-        }
+        };
       }
 
       const result: any = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
