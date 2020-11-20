@@ -282,7 +282,7 @@ export class ServiceController {
 
       // await esClient.create({
       //   id: data.id,
-      //   index: 'get_services_alpha',
+      //   index: 'get_services_dev',
       //   body: serviceData,
       //   type: '_doc'
       // });
@@ -343,13 +343,13 @@ export class ServiceController {
       if (service) {
         await ServiceModel.destroy({ where: { id: serviceId } });
         await esClient.delete({
-          index: 'get_services_alpha',
+          index: 'get_services_dev',
           type: '_doc',
           id: serviceId
         });
       } else {
         const isServiceRemain = await esClient.search({
-          index: 'get_services_alpha',
+          index: 'get_services_dev',
           type: '_doc',
           body: {
             query: {
@@ -361,7 +361,7 @@ export class ServiceController {
         });
         if (isServiceRemain.body.hits.total.value === 1) {
           await esClient.delete({
-            index: 'get_services_alpha',
+            index: 'get_services_dev',
             type: '_doc',
             id: serviceId
           });
@@ -520,7 +520,7 @@ export class ServiceController {
       }
 
       const searchParams: any = {
-        index: 'get_services_alpha',
+        index: 'get_services_dev',
         body: {
           query: {
             bool: {
@@ -1110,7 +1110,7 @@ export class ServiceController {
 
       await elasticsearchClient.update({
         id: params.serviceId,
-        index: 'get_services_alpha',
+        index: 'get_services_dev',
         body: {
           doc: serviceData,
           doc_as_upsert: true
