@@ -446,7 +446,7 @@ export class CustomerController {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
-        phone: req.body.phone,
+        phone: req.body.phone && req.body.phone === 'null' ? null : req.body.phone,
         email: req.body.email,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
