@@ -17,7 +17,7 @@ interface IProcedure extends mongoose.Document {
 }
 
 const ProcedureSchema = new mongoose.Schema({
-  treatmentId: { type: String, required: true },
+  treatmentId: { type: Schema.Types.ObjectId, ref: 'Treatment' },
   staffId: { type: String, required: true },
   teethId: [{ type: Schema.Types.ObjectId, ref: 'Teeth' }],
   serviceId: { type: String, required: true },

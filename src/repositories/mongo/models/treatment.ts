@@ -3,6 +3,7 @@ import { EStatusTreatment } from '../../../utils/consts';
 
 interface ITreatment extends mongoose.Document {
   name: string;
+  code: string;
   createDate: Date;
   status: string;
   customerId: string;
@@ -11,6 +12,7 @@ interface ITreatment extends mongoose.Document {
 
 const TreatmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  code: { type: String, required: true },
   createDate: { type: Date, default: Date.now },
   status: { type: String, enum: Object.values(EStatusTreatment), required: true },
   customerId: { type: String, required: true },
