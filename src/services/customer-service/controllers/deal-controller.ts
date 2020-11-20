@@ -32,14 +32,13 @@ import {
   staffErrorDetails,
   customerErrorDetails
 } from '../../../utils/response-messages/error-details';
+import { esClient } from '../../../repositories/elasticsearch';
 import { FindOptions, Op } from 'sequelize';
-import { paginate, paginateElasicSearch } from '../../../utils/paginator';
+import { paginate, paginateElasticSearch } from '../../../utils/paginator';
 import { EAppointmentStatus, EOrder, EStatusPipelineStage } from '../../../utils/consts';
 import * as _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
-import { SearchParams } from 'elasticsearch';
-import { elasticsearchClient } from '../../../repositories/elasticsearch/connector';
 export class DealController {
   /**
    * @swagger
@@ -339,7 +338,7 @@ export class DealController {
       const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
       if (req.body.listPipelineStage.length !== checkUniqName.length) {
         throw new CustomError(
-          pipelineStageErrorDetails.E_3202(`pipeline stage name exists in pipeline`),
+          pipelineStageErrorDetails.E_3202('pipeline stage name exists in pipeline'),
           httpStatus.BAD_REQUEST
         );
       }
@@ -693,7 +692,7 @@ export class DealController {
         createdBy: res.locals.staffPayload.id
       };
       if (data.ownerId) {
-        const checkOwnerId = await StaffModel.findOne({ where: { id: data.ownerId } });
+        const checkOwnerId = await StaffModel.scope('safe').findOne({ where: { id: data.ownerId } });
         if (!checkOwnerId) {
           throw new CustomError(staffErrorDetails.E_4000(`ownerId ${data.ownerId} not found`), httpStatus.NOT_FOUND);
         }
@@ -1119,7 +1118,7 @@ export class DealController {
       const checkUniqName = _.uniqBy(req.body.listPipelineStage, 'name');
       if (req.body.listPipelineStage.length !== checkUniqName.length) {
         throw new CustomError(
-          pipelineStageErrorDetails.E_3202(`duplicate pipeline stage name`),
+          pipelineStageErrorDetails.E_3202('duplicate pipeline stage name'),
           httpStatus.BAD_REQUEST
         );
       }
@@ -1281,7 +1280,7 @@ export class DealController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const keywords = req.query.keyWords;
-      const searchParams: SearchParams = {
+      const searchParams: any = {
         index: 'get_deals_dev',
         body: {
           query: {
@@ -1311,10 +1310,7 @@ export class DealController {
       if (req.body.order === EOrder.NEWEST) {
         searchParams.body.sort = [{ createdAt: 'desc' }];
       }
-      const deals = await paginateElasicSearch(elasticsearchClient, searchParams, paginateOptions, fullPath);
-      deals.data = deals.data.map((item: any) => ({
-        ...item._source
-      }));
+      const deals = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
       return res.status(httpStatus.OK).send(buildSuccessMessage(deals));
     } catch (error) {
       return next(error);

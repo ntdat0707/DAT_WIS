@@ -185,7 +185,7 @@ export class AppointmentController extends BaseController {
 
       if (dataInput.bookingSource === EAppointmentBookingSource.SCHEDULED && !dataInput.customerWisereId) {
         throw new CustomError(
-          bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+          bookingErrorDetails.E_2014('Appointment must have customer wisere'),
           HttpStatus.BAD_REQUEST
         );
       }
@@ -996,7 +996,7 @@ export class AppointmentController extends BaseController {
             !data.createNewAppointments[i].customerWisereId
           ) {
             throw new CustomError(
-              bookingErrorDetails.E_2014(`Appointment must have customer wisere`),
+              bookingErrorDetails.E_2014('Appointment must have customer wisere'),
               HttpStatus.BAD_REQUEST
             );
           }
@@ -1972,7 +1972,7 @@ export class AppointmentController extends BaseController {
         appointment.status !== EAppointmentStatus.CONFIRMED &&
         appointment.status !== EAppointmentStatus.ARRIVED
       ) {
-        throw new CustomError(bookingErrorDetails.E_2003(`Can not cancel appointment`), HttpStatus.BAD_REQUEST);
+        throw new CustomError(bookingErrorDetails.E_2003('Can not cancel appointment'), HttpStatus.BAD_REQUEST);
       }
       transaction = await sequelize.transaction();
       await appointment.update({ status: EAppointmentStatus.CANCEL, cancelReason: data.cancelReason }, { transaction });
@@ -2124,7 +2124,7 @@ export class AppointmentController extends BaseController {
         appointment.status !== EAppointmentStatus.CONFIRMED &&
         appointment.status !== EAppointmentStatus.ARRIVED
       ) {
-        throw new CustomError(bookingErrorDetails.E_2003(`Can not reschedule appointment`), HttpStatus.BAD_REQUEST);
+        throw new CustomError(bookingErrorDetails.E_2003('Can not reschedule appointment'), HttpStatus.BAD_REQUEST);
       }
       await AppointmentDetailModel.update(
         { startTime: req.body.startTime },
@@ -2188,7 +2188,7 @@ export class AppointmentController extends BaseController {
       }
       if (appointment.status !== EAppointmentStatus.NEW && appointment.status !== EAppointmentStatus.CONFIRMED) {
         throw new CustomError(
-          bookingErrorDetails.E_2003(`Can not update status ready for appointment`),
+          bookingErrorDetails.E_2003('Can not update status ready for appointment'),
           HttpStatus.BAD_REQUEST
         );
       }
