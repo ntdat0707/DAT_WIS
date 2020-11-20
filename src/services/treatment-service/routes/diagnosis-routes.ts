@@ -11,7 +11,7 @@ export class DiagnosticRoutes {
     this.config();
   }
   private config(): void {
-    this.router.get('/get-all-diagnostic', isAuthenticated, this.diagnosticsController.getAllDiagnosis);
+    this.router.get('/get-all-diagnostic', isAuthenticated, this.diagnosticsController.getAllDiagnostic);
     this.router.post('/create-teeth', isAuthenticated, this.diagnosticsController.createTeeth);
     this.router.post('/create-diagnostic', this.diagnosticsController.createDiagnostic);
     this.router.post('/create-diagnosis', this.diagnosticsController.createDiagnosis);
