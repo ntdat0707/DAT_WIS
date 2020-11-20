@@ -224,3 +224,9 @@ export enum EStatusProcedure {
   REJECTED = 'rejected',
   COMPLETE = 'complete'
 }
+
+export enum EStatusTreatment {
+  PLANNING = 'planning',
+  CONFIRMED = 'confirmed',
+  COMPLETE = 'complete'
+}
