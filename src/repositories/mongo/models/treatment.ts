@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { EStatusTreatment } from '../../../utils/consts';
 
 interface ITreatment extends mongoose.Document {
@@ -8,6 +8,9 @@ interface ITreatment extends mongoose.Document {
   status: string;
   customerId: string;
   creatorId: string;
+  diagnosisIds: [string];
+  procedureIds: [string];
+  treamentProcessIds: [string];
 }
 
 const TreatmentSchema = new mongoose.Schema({
@@ -16,7 +19,10 @@ const TreatmentSchema = new mongoose.Schema({
   createDate: { type: Date, default: Date.now },
   status: { type: String, enum: Object.values(EStatusTreatment), required: true },
   customerId: { type: String, required: true },
-  creatorId: { type: String, required: true }
+  creatorId: { type: String, required: true },
+  diagnosisIds: [{ type: Schema.Types.ObjectId, ref: 'Diagnosis' }],
+  procedureIds: [{ type: Schema.Types.ObjectId, ref: 'Procedure' }],
+  treamentProcessIds: [{ type: Schema.Types.ObjectId, ref: 'TreatmentProcess' }]
 });
 
 //Model
