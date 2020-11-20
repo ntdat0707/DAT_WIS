@@ -1169,7 +1169,6 @@ export class SearchController {
         location = {
           ...location,
           ...locationDetail,
-          ...location.locationImages,
           ...location.company,
           ['marketplaceValues']: undefined,
           ['company']: undefined
