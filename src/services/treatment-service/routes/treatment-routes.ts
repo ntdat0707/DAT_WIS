@@ -22,6 +22,6 @@ export class TreatmentRoutes {
       isAuthenticated,
       this.treatmentController.updateMedicalHistoryOfCustomer
     );
-    this.router.post('/create-treatment', isAuthenticated, this.treatmentController.createTreatment);
+    this.router.post('/create-procedures', isAuthenticated, this.treatmentController.createProcedures);
   }
 }

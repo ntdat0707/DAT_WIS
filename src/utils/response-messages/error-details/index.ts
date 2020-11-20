@@ -8,7 +8,7 @@ import { pipelineErrorDetails, pipelineStageErrorDetails, dealErrorDetails } fro
 import { invoiceErrorDetails, receiptErrorDetails, discountErrorDetails } from './sale';
 import { teamErrorDetails, teamStaffErrorDetails, teamSubErrorDetails } from './team';
 import { roleErrorDetails } from './role';
-import { medicineErrorDetails } from './treatment';
+import { treatmentErrorDetails } from './treatment';
 
 const buildErrorDetail = (
   code: string,
@@ -42,5 +42,5 @@ export {
   teamStaffErrorDetails,
   teamSubErrorDetails,
   roleErrorDetails,
-  medicineErrorDetails
+  treatmentErrorDetails
 };

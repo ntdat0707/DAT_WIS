@@ -4,7 +4,6 @@ import {
   CustomerWisereModel,
   MedicalHistoryCustomerModel,
   MedicalHistoryModel,
-  MedicineModel,
   sequelize,
   ServiceModel,
   StaffModel
@@ -17,16 +16,17 @@ import {
   languageSchema,
   customerWisereIdSchema,
   updateMedicalHistorySchema,
-  createTreatmentSchema
+  createProcedureSchema
 } from '../configs/validate-schemas';
 import {
   customerErrorDetails,
   staffErrorDetails,
-  medicineErrorDetails
+  treatmentErrorDetails
 } from '../../../utils/response-messages/error-details';
 import _ from 'lodash';
-import { TreatmentDetailModel } from '../../../repositories/mongo/models';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
+import { TeethModel, ProcedureModel } from '../../../repositories/mongo/models';
+import mongoose from 'mongoose';
 
 export class TreatmentController extends BaseController {
   /**
@@ -248,68 +248,49 @@ export class TreatmentController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   prescriptionDetail:
+   *   procedureCreate:
    *       properties:
-   *           medicineId:
+   *           treatmentId:
    *               type: string
-   *           quantity:
-   *               type: integer
-   *           noteMedicine:
+   *           staffId:
    *               type: string
-   *           notePrescription:
-   *               type: string
-   *
-   */
-
-  /**
-   * @swagger
-   * definitions:
-   *   treatmentCreate:
-   *       properties:
    *           teethId:
    *               type: array
    *               items:
    *                   type: string
    *           serviceId:
    *               type: string
-   *           staffId:
-   *               type: string
-   *           procedureId:
-   *               type: string
+   *           quantity:
+   *               type: integer
+   *           discount:
+   *               type: integer
+   *           totalPrice:
+   *               type: integer
    *           status:
    *               type: string
-   *           diagnoseId:
-   *               type: string
+   *               enum: ['confirmed', 'rejected', 'complete']
    *           note:
    *               type: string
-   *           startDate:
-   *               type: string
-   *           endDate:
-   *               type: string
-   *           prescription:
-   *               type: array
-   *               items:
-   *                   $ref: '#/definitions/prescriptionDetail'
    *
    */
   /**
    * @swagger
-   * /treatment/create-treatment:
+   * /treatment/create-procedures:
    *   post:
    *     tags:
    *       - Treatment
    *     security:
    *       - Bearer: []
-   *     name: createTreatment
+   *     name: createProcedures
    *     parameters:
    *     - in: "body"
    *       name: "body"
    *       required: true
    *       properties:
-   *           treatments:
+   *           procedures:
    *               type: array
    *               items:
-   *                    $ref: '#/definitions/treatmentCreate'
+   *                    $ref: '#/definitions/procedureCreate'
    *     responses:
    *       200:
    *         description: success
@@ -318,53 +299,56 @@ export class TreatmentController extends BaseController {
    *       500:
    *         description:
    */
-  public createTreatment = async (req: Request, res: Response, next: NextFunction) => {
+  public createProcedures = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validateErrors = validate(req.body, createTreatmentSchema);
+      const validateErrors = validate(req.body, createProcedureSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const dataTreatments = [];
-      for (let i = 0; i < req.body.treatments.length; i++) {
-        const service = await ServiceModel.findOne({ where: { id: req.body.treatments[i].serviceId } });
-
-        if (!service) {
-          throw new CustomError(
-            serviceErrorDetails.E_1203(`serviceId ${req.body.treatments[i].serviceId} not found`),
-            httpStatus.NOT_FOUND
-          );
+      const dataProcedures = [];
+      for (let i = 0; i < req.body.procedures.length; i++) {
+        for (let j = 0; j < req.body.procedures[i].teethId.length; j++) {
+          const teeth = await TeethModel.findById({
+            _id: mongoose.Types.ObjectId(req.body.procedures[i].teethId[j])
+          }).exec();
+          if (!teeth) {
+            throw new CustomError(
+              treatmentErrorDetails.E_3900(`teethId ${req.body.procedures[i].teethId[j]} not found`),
+              httpStatus.NOT_FOUND
+            );
+          }
         }
-        const staff = await StaffModel.findOne({ where: { id: req.body.treatments[i].staffId } });
+        const staff = await StaffModel.findOne({ where: { id: req.body.procedures[i].staffId } });
         if (!staff) {
           throw new CustomError(
-            staffErrorDetails.E_4000(`staffId ${req.body.treatments[i].staffId} not found`),
+            staffErrorDetails.E_4000(`staffId ${req.body.procedures[i].staffId} not found`),
             httpStatus.NOT_FOUND
           );
         }
-        if (req.body.treatments[i].prescription) {
-          for (let j = 0; j < req.body.treatments[i].prescription.length; j++) {
-            const medicine = await MedicineModel.findOne({
-              where: { id: req.body.treatments[i].prescription[j].medicineId }
-            });
-            if (!medicine) {
-              throw new CustomError(
-                medicineErrorDetails.E_3900(
-                  `medicineId ${req.body.treatments[i].prescription[j].medicineId} not found`
-                ),
-                httpStatus.NOT_FOUND
-              );
-            }
-          }
+        const service = await ServiceModel.findOne({ where: { id: req.body.procedures[i].serviceId } });
+        if (!service) {
+          throw new CustomError(
+            serviceErrorDetails.E_1203(`serviceId ${req.body.procedures[i].serviceId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        let discount = 0;
+        if (req.body.procedures[i].discount) {
+          discount = (service.salePrice * req.body.procedures[i].discount) / 100;
+        }
+        const totalPrice = req.body.procedures[i].quantity * service.salePrice - discount;
+        if (req.body.procedures[i].totalPrice !== totalPrice) {
+          throw new CustomError(treatmentErrorDetails.E_3901(`total price is incorrect`), httpStatus.BAD_REQUEST);
         }
         const data = {
           serviceName: service.name,
           price: service.salePrice,
-          ...req.body.treatments[i]
+          ...req.body.procedures[i]
         };
-        dataTreatments.push(data);
+        dataProcedures.push(data);
       }
-      const treatment = await TreatmentDetailModel.insertMany(dataTreatments);
-      return res.status(httpStatus.OK).send(buildSuccessMessage(treatment));
+      const procedure = await ProcedureModel.insertMany(dataProcedures);
+      return res.status(httpStatus.OK).send(buildSuccessMessage(procedure));
     } catch (error) {
       return next(error);
     }

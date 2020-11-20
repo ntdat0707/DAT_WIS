@@ -218,3 +218,9 @@ export enum EDiagnosis {
   CONFIRMED = 'confirmed',
   RESOLVED = 'resolved'
 }
+
+export enum EStatusProcedure {
+  CONFIRMED = 'confirmed',
+  REJECTED = 'rejected',
+  COMPLETE = 'complete'
+}
