@@ -1068,9 +1068,24 @@ export class SearchController {
             attributes: ['weekday', 'startTime', 'endTime']
           }
         ],
-        order: [[{ model: LocationImageModel, as: 'locationImages' }, 'is_avatar', 'DESC']],
+        order: [
+          [{ model: LocationImageModel, as: 'locationImages' }, 'is_avatar', 'DESC'],
+          Sequelize.literal(`
+            CASE
+               WHEN "workingTimes".weekday = 'sunday' THEN 8
+               WHEN "workingTimes".weekday = 'monday' THEN 2
+               WHEN "workingTimes".weekday = 'tuesday' THEN 3
+               WHEN "workingTimes".weekday = 'wednesday' THEN 4
+               WHEN "workingTimes".weekday = 'thursday' THEN 5
+               WHEN "workingTimes".weekday = 'friday' THEN 6
+               WHEN "workingTimes".weekday = 'saturday' THEN 7
+            END ASC
+          `)
+        ],
         where: { pathName: data.pathName },
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
+        subQuery: false,
+        limit: 1000000
       });
       if (location) {
         locations = (
