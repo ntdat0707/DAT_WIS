@@ -1,2 +1,2 @@
-export * from './diagnostic';
+export * from './diagnosis';
 export * from './treatment';

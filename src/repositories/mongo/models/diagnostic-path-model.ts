@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 interface IDiagnosticPath extends mongoose.Document {
   //   _id: string;
+  diagnosticId: string;
   pathologicalIds: [string];
   color: string;
   colorText: string;
@@ -9,6 +10,7 @@ interface IDiagnosticPath extends mongoose.Document {
 
 const DiagnosticPathSchema = new mongoose.Schema({
   //   _id: Schema.Types.ObjectId,
+  diagnosticId: { type: Schema.Types.ObjectId, ref: 'Diagnostic' },
   pathologicalIds: [{ type: Schema.Types.ObjectId, ref: 'ToothNotation' }],
   color: { type: String, required: false },
   colorText: { type: String, required: false },

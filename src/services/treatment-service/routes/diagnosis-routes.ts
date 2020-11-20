@@ -11,12 +11,12 @@ export class DiagnosticRoutes {
     this.config();
   }
   private config(): void {
-    this.router.get('/get-all-diagnostic', isAuthenticated, this.diagnosticsController.getAllDiagnosis);
+    this.router.get('/get-all-diagnostic', isAuthenticated, this.diagnosticsController.getAllDiagnostic);
     this.router.post('/create-teeth', isAuthenticated, this.diagnosticsController.createTeeth);
     this.router.post('/create-diagnostic', this.diagnosticsController.createDiagnostic);
     this.router.post('/create-diagnosis', this.diagnosticsController.createDiagnosis);
     this.router.get('/get-teeth/:teethId', isAuthenticated, this.diagnosticsController.getTeeth);
     this.router.get('/get-diagnosis', isAuthenticated, this.diagnosticsController.getDiagnosis);
-    this.router.get('/get-diagnostics', isAuthenticated, this.diagnosticsController.getDiagnostics);
+    this.router.put('/update-diagnosis/:diagnosisId', isAuthenticated, this.diagnosticsController.updateDiagnosis);
   }
 }

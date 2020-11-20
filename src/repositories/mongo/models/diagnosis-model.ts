@@ -1,24 +1,31 @@
 import mongoose, { Schema } from 'mongoose';
+import { EDiagnosis } from '../../../utils/consts';
 
 interface IDiagnosis extends mongoose.Document {
-  teethNumber: number;
   teethId: string;
+  teethNumber: number;
   staffId: string;
+  staffName: string;
   status: string;
-  //procedureId: string;
-  diagnosticId: string;
-  color: string;
+  treatmentId: string;
+  diagnosticIds: [string];
+  diagnosticName: string;
   timestamp: Date;
 }
 
 const DiagnosisSchema = new mongoose.Schema({
   teethId: { type: Schema.Types.ObjectId, ref: 'Teeth' },
-  teethNumber: { type: Number, required: true },
+  teethNumber: { type: Number, required: false },
   staffId: { type: String, required: true },
-  status: { type: String, enum: ['pending', 'confirmed', 'resolved'], required: true },
-  //procedureId: { type: String, required: true },
-  diagnosticId: { type: Schema.Types.ObjectId, ref: 'Diagnostic' },
-  color: { type: String, required: false },
+  staffName: { type: String, required: false },
+  status: {
+    type: String,
+    enum: Object.values(EDiagnosis),
+    default: Object.values(EDiagnosis.PENDING)
+  },
+  treatmentId: { type: Schema.Types.ObjectId, required: 'Treatment' },
+  diagnosticIds: [{ type: Schema.Types.ObjectId, ref: 'Diagnostic' }],
+  diagnosticName: { type: String, required: true },
   timestamp: { type: Date, default: Date.now }
 });
 
