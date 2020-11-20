@@ -32,14 +32,20 @@ const createProcedureSchema = Joi.object({
     .required()
     .items(
       Joi.object({
-        treatmentId: Joi.string().required().label('treatmentId'),
+        treatmentId: Joi.string()
+          .regex(/^[0-9a-fA-F]{24}$/)
+          .required()
+          .label('treatmentId'),
         staffId: Joi.string()
           .guid({
             version: ['uuidv4']
           })
           .required()
           .label('staffId'),
-        teethId: Joi.array().items(Joi.string()).required().label('teethId'),
+        teethId: Joi.array()
+          .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
+          .required()
+          .label('teethId'),
         serviceId: Joi.string()
           .guid({
             version: ['uuidv4']

@@ -11,7 +11,7 @@ const treatmentErrorDetails = {
     return e;
   },
   E_3902(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3902', 'Diagnostic is not valid', detail);
+    const e = buildErrorDetail('3902', 'Treatment not found', detail);
     return e;
   }
 };
