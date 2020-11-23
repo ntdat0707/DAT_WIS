@@ -191,11 +191,11 @@ export class ServiceController {
       /**
        * Prepare location service
        */
-      const locationService = (body.locationIds as []).map((locationId: string) => ({
+      const locationServices = (body.locationIds as []).map((locationId: string) => ({
         locationId: locationId,
         serviceId: service.id
       }));
-      await LocationServiceModel.bulkCreate(locationService, { transaction: transaction });
+      await LocationServiceModel.bulkCreate(locationServices, { transaction: transaction });
 
       if (body.staffIds && body.staffIds.length > 0) {
         const staffs = await StaffModel.findAll({
@@ -272,7 +272,7 @@ export class ServiceController {
         ]
       }).then((item: any) => {
         const serviceMapping = JSON.parse(JSON.stringify(item));
-        serviceMapping.locationService = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
+        serviceMapping.locationServices = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
         serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
         delete serviceMapping.locations;
         delete serviceMapping.staffs;
@@ -283,8 +283,8 @@ export class ServiceController {
         id: data.id,
         index: 'get_services_dev',
         type: '_doc',
-        version: 1,
-        version_type: 'internal',
+        // version: 1,
+        // version_type: 'internal',
         body: serviceData
       });
 
@@ -568,6 +568,7 @@ export class ServiceController {
           }
         });
       }
+      console.log(JSON.stringify(searchParams, null, 2));
 
       const services = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
