@@ -9,7 +9,7 @@ import { DiagnosisModel } from '../../../repositories/mongo/models/diagnosis-mod
 import { DiagnosticModel } from '../../../repositories/mongo/models/diagnostic-model';
 import { DiagnosticPathModel } from '../../../repositories/mongo/models/diagnostic-path-model';
 import { validate } from '../../../utils/validator';
-import { createDiagnosis, updateDiagnosis } from '../configs/validate-schemas/diagnosis';
+import { createDiagnosis, getDiagnosis, updateDiagnosis } from '../configs/validate-schemas/diagnosis';
 import CustomError from '../../../utils/error-handlers/custom-error';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
@@ -239,6 +239,7 @@ export class DiagnosticController extends BaseController {
    *           diagnosticIds
    *           diagnosticPathIds
    *           diagnosticName
+   *           treatmentId
    *       properties:
    *           teethId:
    *               type: string
@@ -254,6 +255,8 @@ export class DiagnosticController extends BaseController {
    *               type: string
    *               enum: ['pending', 'confirmed', 'resolved']
    *           diagnosticName:
+   *               type: string
+   *           treatmentId:
    *               type: string
    *
    */
@@ -284,6 +287,10 @@ export class DiagnosticController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
+      const treatment = await TreatmentModel.findById({ _id: dataInput.treatmentId }).exec();
+      if (!treatment) {
+        throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${dataInput.treatmentId} not found`));
+      }
       const staff = await StaffModel.findOne({
         where: { id: dataInput.staffId },
         attributes: ['firstName'],
@@ -293,9 +300,11 @@ export class DiagnosticController extends BaseController {
         throw new CustomError(staffErrorDetails.E_4000(`Staff ${dataInput.staffId} not found`));
       }
       dataInput.staffName = staff.firstName;
+
       //get teeth Number
 
       //check diagnostic is only one
+
       const diagnosis: any = new DiagnosisModel(dataInput);
       await diagnosis.save();
       const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticIds })
@@ -320,10 +329,10 @@ export class DiagnosticController extends BaseController {
    *       - Treatment
    *     security:
    *       - Bearer: []
-   *     name: getDiagnosis
+   *     name: getAllDiagnosis
    *     parameters:
    *     - in: query
-   *       name:customerId
+   *       name: customerId
    *       type: string
    *       required: true
    *     - in: query
@@ -337,16 +346,23 @@ export class DiagnosticController extends BaseController {
    *       500:
    *         description:
    */
-  public getDiagnosis = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllDiagnosis = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dataInput: any = req.query;
+      const validateErrors = validate(dataInput, getDiagnosis);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
       const customer = await CustomerWisereModel.findAll({ where: { id: dataInput.customerId } });
       if (!customer) {
         throw new CustomError(customerErrorDetails.E_3001(`Customer ${dataInput.customerId} not found`));
       }
       let diagnosis: any = [];
       if (dataInput.treatmentId) {
-        const treatment = await TreatmentModel.findById({ _id: dataInput.treatmentId }).exec();
+        const treatment = await TreatmentModel.find({
+          _id: dataInput.treatmentId,
+          customerId: dataInput.customerId
+        }).exec();
         if (!treatment) {
           throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${dataInput.treatmentId} not found`));
         }
@@ -359,6 +375,12 @@ export class DiagnosticController extends BaseController {
           })
           .exec();
       } else {
+        const treatment = await TreatmentModel.find({ customerId: dataInput.customerId }).exec();
+        if (!treatment) {
+          throw new CustomError(
+            treatmentErrorDetails.E_3902(`Treatment with Customer ${dataInput.customerId} not found`)
+          );
+        }
         diagnosis = await DiagnosisModel.find()
           .populate({ path: 'diagnosticIds', model: 'Diagnostic' })
           .populate({
