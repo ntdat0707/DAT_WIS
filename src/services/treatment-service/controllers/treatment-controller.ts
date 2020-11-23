@@ -403,7 +403,7 @@ export class TreatmentController extends BaseController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const customerId = req.body.customerId;
-      const numberOfTreatments: any = await TreatmentModel.estimatedDocumentCount({ customerId: customerId }).exec();
+      const numberOfTreatments: any = await TreatmentModel.count({ customerId: customerId }).exec();
       const treatmentNum = numberOfTreatments + 1;
       const treatmentName = `Treatment${treatmentNum.toString()}`;
       const treatmentCode = `TR${treatmentNum.toString()}`;
