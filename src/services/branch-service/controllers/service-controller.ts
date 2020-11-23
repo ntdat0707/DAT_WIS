@@ -231,60 +231,60 @@ export class ServiceController {
         await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       }
       await transaction.commit();
-      // const serviceData = await ServiceModel.findOne({
-      //   where: {
-      //     id: data.id
-      //   },
-      //   include: [
-      //     {
-      //       model: LocationModel,
-      //       as: 'locations',
-      //       required: true,
-      //       through: {
-      //         attributes: {
-      //           exclude: ['updatedAt', 'createdAt', 'deletedAt']
-      //         }
-      //       }
-      //     },
-      //     {
-      //       model: CateServiceModel,
-      //       as: 'cateService',
-      //       required: true,
-      //       attributes: {
-      //         exclude: ['updatedAt', 'createdAt', 'deletedAt']
-      //       }
-      //     },
-      //     {
-      //       model: StaffModel,
-      //       as: 'staffs',
-      //       required: false,
-      //       through: {
-      //         attributes: {
-      //           exclude: ['updatedAt', 'createdAt', 'deletedAt']
-      //         }
-      //       }
-      //     },
-      //     {
-      //       model: ServiceImageModel,
-      //       as: 'images',
-      //       required: false
-      //     }
-      //   ]
-      // }).then((item: any) => {
-      //   const serviceMapping = JSON.parse(JSON.stringify(item));
-      //   serviceMapping.locationService = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
-      //   serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
-      //   delete serviceMapping.locations;
-      //   delete serviceMapping.staffs;
-      //   return serviceMapping;
-      // });
+      const serviceData = await ServiceModel.findOne({
+        where: {
+          id: data.id
+        },
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            through: {
+              attributes: {
+                exclude: ['updatedAt', 'createdAt', 'deletedAt']
+              }
+            }
+          },
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: true,
+            attributes: {
+              exclude: ['updatedAt', 'createdAt', 'deletedAt']
+            }
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: false,
+            through: {
+              attributes: {
+                exclude: ['updatedAt', 'createdAt', 'deletedAt']
+              }
+            }
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
+          }
+        ]
+      }).then((item: any) => {
+        const serviceMapping = JSON.parse(JSON.stringify(item));
+        serviceMapping.locationService = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
+        serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
+        delete serviceMapping.locations;
+        delete serviceMapping.staffs;
+        return serviceMapping;
+      });
 
-      // await esClient.create({
-      //   id: data.id,
-      //   index: 'get_services',
-      //   body: serviceData,
-      //   type: '_doc'
-      // });
+      await esClient.create({
+        id: data.id,
+        index: 'get_services',
+        body: serviceData,
+        type: '_doc'
+      });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
