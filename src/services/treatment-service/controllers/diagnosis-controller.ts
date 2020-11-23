@@ -323,7 +323,7 @@ export class DiagnosticController extends BaseController {
 
   /**
    * @swagger
-   * /treatment/diagnosis/get-diagnosis:
+   * /treatment/diagnosis/get-all-diagnosis:
    *   get:
    *     tags:
    *       - Treatment
