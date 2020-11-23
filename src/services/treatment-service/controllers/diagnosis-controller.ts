@@ -233,7 +233,6 @@ export class DiagnosticController extends BaseController {
    * definitions:
    *   CreateDiagnosis:
    *       required:
-   *           teethId
    *           teethNumber
    *           staffId
    *           diagnosticIds
@@ -241,8 +240,6 @@ export class DiagnosticController extends BaseController {
    *           diagnosticName
    *           treatmentId
    *       properties:
-   *           teethId:
-   *               type: string
    *           teethNumber:
    *               type: string
    *           staffId:
