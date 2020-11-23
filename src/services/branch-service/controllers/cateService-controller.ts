@@ -424,7 +424,7 @@ export class CateServiceController {
    *       - Branch
    *     security:
    *       - Bearer: []
-   *     name: searchCateService
+   *     name: getAllCateServices
    *     parameters:
    *     - in: query
    *       name: pageNum
@@ -449,7 +449,7 @@ export class CateServiceController {
    *       500:
    *         description: Internal server errors
    */
-  public searchCateService = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllCateServices = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const fullPath = req.headers['x-base-url'] + req.originalUrl;
       const paginateOptions = {
@@ -463,7 +463,7 @@ export class CateServiceController {
       const companyId = res.locals.staffPayload.companyId;
       const query: FindOptions = {
         where: { companyId: companyId },
-        order: [['name', 'DESC']],
+        order: [['name', 'ASC']],
         attributes: { exclude: ['updatedAt', 'deletedAt'] }
       };
 

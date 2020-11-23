@@ -13,6 +13,10 @@ const treatmentErrorDetails = {
   E_3902(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3902', 'Treatment not found', detail);
     return e;
+  },
+  E_3903(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3903', 'Diagnostic not found', detail);
+    return e;
   }
 };
 

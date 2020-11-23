@@ -13,6 +13,9 @@ import { createDiagnosis, updateDiagnosis } from '../configs/validate-schemas/di
 import CustomError from '../../../utils/error-handlers/custom-error';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
+import { customerErrorDetails, treatmentErrorDetails } from '../../../utils/response-messages/error-details';
+import { CustomerWisereModel } from '../../../repositories/postgres/models/customer-wisere-model';
+import { TreatmentModel } from '../../../repositories/mongo/models';
 export class DiagnosticController extends BaseController {
   /**
    * @swagger
@@ -318,6 +321,14 @@ export class DiagnosticController extends BaseController {
    *     security:
    *       - Bearer: []
    *     name: getDiagnosis
+   *     parameters:
+   *     - in: query
+   *       name:customerId
+   *       type: string
+   *       required: true
+   *     - in: query
+   *       name: treatmentId
+   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -328,14 +339,35 @@ export class DiagnosticController extends BaseController {
    */
   public getDiagnosis = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const diagnosis = await DiagnosisModel.find()
-        .populate({ path: 'diagnosticId', model: 'Diagnostic' })
-        .populate({
-          path: 'teethId',
-          model: 'Teeth',
-          populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
-        })
-        .exec();
+      const dataInput: any = req.query;
+      const customer = await CustomerWisereModel.findAll({ where: { id: dataInput.customerId } });
+      if (!customer) {
+        throw new CustomError(customerErrorDetails.E_3001(`Customer ${dataInput.customerId} not found`));
+      }
+      let diagnosis: any = [];
+      if (dataInput.treatmentId) {
+        const treatment = await TreatmentModel.findById({ _id: dataInput.treatmentId }).exec();
+        if (!treatment) {
+          throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${dataInput.treatmentId} not found`));
+        }
+        diagnosis = await DiagnosisModel.find({ treatmentId: dataInput.treatmentId })
+          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
+          .populate({
+            path: 'teethId',
+            model: 'Teeth',
+            populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
+          })
+          .exec();
+      } else {
+        diagnosis = await DiagnosisModel.find()
+          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
+          .populate({
+            path: 'teethId',
+            model: 'Teeth',
+            populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
+          })
+          .exec();
+      }
       return res.status(httpStatus.OK).send(buildSuccessMessage(diagnosis));
     } catch (error) {
       return next(error);
@@ -420,6 +452,62 @@ export class DiagnosticController extends BaseController {
       }
       await DiagnosisModel.update({ _id: dataInput.diagnosisId }, diagnosis).exec();
       return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   AddColor:
+   *       properties:
+   *           color:
+   *               type: string
+   *           colorText:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /treatment/diagnosis/add-color/{diagnosticId}:
+   *   post:
+   *     tags:
+   *       - Treatment
+   *     name: addColor
+   *     parameters:
+   *     - in: path
+   *       name: diagnosticId
+   *       type: string
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       schema:
+   *            $ref: '#/definitions/AddColor'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public addColor = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const diagnosticId = req.params.diagnosticId;
+      const dataInput = req.body;
+      const diagnostic = await DiagnosticModel.findById({ _id: diagnosticId }).exec();
+      if (!diagnostic) {
+        throw new CustomError(treatmentErrorDetails.E_3903(`diagnostic ${diagnosticId} not found`));
+      }
+      const diagPathData = {
+        diagnosticId: diagnosticId,
+        color: dataInput.color,
+        colorText: dataInput.colorText
+      };
+      const diagPath = new DiagnosticPathModel(diagPathData);
+      await diagPath.save();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(diagPath));
     } catch (error) {
       return next(error);
     }
