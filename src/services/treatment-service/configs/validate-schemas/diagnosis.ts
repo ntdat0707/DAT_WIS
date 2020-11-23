@@ -27,6 +27,10 @@ const createDiagnosis = Joi.object({
         .regex(/^[0-9a-fA-F]{24}$/)
         .label('diagnosticId')
     ),
+  treatmentId: Joi.string()
+    .required()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .label('treatmentId'),
   diagnosticName: Joi.string().label('diagnosticName')
 });
 
@@ -63,4 +67,14 @@ const updateDiagnosis = Joi.object({
     ),
   diagnosticName: Joi.string().label('diagnosticName')
 });
-export { createDiagnosis, updateDiagnosis };
+
+const getDiagnosis = Joi.object({
+  customerId: Joi.string()
+    .guid({ version: ['uuidv4'] })
+    .required()
+    .label('customerId'),
+  treatmentId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .label('treatmentId')
+});
+export { createDiagnosis, updateDiagnosis, getDiagnosis };
