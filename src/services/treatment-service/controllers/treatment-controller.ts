@@ -413,7 +413,7 @@ export class TreatmentController extends BaseController {
         name: treatmentName,
         code: treatmentCode,
         customerId: req.body.customerId,
-        creatorId: req.body.creatorId,
+        creatorId: !req.body.creatorId ? res.locals.staffPayload.id : req.body.creatorId,
         status: req.body.status
       };
       const treatment = new TreatmentModel(data);
