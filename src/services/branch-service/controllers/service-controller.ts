@@ -231,60 +231,6 @@ export class ServiceController {
         await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       }
       await transaction.commit();
-      const serviceData = await ServiceModel.findOne({
-        where: {
-          id: data.id
-        },
-        include: [
-          {
-            model: LocationModel,
-            as: 'locations',
-            required: true,
-            through: {
-              attributes: {
-                exclude: ['updatedAt', 'createdAt', 'deletedAt']
-              }
-            }
-          },
-          {
-            model: CateServiceModel,
-            as: 'cateService',
-            required: true,
-            attributes: {
-              exclude: ['updatedAt', 'createdAt', 'deletedAt']
-            }
-          },
-          {
-            model: StaffModel,
-            as: 'staffs',
-            required: false,
-            through: {
-              attributes: {
-                exclude: ['updatedAt', 'createdAt', 'deletedAt']
-              }
-            }
-          },
-          {
-            model: ServiceImageModel,
-            as: 'images',
-            required: false
-          }
-        ]
-      }).then((item: any) => {
-        const serviceMapping = JSON.parse(JSON.stringify(item));
-        serviceMapping.locationService = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
-        serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
-        delete serviceMapping.locations;
-        delete serviceMapping.staffs;
-        return serviceMapping;
-      });
-
-      await esClient.create({
-        id: data.id,
-        index: 'get_services',
-        body: serviceData,
-        type: '_doc'
-      });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
@@ -342,13 +288,13 @@ export class ServiceController {
       if (service) {
         await ServiceModel.destroy({ where: { id: serviceId } });
         await esClient.delete({
-          index: 'get_services',
+          index: 'get_services_dev',
           type: '_doc',
           id: serviceId
         });
       } else {
         const isServiceRemain = await esClient.search({
-          index: 'get_services',
+          index: 'get_services_dev',
           type: '_doc',
           body: {
             query: {
@@ -360,7 +306,7 @@ export class ServiceController {
         });
         if (isServiceRemain.body.hits.total.value === 1) {
           await esClient.delete({
-            index: 'get_services',
+            index: 'get_services_dev',
             type: '_doc',
             id: serviceId
           });
@@ -519,7 +465,7 @@ export class ServiceController {
       }
 
       const searchParams: any = {
-        index: 'get_services',
+        index: 'get_services_dev',
         body: {
           query: {
             bool: {
@@ -1098,7 +1044,7 @@ export class ServiceController {
 
       await elasticsearchClient.update({
         id: params.serviceId,
-        index: 'get_services',
+        index: 'get_services_dev',
         body: {
           doc: serviceData,
           doc_as_upsert: true
