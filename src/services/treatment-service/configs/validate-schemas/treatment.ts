@@ -66,29 +66,21 @@ const createProcedureSchema = Joi.object({
 });
 
 const createTreatmentSchema = Joi.object({
-  treatments: Joi.array()
-    .min(1)
+  status: Joi.string()
+    .valid(...Object.values(EStatusTreatment))
     .required()
-    .items(
-      Joi.object({
-        status: Joi.string()
-          .valid(...Object.values(EStatusTreatment))
-          .required()
-          .label('status'),
-        creattorId: Joi.string()
-          .guid({
-            version: ['uuidv4']
-          })
-          .required()
-          .label('creatorId'),
-        customerId: Joi.string()
-          .guid({
-            version: ['uuidv4']
-          })
-          .required()
-          .label('customerId')
-      })
-    )
+    .label('status'),
+  creatorId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .label('creatorId'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('customerId')
 });
 export {
   languageSchema,

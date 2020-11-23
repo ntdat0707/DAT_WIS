@@ -23,5 +23,6 @@ export class TreatmentRoutes {
       this.treatmentController.updateMedicalHistoryOfCustomer
     );
     this.router.post('/create-procedures', isAuthenticated, this.treatmentController.createProcedures);
+    this.router.post('/create-treatment', isAuthenticated, this.treatmentController.createTreatment);
   }
 }

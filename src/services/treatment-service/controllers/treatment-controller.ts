@@ -405,15 +405,15 @@ export class TreatmentController extends BaseController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const customerId = req.body.customerId;
-      const numberOfTreatments: any = TreatmentModel.count({ customerId: customerId });
+      const numberOfTreatments: any = await TreatmentModel.estimatedDocumentCount({ customerId: customerId }).exec();
       const treatmentNum = numberOfTreatments + 1;
-      const treatmentName = `Treatment ${treatmentNum.toString()}`;
-      const treatmentCode = `TR ${treatmentNum.toString()}`;
+      const treatmentName = `Treatment${treatmentNum.toString()}`;
+      const treatmentCode = `TR${treatmentNum.toString()}`;
       const data = {
         name: treatmentName,
         code: treatmentCode,
         customerId: req.body.customerId,
-        creatorId: req.body.creatorId,
+        creatorId: !req.body.creatorId ? res.locals.staffPayload.id : req.body.creatorId,
         status: req.body.status
       };
       const treatment = new TreatmentModel(data);
