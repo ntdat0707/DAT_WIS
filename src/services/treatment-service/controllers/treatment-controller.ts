@@ -16,7 +16,8 @@ import {
   languageSchema,
   customerWisereIdSchema,
   updateMedicalHistorySchema,
-  createProcedureSchema
+  createProcedureSchema,
+  createTreatmentSchema
 } from '../configs/validate-schemas';
 import {
   customerErrorDetails,
@@ -356,6 +357,68 @@ export class TreatmentController extends BaseController {
       }
       const procedure = await ProcedureModel.insertMany(dataProcedures);
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedure));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   treatmentCreate:
+   *       properties:
+   *           creatorId:
+   *               type: string
+   *           customerId:
+   *               type: string
+   *           status:
+   *               type: string
+   *               enum: ['planning', 'confirmed', 'completed']
+   */
+  /**
+   * @swagger
+   * /treatment/create-treatment:
+   *   post:
+   *     tags:
+   *       - Treatment
+   *     security:
+   *       - Bearer: []
+   *     name: createTreatment
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/treatmentCreate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public createTreatment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.body, createTreatmentSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const customerId = req.body.customerId;
+      const numberOfTreatments: any = TreatmentModel.count({ customerId: customerId });
+      const treatmentNum = numberOfTreatments + 1;
+      const treatmentName = `Treatment ${treatmentNum.toString()}`;
+      const treatmentCode = `TR ${treatmentNum.toString()}`;
+      const data = {
+        name: treatmentName,
+        code: treatmentCode,
+        customerId: req.body.customerId,
+        creatorId: req.body.creatorId,
+        status: req.body.status
+      };
+      const treatment = new TreatmentModel(data);
+      const savedTreatment = await treatment.save();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(savedTreatment));
     } catch (error) {
       return next(error);
     }

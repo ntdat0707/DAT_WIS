@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EStatusProcedure } from '../../../../utils/consts';
+import { EStatusProcedure, EStatusTreatment } from '../../../../utils/consts';
 
 const languageSchema = Joi.string().valid('en', 'vi').required().label('language');
 
@@ -64,4 +64,36 @@ const createProcedureSchema = Joi.object({
     )
     .label('procedures')
 });
-export { languageSchema, customerWisereIdSchema, updateMedicalHistorySchema, createProcedureSchema };
+
+const createTreatmentSchema = Joi.object({
+  treatments: Joi.array()
+    .min(1)
+    .required()
+    .items(
+      Joi.object({
+        status: Joi.string()
+          .valid(...Object.values(EStatusTreatment))
+          .required()
+          .label('status'),
+        creattorId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .required()
+          .label('creatorId'),
+        customerId: Joi.string()
+          .guid({
+            version: ['uuidv4']
+          })
+          .required()
+          .label('customerId')
+      })
+    )
+});
+export {
+  languageSchema,
+  customerWisereIdSchema,
+  updateMedicalHistorySchema,
+  createProcedureSchema,
+  createTreatmentSchema
+};
