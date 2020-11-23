@@ -282,8 +282,10 @@ export class ServiceController {
       await esClient.create({
         id: data.id,
         index: 'get_services_dev',
-        body: serviceData,
-        type: '_doc'
+        type: '_doc',
+        version: 1,
+        version_type: 'internal',
+        body: serviceData
       });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
