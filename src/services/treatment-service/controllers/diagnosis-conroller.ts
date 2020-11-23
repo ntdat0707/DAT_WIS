@@ -323,7 +323,7 @@ export class DiagnosticController extends BaseController {
    *     name: getDiagnosis
    *     parameters:
    *     - in: query
-   *       name:customerId
+   *       name: customerId
    *       type: string
    *       required: true
    *     - in: query
