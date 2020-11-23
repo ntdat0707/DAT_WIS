@@ -272,7 +272,9 @@ export class ServiceController {
         ]
       }).then((item: any) => {
         const serviceMapping = JSON.parse(JSON.stringify(item));
-        serviceMapping.locationServices = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
+        serviceMapping.locationServices = serviceMapping.locations.map(
+          (location: any) => location.LocationServiceModel
+        );
         serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
         delete serviceMapping.locations;
         delete serviceMapping.staffs;
@@ -568,7 +570,6 @@ export class ServiceController {
           }
         });
       }
-      console.log(JSON.stringify(searchParams, null, 2));
 
       const services = await paginateElasticSearch(esClient, searchParams, paginateOptions, fullPath);
       return res.status(HttpStatus.OK).send(buildSuccessMessage(services));
