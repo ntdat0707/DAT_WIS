@@ -25,7 +25,7 @@ import {
 } from '../../../utils/response-messages/error-details';
 import _ from 'lodash';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
-import { TeethModel, ProcedureModel } from '../../../repositories/mongo/models';
+import { TeethModel, ProcedureModel, TreatmentModel } from '../../../repositories/mongo/models';
 import mongoose from 'mongoose';
 
 export class TreatmentController extends BaseController {
@@ -317,6 +317,13 @@ export class TreatmentController extends BaseController {
               httpStatus.NOT_FOUND
             );
           }
+        }
+        const treatment = await TreatmentModel.findById({ _id: req.body.procedures[i].treatmentId }).exec();
+        if (!treatment) {
+          throw new CustomError(
+            treatmentErrorDetails.E_3902(`treatmentId ${req.body.procedures[i].treatmentId} not found`),
+            httpStatus.NOT_FOUND
+          );
         }
         const staff = await StaffModel.findOne({ where: { id: req.body.procedures[i].staffId } });
         if (!staff) {
