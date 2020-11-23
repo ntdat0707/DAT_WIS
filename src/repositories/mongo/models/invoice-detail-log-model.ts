@@ -19,9 +19,5 @@ const InvoiceDetailSchema = new mongoose.Schema({
 });
 
 //Model
-const InvoiceDetailLogModel = mongoose.model<IInvoiceDetailLog>(
-  'IInvoiceDetailLog',
-  InvoiceDetailSchema
-  //'invoice_detail_log'
-);
+const InvoiceDetailLogModel = mongoose.model<IInvoiceDetailLog>('IInvoiceDetailLog', InvoiceDetailSchema);
 export { InvoiceDetailLogModel, IInvoiceDetailLog, InvoiceDetailSchema };

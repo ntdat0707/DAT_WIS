@@ -967,6 +967,7 @@ export class LocationController {
         }));
         await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
+
       //check prefixCode
 
       // if (data.prefixCode) {

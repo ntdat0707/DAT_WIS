@@ -6,6 +6,7 @@ import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
+import { Unaccent } from '../../../utils/unaccent';
 import { paginate } from '../../../utils/paginator';
 
 import { createCateServiceSchema, updateCateServiceSchema, cateServiceIdSchema } from '../configs/validate-schemas';
@@ -463,17 +464,16 @@ export class CateServiceController {
       const companyId = res.locals.staffPayload.companyId;
       const query: FindOptions = {
         where: { companyId: companyId },
-        order: [['name', 'DESC']],
+        order: [['name', 'ASC']],
         attributes: { exclude: ['updatedAt', 'deletedAt'] }
       };
 
       if (req.query.searchValue) {
+        const unaccentSearchValue = Unaccent(req.query.searchValue);
         query.where = {
           ...query.where,
           ...{
-            [Op.or]: [
-              Sequelize.literal(`unaccent("CateServiceModel"."name") ilike unaccent('%${req.query.searchValue}%')`)
-            ]
+            [Op.or]: [Sequelize.literal(`unaccent("CateServiceModel"."name") ilike '%${unaccentSearchValue}%'`)]
           }
         };
       }

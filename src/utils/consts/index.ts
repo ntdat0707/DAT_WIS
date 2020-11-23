@@ -156,7 +156,7 @@ export enum EInvoiceSourceType {
 export enum EPaymentType {
   CASH = 'cash',
   CARD = 'card',
-  TRANFER = 'tranfer',
+  TRANSFER = 'transfer',
   GIFT_CARD = 'gift_card'
 }
 
@@ -209,4 +209,27 @@ export enum ERoleDefault {
   ADMIN = 'Admin',
   STAFF = 'Staff',
   NORMAL_USER = 'Normal user'
+}
+
+export enum ETeeth {
+  ADULT = 'adult',
+  KID = 'kid'
+}
+
+export enum EDiagnosis {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  RESOLVED = 'resolved'
+}
+
+export enum EStatusProcedure {
+  CONFIRMED = 'confirmed',
+  REJECTED = 'rejected',
+  COMPLETE = 'complete'
+}
+
+export enum EStatusTreatment {
+  PLANNING = 'planning',
+  CONFIRMED = 'confirmed',
+  COMPLETE = 'complete'
 }

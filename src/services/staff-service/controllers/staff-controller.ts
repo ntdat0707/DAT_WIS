@@ -21,6 +21,7 @@ import { minutesToNum } from '../../../utils/minutes-to-number';
 import { dayOfWeek } from '../../../utils/day-of-week';
 import { getStaffUnavailTime } from '../../../utils/unavail-time-array';
 import { staffWithTime } from '../../../utils/staff-with-time';
+import { Unaccent } from '../../../utils/unaccent';
 import {
   sequelize,
   StaffModel,
@@ -36,7 +37,6 @@ import {
   PositionModel,
   RoleModel
 } from '../../../repositories/postgres/models';
-import { Unaccent } from '../../../utils/unaccent';
 import {
   staffIdSchema,
   createStaffSchema,
@@ -90,8 +90,7 @@ export class StaffController {
             model: TeamModel,
             as: 'teamStaffs',
             through: { attributes: [] },
-            required: false,
-            attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+            required: false
           }
         ]
       });

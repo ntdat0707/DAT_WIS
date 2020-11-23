@@ -209,7 +209,8 @@ export class TeamController {
         await TeamSubModel.findAll({
           where: {
             teamId: req.params.parentId
-          }
+          },
+          order: [['updatedAt', 'DESC']]
         })
       ).map((subTeamId: any) => subTeamId.teamSubId);
       const query: FindOptions = {

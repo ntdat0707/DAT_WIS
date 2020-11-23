@@ -4,15 +4,30 @@ import {
   CustomerWisereModel,
   MedicalHistoryCustomerModel,
   MedicalHistoryModel,
-  sequelize
+  sequelize,
+  ServiceModel,
+  StaffModel
 } from '../../../repositories/postgres/models';
 import { CustomError } from '../../../utils/error-handlers';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { validate } from '../../../utils/validator';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
-import { languageSchema, customerWisereIdSchema, updateMedicalHistorySchema } from '../configs/validate-schemas';
-import { customerErrorDetails } from '../../../utils/response-messages/error-details';
+import {
+  languageSchema,
+  customerWisereIdSchema,
+  updateMedicalHistorySchema,
+  createProcedureSchema,
+  createTreatmentSchema
+} from '../configs/validate-schemas';
+import {
+  customerErrorDetails,
+  staffErrorDetails,
+  treatmentErrorDetails
+} from '../../../utils/response-messages/error-details';
 import _ from 'lodash';
+import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
+import { TeethModel, ProcedureModel, TreatmentModel } from '../../../repositories/mongo/models';
+import mongoose from 'mongoose';
 
 export class TreatmentController extends BaseController {
   /**
@@ -179,42 +194,40 @@ export class TreatmentController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      const currentMedicalhistory: string[] = customerWisere.medicalHistories.map((item: any) => item.id);
+      const currentMedicalHistory: string[] = customerWisere.medicalHistories.map((item: any) => item.id);
       const dataInput: string[] = req.body.medicalHistories.map((item: any) => item.medicalHistoryId);
-      const removeMedicalhistory = _.difference(currentMedicalhistory, dataInput);
+      const removeMedicalHistory = _.difference(currentMedicalHistory, dataInput);
       transaction = await sequelize.transaction();
-      if (removeMedicalhistory.length > 0) {
+      if (removeMedicalHistory.length > 0) {
         await MedicalHistoryCustomerModel.destroy({
-          where: { customerWisereId: customerWisereId, medicalHistoryId: removeMedicalhistory },
+          where: { customerWisereId: customerWisereId, medicalHistoryId: removeMedicalHistory },
           transaction
         });
       }
-      const addMedicalhistory = _.difference(dataInput, currentMedicalhistory);
-      if (addMedicalhistory.length > 0) {
+      const addMedicalHistory = _.difference(dataInput, currentMedicalHistory);
+      if (addMedicalHistory.length > 0) {
         const listMedicalHistory = [];
-        for (let i = 0; i < addMedicalhistory.length; i++) {
-          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === addMedicalhistory[i]);
+        for (let i = 0; i < addMedicalHistory.length; i++) {
+          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === addMedicalHistory[i]);
           const data = {
             customerWisereId: customerWisereId,
-            medicalHistoryId: addMedicalhistory[i],
+            medicalHistoryId: addMedicalHistory[i],
             note: req.body.medicalHistories[index].note
           };
           listMedicalHistory.push(data);
         }
         await MedicalHistoryCustomerModel.bulkCreate(listMedicalHistory, { transaction });
       }
-      const upadateMedicalhistory = _.intersection(dataInput, currentMedicalhistory);
-      if (upadateMedicalhistory.length > 0) {
-        for (let j = 0; j < upadateMedicalhistory.length; j++) {
-          const index = req.body.medicalHistories.findIndex(
-            (x: any) => x.medicalHistoryId === upadateMedicalhistory[j]
-          );
+      const updateMedicalHistory = _.intersection(dataInput, currentMedicalHistory);
+      if (updateMedicalHistory.length > 0) {
+        for (let j = 0; j < updateMedicalHistory.length; j++) {
+          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === updateMedicalHistory[j]);
           await MedicalHistoryCustomerModel.update(
             {
               note: req.body.medicalHistories[index].note
             },
             {
-              where: { customerWisereId: customerWisereId, medicalHistoryId: upadateMedicalhistory[j] },
+              where: { customerWisereId: customerWisereId, medicalHistoryId: updateMedicalHistory[j] },
               transaction
             }
           );
@@ -227,6 +240,222 @@ export class TreatmentController extends BaseController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   procedureCreate:
+   *       properties:
+   *           treatmentId:
+   *               type: string
+   *           staffId:
+   *               type: string
+   *           teethId:
+   *               type: array
+   *               items:
+   *                   type: string
+   *           serviceId:
+   *               type: string
+   *           quantity:
+   *               type: integer
+   *           discount:
+   *               type: integer
+   *           totalPrice:
+   *               type: integer
+   *           status:
+   *               type: string
+   *               enum: ['confirmed', 'rejected', 'complete']
+   *           note:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /treatment/create-procedures:
+   *   post:
+   *     tags:
+   *       - Treatment
+   *     security:
+   *       - Bearer: []
+   *     name: createProcedures
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       properties:
+   *           procedures:
+   *               type: array
+   *               items:
+   *                    $ref: '#/definitions/procedureCreate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public createProcedures = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.body, createProcedureSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const dataProcedures = [];
+      for (let i = 0; i < req.body.procedures.length; i++) {
+        for (let j = 0; j < req.body.procedures[i].teethId.length; j++) {
+          const teeth = await TeethModel.findById({
+            _id: mongoose.Types.ObjectId(req.body.procedures[i].teethId[j])
+          }).exec();
+          if (!teeth) {
+            throw new CustomError(
+              treatmentErrorDetails.E_3900(`teethId ${req.body.procedures[i].teethId[j]} not found`),
+              httpStatus.NOT_FOUND
+            );
+          }
+        }
+        const treatment = await TreatmentModel.findById({ _id: req.body.procedures[i].treatmentId }).exec();
+        if (!treatment) {
+          throw new CustomError(
+            treatmentErrorDetails.E_3902(`treatmentId ${req.body.procedures[i].treatmentId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        const staff = await StaffModel.findOne({ where: { id: req.body.procedures[i].staffId } });
+        if (!staff) {
+          throw new CustomError(
+            staffErrorDetails.E_4000(`staffId ${req.body.procedures[i].staffId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        const service = await ServiceModel.findOne({ where: { id: req.body.procedures[i].serviceId } });
+        if (!service) {
+          throw new CustomError(
+            serviceErrorDetails.E_1203(`serviceId ${req.body.procedures[i].serviceId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        let discount = 0;
+        if (req.body.procedures[i].discount) {
+          discount = (service.salePrice * req.body.procedures[i].discount) / 100;
+        }
+        const totalPrice = req.body.procedures[i].quantity * service.salePrice - discount;
+        if (req.body.procedures[i].totalPrice !== totalPrice) {
+          throw new CustomError(treatmentErrorDetails.E_3901('total price is incorrect'), httpStatus.BAD_REQUEST);
+        }
+        const data = {
+          serviceName: service.name,
+          price: service.salePrice,
+          ...req.body.procedures[i]
+        };
+        dataProcedures.push(data);
+      }
+      const procedure = await ProcedureModel.insertMany(dataProcedures);
+      return res.status(httpStatus.OK).send(buildSuccessMessage(procedure));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   treatmentCreate:
+   *       properties:
+   *           creatorId:
+   *               type: string
+   *           customerId:
+   *               type: string
+   *           status:
+   *               type: string
+   *               enum: ['planning', 'confirmed', 'completed']
+   */
+  /**
+   * @swagger
+   * /treatment/create-treatment:
+   *   post:
+   *     tags:
+   *       - Treatment
+   *     security:
+   *       - Bearer: []
+   *     name: createTreatment
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/treatmentCreate'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public createTreatment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validateErrors = validate(req.body, createTreatmentSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const customerId = req.body.customerId;
+      const numberOfTreatments: any = await TreatmentModel.estimatedDocumentCount({ customerId: customerId }).exec();
+      const treatmentNum = numberOfTreatments + 1;
+      const treatmentName = `Treatment${treatmentNum.toString()}`;
+      const treatmentCode = `TR${treatmentNum.toString()}`;
+      const data = {
+        name: treatmentName,
+        code: treatmentCode,
+        customerId: req.body.customerId,
+        creatorId: !req.body.creatorId ? res.locals.staffPayload.id : req.body.creatorId,
+        status: req.body.status
+      };
+      const treatment = new TreatmentModel(data);
+      const savedTreatment = await treatment.save();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(savedTreatment));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/get-all-treatment/{customerWisereId}:
+   *   get:
+   *     tags:
+   *       - Treatment
+   *     security:
+   *       - Bearer: []
+   *     name: getAllTreatment
+   *     parameters:
+   *     - in: path
+   *       name: customerWisereId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllTreatment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = req.params.customerWisereId;
+      const validateErrors = validate(customerId, customerWisereIdSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const treatments = await TreatmentModel.find({
+        customerId
+      }).exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(treatments));
+    } catch (error) {
       return next(error);
     }
   };

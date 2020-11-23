@@ -62,7 +62,7 @@ import * as ejs from 'ejs';
 import * as path from 'path';
 import { executeSendingEmail } from '../../../utils/emailer';
 import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
-
+import { Unaccent } from '../../../utils/unaccent';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.MARKETPLACE_URL;
 export class CustomerController {
@@ -446,7 +446,7 @@ export class CustomerController {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         gender: req.body.gender,
-        phone: req.body.phone,
+        phone: req.body.phone && req.body.phone === 'null' ? null : req.body.phone,
         email: req.body.email,
         birthDate: req.body.birthDate,
         passportNumber: req.body.passportNumber,
@@ -782,12 +782,13 @@ export class CustomerController {
       };
 
       if (req.query.searchValue) {
+        const unaccentSearchValue = Unaccent(req.query.searchValue);
         query.where = {
           ...query.where,
           ...{
             [Op.or]: [
               Sequelize.literal(
-                `unaccent(concat("CustomerWisereModel"."first_name", ' ', "CustomerWisereModel"."last_name")) ilike unaccent('%${req.query.searchValue}%')`
+                `unaccent(concat("CustomerWisereModel"."last_name", ' ', "CustomerWisereModel"."first_name")) ilike '%${unaccentSearchValue}%'`
               ),
               Sequelize.literal(`"CustomerWisereModel"."code" ilike '%${req.query.searchValue}%'`),
               Sequelize.literal(`"CustomerWisereModel"."phone" like '%${req.query.searchValue}%'`),
