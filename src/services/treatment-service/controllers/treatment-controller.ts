@@ -193,42 +193,42 @@ export class TreatmentController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      const currentMedicalhistory: string[] = customerWisere.medicalHistories.map((item: any) => item.id);
+      const currentMedicalHistory: string[] = customerWisere.medicalHistories.map((item: any) => item.id);
       const dataInput: string[] = req.body.medicalHistories.map((item: any) => item.medicalHistoryId);
-      const removeMedicalhistory = _.difference(currentMedicalhistory, dataInput);
+      const removeMedicalHistory = _.difference(currentMedicalHistory, dataInput);
       transaction = await sequelize.transaction();
-      if (removeMedicalhistory.length > 0) {
+      if (removeMedicalHistory.length > 0) {
         await MedicalHistoryCustomerModel.destroy({
-          where: { customerWisereId: customerWisereId, medicalHistoryId: removeMedicalhistory },
+          where: { customerWisereId: customerWisereId, medicalHistoryId: removeMedicalHistory },
           transaction
         });
       }
-      const addMedicalhistory = _.difference(dataInput, currentMedicalhistory);
-      if (addMedicalhistory.length > 0) {
+      const addMedicalHistory = _.difference(dataInput, currentMedicalHistory);
+      if (addMedicalHistory.length > 0) {
         const listMedicalHistory = [];
-        for (let i = 0; i < addMedicalhistory.length; i++) {
-          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === addMedicalhistory[i]);
+        for (let i = 0; i < addMedicalHistory.length; i++) {
+          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === addMedicalHistory[i]);
           const data = {
             customerWisereId: customerWisereId,
-            medicalHistoryId: addMedicalhistory[i],
+            medicalHistoryId: addMedicalHistory[i],
             note: req.body.medicalHistories[index].note
           };
           listMedicalHistory.push(data);
         }
         await MedicalHistoryCustomerModel.bulkCreate(listMedicalHistory, { transaction });
       }
-      const upadateMedicalhistory = _.intersection(dataInput, currentMedicalhistory);
-      if (upadateMedicalhistory.length > 0) {
-        for (let j = 0; j < upadateMedicalhistory.length; j++) {
+      const updateMedicalHistory = _.intersection(dataInput, currentMedicalHistory);
+      if (updateMedicalHistory.length > 0) {
+        for (let j = 0; j < updateMedicalHistory.length; j++) {
           const index = req.body.medicalHistories.findIndex(
-            (x: any) => x.medicalHistoryId === upadateMedicalhistory[j]
+            (x: any) => x.medicalHistoryId === updateMedicalHistory[j]
           );
           await MedicalHistoryCustomerModel.update(
             {
               note: req.body.medicalHistories[index].note
             },
             {
-              where: { customerWisereId: customerWisereId, medicalHistoryId: upadateMedicalhistory[j] },
+              where: { customerWisereId: customerWisereId, medicalHistoryId: updateMedicalHistory[j] },
               transaction
             }
           );
@@ -345,7 +345,7 @@ export class TreatmentController extends BaseController {
         }
         const totalPrice = req.body.procedures[i].quantity * service.salePrice - discount;
         if (req.body.procedures[i].totalPrice !== totalPrice) {
-          throw new CustomError(treatmentErrorDetails.E_3901(`total price is incorrect`), httpStatus.BAD_REQUEST);
+          throw new CustomError(treatmentErrorDetails.E_3901('total price is incorrect'), httpStatus.BAD_REQUEST);
         }
         const data = {
           serviceName: service.name,
@@ -356,6 +356,44 @@ export class TreatmentController extends BaseController {
       }
       const procedure = await ProcedureModel.insertMany(dataProcedures);
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedure));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/get-all-treatment/{customerWisereId}:
+   *   get:
+   *     tags:
+   *       - Treatment
+   *     security:
+   *       - Bearer: []
+   *     name: getAllTreatment
+   *     parameters:
+   *     - in: path
+   *       name: customerWisereId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllTreatment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const customerId = req.params.customerWisereId;
+      const validateErrors = validate(customerId, customerWisereIdSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const treatments = await TreatmentModel.find({
+        customerId
+      });
+      return res.status(httpStatus.OK).send(buildSuccessMessage(treatments));
     } catch (error) {
       return next(error);
     }
