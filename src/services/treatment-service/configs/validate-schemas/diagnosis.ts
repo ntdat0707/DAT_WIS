@@ -1,10 +1,6 @@
 import Joi from 'joi';
 
 const createDiagnosis = Joi.object({
-  teethId: Joi.string()
-    .required()
-    .regex(/^[0-9a-fA-F]{24}$/)
-    .label('teethId'),
   teethNumber: Joi.number().integer().label('teethNumber'),
   staffId: Joi.string()
     .guid({ version: ['uuidv4'] })
@@ -19,14 +15,9 @@ const createDiagnosis = Joi.object({
   //       .regex(/^[0-9a-fA-F]{24}$/)
   //       .label('diagnosticPathId')
   //   ),
-  diagnosticIds: Joi.array()
-    .min(1)
-    .required()
-    .items(
-      Joi.string()
-        .regex(/^[0-9a-fA-F]{24}$/)
-        .label('diagnosticId')
-    ),
+  diagnosticId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .label('diagnosticId'),
   treatmentId: Joi.string()
     .required()
     .regex(/^[0-9a-fA-F]{24}$/)
@@ -57,14 +48,9 @@ const updateDiagnosis = Joi.object({
   //       .regex(/^[0-9a-fA-F]{24}$/)
   //       .label('diagnosticPathId')
   //   ),
-  diagnosticIds: Joi.array()
-    .min(1)
-    .required()
-    .items(
-      Joi.string()
-        .regex(/^[0-9a-fA-F]{24}$/)
-        .label('diagnosticId')
-    ),
+  diagnosticId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .label('diagnosticId'),
   diagnosticName: Joi.string().label('diagnosticName')
 });
 
