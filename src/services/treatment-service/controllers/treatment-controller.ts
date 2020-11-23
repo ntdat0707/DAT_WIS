@@ -221,9 +221,7 @@ export class TreatmentController extends BaseController {
       const updateMedicalHistory = _.intersection(dataInput, currentMedicalHistory);
       if (updateMedicalHistory.length > 0) {
         for (let j = 0; j < updateMedicalHistory.length; j++) {
-          const index = req.body.medicalHistories.findIndex(
-            (x: any) => x.medicalHistoryId === updateMedicalHistory[j]
-          );
+          const index = req.body.medicalHistories.findIndex((x: any) => x.medicalHistoryId === updateMedicalHistory[j]);
           await MedicalHistoryCustomerModel.update(
             {
               note: req.body.medicalHistories[index].note
@@ -455,7 +453,7 @@ export class TreatmentController extends BaseController {
       }
       const treatments = await TreatmentModel.find({
         customerId
-      });
+      }).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatments));
     } catch (error) {
       return next(error);
