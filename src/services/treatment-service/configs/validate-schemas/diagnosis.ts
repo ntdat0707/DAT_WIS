@@ -5,7 +5,7 @@ const createDiagnosis = Joi.object({
     .required()
     .regex(/^[0-9a-fA-F]{24}$/)
     .label('teethId'),
-  teethNumber: Joi.number().label('teethNumber'),
+  teethNumber: Joi.number().integer().label('teethNumber'),
   staffId: Joi.string()
     .guid({ version: ['uuidv4'] })
     .required()
@@ -35,7 +35,7 @@ const updateDiagnosis = Joi.object({
     .regex(/^[0-9a-fA-F]{24}$/)
     .required()
     .label('diagnosisId'),
-  teethNumber: Joi.number().label('teethNumber'),
+  teethNumber: Joi.number().integer().label('teethNumber'),
   teethId: Joi.string()
     .required()
     .regex(/^[0-9a-fA-F]{24}$/)
