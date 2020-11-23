@@ -28,5 +28,6 @@ export class TreatmentRoutes {
       isAuthenticated,
       this.treatmentController.getAllTreatment
     );
+    this.router.post('/create-treatment', isAuthenticated, this.treatmentController.createTreatment);
   }
 }
