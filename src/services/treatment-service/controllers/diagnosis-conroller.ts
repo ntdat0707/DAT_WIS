@@ -351,7 +351,7 @@ export class DiagnosticController extends BaseController {
           throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${dataInput.treatmentId} not found`));
         }
         diagnosis = await DiagnosisModel.find({ treatmentId: dataInput.treatmentId })
-          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
+          .populate({ path: 'diagnosticIds', model: 'Diagnostic' })
           .populate({
             path: 'teethId',
             model: 'Teeth',
@@ -360,7 +360,7 @@ export class DiagnosticController extends BaseController {
           .exec();
       } else {
         diagnosis = await DiagnosisModel.find()
-          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
+          .populate({ path: 'diagnosticIds', model: 'Diagnostic' })
           .populate({
             path: 'teethId',
             model: 'Teeth',
