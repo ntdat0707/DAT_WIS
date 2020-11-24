@@ -482,7 +482,6 @@ export class InvoiceController {
             as: 'invoiceDetails',
             include: [
               {
-                attributes: ['id', 'name', 'duration'],
                 model: ServiceModel,
                 as: 'service'
               },
