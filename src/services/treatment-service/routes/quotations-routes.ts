@@ -11,7 +11,10 @@ export class QuotationsRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post('/update-quotations-dental/:quotationId', isAuthenticated, this.quotationsController.updateQuotationsDental);
+    this.router.post(
+      '/update-quotations-dental/:quotationId',
+      isAuthenticated,
+      this.quotationsController.updateQuotationsDental
+    );
   }
 }
-

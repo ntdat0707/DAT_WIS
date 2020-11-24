@@ -7,9 +7,7 @@ const quotationsDentalDetailSchema = Joi.object({
     .regex(/^[0-9a-fA-F]{24}$/)
     .required()
     .label('quotationDentalDetailId'),
-  isAccept: Joi.boolean()
-    .required()
-    .label('isAccept'),
+  isAccept: Joi.boolean().required().label('isAccept'),
   serviceId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -22,35 +20,22 @@ const quotationsDentalDetailSchema = Joi.object({
     })
     .required()
     .label('staffId'),
-  teeth: Joi.array().items(
-    Joi.string()
-    .valid(TEETH_2H, ...TEETH_ADULT, ...TEETH_CHILD)
-  )
+  teeth: Joi.array()
+    .items(Joi.string().valid(TEETH_2H, ...TEETH_ADULT, ...TEETH_CHILD))
     .min(1)
     .required()
     .label('teeth'),
-  discount: Joi.number()
-    .integer()
-    .min(0)
-    .required()
-    .allow(null, '')
-    .label('discount'),
+  discount: Joi.number().integer().min(0).required().allow(null, '').label('discount'),
   discountType: Joi.string()
     .valid(...Object.values(EQuotationDiscountType))
     .allow(null, '')
     .label('discountType'),
-  quantity: Joi.number()
-    .integer()
-    .allow(null, '')
-    .label('quantity'),
-  tax: Joi.string()
-    .allow(null, '')
-    .label('tax'),
+  quantity: Joi.number().integer().allow(null, '').label('quantity'),
+  tax: Joi.string().allow(null, '').label('tax'),
   currencyUnit: Joi.string()
     .valid(...Object.values(EQuotationCurrencyUnit))
     .label('currencyUnit')
 });
-
 
 const createQuotationsDentalSchema = Joi.object({
   treatmentId: Joi.string()
@@ -82,12 +67,7 @@ const createQuotationsDentalSchema = Joi.object({
   currencyUnit: Joi.string()
     .valid(...Object.values(EQuotationCurrencyUnit))
     .label('currencyUnit'),
-  quotationsDentalDetails: Joi.array()
-    .items(quotationsDentalDetailSchema)
-    .label('quotationsDentalDetails'),
+  quotationsDentalDetails: Joi.array().items(quotationsDentalDetailSchema).label('quotationsDentalDetails')
 });
 
-export {
-  createQuotationsDentalSchema,
-  quotationsDentalDetailSchema
-};
+export { createQuotationsDentalSchema, quotationsDentalDetailSchema };

@@ -64,7 +64,6 @@ export class QuotationsController extends BaseController {
     }
   };
 
-
   /**
    * @swagger
    * definitions:
