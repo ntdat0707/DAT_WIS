@@ -19,7 +19,7 @@ interface IQuotationsDental extends mongoose.Document {
 }
 
 const QuotationsDentalSchema = new mongoose.Schema({
-  quoteCode: { type: String, required: true },
+  quoteCode: { type: String, required: false },
   Date: { type: Date, required: true },
   Expire: { type: Date, required: true },
   treatmentId: { type: String, required: true },
@@ -29,7 +29,7 @@ const QuotationsDentalSchema = new mongoose.Schema({
   accountedBy: { type: String, required: true },
   customerId: { type: String, required: true },
   discount: { type: Number, required: false },
-  discountType: { type: String, enum: Object.values(EQuotationDiscountType), required: true },
+  discountType: { type: String, enum: Object.values(EQuotationDiscountType), default: EQuotationDiscountType.MONEY },
   quotationsDentalDetails: [{ type: Schema.Types.ObjectId, ref: 'QuotationsDentalDetail' }],
   currencyUnit: { type: String, enum: Object.values(EQuotationCurrencyUnit), default: EQuotationCurrencyUnit.VND },
   totalPrice: { type: Number, required: false }
