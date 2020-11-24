@@ -294,6 +294,21 @@ export class DiagnosticController extends BaseController {
         throw new CustomError(staffErrorDetails.E_4000(`Staff ${dataInput.staffId} not found`), httpStatus.NOT_FOUND);
       }
       dataInput.staffName = staff.firstName;
+      const teeth: any = await TeethModel.findOne({ toothNumber: dataInput.teethNumber }).exec();
+      if (!teeth) {
+        throw new CustomError(
+          treatmentErrorDetails.E_3900(`Teeth ${dataInput.teethNumber} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
+      dataInput.teethId = teeth._id;
+      if (treatment.diagnosisIds.length > 0) {
+        for (let diagnosticId of treatment.diagnosisIds) {
+          if (diagnosticId === dataInput.diagnosisId) {
+            throw new CustomError(treatmentErrorDetails.E_4101(`Diagnostic ${diagnosticId} is duplicate`));
+          }
+        }
+      }
       const diagnosis: any = new DiagnosisModel(dataInput);
       await diagnosis.save();
       //update treatment
@@ -475,7 +490,7 @@ export class DiagnosticController extends BaseController {
       }
       const diagnosis = await DiagnosisModel.findById(diagnosisId).exec();
       if (!diagnosis) {
-        throw new CustomError(treatmentErrorDetails.E_3904(`diagnosis ${diagnosisId} not found`), httpStatus.NOT_FOUND);
+        throw new CustomError(treatmentErrorDetails.E_4102(`diagnosis ${diagnosisId} not found`), httpStatus.NOT_FOUND);
       }
       await DiagnosisModel.findByIdAndDelete(diagnosisId).exec();
       return res.status(httpStatus.OK).send();
@@ -526,7 +541,7 @@ export class DiagnosticController extends BaseController {
       const diagnostic = await DiagnosticModel.findById({ _id: diagnosticId }).exec();
       if (!diagnostic) {
         throw new CustomError(
-          treatmentErrorDetails.E_3903(`diagnostic ${diagnosticId} not found`),
+          treatmentErrorDetails.E_4101(`diagnostic ${diagnosticId} not found`),
           httpStatus.NOT_FOUND
         );
       }
