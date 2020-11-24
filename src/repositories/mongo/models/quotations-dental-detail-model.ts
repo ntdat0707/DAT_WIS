@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../utils/consts';
 
 interface IQuotationsDentalDetail extends mongoose.Document {
+  isAccept: boolean;
   quotationsDentalId: string;
   serviceId: string;
   createdAt: Date;
@@ -16,6 +17,7 @@ interface IQuotationsDentalDetail extends mongoose.Document {
 }
 
 const QuotationsDentalSchema = new mongoose.Schema({
+  isAccept: { type: Boolean, required: true },
   quotationsDentalId: { type: Schema.Types.ObjectId, ref: 'QuotationsDental' },
   serviceId: { type: String, required: true },
   createdAt: { type: String, default: Date.now },
