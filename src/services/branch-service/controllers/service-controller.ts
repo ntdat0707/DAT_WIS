@@ -30,7 +30,7 @@ import { paginateElasticSearch } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
-import { elasticsearchClient, esClient } from '../../../repositories/elasticsearch';
+import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ServiceController {
@@ -1100,7 +1100,7 @@ export class ServiceController {
         return serviceMapping;
       });
 
-      await elasticsearchClient.update({
+      await esClient.update({
         id: params.serviceId,
         index: 'get_services_dev',
         body: {

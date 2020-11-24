@@ -22,7 +22,7 @@ import {
   LocationStaffModel,
   CompanyTypeDetailModel
 } from '../../../repositories/postgres/models';
-import { elasticsearchClient, esClient } from '../../../repositories/elasticsearch';
+import { esClient } from '../../../repositories/elasticsearch';
 
 import {
   searchSchema,
@@ -1228,7 +1228,7 @@ export class SearchController {
           ],
           group: ['CateServiceModel.id', 'services.id']
         });
-        nearLocation = await elasticsearchClient
+        nearLocation = await esClient
           .search({
             index: 'marketplace_search',
             body: {
