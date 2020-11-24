@@ -9,10 +9,13 @@ import { DiagnosisModel } from '../../../repositories/mongo/models/diagnosis-mod
 import { DiagnosticModel } from '../../../repositories/mongo/models/diagnostic-model';
 import { DiagnosticPathModel } from '../../../repositories/mongo/models/diagnostic-path-model';
 import { validate } from '../../../utils/validator';
-import { createDiagnosis, updateDiagnosis } from '../configs/validate-schemas/diagnosis';
+import { createDiagnosis, getDiagnosis, updateDiagnosis } from '../configs/validate-schemas/diagnosis';
 import CustomError from '../../../utils/error-handlers/custom-error';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
+import { customerErrorDetails, treatmentErrorDetails } from '../../../utils/response-messages/error-details';
+import { CustomerWisereModel } from '../../../repositories/postgres/models/customer-wisere-model';
+import { TreatmentModel } from '../../../repositories/mongo/models';
 export class DiagnosticController extends BaseController {
   /**
    * @swagger
@@ -230,27 +233,24 @@ export class DiagnosticController extends BaseController {
    * definitions:
    *   CreateDiagnosis:
    *       required:
-   *           teethId
    *           teethNumber
    *           staffId
-   *           diagnosticIds
-   *           diagnosticPathIds
+   *           diagnosticId
    *           diagnosticName
+   *           treatmentId
    *       properties:
-   *           teethId:
-   *               type: string
    *           teethNumber:
    *               type: string
    *           staffId:
    *               type: string
-   *           diagnosticIds:
-   *               type: array
-   *               items:
-   *                   type: string
+   *           diagnosticId:
+   *               type: string
    *           status:
    *               type: string
    *               enum: ['pending', 'confirmed', 'resolved']
    *           diagnosticName:
+   *               type: string
+   *           treatmentId:
    *               type: string
    *
    */
@@ -281,6 +281,10 @@ export class DiagnosticController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
+      const treatment = await TreatmentModel.findById({ _id: dataInput.treatmentId }).exec();
+      if (!treatment) {
+        throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${dataInput.treatmentId} not found`));
+      }
       const staff = await StaffModel.findOne({
         where: { id: dataInput.staffId },
         attributes: ['firstName'],
@@ -290,12 +294,14 @@ export class DiagnosticController extends BaseController {
         throw new CustomError(staffErrorDetails.E_4000(`Staff ${dataInput.staffId} not found`));
       }
       dataInput.staffName = staff.firstName;
+
       //get teeth Number
 
       //check diagnostic is only one
+
       const diagnosis: any = new DiagnosisModel(dataInput);
       await diagnosis.save();
-      const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticIds })
+      const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticId })
         .populate({
           path: 'pathologicalIds',
           model: 'ToothNotation',
@@ -311,13 +317,21 @@ export class DiagnosticController extends BaseController {
 
   /**
    * @swagger
-   * /treatment/diagnosis/get-diagnosis:
+   * /treatment/diagnosis/get-all-diagnosis:
    *   get:
    *     tags:
    *       - Treatment
    *     security:
    *       - Bearer: []
-   *     name: getDiagnosis
+   *     name: getAllDiagnosis
+   *     parameters:
+   *     - in: query
+   *       name: customerId
+   *       type: string
+   *       required: true
+   *     - in: query
+   *       name: treatmentId
+   *       type: string
    *     responses:
    *       200:
    *         description: success
@@ -326,16 +340,50 @@ export class DiagnosticController extends BaseController {
    *       500:
    *         description:
    */
-  public getDiagnosis = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllDiagnosis = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const diagnosis = await DiagnosisModel.find()
-        .populate({ path: 'diagnosticId', model: 'Diagnostic' })
-        .populate({
-          path: 'teethId',
-          model: 'Teeth',
-          populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
-        })
-        .exec();
+      const dataInput: any = req.query;
+      const validateErrors = validate(dataInput, getDiagnosis);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const customer = await CustomerWisereModel.findAll({ where: { id: dataInput.customerId } });
+      if (!customer) {
+        throw new CustomError(customerErrorDetails.E_3001(`Customer ${dataInput.customerId} not found`));
+      }
+      let diagnosis: any = [];
+      if (dataInput.treatmentId) {
+        const treatment = await TreatmentModel.find({
+          _id: dataInput.treatmentId,
+          customerId: dataInput.customerId
+        }).exec();
+        if (!treatment) {
+          throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${dataInput.treatmentId} not found`));
+        }
+        diagnosis = await DiagnosisModel.find({ treatmentId: dataInput.treatmentId })
+          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
+          .populate({
+            path: 'teethId',
+            model: 'Teeth',
+            populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
+          })
+          .exec();
+      } else {
+        const treatment = await TreatmentModel.find({ customerId: dataInput.customerId }).exec();
+        if (!treatment) {
+          throw new CustomError(
+            treatmentErrorDetails.E_3902(`Treatment with Customer ${dataInput.customerId} not found`)
+          );
+        }
+        diagnosis = await DiagnosisModel.find()
+          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
+          .populate({
+            path: 'teethId',
+            model: 'Teeth',
+            populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
+          })
+          .exec();
+      }
       return res.status(httpStatus.OK).send(buildSuccessMessage(diagnosis));
     } catch (error) {
       return next(error);
@@ -353,10 +401,8 @@ export class DiagnosticController extends BaseController {
    *                   type: string
    *           staffId:
    *               type: string
-   *           diagnosticIds:
-   *               type: array
-   *               items:
-   *                   type: string
+   *           diagnosticId:
+   *               type: string
    *           status:
    *               type: string
    *               enum: ['pending', 'confirmed', 'resolved']
@@ -400,7 +446,7 @@ export class DiagnosticController extends BaseController {
       }
       const diagnosis: any = await DiagnosisModel.find({ _id: dataInput.diagnosisId }).exec();
       diagnosis.teethId = !dataInput.teethId ? diagnosis.teethId : dataInput.teethId;
-      diagnosis.diagnosticIds = !dataInput.diagnosticIds ? diagnosis.diagnosticIds : dataInput.diagnosticIds;
+      diagnosis.diagnosticId = !dataInput.diagnosticId ? diagnosis.diagnosticId : dataInput.diagnosticId;
       diagnosis.status = !dataInput.status ? diagnosis.status : dataInput.status;
       // diagnosis.diagnosticPathIds = !dataInput.diagnosticPathIds
       //   ? diagnosis.diagnosticPathIds
@@ -420,6 +466,62 @@ export class DiagnosticController extends BaseController {
       }
       await DiagnosisModel.update({ _id: dataInput.diagnosisId }, diagnosis).exec();
       return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   AddColor:
+   *       properties:
+   *           color:
+   *               type: string
+   *           colorText:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * /treatment/diagnosis/add-color/{diagnosticId}:
+   *   post:
+   *     tags:
+   *       - Treatment
+   *     name: addColor
+   *     parameters:
+   *     - in: path
+   *       name: diagnosticId
+   *       type: string
+   *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       schema:
+   *            $ref: '#/definitions/AddColor'
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public addColor = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const diagnosticId = req.params.diagnosticId;
+      const dataInput = req.body;
+      const diagnostic = await DiagnosticModel.findById({ _id: diagnosticId }).exec();
+      if (!diagnostic) {
+        throw new CustomError(treatmentErrorDetails.E_3903(`diagnostic ${diagnosticId} not found`));
+      }
+      const diagPathData = {
+        diagnosticId: diagnosticId,
+        color: dataInput.color,
+        colorText: dataInput.colorText
+      };
+      const diagPath = new DiagnosticPathModel(diagPathData);
+      await diagPath.save();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(diagPath));
     } catch (error) {
       return next(error);
     }

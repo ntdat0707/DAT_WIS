@@ -2035,7 +2035,7 @@ export class SearchController {
           script_fields: {
             distance: {
               script: {
-                inline: 'doc[\'location\'].arcDistance(params.lat,params.lon) * 0.001',
+                inline: "doc['location'].arcDistance(params.lat,params.lon) * 0.001",
                 params: {
                   lat: search.latitude,
                   lon: search.longitude

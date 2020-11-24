@@ -11,4 +11,4 @@ export * from './tooth-notation-model';
 export * from './medicine-model';
 export * from './prescription-model';
 export * from './treatment-process';
-export * from './treatment';
+export * from './treatment-model';

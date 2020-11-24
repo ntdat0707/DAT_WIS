@@ -21,12 +21,11 @@ import {
   ResourceModel,
   CompanyModel
 } from '../../../repositories/postgres/models';
-import { Unaccent } from '../../../utils/unaccent';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
-import { FindOptions, Sequelize, Op, Transaction } from 'sequelize';
+import { FindOptions, Transaction } from 'sequelize';
 import { paginateElasticSearch } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
@@ -192,11 +191,11 @@ export class ServiceController {
       /**
        * Prepare location service
        */
-      const locationService = (body.locationIds as []).map((locationId: string) => ({
+      const locationServices = (body.locationIds as []).map((locationId: string) => ({
         locationId: locationId,
         serviceId: service.id
       }));
-      await LocationServiceModel.bulkCreate(locationService, { transaction: transaction });
+      await LocationServiceModel.bulkCreate(locationServices, { transaction: transaction });
 
       if (body.staffIds && body.staffIds.length > 0) {
         const staffs = await StaffModel.findAll({
@@ -232,60 +231,64 @@ export class ServiceController {
         await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       }
       await transaction.commit();
-      // const serviceData = await ServiceModel.findOne({
-      //   where: {
-      //     id: data.id
-      //   },
-      //   include: [
-      //     {
-      //       model: LocationModel,
-      //       as: 'locations',
-      //       required: true,
-      //       through: {
-      //         attributes: {
-      //           exclude: ['updatedAt', 'createdAt', 'deletedAt']
-      //         }
-      //       }
-      //     },
-      //     {
-      //       model: CateServiceModel,
-      //       as: 'cateService',
-      //       required: true,
-      //       attributes: {
-      //         exclude: ['updatedAt', 'createdAt', 'deletedAt']
-      //       }
-      //     },
-      //     {
-      //       model: StaffModel,
-      //       as: 'staffs',
-      //       required: false,
-      //       through: {
-      //         attributes: {
-      //           exclude: ['updatedAt', 'createdAt', 'deletedAt']
-      //         }
-      //       }
-      //     },
-      //     {
-      //       model: ServiceImageModel,
-      //       as: 'images',
-      //       required: false
-      //     }
-      //   ]
-      // }).then((item: any) => {
-      //   const serviceMapping = JSON.parse(JSON.stringify(item));
-      //   serviceMapping.locationService = serviceMapping.locations.map((location: any) => location.LocationServiceModel);
-      //   serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
-      //   delete serviceMapping.locations;
-      //   delete serviceMapping.staffs;
-      //   return serviceMapping;
-      // });
+      const serviceData = await ServiceModel.findOne({
+        where: {
+          id: data.id
+        },
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            through: {
+              attributes: {
+                exclude: ['updatedAt', 'createdAt', 'deletedAt']
+              }
+            }
+          },
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: true,
+            attributes: {
+              exclude: ['updatedAt', 'createdAt', 'deletedAt']
+            }
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: false,
+            through: {
+              attributes: {
+                exclude: ['updatedAt', 'createdAt', 'deletedAt']
+              }
+            }
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
+          }
+        ]
+      }).then((item: any) => {
+        const serviceMapping = JSON.parse(JSON.stringify(item));
+        serviceMapping.locationServices = serviceMapping.locations.map(
+          (location: any) => location.LocationServiceModel
+        );
+        serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
+        delete serviceMapping.locations;
+        delete serviceMapping.staffs;
+        return serviceMapping;
+      });
 
-      // await esClient.create({
-      //   id: data.id,
-      //   index: 'get_services_dev',
-      //   body: serviceData,
-      //   type: '_doc'
-      // });
+      await esClient.create({
+        id: data.id,
+        index: 'get_services_dev',
+        type: '_doc',
+        // version: 1,
+        // version_type: 'internal',
+        body: serviceData
+      });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
@@ -542,21 +545,10 @@ export class ServiceController {
       };
 
       if (req.query.searchValue) {
-        const unaccentSearchValue = Unaccent(req.query.searchValue);
-        const servicesSearch = await ServiceModel.findAndCountAll({
-          where: {
-            [Op.or]: [
-              Sequelize.literal(`unaccent("ServiceModel"."name") ilike '%${unaccentSearchValue}%'`),
-              Sequelize.literal(`unaccent("ServiceModel"."name_en") ilike '%${unaccentSearchValue}%'`),
-              Sequelize.literal(`"ServiceModel"."service_code" ilike '%${req.query.searchValue}%'`)
-            ]
-          }
-        });
-        const servicesIds: any = [...servicesSearch.rows.map((ids: any) => ids.id)];
         searchParams.body.query.bool.must.push({
           query_string: {
-            query: servicesIds.join(' OR ')
-            //fields: ['locationServices.serviceId']
+            fields: ['name', 'serviceCode'],
+            query: `${(req.query.searchValue as string).replace(/  +/g, ' ').trim()}`
           }
         });
       }
