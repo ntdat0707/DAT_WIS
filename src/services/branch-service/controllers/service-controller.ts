@@ -283,7 +283,7 @@ export class ServiceController {
 
       await esClient.create({
         id: data.id,
-        index: 'get_services_dev',
+        index: 'get_services',
         type: '_doc',
         // version: 1,
         // version_type: 'internal',
@@ -346,13 +346,13 @@ export class ServiceController {
       if (service) {
         await ServiceModel.destroy({ where: { id: serviceId } });
         await esClient.delete({
-          index: 'get_services_dev',
+          index: 'get_services',
           type: '_doc',
           id: serviceId
         });
       } else {
         const isServiceRemain = await esClient.search({
-          index: 'get_services_dev',
+          index: 'get_services',
           type: '_doc',
           body: {
             query: {
@@ -364,7 +364,7 @@ export class ServiceController {
         });
         if (isServiceRemain.body.hits.total.value === 1) {
           await esClient.delete({
-            index: 'get_services_dev',
+            index: 'get_services',
             type: '_doc',
             id: serviceId
           });
@@ -523,7 +523,7 @@ export class ServiceController {
       }
 
       const searchParams: any = {
-        index: 'get_services_dev',
+        index: 'get_services',
         body: {
           query: {
             bool: {
@@ -1102,7 +1102,7 @@ export class ServiceController {
 
       await esClient.update({
         id: params.serviceId,
-        index: 'get_services_dev',
+        index: 'get_services',
         body: {
           doc: serviceData,
           doc_as_upsert: true
