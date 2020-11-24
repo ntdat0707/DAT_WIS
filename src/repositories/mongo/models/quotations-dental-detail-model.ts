@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { EQoutationDiscountType, EQoutationCurrencyUnit } from '../../../utils/consts';
+import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../utils/consts';
 
 interface IQuotationsDentalDetail extends mongoose.Document {
   qoutationsDentalId: string;
@@ -15,22 +15,22 @@ interface IQuotationsDentalDetail extends mongoose.Document {
   price: number;
 }
 
-const QoutationsDentalSchema = new mongoose.Schema({
-  qoutationsDentalId: { type: Schema.Types.ObjectId, ref: 'QoutationsDental' },
+const QuotationsDentalSchema = new mongoose.Schema({
+  quotationsDentalId: { type: Schema.Types.ObjectId, ref: 'QuotationsDental' },
   serviceId: { type: String, required: true },
   createdAt: { type: String, default: Date.now },
   teeth: [{ type: String, required: true }],
   discount: { type: Number, required: false },
-  discountType: { type: String, enum: Object.values(EQoutationDiscountType), required: false },
+  discountType: { type: String, enum: Object.values(EQuotationDiscountType), required: false },
   quantity: { type: String, required: true },
-  currencyUnit: { type: String, enum: Object.values(EQoutationCurrencyUnit), default: EQoutationCurrencyUnit.VND },
+  currencyUnit: { type: String, enum: Object.values(EQuotationCurrencyUnit), default: EQuotationCurrencyUnit.VND },
   tax: { type: Number, required: false },
   price: { type: Number, required: true }
 });
 
 //Model
-const QoutationsDentalDetailModel = mongoose.model<IQuotationsDentalDetail>(
-  'QoutationsDentalDetail',
-  QoutationsDentalSchema
+const QuotationsDentalDetailModel = mongoose.model<IQuotationsDentalDetail>(
+  'QuotationsDentalDetail',
+  QuotationsDentalSchema
 );
-export { QoutationsDentalDetailModel, IQuotationsDentalDetail };
+export { QuotationsDentalDetailModel, IQuotationsDentalDetail };

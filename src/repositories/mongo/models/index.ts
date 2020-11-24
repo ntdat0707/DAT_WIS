@@ -12,5 +12,5 @@ export * from './medicine-model';
 export * from './prescription-model';
 export * from './treatment-process';
 export * from './treatment-model';
-export * from './qoutations-dental-model';
-export * from './qoutations-dental-detail-model';
+export * from './quotations-dental-model';
+export * from './quotations-dental-detail-model';
