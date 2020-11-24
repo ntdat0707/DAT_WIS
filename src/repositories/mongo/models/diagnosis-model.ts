@@ -21,7 +21,7 @@ const DiagnosisSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: Object.values(EDiagnosis),
-    default: Object.values(EDiagnosis.PENDING)
+    default: EDiagnosis.PENDING
   },
   treatmentId: { type: Schema.Types.ObjectId, required: 'Treatment' },
   diagnosticId: { type: Schema.Types.ObjectId, ref: 'Diagnostic' },
