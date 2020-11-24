@@ -3,7 +3,6 @@ import { DiagnosticRoutes } from './diagnosis-routes';
 import { TreatmentRoutes } from './treatment-routes';
 import { QuotationsRoutes } from './quotations-routes';
 
-
 class MainRoutes {
   public router: express.Router = express.Router();
   private treatmentRoutes = new TreatmentRoutes().router;

@@ -4,7 +4,7 @@ import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
 import { createQuotationsDentalSchema } from '../configs/validate-schemas';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
-
+import { QuotationsDentalModel, QuotationsDentalDetailModel } from '../../../repositories/mongo/models';
 export class QuotationsController extends BaseController {
   /**
    * @swagger
@@ -86,25 +86,23 @@ export class QuotationsController extends BaseController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const quotationData = {
-          date: req.body.Date,
-          expire: req.body.Expire,
-          treatmentId: req.body.treatmentId,
-          note: req.body.note,
-          locationId: req.body.locationId,
-          customerId: req.body.customerId,
-          accountedBy: !req.body.accountedBy ? res.locals.staffPayload.id : req.body.accountedBy
-      }
+        date: req.body.Date,
+        expire: req.body.Expire,
+        treatmentId: req.body.treatmentId,
+        note: req.body.note,
+        locationId: req.body.locationId,
+        customerId: req.body.customerId,
+        accountedBy: !req.body.accountedBy ? res.locals.staffPayload.id : req.body.accountedBy
+      };
       const createQuotation = new QuotationsDentalModel(quotationData);
       const quotationId = createQuotation.save((err: any, quotation: any) => {
-          return quotation._id;
+        return quotation._id;
       });
-      const quotationDetail = []
-
+      const quotationDetail = [];
     } catch (error) {
       return next(error);
     }
   };
-
 
   /**
    * @swagger
