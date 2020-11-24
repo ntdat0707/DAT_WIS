@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../utils/consts';
 
 interface IQuotationsDentalDetail extends mongoose.Document {
-  qoutationsDentalId: string;
+  quotationsDentalId: string;
   serviceId: string;
   createdAt: Date;
   staffId: string;
