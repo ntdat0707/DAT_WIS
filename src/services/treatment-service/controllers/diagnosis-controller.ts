@@ -272,7 +272,6 @@ export class DiagnosticController extends BaseController {
    *         description:
    */
   public createDiagnosis = async (req: Request, res: Response, next: NextFunction) => {
-    const transaction = await mongoose.startSession();
     try {
       const dataInput = req.body;
       const validateErrors = validate(dataInput, createDiagnosis);
@@ -295,17 +294,13 @@ export class DiagnosticController extends BaseController {
         throw new CustomError(staffErrorDetails.E_4000(`Staff ${dataInput.staffId} not found`), httpStatus.NOT_FOUND);
       }
       dataInput.staffName = staff.firstName;
-      transaction.startTransaction();
       const diagnosis: any = new DiagnosisModel(dataInput);
       await diagnosis.save();
       //update treatment
       const diagnosticIds: any = [];
       diagnosticIds.push(diagnosis._id);
       treatment.diagnosisIds = diagnosticIds;
-      await TreatmentModel.updateOne({ _id: dataInput.treatmentId }, treatment, { session: transaction }).exec();
-      await transaction.commitTransaction();
-      transaction.endSession();
-
+      await TreatmentModel.updateOne({ _id: dataInput.treatmentId }, treatment).exec();
       const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticId })
         .populate({
           path: 'pathologicalIds',
