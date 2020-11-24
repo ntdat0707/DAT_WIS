@@ -10,7 +10,7 @@ interface IQuotationsDentalDetail extends mongoose.Document {
   teeth: [string];
   discount: number;
   discountType: string;
-  quantity: string;
+  quantity: number;
   tax: number;
   currencyUnit: string;
   price: number;
@@ -24,7 +24,7 @@ const QuotationsDentalSchema = new mongoose.Schema({
   teeth: [{ type: String, required: true }],
   discount: { type: Number, required: false },
   discountType: { type: String, enum: Object.values(EQuotationDiscountType), required: false },
-  quantity: { type: String, required: true },
+  quantity: { type: Number, required: true },
   currencyUnit: { type: String, enum: Object.values(EQuotationCurrencyUnit), default: EQuotationCurrencyUnit.VND },
   tax: { type: Number, required: false },
   price: { type: Number, required: true }
