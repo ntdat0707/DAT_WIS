@@ -19,7 +19,7 @@ interface IQuotationsDental extends mongoose.Document {
 }
 
 const QuotationsDentalSchema = new mongoose.Schema({
-  quoteCode: { type: String, required: true },
+  quoteCode: { type: String, required: false },
   Date: { type: Date, required: true },
   Expire: { type: Date, required: true },
   treatmentId: { type: String, required: true },
