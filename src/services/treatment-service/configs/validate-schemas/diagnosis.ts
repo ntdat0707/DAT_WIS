@@ -53,16 +53,7 @@ const updateDiagnosis = Joi.object({
   diagnosticName: Joi.string().label('diagnosticName')
 });
 
-const getDiagnosis = Joi.object({
-  customerId: Joi.string()
-    .guid({ version: ['uuidv4'] })
-    .required()
-    .label('customerId'),
-  treatmentId: Joi.string()
-    .regex(/^[0-9a-fA-F]{24}$/)
-    .label('treatmentId')
-});
 const deleteDiagnosis = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
   .label('diagnosisId');
-export { createDiagnosis, updateDiagnosis, getDiagnosis, deleteDiagnosis };
+export { createDiagnosis, updateDiagnosis, deleteDiagnosis };
