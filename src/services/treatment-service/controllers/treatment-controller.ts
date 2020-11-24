@@ -355,11 +355,11 @@ export class TreatmentController extends BaseController {
         dataProcedures.push(data);
       }
       const procedures = await ProcedureModel.insertMany(dataProcedures);
-      const procudredIds: any = [];
+      const procedureIds: any = [];
       for (const procedure of procedures) {
-        procudredIds.push(procedure._id);
+        procedureIds.push(procedure._id);
       }
-      treatment.procedureIds = procudredIds;
+      treatment.procedureIds = procedureIds;
       await TreatmentModel.update({ _id: treatment._id }, treatment).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
@@ -502,4 +502,42 @@ export class TreatmentController extends BaseController {
       return next(error);
     }
   };
+
+  // /**
+  //  * @swagger
+  //  * /treatment/update-procedure/{procedureId}:
+  //  *   get:
+  //  *     tags:
+  //  *       - Treatment
+  //  *     security:
+  //  *       - Bearer: []
+  //  *     name: updateProcedure
+  //  *     parameters:
+  //  *     - in: path
+  //  *       name: procedureId
+  //  *       type: string
+  //  *       required: true
+  //  *     responses:
+  //  *       200:
+  //  *         description: success
+  //  *       400:
+  //  *         description: bad request
+  //  *       500:
+  //  *         description:
+  //  */
+  // public updateProcedure = async (req: Request, res: Response, next: NextFunction) => {
+  //   try {
+  //     const procedureId = req.params.procedureId;
+  //     const validateErrors = validate(treatmentId, customerWisereIdSchema);
+  //     if (validateErrors) {
+  //       throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+  //     }
+  //     const treatments = await TreatmentModel.find({
+  //       customerId
+  //     }).exec();
+  //     return res.status(httpStatus.OK).send(buildSuccessMessage(treatments));
+  //   } catch (error) {
+  //     return next(error);
+  //   }
+  // };
 }

@@ -9,13 +9,13 @@ import { DiagnosisModel } from '../../../repositories/mongo/models/diagnosis-mod
 import { DiagnosticModel } from '../../../repositories/mongo/models/diagnostic-model';
 import { DiagnosticPathModel } from '../../../repositories/mongo/models/diagnostic-path-model';
 import { validate } from '../../../utils/validator';
-import { createDiagnosis, deleteDiagnosis, getDiagnosis, updateDiagnosis } from '../configs/validate-schemas/diagnosis';
+import { createDiagnosis, deleteDiagnosis, updateDiagnosis } from '../configs/validate-schemas/diagnosis';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
-import { customerErrorDetails, treatmentErrorDetails } from '../../../utils/response-messages/error-details';
-import { CustomerWisereModel } from '../../../repositories/postgres/models/customer-wisere-model';
+import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
 import { TreatmentModel } from '../../../repositories/mongo/models';
 import CustomError from '../../../utils/error-handlers/custom-error';
+import { treatmentIdSchema } from '../configs/validate-schemas/treatment';
 export class DiagnosticController extends BaseController {
   /**
    * @swagger
@@ -297,10 +297,13 @@ export class DiagnosticController extends BaseController {
       const diagnosis: any = new DiagnosisModel(dataInput);
       await diagnosis.save();
       //update treatment
-      const diagnosticIds: any = [];
+      let diagnosticIds: any = [];
+      if (treatment.diagnosisIds.length > 0) {
+        diagnosticIds = treatment.diagnosisIds;
+      }
       diagnosticIds.push(diagnosis._id);
       treatment.diagnosisIds = diagnosticIds;
-      await TreatmentModel.updateOne({ _id: dataInput.treatmentId }, treatment).exec();
+      await TreatmentModel.updateOne({ _id: dataInput.treatmentId }, { diagnosisIds: diagnosticIds }).exec();
       const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticId })
         .populate({
           path: 'pathologicalIds',
@@ -317,7 +320,7 @@ export class DiagnosticController extends BaseController {
 
   /**
    * @swagger
-   * /treatment/diagnosis/get-all-diagnosis:
+   * /treatment/diagnosis/get-all-diagnosis/{treatmentId}:
    *   get:
    *     tags:
    *       - Treatment
@@ -325,13 +328,10 @@ export class DiagnosticController extends BaseController {
    *       - Bearer: []
    *     name: getAllDiagnosis
    *     parameters:
-   *     - in: query
-   *       name: customerId
-   *       type: string
-   *       required: true
-   *     - in: query
+   *     - in: path
    *       name: treatmentId
    *       type: string
+   *       required: true
    *     responses:
    *       200:
    *         description: success
@@ -342,55 +342,26 @@ export class DiagnosticController extends BaseController {
    */
   public getAllDiagnosis = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const dataInput: any = req.query;
-      const validateErrors = validate(dataInput, getDiagnosis);
+      const treatmentId: any = req.params.treatmentId;
+      const validateErrors = validate(treatmentId, treatmentIdSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const customer = await CustomerWisereModel.findAll({ where: { id: dataInput.customerId } });
-      if (!customer) {
-        throw new CustomError(
-          customerErrorDetails.E_3001(`Customer ${dataInput.customerId} not found`),
-          httpStatus.NOT_FOUND
-        );
-      }
       let diagnosis: any = [];
-      if (dataInput.treatmentId) {
-        const treatment = await TreatmentModel.find({
-          _id: dataInput.treatmentId,
-          customerId: dataInput.customerId
-        }).exec();
-        if (!treatment) {
-          throw new CustomError(
-            treatmentErrorDetails.E_3902(`Treatment ${dataInput.treatmentId} not found`),
-            httpStatus.NOT_FOUND
-          );
-        }
-        diagnosis = await DiagnosisModel.find({ treatmentId: dataInput.treatmentId, customerId: dataInput.customerId })
-          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
-          .populate({
-            path: 'teethId',
-            model: 'Teeth',
-            populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
-          })
-          .exec();
-      } else {
-        const treatment = await TreatmentModel.find({ customerId: dataInput.customerId }).exec();
-        if (!treatment) {
-          throw new CustomError(
-            treatmentErrorDetails.E_3902(`Treatment with Customer ${dataInput.customerId} not found`),
-            httpStatus.NOT_FOUND
-          );
-        }
-        diagnosis = await DiagnosisModel.find()
-          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
-          .populate({
-            path: 'teethId',
-            model: 'Teeth',
-            populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
-          })
-          .exec();
+      const treatment = await TreatmentModel.find({
+        _id: treatmentId
+      }).exec();
+      if (!treatment) {
+        throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${treatmentId} not found`), httpStatus.NOT_FOUND);
       }
+      diagnosis = await DiagnosisModel.find({ treatmentId: treatmentId })
+        .populate({ path: 'diagnosticId', model: 'Diagnostic' })
+        .populate({
+          path: 'teethId',
+          model: 'Teeth',
+          populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
+        })
+        .exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(diagnosis));
     } catch (error) {
       return next(error);

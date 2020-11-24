@@ -15,7 +15,7 @@ export class DiagnosticRoutes {
     this.router.post('/create-teeth', isAuthenticated, this.diagnosticsController.createTeeth);
     this.router.post('/create-diagnosis', this.diagnosticsController.createDiagnosis);
     this.router.get('/get-teeth/:teethId', isAuthenticated, this.diagnosticsController.getTeeth);
-    this.router.get('/get-all-diagnosis', isAuthenticated, this.diagnosticsController.getAllDiagnosis);
+    this.router.get('/get-all-diagnosis/:treatmentId', isAuthenticated, this.diagnosticsController.getAllDiagnosis);
     this.router.put('/update-diagnosis/:diagnosisId', isAuthenticated, this.diagnosticsController.updateDiagnosis);
     this.router.post('/add-color', this.diagnosticsController.addColor);
     this.router.delete('/delete-diagnosis/:diagnosisId', isAuthenticated, this.diagnosticsController.deleteDiagnosis);
