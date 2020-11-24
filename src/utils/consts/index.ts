@@ -231,12 +231,12 @@ export enum EStatusTreatment {
   COMPLETE = 'complete'
 }
 
-export enum EQoutationDiscountType {
+export enum EQuotationDiscountType {
   PERCENT = 'percent',
   MONEY = 'money'
 }
 
-export enum EQoutationCurrencyUnit {
+export enum EQuotationCurrencyUnit {
   USD = 'usd',
   VND = 'vnd'
 }

@@ -453,7 +453,11 @@ export class TreatmentController extends BaseController {
       }
       const treatments = await TreatmentModel.find({
         customerId
-      }).exec();
+      })
+        .populate({ path: 'diagnosisIds', model: 'DiagnosisModel' })
+        .populate({ path: 'procedureIds', model: 'ProcedureModel' })
+        .populate({ path: 'treatmentProcessIds', model: 'TreatmentProcessModel' })
+        .exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatments));
     } catch (error) {
       return next(error);
