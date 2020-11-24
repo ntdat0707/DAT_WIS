@@ -3,7 +3,6 @@ import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../../util
 
 const createQuotationsDentalSchema = Joi.object({
   treatmentId: Joi.string()
-    .regex(/^[0-9a-fA-F]{24}$/)
     .required()
     .label('treatmentId'),
   locationId: Joi.string()
@@ -24,6 +23,13 @@ const createQuotationsDentalSchema = Joi.object({
     .label('discountType'),
   currencyUnit: Joi.string()
     .valid(...Object.values(EQuotationCurrencyUnit))
-    .label('currentcyUnit')
+    .label('currentcyUnit'),
+quotationsDetail: Joi.array()
+.items(
+    Joi.object({
+
+    })
+)
+
 });
 export { createQuotationsDentalSchema };

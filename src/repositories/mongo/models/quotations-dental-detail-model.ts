@@ -23,7 +23,7 @@ const QuotationsDentalSchema = new mongoose.Schema({
   createdAt: { type: String, default: Date.now },
   teeth: [{ type: String, required: true }],
   discount: { type: Number, required: false },
-  discountType: { type: String, enum: Object.values(EQuotationDiscountType), required: false },
+  discountType: { type: String, enum: Object.values(EQuotationDiscountType), default: EQuotationDiscountType.MONEY },
   quantity: { type: String, required: true },
   currencyUnit: { type: String, enum: Object.values(EQuotationCurrencyUnit), default: EQuotationCurrencyUnit.VND },
   tax: { type: Number, required: false },
