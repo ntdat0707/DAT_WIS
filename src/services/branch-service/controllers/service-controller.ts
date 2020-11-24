@@ -32,6 +32,9 @@ import { LocationServiceModel } from '../../../repositories/postgres/models/loca
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
 import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
+import dotenv from 'dotenv';
+
+const { parsed: env } = dotenv.config();
 
 export class ServiceController {
   /**
@@ -283,7 +286,7 @@ export class ServiceController {
 
       await esClient.create({
         id: data.id,
-        index: 'get_services',
+        index: env!.ELS_INDEX_GET_SERVICES,
         type: '_doc',
         // version: 1,
         // version_type: 'internal',
@@ -346,13 +349,13 @@ export class ServiceController {
       if (service) {
         await ServiceModel.destroy({ where: { id: serviceId } });
         await esClient.delete({
-          index: 'get_services',
+          index: env!.ELS_INDEX_GET_SERVICES,
           type: '_doc',
           id: serviceId
         });
       } else {
         const isServiceRemain = await esClient.search({
-          index: 'get_services',
+          index: env!.ELS_INDEX_GET_SERVICES,
           type: '_doc',
           body: {
             query: {
@@ -364,7 +367,7 @@ export class ServiceController {
         });
         if (isServiceRemain.body.hits.total.value === 1) {
           await esClient.delete({
-            index: 'get_services',
+            index: env!.ELS_INDEX_GET_SERVICES,
             type: '_doc',
             id: serviceId
           });
@@ -523,7 +526,7 @@ export class ServiceController {
       }
 
       const searchParams: any = {
-        index: 'get_services',
+        index: env!.ELS_INDEX_GET_SERVICES,
         body: {
           query: {
             bool: {
@@ -1102,7 +1105,7 @@ export class ServiceController {
 
       await esClient.update({
         id: params.serviceId,
-        index: 'get_services',
+        index: env!.ELS_INDEX_GET_SERVICES,
         body: {
           doc: serviceData,
           doc_as_upsert: true
