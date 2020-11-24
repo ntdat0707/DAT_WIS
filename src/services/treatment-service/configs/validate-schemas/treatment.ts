@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EStatusProcedure, EStatusTreatment } from '../../../../utils/consts';
+import { EStatusTreatment } from '../../../../utils/consts';
 
 const languageSchema = Joi.string().valid('en', 'vi').required().label('language');
 
@@ -27,25 +27,22 @@ const updateMedicalHistorySchema = Joi.object({
 });
 
 const createProcedureSchema = Joi.object({
+  treatmentId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .required()
+    .label('treatmentId'),
   procedures: Joi.array()
     .min(1)
     .required()
     .items(
       Joi.object({
-        treatmentId: Joi.string()
-          .regex(/^[0-9a-fA-F]{24}$/)
-          .required()
-          .label('treatmentId'),
         staffId: Joi.string()
           .guid({
             version: ['uuidv4']
           })
           .required()
           .label('staffId'),
-        teethId: Joi.array()
-          .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
-          .required()
-          .label('teethId'),
+        teethNumber: Joi.array().items(Joi.number().integer()).required().label('teethNumber'),
         serviceId: Joi.string()
           .guid({
             version: ['uuidv4']
@@ -55,10 +52,6 @@ const createProcedureSchema = Joi.object({
         quantity: Joi.number().integer().min(1).required().label('quantity'),
         discount: Joi.number().integer().min(0).allow(null).label('discount'),
         totalPrice: Joi.number().integer().min(1).required().label('totalPrice'),
-        status: Joi.string()
-          .valid(...Object.values(EStatusProcedure))
-          .required()
-          .label('status'),
         note: Joi.string().max(150).allow(null, '').label('note')
       })
     )
@@ -82,10 +75,17 @@ const createTreatmentSchema = Joi.object({
     .required()
     .label('customerId')
 });
+
+const treatmentIdSchema = Joi.string()
+  .regex(/^[0-9a-fA-F]{24}$/)
+  .required()
+  .label('treatmentId');
+
 export {
   languageSchema,
   customerWisereIdSchema,
   updateMedicalHistorySchema,
   createProcedureSchema,
-  createTreatmentSchema
+  createTreatmentSchema,
+  treatmentIdSchema
 };
