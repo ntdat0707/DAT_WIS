@@ -49,7 +49,7 @@ export class DiagnosticController extends BaseController {
    *   ToothNotation:
    *       required:
    *           toothCode
-   *           order
+   *           position
    *           toothName
    *           toothImage
    *       properties:
@@ -57,7 +57,7 @@ export class DiagnosticController extends BaseController {
    *               type: string
    *           toothImage:
    *               type: string
-   *           order:
+   *           position:
    *               type: string
    *           toothCode:
    *               type: string

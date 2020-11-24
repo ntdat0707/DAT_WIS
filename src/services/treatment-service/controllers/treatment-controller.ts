@@ -17,7 +17,8 @@ import {
   customerWisereIdSchema,
   updateMedicalHistorySchema,
   createProcedureSchema,
-  createTreatmentSchema
+  createTreatmentSchema,
+  treatmentIdSchema
 } from '../configs/validate-schemas';
 import {
   customerErrorDetails,
@@ -27,7 +28,6 @@ import {
 import _ from 'lodash';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { TeethModel, ProcedureModel, TreatmentModel } from '../../../repositories/mongo/models';
-import mongoose from 'mongoose';
 
 export class TreatmentController extends BaseController {
   /**
@@ -249,14 +249,12 @@ export class TreatmentController extends BaseController {
    * definitions:
    *   procedureCreate:
    *       properties:
-   *           treatmentId:
-   *               type: string
    *           staffId:
    *               type: string
-   *           teethId:
+   *           teethNumber:
    *               type: array
    *               items:
-   *                   type: string
+   *                   type: integer
    *           serviceId:
    *               type: string
    *           quantity:
@@ -265,9 +263,6 @@ export class TreatmentController extends BaseController {
    *               type: integer
    *           totalPrice:
    *               type: integer
-   *           status:
-   *               type: string
-   *               enum: ['confirmed', 'rejected', 'complete']
    *           note:
    *               type: string
    *
@@ -286,6 +281,8 @@ export class TreatmentController extends BaseController {
    *       name: "body"
    *       required: true
    *       properties:
+   *           treatmentId:
+   *               type: string
    *           procedures:
    *               type: array
    *               items:
@@ -305,24 +302,26 @@ export class TreatmentController extends BaseController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const dataProcedures = [];
+      const treatment: any = await TreatmentModel.findById({ _id: req.body.treatmentId }).exec();
+      if (!treatment) {
+        throw new CustomError(
+          treatmentErrorDetails.E_3902(`treatmentId ${req.body.treatmentId} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
       for (let i = 0; i < req.body.procedures.length; i++) {
-        for (let j = 0; j < req.body.procedures[i].teethId.length; j++) {
-          const teeth = await TeethModel.findById({
-            _id: mongoose.Types.ObjectId(req.body.procedures[i].teethId[j])
+        const teethIds = [];
+        for (let j = 0; j < req.body.procedures[i].teethNumber.length; j++) {
+          const teeth: any = await TeethModel.findOne({
+            toothNumber: req.body.procedures[i].teethNumber[j]
           }).exec();
           if (!teeth) {
             throw new CustomError(
-              treatmentErrorDetails.E_3900(`teethId ${req.body.procedures[i].teethId[j]} not found`),
+              treatmentErrorDetails.E_3900(`teeth number ${req.body.procedures[i].teethNumber[j]} not found`),
               httpStatus.NOT_FOUND
             );
           }
-        }
-        const treatment = await TreatmentModel.findById({ _id: req.body.procedures[i].treatmentId }).exec();
-        if (!treatment) {
-          throw new CustomError(
-            treatmentErrorDetails.E_3902(`treatmentId ${req.body.procedures[i].treatmentId} not found`),
-            httpStatus.NOT_FOUND
-          );
+          teethIds.push(teeth._id);
         }
         const staff = await StaffModel.findOne({ where: { id: req.body.procedures[i].staffId } });
         if (!staff) {
@@ -347,14 +346,22 @@ export class TreatmentController extends BaseController {
           throw new CustomError(treatmentErrorDetails.E_3901('total price is incorrect'), httpStatus.BAD_REQUEST);
         }
         const data = {
+          treatmentId: req.body.treatmentId,
           serviceName: service.name,
           price: service.salePrice,
           ...req.body.procedures[i]
         };
+        data.teethId = teethIds;
         dataProcedures.push(data);
       }
-      const procedure = await ProcedureModel.insertMany(dataProcedures);
-      return res.status(httpStatus.OK).send(buildSuccessMessage(procedure));
+      const procedures = await ProcedureModel.insertMany(dataProcedures);
+      const procudredIds: any = [];
+      for (const procedure of procedures) {
+        procudredIds.push(procedure._id);
+      }
+      treatment.procedureIds = procudredIds;
+      await TreatmentModel.update({ _id: treatment._id }, treatment).exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
     }
@@ -459,6 +466,42 @@ export class TreatmentController extends BaseController {
         .populate({ path: 'treatmentProcessIds', model: 'TreatmentProcessModel' })
         .exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatments));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/get-all-procedure/{treatmentId}:
+   *   get:
+   *     tags:
+   *       - Treatment
+   *     security:
+   *       - Bearer: []
+   *     name: getAllProcedure
+   *     parameters:
+   *     - in: path
+   *       name: treatmentId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllProcedure = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const treatmentId = req.params.treatmentId;
+      const validateErrors = validate(treatmentId, treatmentIdSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const procedures = await ProcedureModel.find({ treatmentId: treatmentId }).exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
     }
