@@ -235,8 +235,7 @@ export class DiagnosticController extends BaseController {
    *       required:
    *           teethNumber
    *           staffId
-   *           diagnosticIds
-   *           diagnosticPathIds
+   *           diagnosticId
    *           diagnosticName
    *           treatmentId
    *       properties:
@@ -244,10 +243,8 @@ export class DiagnosticController extends BaseController {
    *               type: string
    *           staffId:
    *               type: string
-   *           diagnosticIds:
-   *               type: array
-   *               items:
-   *                   type: string
+   *           diagnosticId:
+   *               type: string
    *           status:
    *               type: string
    *               enum: ['pending', 'confirmed', 'resolved']
@@ -304,7 +301,7 @@ export class DiagnosticController extends BaseController {
 
       const diagnosis: any = new DiagnosisModel(dataInput);
       await diagnosis.save();
-      const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticIds })
+      const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticId })
         .populate({
           path: 'pathologicalIds',
           model: 'ToothNotation',
@@ -364,7 +361,7 @@ export class DiagnosticController extends BaseController {
           throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${dataInput.treatmentId} not found`));
         }
         diagnosis = await DiagnosisModel.find({ treatmentId: dataInput.treatmentId })
-          .populate({ path: 'diagnosticIds', model: 'Diagnostic' })
+          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
           .populate({
             path: 'teethId',
             model: 'Teeth',
@@ -379,7 +376,7 @@ export class DiagnosticController extends BaseController {
           );
         }
         diagnosis = await DiagnosisModel.find()
-          .populate({ path: 'diagnosticIds', model: 'Diagnostic' })
+          .populate({ path: 'diagnosticId', model: 'Diagnostic' })
           .populate({
             path: 'teethId',
             model: 'Teeth',
@@ -404,10 +401,8 @@ export class DiagnosticController extends BaseController {
    *                   type: string
    *           staffId:
    *               type: string
-   *           diagnosticIds:
-   *               type: array
-   *               items:
-   *                   type: string
+   *           diagnosticId:
+   *               type: string
    *           status:
    *               type: string
    *               enum: ['pending', 'confirmed', 'resolved']
@@ -451,7 +446,7 @@ export class DiagnosticController extends BaseController {
       }
       const diagnosis: any = await DiagnosisModel.find({ _id: dataInput.diagnosisId }).exec();
       diagnosis.teethId = !dataInput.teethId ? diagnosis.teethId : dataInput.teethId;
-      diagnosis.diagnosticIds = !dataInput.diagnosticIds ? diagnosis.diagnosticIds : dataInput.diagnosticIds;
+      diagnosis.diagnosticId = !dataInput.diagnosticId ? diagnosis.diagnosticId : dataInput.diagnosticId;
       diagnosis.status = !dataInput.status ? diagnosis.status : dataInput.status;
       // diagnosis.diagnosticPathIds = !dataInput.diagnosticPathIds
       //   ? diagnosis.diagnosticPathIds
