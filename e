@@ -2,15 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
-import {
-  createQuotationsDentalSchema,
-  updateQuotationsDentalSchema
-} from '../configs/validate-schemas';
+import { createQuotationsDentalSchema, updateQuotationsDentalSchema, quotationsDentalDetailSchema } from '../configs/validate-schemas';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import { QuotationsDentalModel, QuotationsDentalDetailModel } from '../../../repositories/mongo/models';
-import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
-import { TEETH_ADULT, TEETH_CHILD, TEETH_2H } from '../configs/consts';
-import { ETeeth } from '../../../utils/consts';
 
 export class QuotationsController extends BaseController {
   /**
@@ -168,10 +162,6 @@ export class QuotationsController extends BaseController {
    *       - Bearer: []
    *     name: updateQuotationsDental
    *     parameters:
-   *     - in: path
-   *       name: quotationsId
-   *       type: string
-   *       required: true
    *     - in: "body"
    *       name: "body"
    *       required: true
@@ -187,71 +177,18 @@ export class QuotationsController extends BaseController {
    */
   public updateQuotationsDental = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const quotationsData = {
-        quotationsId: req.params.quotationsId,
-        expire: req.body.expire,
-        locationId: req.body.locationId,
-        note: req.body.note,
-        quotationsDetails: req.body.quotationsDetails
-      };
-      const validateErrors = validate(quotationsData, updateQuotationsDentalSchema);
+       const quotationsDental = {
+         expire: req.body.expire,
+         treatmentId: req.body.treatmentId,
+         locationId: req.body.locationId,
+         note: req.body.note,
+         quotationsDentalDetails: req.body.quotationsDentalDetails
+       };
+      const validateErrors = validate(quotationsDental, updateQuotationsDentalSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const quotationsDental: any = await QuotationsDentalModel.findById(quotationsData.quotationsId).exec();
-      if (!quotationsDental) {
-        throw new CustomError(
-          treatmentErrorDetails.E_3905(`quotations dental ${quotationsData.quotationsId} not found`),
-          httpStatus.NOT_FOUND
-        );
-      }
-      await QuotationsDentalModel.update(
-        {
-          _id: quotationsData.quotationsId
-        },
-        {
-          ...quotationsDental,
-          expire: quotationsData.expire,
-          locationId: quotationsData.locationId,
-          note: quotationsData.note
-        }
-      ).exec();
-      quotationsData.quotationsDetails = quotationsData.quotationsDetails.map((item: any) => {
-        if (item.teeth.includes(TEETH_2H)) {
-          if (item.teethType === ETeeth.ADULT) {
-            item.quantity = TEETH_ADULT.length;
-          } else {
-            item.quantity = TEETH_CHILD.length;
-          }
-        } else {
-          item.quantity = item.teeth.length;
-        }
-        return item;
-      });
-      for (const quotationsDentalDetail of quotationsData.quotationsDetails) {
-        if (quotationsDentalDetail.quotationsId) {
-          const qdDetail = await QuotationsDentalDetailModel.findById(quotationsDentalDetail.quotationsId).exec();
-          if (!qdDetail) {
-            throw new CustomError(
-              treatmentErrorDetails.E_3906(`quotations dental detail ${quotationsData.quotationsId} not found`),
-              httpStatus.NOT_FOUND
-            );
-          }
-          await QuotationsDentalDetailModel.update(
-            { _id: quotationsDentalDetail.quotationsId },
-            quotationsDentalDetail
-          ).exec();
-        } else {
-          const quotationsDentalDetails = new QuotationsDentalDetailModel({
-            ...quotationsDentalDetail,
-            quotationsDental: quotationsDental
-          });
-          await quotationsDentalDetails.save();
-          quotationsDental.quotationsDentalDetails.push(quotationsDentalDetails);
-        }
-      }
-      await quotationsDental.save();
-      return res.status(httpStatus.OK).send();
+
     } catch (error) {
       return next(error);
     }
