@@ -81,10 +81,10 @@ const treatmentIdSchema = Joi.string()
   .required()
   .label('treatmentId');
 
-const updateProcedure = Joi.string()
+const procedureSchema = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
   .required()
-  .label('procedureId');
+  .label('procedureSchema');
 export {
   languageSchema,
   customerWisereIdSchema,
@@ -92,5 +92,5 @@ export {
   createProcedureSchema,
   createTreatmentSchema,
   treatmentIdSchema,
-  updateProcedure
+  procedureSchema
 };

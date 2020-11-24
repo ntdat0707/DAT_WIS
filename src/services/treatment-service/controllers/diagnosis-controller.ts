@@ -297,13 +297,8 @@ export class DiagnosticController extends BaseController {
       const diagnosis: any = new DiagnosisModel(dataInput);
       await diagnosis.save();
       //update treatment
-      let diagnosticIds: any = [];
-      if (treatment.diagnosisIds.length > 0) {
-        diagnosticIds = treatment.diagnosisIds;
-      }
-      diagnosticIds.push(diagnosis._id);
-      treatment.diagnosisIds = diagnosticIds;
-      await TreatmentModel.updateOne({ _id: dataInput.treatmentId }, { diagnosisIds: diagnosticIds }).exec();
+      treatment.diagnosisIds.push(diagnosis._id);
+      await TreatmentModel.updateOne({ _id: dataInput.treatmentId }, treatment).exec();
       const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticId })
         .populate({
           path: 'pathologicalIds',
