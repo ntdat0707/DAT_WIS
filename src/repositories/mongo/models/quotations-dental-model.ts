@@ -32,7 +32,7 @@ const QuotationsDentalSchema = new mongoose.Schema({
   discountType: { type: String, enum: Object.values(EQuotationDiscountType), default: EQuotationDiscountType.MONEY },
   quotationsDentalDetails: [{ type: Schema.Types.ObjectId, ref: 'QuotationsDentalDetail' }],
   currencyUnit: { type: String, enum: Object.values(EQuotationCurrencyUnit), default: EQuotationCurrencyUnit.VND },
-  totalPrice: { type: Number, required: false }
+  totalPrice: { type: Number, default: 0 }
 });
 
 //Model

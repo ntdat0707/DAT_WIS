@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../utils/consts';
+import { EQuotationDiscountType, EQuotationCurrencyUnit, EQuotationTeethType } from '../../../utils/consts';
 
 interface IQuotationsDentalDetail extends mongoose.Document {
   isAccept: boolean;
@@ -8,6 +8,7 @@ interface IQuotationsDentalDetail extends mongoose.Document {
   createdAt: Date;
   staffId: string;
   teeth: [string];
+  teethType: string;
   discount: number;
   discountType: string;
   quantity: number;
@@ -22,6 +23,7 @@ const QuotationsDentalSchema = new mongoose.Schema({
   serviceId: { type: String, required: true },
   createdAt: { type: String, default: Date.now },
   teeth: [{ type: String, required: true }],
+  teethType: { type: String, enum: Object.values(EQuotationTeethType), required: true },
   discount: { type: Number, required: false },
   discountType: { type: String, enum: Object.values(EQuotationDiscountType), required: false },
   quantity: { type: Number, required: true },
