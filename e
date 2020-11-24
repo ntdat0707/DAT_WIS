@@ -2,17 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
-import {
-  createQuotationsDentalSchema,
-  treatmentIdSchema,
-  updateQuotationsDentalSchema
-} from '../configs/validate-schemas';
+import { createQuotationsDentalSchema, updateQuotationsDentalSchema, quotationsDentalDetailSchema } from '../configs/validate-schemas';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import { QuotationsDentalModel, QuotationsDentalDetailModel } from '../../../repositories/mongo/models';
-import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
-import { TEETH_ADULT, TEETH_CHILD, TEETH_2H } from '../configs/consts';
-import { ETeeth } from '../../../utils/consts';
-import { buildSuccessMessage } from '../../../utils/response-messages';
 
 export class QuotationsController extends BaseController {
   /**
@@ -52,9 +44,6 @@ export class QuotationsController extends BaseController {
    *                            type: array
    *                            items:
    *                                type: string
-   *                        teethType:
-   *                            type: string
-   *                            enum: [adult, child]
    *                        discount:
    *                            type: number
    *                        discountType:
@@ -106,72 +95,11 @@ export class QuotationsController extends BaseController {
         customerId: req.body.customerId,
         accountedBy: !req.body.accountedBy ? res.locals.staffPayload.id : req.body.accountedBy
       };
-      if (req.body.quotationsDetails) {
-        const createQuotation = new QuotationsDentalModel(quotationData);
-        const quotationsId = createQuotation._id;
-        createQuotation.save();
-        const quotationDetailsData: any = [];
-        req.body.quotationsDetails.map((item: any) => {
-          if (item.teeth.includes('2H')) {
-            if (item.teetType === 'adult') item.quantity = TEETH_ADULT.length;
-            else item.quantity = TEETH_CHILD.length;
-          } else item.quantity = item.teeth.length;
-          Object.assign(item, { quotationsDentalId: quotationsId });
-          quotationDetailsData.push(item);
-        });
-        const quotationsDetails = await QuotationsDentalDetailModel.insertMany(quotationData);
-        let totalPrice: any;
-        await Promise.resolve(
-          QuotationsDentalDetailModel.find({ _id: quotationsId }, (err: any, result: any) => {
-            if (err) throw err;
-            return (totalPrice += result.price);
-          }) as any
-        );
-        await QuotationsDentalModel.update({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
-        return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDetails));
-      } else {
-        const createQuotation = new QuotationsDentalModel(quotationData);
-        const quotations = createQuotation.save();
-        return res.status(httpStatus.OK).send(buildSuccessMessage(quotations));
-      }
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * /treatment/get-quotations/{treatmentId}:
-   *   post:
-   *     tags:
-   *       - Quotations
-   *     security:
-   *       - Bearer: []
-   *     name: get-quotations
-   *     parameters:
-   *     - in: path
-   *       name: treatmentId
-   *       schema:
-   *          type: string
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public getQuotationsDental = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const treatmentId = req.params.treatmentId;
-      const validateErrors = validate(treatmentId, treatmentIdSchema);
-      if (validateErrors) {
-        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
-      }
-      const quotations = await QuotationsDentalModel.find({ treatmentId: treatmentId })
-        .populate('QuotationsDentalDetail')
-        .exec();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(quotations));
+      const createQuotation = new QuotationsDentalModel(quotationData);
+      const quotationId = createQuotation.save((err: any, quotation: any) => {
+        return quotation._id;
+      });
+      const quotationDetail = [];
     } catch (error) {
       return next(error);
     }
@@ -234,10 +162,6 @@ export class QuotationsController extends BaseController {
    *       - Bearer: []
    *     name: updateQuotationsDental
    *     parameters:
-   *     - in: path
-   *       name: quotationsId
-   *       type: string
-   *       required: true
    *     - in: "body"
    *       name: "body"
    *       required: true
@@ -253,71 +177,18 @@ export class QuotationsController extends BaseController {
    */
   public updateQuotationsDental = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const quotationsData = {
-        quotationsId: req.params.quotationsId,
-        expire: req.body.expire,
-        locationId: req.body.locationId,
-        note: req.body.note,
-        quotationsDetails: req.body.quotationsDetails
-      };
-      const validateErrors = validate(quotationsData, updateQuotationsDentalSchema);
+       const quotationsDental = {
+         expire: req.body.expire,
+         treatmentId: req.body.treatmentId,
+         locationId: req.body.locationId,
+         note: req.body.note,
+         quotationsDentalDetails: req.body.quotationsDentalDetails
+       };
+      const validateErrors = validate(quotationsDental, updateQuotationsDentalSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const quotationsDental: any = await QuotationsDentalModel.findById(quotationsData.quotationsId).exec();
-      if (!quotationsDental) {
-        throw new CustomError(
-          treatmentErrorDetails.E_3905(`quotations dental ${quotationsData.quotationsId} not found`),
-          httpStatus.NOT_FOUND
-        );
-      }
-      await QuotationsDentalModel.update(
-        {
-          _id: quotationsData.quotationsId
-        },
-        {
-          ...quotationsDental,
-          expire: quotationsData.expire,
-          locationId: quotationsData.locationId,
-          note: quotationsData.note
-        }
-      ).exec();
-      quotationsData.quotationsDetails = quotationsData.quotationsDetails.map((item: any) => {
-        if (item.teeth.includes(TEETH_2H)) {
-          if (item.teethType === ETeeth.ADULT) {
-            item.quantity = TEETH_ADULT.length;
-          } else {
-            item.quantity = TEETH_CHILD.length;
-          }
-        } else {
-          item.quantity = item.teeth.length;
-        }
-        return item;
-      });
-      for (const quotationsDentalDetail of quotationsData.quotationsDetails) {
-        if (quotationsDentalDetail.quotationsId) {
-          const qdDetail = await QuotationsDentalDetailModel.findById(quotationsDentalDetail.quotationsId).exec();
-          if (!qdDetail) {
-            throw new CustomError(
-              treatmentErrorDetails.E_3906(`quotations dental detail ${quotationsData.quotationsId} not found`),
-              httpStatus.NOT_FOUND
-            );
-          }
-          await QuotationsDentalDetailModel.update(
-            { _id: quotationsDentalDetail.quotationsId },
-            quotationsDentalDetail
-          ).exec();
-        } else {
-          const quotationsDentalDetails = new QuotationsDentalDetailModel({
-            ...quotationsDentalDetail,
-            quotationsDental: quotationsDental
-          });
-          await quotationsDentalDetails.save();
-          quotationsDental.quotationsDentalDetails.push(quotationsDentalDetails);
-        }
-      }
-      await quotationsDental.save();
-      return res.status(httpStatus.OK).send();
+
     } catch (error) {
       return next(error);
     }

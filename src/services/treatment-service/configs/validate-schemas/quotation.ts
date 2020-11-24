@@ -37,9 +37,7 @@ const quotationsDentalDetailSchema = Joi.object({
 });
 
 const createQuotationsDentalSchema = Joi.object({
-  treatmentId: Joi.string()
-    .required()
-    .label('treatmentId'),
+  treatmentId: Joi.string().required().label('treatmentId'),
   locationId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -59,15 +57,20 @@ const createQuotationsDentalSchema = Joi.object({
     .required()
     .label('customerId'),
   note: Joi.string().max(150).allow(null, '').label('note'),
-  discountType: Joi.string()
-    .valid(...Object.values(EQuotationDiscountType))
-    .label('discountType'),
-  currencyUnit: Joi.string()
-    .valid(...Object.values(EQuotationCurrencyUnit))
-    .label('currentcyUnit'),
-  quotationsDentalDetails: Joi.array()
-    .items(quotationsDentalDetailSchema)
-    .label('quotationsDentalDetails'),
+  quotationsDetails: Joi.array().items(quotationsDentalDetailSchema).label('quotationsDentalDetails')
 });
 
-export { createQuotationsDentalSchema, quotationsDentalDetailSchema };
+const updateQuotationsDentalSchema = Joi.object({
+  expire: Joi.date().required().label('expire'),
+  treatmentId: Joi.string().required().label('treatmentId'),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  note: Joi.string().max(150).allow(null, '').label('note'),
+  quotationsDetails: Joi.array().items(quotationsDentalDetailSchema).label('quotationsDentalDetails')
+});
+
+export { createQuotationsDentalSchema, updateQuotationsDentalSchema, quotationsDentalDetailSchema };

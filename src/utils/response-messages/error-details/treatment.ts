@@ -23,7 +23,11 @@ const treatmentErrorDetails = {
     return e;
   },
   E_3905(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3905', 'Procedure not found', detail);
+    const e = buildErrorDetail('3905', 'Quotations dental not found', detail);
+    return e;
+  },
+  E_3906(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3906', 'Quotations dental detail not found', detail);
     return e;
   }
 };
