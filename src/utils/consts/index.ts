@@ -230,3 +230,13 @@ export enum EStatusTreatment {
   CONFIRMED = 'confirmed',
   COMPLETE = 'complete'
 }
+
+export enum EQoutationDiscountType {
+  PERCENT = 'percent',
+  MONEY = 'money'
+}
+
+export enum EQoutationCurrencyUnit {
+  USD = 'usd',
+  VND = 'vnd'
+}

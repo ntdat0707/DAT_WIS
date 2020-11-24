@@ -22,7 +22,7 @@ import {
   LocationStaffModel,
   CompanyTypeDetailModel
 } from '../../../repositories/postgres/models';
-import { elasticsearchClient, esClient } from '../../../repositories/elasticsearch';
+import { esClient } from '../../../repositories/elasticsearch';
 
 import {
   searchSchema,
@@ -46,6 +46,9 @@ import {
   // suggestCountryAndCity
 } from '../configs/validate-schemas/recent-view';
 import _ from 'lodash';
+import dotenv from 'dotenv';
+
+const { parsed: env } = dotenv.config();
 
 export class SearchController {
   private calcCrow(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -1228,9 +1231,9 @@ export class SearchController {
           ],
           group: ['CateServiceModel.id', 'services.id']
         });
-        nearLocation = await elasticsearchClient
+        nearLocation = await esClient
           .search({
-            index: 'marketplace_search',
+            index: env!.ELS_INDEX_MARKETPLACE_SEARCH,
             body: {
               query: {
                 bool: {
@@ -1958,10 +1961,8 @@ export class SearchController {
         });
       }
 
-      const INDEX_SEARCH_MARKETPLACE = 'marketplace_search';
-
       const searchParams: any = {
-        index: INDEX_SEARCH_MARKETPLACE,
+        index: env!.ELS_INDEX_MARKETPLACE_SEARCH,
         body: {
           query: {
             bool: {

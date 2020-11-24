@@ -30,8 +30,11 @@ import { paginateElasticSearch } from '../../../utils/paginator';
 import { ServiceImageModel } from '../../../repositories/postgres/models/service-image';
 import { LocationServiceModel } from '../../../repositories/postgres/models/location-service';
 import { ServiceResourceModel } from '../../../repositories/postgres/models/service-resource';
-import { elasticsearchClient, esClient } from '../../../repositories/elasticsearch';
+import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
+import dotenv from 'dotenv';
+
+const { parsed: env } = dotenv.config();
 
 export class ServiceController {
   /**
@@ -191,11 +194,11 @@ export class ServiceController {
       /**
        * Prepare location service
        */
-      const locationService = (body.locationIds as []).map((locationId: string) => ({
+      const locationServices = (body.locationIds as []).map((locationId: string) => ({
         locationId: locationId,
         serviceId: service.id
       }));
-      await LocationServiceModel.bulkCreate(locationService, { transaction: transaction });
+      await LocationServiceModel.bulkCreate(locationServices, { transaction: transaction });
 
       if (body.staffIds && body.staffIds.length > 0) {
         const staffs = await StaffModel.findAll({
@@ -231,6 +234,64 @@ export class ServiceController {
         await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       }
       await transaction.commit();
+      const serviceData = await ServiceModel.findOne({
+        where: {
+          id: data.id
+        },
+        include: [
+          {
+            model: LocationModel,
+            as: 'locations',
+            required: true,
+            through: {
+              attributes: {
+                exclude: ['updatedAt', 'createdAt', 'deletedAt']
+              }
+            }
+          },
+          {
+            model: CateServiceModel,
+            as: 'cateService',
+            required: true,
+            attributes: {
+              exclude: ['updatedAt', 'createdAt', 'deletedAt']
+            }
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: false,
+            through: {
+              attributes: {
+                exclude: ['updatedAt', 'createdAt', 'deletedAt']
+              }
+            }
+          },
+          {
+            model: ServiceImageModel,
+            as: 'images',
+            required: false
+          }
+        ]
+      }).then((item: any) => {
+        const serviceMapping = JSON.parse(JSON.stringify(item));
+        serviceMapping.locationServices = serviceMapping.locations.map(
+          (location: any) => location.LocationServiceModel
+        );
+        serviceMapping.serviceStaff = serviceMapping.staffs.map((staff: any) => staff.ServiceStaffModel);
+        delete serviceMapping.locations;
+        delete serviceMapping.staffs;
+        return serviceMapping;
+      });
+
+      await esClient.create({
+        id: data.id,
+        index: env!.ELS_INDEX_GET_SERVICES,
+        type: '_doc',
+        // version: 1,
+        // version_type: 'internal',
+        body: serviceData
+      });
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
@@ -288,13 +349,13 @@ export class ServiceController {
       if (service) {
         await ServiceModel.destroy({ where: { id: serviceId } });
         await esClient.delete({
-          index: 'get_services_dev',
+          index: env!.ELS_INDEX_GET_SERVICES,
           type: '_doc',
           id: serviceId
         });
       } else {
         const isServiceRemain = await esClient.search({
-          index: 'get_services_dev',
+          index: env!.ELS_INDEX_GET_SERVICES,
           type: '_doc',
           body: {
             query: {
@@ -306,7 +367,7 @@ export class ServiceController {
         });
         if (isServiceRemain.body.hits.total.value === 1) {
           await esClient.delete({
-            index: 'get_services_dev',
+            index: env!.ELS_INDEX_GET_SERVICES,
             type: '_doc',
             id: serviceId
           });
@@ -465,7 +526,7 @@ export class ServiceController {
       }
 
       const searchParams: any = {
-        index: 'get_services_dev',
+        index: env!.ELS_INDEX_GET_SERVICES,
         body: {
           query: {
             bool: {
@@ -1042,9 +1103,9 @@ export class ServiceController {
         return serviceMapping;
       });
 
-      await elasticsearchClient.update({
+      await esClient.update({
         id: params.serviceId,
-        index: 'get_services_dev',
+        index: env!.ELS_INDEX_GET_SERVICES,
         body: {
           doc: serviceData,
           doc_as_upsert: true
