@@ -21,6 +21,10 @@ const treatmentErrorDetails = {
   E_3904(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3904', 'Diagnosis not found', detail);
     return e;
+  },
+  E_3905(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3905', 'Procedure not found', detail);
+    return e;
   }
 };
 

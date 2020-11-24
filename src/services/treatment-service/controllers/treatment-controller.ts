@@ -18,7 +18,8 @@ import {
   updateMedicalHistorySchema,
   createProcedureSchema,
   createTreatmentSchema,
-  treatmentIdSchema
+  treatmentIdSchema,
+  procedureSchema
 } from '../configs/validate-schemas';
 import {
   customerErrorDetails,
@@ -27,7 +28,8 @@ import {
 } from '../../../utils/response-messages/error-details';
 import _ from 'lodash';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
-import { TeethModel, ProcedureModel, TreatmentModel } from '../../../repositories/mongo/models';
+import { TeethModel, TreatmentModel, ProcedureModel } from '../../../repositories/mongo/models';
+import { EStatusProcedure } from '../../../utils/consts';
 
 export class TreatmentController extends BaseController {
   /**
@@ -503,41 +505,46 @@ export class TreatmentController extends BaseController {
     }
   };
 
-  // /**
-  //  * @swagger
-  //  * /treatment/update-procedure/{procedureId}:
-  //  *   get:
-  //  *     tags:
-  //  *       - Treatment
-  //  *     security:
-  //  *       - Bearer: []
-  //  *     name: updateProcedure
-  //  *     parameters:
-  //  *     - in: path
-  //  *       name: procedureId
-  //  *       type: string
-  //  *       required: true
-  //  *     responses:
-  //  *       200:
-  //  *         description: success
-  //  *       400:
-  //  *         description: bad request
-  //  *       500:
-  //  *         description:
-  //  */
-  // public updateProcedure = async (req: Request, res: Response, next: NextFunction) => {
-  //   try {
-  //     const procedureId = req.params.procedureId;
-  //     const validateErrors = validate(treatmentId, customerWisereIdSchema);
-  //     if (validateErrors) {
-  //       throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
-  //     }
-  //     const treatments = await TreatmentModel.find({
-  //       customerId
-  //     }).exec();
-  //     return res.status(httpStatus.OK).send(buildSuccessMessage(treatments));
-  //   } catch (error) {
-  //     return next(error);
-  //   }
-  // };
+  /**
+   * @swagger
+   * /treatment/update-procedure/{procedureId}:
+   *   put:
+   *     tags:
+   *       - Treatment
+   *     security:
+   *       - Bearer: []
+   *     name: updateProcedureReject
+   *     parameters:
+   *     - in: path
+   *       name: procedureId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updateProcedureReject = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const procedureId = req.params.procedureId;
+      const validateErrors = validate(procedureId, procedureSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const procedure = await ProcedureModel.findById(procedureId).exec();
+      if (!procedure) {
+        throw new CustomError(treatmentErrorDetails.E_3905(`Procedure ${procedureId} not found`), httpStatus.NOT_FOUND);
+      }
+      if (procedure.status !== EStatusProcedure.COMPLETE) {
+        procedure.status = EStatusProcedure.REJECT;
+      }
+      await procedure.save();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(procedure));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
