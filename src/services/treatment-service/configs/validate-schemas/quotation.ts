@@ -28,11 +28,7 @@ const quotationsDentalDetailSchema = Joi.object({
     .valid(...Object.values(ETeeth))
     .required()
     .label('teethType'),
-  discount: Joi.number()
-    .integer()
-    .min(0)
-    .required()
-    .label('discount'),
+  discount: Joi.number().integer().min(0).required().label('discount'),
   discountType: Joi.string()
     .valid(...Object.values(EQuotationDiscountType))
     .allow(null, '')
@@ -40,7 +36,7 @@ const quotationsDentalDetailSchema = Joi.object({
   tax: Joi.string().allow(null, '').label('tax'),
   currencyUnit: Joi.string()
     .valid(...Object.values(EQuotationCurrencyUnit))
-    .label('currencyUnit'),
+    .label('currencyUnit')
 });
 
 const createQuotationsDentalSchema = Joi.object({

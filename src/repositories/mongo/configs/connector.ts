@@ -9,18 +9,19 @@ const options = {
   useNewUrlParser: true
 };
 const mongoose = new Mongoose();
-mongoose.connect(mongoURL, options)
+mongoose
+  .connect(mongoURL, options)
   .then(() => {
     logger.info({
       message: 'Connect to database successfully',
       label: 'MongoDB'
     });
-  }).catch((error) => {
+  })
+  .catch((error) => {
     logger.info({
       message: 'Connect to database failed' + error,
       label: 'MongoDB'
     });
   });
-
 
 export default mongoose;

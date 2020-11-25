@@ -1,6 +1,6 @@
 import mongoose from '../configs/connector';
 import { Schema, Document } from 'mongoose';
-import {  EQuotationDiscountType, EStatusProcedure  } from '../../../utils/consts';
+import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
 
 interface IProcedure extends Document {
   treatmentId: string;

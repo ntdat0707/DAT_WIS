@@ -1,7 +1,6 @@
 import mongoose from '../configs/connector';
 import { Schema, Document } from 'mongoose';
 
-
 interface IMqttUser extends Document {
   isSupperUser: boolean;
   password: string;

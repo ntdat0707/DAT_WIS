@@ -1,7 +1,6 @@
 import mongoose from '../configs/connector';
 import { Schema, Document } from 'mongoose';
 
-
 interface ITeeth extends Document {
   toothNumber: number;
   type: string;

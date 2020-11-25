@@ -2,7 +2,6 @@ import mongoose from '../configs/connector';
 import { Schema, Document } from 'mongoose';
 import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../utils/consts';
 
-
 interface IQuotationsDental extends Document {
   quoteCode: string;
   date: Date;

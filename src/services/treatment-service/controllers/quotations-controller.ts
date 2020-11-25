@@ -15,8 +15,7 @@ import {
   TeethModel
 } from '../../../repositories/mongo/models';
 import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
-import { TEETH_ADULT, TEETH_CHILD, TEETH_2H } from '../configs/consts';
-import { ETeeth } from '../../../utils/consts';
+import { TEETH_2H } from '../configs/consts';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
 export class QuotationsController extends BaseController {
@@ -259,10 +258,13 @@ export class QuotationsController extends BaseController {
    *                            type: string
    *                        staffId:
    *                            type: string
-   *                        teeth:
+   *                        teethNumbers:
    *                            type: array
    *                            items:
    *                                type: string
+   *                        teethType:
+   *                            type: string
+   *                            enum: [adult, child]
    *                        discount:
    *                            type: number
    *                        discountType:
@@ -270,9 +272,9 @@ export class QuotationsController extends BaseController {
    *                            enum: [percent, money]
    *                        currencyUnit:
    *                            type: string
-   *                            enum: [usd, vnd]
+   *                            enum: [vnd, usd]
    *                        tax:
-   *                            type: number
+   *                            type: string
    */
   /**
    * @swagger
@@ -322,7 +324,7 @@ export class QuotationsController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      await QuotationsDentalModel.update(
+      await QuotationsDentalModel.updateOne(
         {
           _id: quotationsData.quotationsId
         },
@@ -334,15 +336,23 @@ export class QuotationsController extends BaseController {
           note: quotationsData.note
         }
       ).exec();
-      quotationsData.quotationsDetails = quotationsData.quotationsDetails.map((item: any) => {
-        if (item.teeth.includes(TEETH_2H)) {
-          item.quantity = item.teethType === ETeeth.ADULT ? TEETH_ADULT.length : TEETH_CHILD.length;
-        } else {
-          item.quantity = item.teeth.length;
-        }
-        return item;
-      });
+      quotationsData.quotationsDetails = await Promise.all(
+        quotationsData.quotationsDetails.map(async (item: any) => {
+          item.quantity = TEETH_2H in item.teethNumbers ? 1 : item.teethNumbers.length;
+          const serviceId = item.serviceId;
+          const servicePrice = await ServiceModel.findOne({
+            where: { id: serviceId },
+            attributes: ['sale_price'],
+            raw: true
+          }).then((salePrice: any) => {
+            return salePrice.sale_price;
+          });
+          item.price = servicePrice * item.quantity;
+          return item;
+        })
+      );
       for (const quotationsDentalDetail of quotationsData.quotationsDetails) {
+        let flagNewProcedure = false;
         if (quotationsDentalDetail.quotationsId) {
           const qdDetail = await QuotationsDentalDetailModel.findById(quotationsDentalDetail.quotationsId).exec();
           if (!qdDetail) {
@@ -355,15 +365,58 @@ export class QuotationsController extends BaseController {
             { _id: quotationsDentalDetail.quotationsId },
             quotationsDentalDetail
           ).exec();
+          flagNewProcedure = !qdDetail.isAccept && quotationsDentalDetail.isAccept;
         } else {
           const quotationsDentalDetails = new QuotationsDentalDetailModel({
             ...quotationsDentalDetail,
             quotationsDental: quotationsDental
           });
           await quotationsDentalDetails.save();
-          quotationsDental.quotationsDentalDetails.push(quotationsDentalDetails);
+          quotationsDental.quotationsDentalDetails.push(quotationsDentalDetails._id.toString());
+          flagNewProcedure = quotationsDentalDetail.isAccept;
+        }
+        if (flagNewProcedure) {
+          let newProcedure = JSON.parse(JSON.stringify(quotationsDentalDetail));
+          const teethIds = await Promise.all(
+            newProcedure.teethNumbers.map(async (i: any) => {
+              const teethId = await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).then((teeth: any) => {
+                return teeth._id;
+              });
+              return teethId.toString();
+            })
+          );
+          const serviceId = newProcedure.serviceId;
+          const serviceData = await ServiceModel.findOne({
+            where: { id: serviceId },
+            attributes: ['name', 'sale_price'],
+            raw: true
+          }).then((serviceName: any) => {
+            return serviceName;
+          });
+          delete Object.assign(newProcedure, { ['teethId']: newProcedure.teethNumbers }).teethNumbers;
+          newProcedure.serviceName = serviceData.name;
+          newProcedure.price = serviceData.sale_price;
+          newProcedure.teethId = teethIds;
+          newProcedure.totalPrice = newProcedure.price * newProcedure.quantity;
+          newProcedure.locationId = req.body.locationId;
+          newProcedure.customerId = req.body.customerId;
+          newProcedure.treatmentId = req.body.treatmentId;
+          const { isAccept, quotationsDentalId, currencyUnit, tax, teethType, ...data } = newProcedure;
+          newProcedure = data;
+          await ProcedureModel.insertMany([newProcedure]);
         }
       }
+      let totalPrice: number = 0;
+      await Promise.resolve(
+        QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsDental._id.toString() }, (err: any, result: any) => {
+          if (err) throw err;
+          totalPrice = parseInt(
+            result.map((item: any) => +item.price),
+            10
+          );
+        }) as any
+      );
+      quotationsDental.totalPrice = totalPrice;
       await quotationsDental.save();
       return res.status(httpStatus.OK).send();
     } catch (error) {

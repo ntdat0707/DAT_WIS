@@ -2,7 +2,6 @@ import mongoose from '../configs/connector';
 import { Schema, Document } from 'mongoose';
 import { EQuotationDiscountType, EQuotationCurrencyUnit, EQuotationTeethType } from '../../../utils/consts';
 
-
 interface IQuotationsDentalDetail extends Document {
   isAccept: boolean;
   quotationsDentalId: string;
