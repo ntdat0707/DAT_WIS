@@ -365,12 +365,12 @@ export class DiagnosticController extends BaseController {
         throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${treatmentId} not found`), httpStatus.NOT_FOUND);
       }
       diagnosis = await DiagnosisModel.find({ treatmentId: treatmentId })
-        .populate({ path: 'diagnosticId', model: 'Diagnostic' })
-        .populate({
-          path: 'teethId',
-          model: 'Teeth',
-          populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
-        })
+        // .populate({ path: 'diagnosticId', model: 'Diagnostic' })
+        // .populate({
+        //   path: 'teethId',
+        //   model: 'Teeth',
+        //   populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
+        // })
         .exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(diagnosis));
     } catch (error) {

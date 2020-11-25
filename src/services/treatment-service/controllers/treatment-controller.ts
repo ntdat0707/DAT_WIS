@@ -29,7 +29,13 @@ import {
 } from '../../../utils/response-messages/error-details';
 import _ from 'lodash';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
-import { TeethModel, TreatmentModel, ProcedureModel } from '../../../repositories/mongo/models';
+import {
+  TeethModel,
+  TreatmentModel,
+  ProcedureModel,
+  QuotationsDentalModel,
+  QuotationsDentalDetailModel
+} from '../../../repositories/mongo/models';
 import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
 
 export class TreatmentController extends BaseController {
@@ -254,10 +260,10 @@ export class TreatmentController extends BaseController {
    *       properties:
    *           staffId:
    *               type: string
-   *           teethNumber:
+   *           teethNumbers:
    *               type: array
    *               items:
-   *                   type: integer
+   *                   type: string
    *           serviceId:
    *               type: string
    *           quantity:
@@ -328,9 +334,9 @@ export class TreatmentController extends BaseController {
       }
       for (let i = 0; i < req.body.procedures.length; i++) {
         const teethIds = [];
-        for (let j = 0; j < req.body.procedures[i].teethNumber.length; j++) {
+        for (let j = 0; j < req.body.procedures[i].teethNumbers.length; j++) {
           const teeth: any = await TeethModel.findOne({
-            toothNumber: req.body.procedures[i].teethNumber[j]
+            toothNumber: parseInt(req.body.procedures[i].teethNumber[j], 10)
           }).exec();
           if (!teeth) {
             throw new CustomError(
@@ -381,25 +387,50 @@ export class TreatmentController extends BaseController {
       const procedureIds: any = [];
       for (const procedure of procedures) {
         procedureIds.push(procedure._id);
-
-        //const quotationsDental = await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }).exec();
-        // if (quotationsDental) {
-        //   const quotationDentalDetail = {
-        //     isAccept: true,
-        //     quotationsDentalId: quotationsDental._id
-        //     // serviceId: string;
-        //     // createdAt: Date;
-        //     // staffId: string;
-        //     // teethNumbers: [string];
-        //     // teethType: string;
-        //     // discount: number;
-        //     // discountType: string;
-        //     // quantity: number;
-        //     // tax: number;
-        //     // currencyUnit: string;
-        //     // price: number;
-        //   };
-        // }
+      }
+      let isQuotation: boolean;
+      let quotationsDentalData: any = {};
+      await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }, (err: any, quotations: any) => {
+        if (err) throw err;
+        if (!quotations.length) {
+          isQuotation = false;
+        } else {
+          isQuotation = true;
+        }
+      }).exec();
+      if (isQuotation === false) {
+        quotationsDentalData = {
+          date: Date.now,
+          treatmentId: req.body.treatmentId,
+          locationId: req.body.locationId,
+          accountedBy: req.body.staffId,
+          customerId: req.body.customerId
+        };
+        const quotationsDental = new QuotationsDentalModel();
+        quotationsDental.save(quotationsDentalData);
+        const quotationsId = quotationsDental._id;
+        let quotationsDentalDetailsData: any = [];
+        quotationsDentalDetailsData = dataProcedures.map((element: any) => {
+          delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
+          delete element.price;
+          delete element.note;
+          element.quotationsDentalId = quotationsId;
+        });
+        await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
+      } else {
+        let quotationsId: any;
+        await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }, (err: any, quotations: any) => {
+          if (err) throw err;
+          quotationsId = quotations._id;
+        }).exec();
+        let quotationsDentalDetailsData: any = [];
+        quotationsDentalDetailsData = dataProcedures.map((element: any) => {
+          delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
+          delete element.price;
+          delete element.note;
+          element.quotationsDentalId = quotationsId;
+        });
+        await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
       }
       treatment.procedureIds.push(procedureIds);
       await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
