@@ -303,9 +303,9 @@ export class DiagnosticController extends BaseController {
       }
       dataInput.teethId = teeth._id;
       if (treatment.diagnosisIds.length > 0) {
-        for (let diagnosticId of treatment.diagnosisIds) {
+        for (const diagnosticId of treatment.diagnosisIds) {
           if (diagnosticId === dataInput.diagnosisId) {
-            throw new CustomError(treatmentErrorDetails.E_4101(`Diagnostic ${diagnosticId} is duplicate`));
+            throw new CustomError(treatmentErrorDetails.E_4101(`Diagnostic ${diagnosticId} is already exists`));
           }
         }
       }
@@ -541,7 +541,7 @@ export class DiagnosticController extends BaseController {
       const diagnostic = await DiagnosticModel.findById({ _id: diagnosticId }).exec();
       if (!diagnostic) {
         throw new CustomError(
-          treatmentErrorDetails.E_4101(`diagnostic ${diagnosticId} not found`),
+          treatmentErrorDetails.E_4100(`diagnostic ${diagnosticId} not found`),
           httpStatus.NOT_FOUND
         );
       }

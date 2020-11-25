@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../utils/consts';
+import { EQuotationDiscountType, EQuotationCurrencyUnit, EQuotationTeethType } from '../../../utils/consts';
 
 interface IQuotationsDentalDetail extends mongoose.Document {
   isAccept: boolean;
@@ -7,7 +7,8 @@ interface IQuotationsDentalDetail extends mongoose.Document {
   serviceId: string;
   createdAt: Date;
   staffId: string;
-  teeth: [string];
+  teethNumbers: [string];
+  teethType: string;
   discount: number;
   discountType: string;
   quantity: number;
@@ -17,22 +18,24 @@ interface IQuotationsDentalDetail extends mongoose.Document {
 }
 
 const QuotationsDentalSchema = new mongoose.Schema({
-  isAccept: { type: Boolean, required: true },
+  isAccept: { type: Boolean, required: false },
   quotationsDentalId: { type: Schema.Types.ObjectId, ref: 'QuotationsDental' },
-  serviceId: { type: String, required: true },
+  serviceId: { type: String, required: false },
   createdAt: { type: String, default: Date.now },
-  teeth: [{ type: String, required: true }],
+  teethNumbers: [{ type: String, required: false }],
+  teethType: { type: String, enum: Object.values(EQuotationTeethType), required: false },
   discount: { type: Number, required: false },
   discountType: { type: String, enum: Object.values(EQuotationDiscountType), required: false },
-  quantity: { type: Number, required: true },
+  quantity: { type: Number, required: false },
   currencyUnit: { type: String, enum: Object.values(EQuotationCurrencyUnit), default: EQuotationCurrencyUnit.VND },
   tax: { type: Number, required: false },
-  price: { type: Number, required: true }
+  price: { type: Number, required: false }
 });
 
 //Model
 const QuotationsDentalDetailModel = mongoose.model<IQuotationsDentalDetail>(
   'QuotationsDentalDetail',
-  QuotationsDentalSchema
+  QuotationsDentalSchema,
+  'quotation_dental_detail'
 );
 export { QuotationsDentalDetailModel, IQuotationsDentalDetail };

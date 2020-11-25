@@ -11,7 +11,9 @@ export class QuotationsRoutes {
     this.config();
   }
   private config(): void {
-    this.router.post(
+    this.router.post('/create-quotations', isAuthenticated, this.quotationsController.createQuotationsDental);
+    this.router.get('/get-quotations/:treatmentId', isAuthenticated, this.quotationsController.getQuotationsDental);
+    this.router.put(
       '/update-quotations-dental/:quotationId',
       isAuthenticated,
       this.quotationsController.updateQuotationsDental

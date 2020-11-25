@@ -241,3 +241,8 @@ export enum EQuotationCurrencyUnit {
   USD = 'usd',
   VND = 'vnd'
 }
+
+export enum EQuotationTeethType {
+  ADULT = 'adult',
+  CHILD = 'child'
+}

@@ -15,14 +15,22 @@ const treatmentErrorDetails = {
     return e;
   },
 
+  E_3903(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3905', 'Quotations dental not found', detail);
+    return e;
+  },
+  E_3904(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3906', 'Quotations dental detail not found', detail);
+    return e;
+  },
   E_3905(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3905', 'Procedure not found', detail);
     return e;
   },
-  //Diagnosis and diagnostic
 
+  //Diagnosis and diagnostic
   E_4101(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('E_4101', 'Diagnostic is duplicate', detail);
+    const e = buildErrorDetail('E_4101', 'Diagnostic is already exists', detail);
     return e;
   },
   E_4100(detail: string = null): IErrorDetail {
