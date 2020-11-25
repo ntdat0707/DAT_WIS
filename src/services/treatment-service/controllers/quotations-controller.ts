@@ -372,7 +372,7 @@ export class QuotationsController extends BaseController {
             quotationsDental: quotationsDental
           });
           await quotationsDentalDetails.save();
-          quotationsDental.quotationsDentalDetails.push(quotationsDentalDetails._id.toString());
+          quotationsDental.quotationsDentalDetails.push(quotationsDentalDetails._id);
           flagNewProcedure = quotationsDentalDetail.isAccept;
         }
         if (flagNewProcedure) {
@@ -408,7 +408,7 @@ export class QuotationsController extends BaseController {
       }
       let totalPrice: number = 0;
       await Promise.resolve(
-        QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsDental._id.toString() }, (err: any, result: any) => {
+        QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsDental._id }, (err: any, result: any) => {
           if (err) throw err;
           totalPrice = parseInt(
             result.map((item: any) => +item.price),
