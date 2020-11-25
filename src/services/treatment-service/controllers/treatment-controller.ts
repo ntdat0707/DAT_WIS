@@ -498,8 +498,12 @@ export class TreatmentController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const procedures = await ProcedureModel.find({ treatmentId: treatmentId }).exec();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
+      const procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).exec();
+      const treatmentProcess = await ProcedureModel.find({
+        $and: [{ treatmentId: treatmentId }, { $or: [{ status: 'new' }, { status: 'in-progress' }] }]
+      }).exec();
+      const allProcedures: any = { procedures: procedures, treatmentProcess: treatmentProcess };
+      return res.status(httpStatus.OK).send(buildSuccessMessage(allProcedures));
     } catch (error) {
       return next(error);
     }

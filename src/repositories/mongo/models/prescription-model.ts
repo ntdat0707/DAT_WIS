@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 interface IPrescription extends mongoose.Document {
-  diagnosis: string;
+  treatmentProcessId: string;
   note: string;
   createDate: Date;
   drugList: [
@@ -13,7 +13,7 @@ interface IPrescription extends mongoose.Document {
 }
 
 const PrescriptionSchema = new mongoose.Schema({
-  diagnosis: { type: String, required: true },
+  treatmentProcessId: { type: Schema.Types.ObjectId, ref: 'TreatmentProcess' },
   note: { type: String, required: false },
   createDate: { type: Date, default: Date.now },
   drugList: [
