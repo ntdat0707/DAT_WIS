@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EStatusTreatment } from '../../../../utils/consts';
+import { EDiscountType, EStatusTreatment } from '../../../../utils/consts';
 
 const languageSchema = Joi.string().valid('en', 'vi').required().label('language');
 
@@ -37,6 +37,12 @@ const createProcedureSchema = Joi.object({
     })
     .required()
     .label('locationId'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('customerId'),
   procedures: Joi.array()
     .min(1)
     .required()
@@ -48,7 +54,7 @@ const createProcedureSchema = Joi.object({
           })
           .required()
           .label('staffId'),
-        teethNumber: Joi.array().items(Joi.number().integer()).required().label('teethNumber'),
+        teethNumbers: Joi.array().items(Joi.number().integer()).required().label('teethNumbers'),
         serviceId: Joi.string()
           .guid({
             version: ['uuidv4']
@@ -57,6 +63,9 @@ const createProcedureSchema = Joi.object({
           .label('serviceId'),
         quantity: Joi.number().integer().min(1).required().label('quantity'),
         discount: Joi.number().integer().min(0).allow(null).label('discount'),
+        discountType: Joi.string()
+          .valid(...Object.values(EDiscountType))
+          .label('discountType'),
         totalPrice: Joi.number().integer().min(1).required().label('totalPrice'),
         note: Joi.string().max(150).allow(null, '').label('note')
       })

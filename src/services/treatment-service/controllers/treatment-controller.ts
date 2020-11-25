@@ -22,7 +22,6 @@ import {
   procedureSchema
 } from '../configs/validate-schemas';
 import {
-  branchErrorDetails,
   customerErrorDetails,
   staffErrorDetails,
   treatmentErrorDetails
@@ -325,22 +324,22 @@ export class TreatmentController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      const { workingLocationIds } = res.locals.staffPayload;
-      if (!workingLocationIds.includes(req.body.locationId)) {
-        throw new CustomError(
-          branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-          httpStatus.FORBIDDEN
-        );
-      }
+      // const { workingLocationIds } = res.locals.staffPayload;
+      // if (!workingLocationIds.includes(req.body.locationId)) {
+      //   throw new CustomError(
+      //     branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+      //     httpStatus.FORBIDDEN
+      //   );
+      // }
       for (let i = 0; i < req.body.procedures.length; i++) {
         const teethIds = [];
         for (let j = 0; j < req.body.procedures[i].teethNumbers.length; j++) {
           const teeth: any = await TeethModel.findOne({
-            toothNumber: parseInt(req.body.procedures[i].teethNumber[j], 10)
+            toothNumber: parseInt(req.body.procedures[i].teethNumbers[j], 10)
           }).exec();
           if (!teeth) {
             throw new CustomError(
-              treatmentErrorDetails.E_3900(`teeth number ${req.body.procedures[i].teethNumber[j]} not found`),
+              treatmentErrorDetails.E_3900(`teeth number ${req.body.procedures[i].teethNumbers[j]} not found`),
               httpStatus.NOT_FOUND
             );
           }
@@ -392,45 +391,94 @@ export class TreatmentController extends BaseController {
       let quotationsDentalData: any = {};
       await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }, (err: any, quotations: any) => {
         if (err) throw err;
-        if (!quotations.length) {
-          isQuotation = false;
-        } else {
+        if (quotations) {
           isQuotation = true;
+        } else {
+          isQuotation = false;
         }
       }).exec();
       if (isQuotation === false) {
         quotationsDentalData = {
-          date: Date.now,
+          date: Date.now(),
           treatmentId: req.body.treatmentId,
           locationId: req.body.locationId,
-          accountedBy: req.body.staffId,
+          accountedBy: res.locals.staffPayload.id,
           customerId: req.body.customerId
         };
-        const quotationsDental = new QuotationsDentalModel();
-        quotationsDental.save(quotationsDentalData);
+        const quotationsDental = new QuotationsDentalModel(quotationsDentalData);
+        quotationsDental.save();
+
         const quotationsId = quotationsDental._id;
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
           delete element.price;
           delete element.note;
+          delete element.treatmentId;
+          delete element.customerId;
+          delete element.locationId;
+          delete element.serviceName;
           element.quotationsDentalId = quotationsId;
+          element.isAccept = true;
+          delete element.teethId;
+          return element;
         });
-        await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
+        let id: any;
+        let detailsIds: any = [];
+        await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData, (result: any) => {
+          id = result.map((a: any) => a.quotationsDentalId);
+          detailsIds = result.map((i: any) => {
+            return i._id;
+          });
+        });
+        let totalPrice: number = 0;
+        quotationsDentalDetailsData.map((b: any) => {
+          totalPrice += b.price;
+        });
+        await QuotationsDentalModel.findByIdAndUpdate(
+          { _id: id },
+          { totalPrice: totalPrice, quotationDentalDetails: detailsIds }
+        ).exec();
       } else {
         let quotationsId: any;
-        await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }, (err: any, quotations: any) => {
-          if (err) throw err;
-          quotationsId = quotations._id;
-        }).exec();
+        let totalPrice: number;
+        let detailsIds: any = [];
+        const quotationsDental: any = await QuotationsDentalModel.findOne(
+          { treatmentId: req.body.treatmentId },
+          (err: any, quotations: any) => {
+            if (err) throw err;
+            quotationsId = quotations._id;
+            detailsIds = quotations.quotationsDentalDetails;
+          }
+        ).exec();
+        totalPrice = quotationsDental.totalPrice || 0;
+        quotationsDental.quotationDentalDetails = quotationsDental.quotationDentalDetails || [];
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
-          delete element.price;
           delete element.note;
+          delete element.treatmentId;
+          delete element.customerId;
+          delete element.locationId;
+          delete element.serviceName;
           element.quotationsDentalId = quotationsId;
+          element.isAccept = true;
+          delete element.teethId;
+          return element;
         });
-        await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
+        quotationsDentalDetailsData.map((b: any) => {
+          totalPrice += b.price;
+        });
+        const quotationDentalDetails: any = await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
+        quotationDentalDetails.map((item: any) => {
+          detailsIds.push(item._id);
+        });
+        quotationsDental.totalPrice = totalPrice;
+        detailsIds.map((item: any) => quotationsDental.quotationDentalDetails.push(item));
+        //console.log('quotationdental:::', quotationsDental);
+        await QuotationsDentalModel.updateOne({ _id: quotationsId }, quotationsDental, (err: any) => {
+          if (err) throw err;
+        }).exec();
       }
       treatment.procedureIds.push(procedureIds);
       await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();

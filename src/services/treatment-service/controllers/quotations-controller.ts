@@ -198,12 +198,12 @@ export class QuotationsController extends BaseController {
   /**
    * @swagger
    * /treatment/quotations/get-quotations/{treatmentId}:
-   *   post:
+   *   get:
    *     tags:
    *       - Quotations
    *     security:
    *       - Bearer: []
-   *     name: get-quotations
+   *     name: getQuotationsDental
    *     parameters:
    *     - in: path
    *       name: treatmentId
