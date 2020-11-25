@@ -1,13 +1,14 @@
-import mongoose from 'mongoose';
+import mongoose from '../configs/connector';
+import { Schema, Document } from 'mongoose';
 
-interface ILogger extends mongoose.Document {
+interface ILogger extends Document {
   label: string;
   message: string;
   timestamp: Date;
   level: string;
 }
 
-const LoggerSchema = new mongoose.Schema({
+const LoggerSchema = new Schema({
   label: { type: String, required: true },
   message: { type: Object, required: true },
   timestamp: { type: Date, required: true },

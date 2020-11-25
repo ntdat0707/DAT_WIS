@@ -1,7 +1,8 @@
-import mongoose, { Schema } from 'mongoose';
-import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
+import mongoose from '../configs/connector';
+import { Schema, Document } from 'mongoose';
+import {  EQuotationDiscountType, EStatusProcedure  } from '../../../utils/consts';
 
-interface IProcedure extends mongoose.Document {
+interface IProcedure extends Document {
   treatmentId: string;
   locationId: string;
   customerId: string;
@@ -19,7 +20,7 @@ interface IProcedure extends mongoose.Document {
   createDate: Date;
 }
 
-const ProcedureSchema = new mongoose.Schema({
+const ProcedureSchema = new Schema({
   treatmentId: { type: Schema.Types.ObjectId, ref: 'Treatment' },
   locationId: { type: String, required: true },
   customerId: { type: String, required: true },

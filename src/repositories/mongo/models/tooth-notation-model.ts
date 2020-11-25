@@ -1,5 +1,7 @@
-import mongoose, { Schema } from 'mongoose';
-interface IToothNotation extends mongoose.Document {
+import mongoose from '../configs/connector';
+import { Schema, Document } from 'mongoose';
+
+interface IToothNotation extends Document {
   toothCode: string;
   teethId: string;
   toothName: string;
@@ -10,7 +12,7 @@ interface IToothNotation extends mongoose.Document {
   timestamp: Date;
 }
 
-const ToothNotationSchema = new mongoose.Schema({
+const ToothNotationSchema = new Schema({
   teethId: { type: Schema.Types.ObjectId, ref: 'Teeth' },
   toothCode: { type: String, required: true },
   toothName: { type: String, required: true },
