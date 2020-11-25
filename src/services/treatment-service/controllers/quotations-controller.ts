@@ -238,21 +238,15 @@ export class QuotationsController extends BaseController {
    * definitions:
    *   quotationUpdate:
    *       properties:
-   *           Date:
+   *           date:
    *               type: string
    *               format: date
-   *           Expire:
+   *           expire:
    *               type: string
    *               format: date
-   *           treatmentId:
-   *               type: string
    *           note:
    *               type: string
    *           locationId:
-   *               type: string
-   *           customerId:
-   *               type: string
-   *           accountedBy:
    *               type: string
    *           quotationsDetails:
    *               type: array
@@ -311,6 +305,7 @@ export class QuotationsController extends BaseController {
     try {
       const quotationsData = {
         quotationsId: req.params.quotationsId,
+        date: req.body.date,
         expire: req.body.expire,
         locationId: req.body.locationId,
         note: req.body.note,
@@ -333,6 +328,7 @@ export class QuotationsController extends BaseController {
         },
         {
           ...quotationsDental,
+          date: quotationsData.date,
           expire: quotationsData.expire,
           locationId: quotationsData.locationId,
           note: quotationsData.note
@@ -340,11 +336,7 @@ export class QuotationsController extends BaseController {
       ).exec();
       quotationsData.quotationsDetails = quotationsData.quotationsDetails.map((item: any) => {
         if (item.teeth.includes(TEETH_2H)) {
-          if (item.teethType === ETeeth.ADULT) {
-            item.quantity = TEETH_ADULT.length;
-          } else {
-            item.quantity = TEETH_CHILD.length;
-          }
+          item.quantity = item.teethType === ETeeth.ADULT ? TEETH_ADULT.length : TEETH_CHILD.length;
         } else {
           item.quantity = item.teeth.length;
         }

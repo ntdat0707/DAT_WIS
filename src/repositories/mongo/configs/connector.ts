@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { logger } from '../../../utils/logger';
 require('dotenv').config();
+
 export default async (): Promise<typeof mongoose> => {
   const mongoURL = 'mongodb://' + process.env.MONGO_HOST + ':' + process.env.MONGO_PORT + '/' + process.env.MONGO_NAME;
   const options = {
@@ -11,7 +12,7 @@ export default async (): Promise<typeof mongoose> => {
   try {
     const rs = await mongoose.connect(mongoURL, options);
     logger.info({
-      message: 'Connect to database successfull',
+      message: 'Connect to database successfully',
       label: 'MongoDB'
     });
     return rs;
