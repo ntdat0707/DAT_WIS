@@ -546,8 +546,18 @@ export class TreatmentController extends BaseController {
           httpStatus.BAD_REQUEST
         );
       }
-      const procedures = await ProcedureModel.find({ treatmentId: treatmentId }).exec();
-
+      const procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
+      for (let i = 0; i < procedures.length; i++) {
+        const service = await ServiceModel.findOne({ where: { id: procedures[i].serviceId }, raw: true });
+        const staff = await StaffModel.findOne({ where: { id: procedures[i].staffId }, raw: true });
+        procedures[i] = {
+          ...procedures[i]._doc,
+          service: service,
+          staff: staff,
+          staffId: undefined,
+          serviceId: undefined
+        };
+      }
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
