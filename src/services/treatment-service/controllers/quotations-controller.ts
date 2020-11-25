@@ -20,10 +20,10 @@ export class QuotationsController extends BaseController {
    * definitions:
    *   quotationCreate:
    *       properties:
-   *           Date:
+   *           date:
    *               type: string
    *               format: date
-   *           Expire:
+   *           expire:
    *               type: string
    *               format: date
    *           treatmentId:
@@ -36,7 +36,6 @@ export class QuotationsController extends BaseController {
    *               type: string
    *           accountedBy:
    *               type: string
-   *               enum: [percent, money]
    *           quotationsDetails:
    *               type: array
    *               items:
@@ -48,7 +47,7 @@ export class QuotationsController extends BaseController {
    *                            type: string
    *                        staffId:
    *                            type: string
-   *                        teeth:
+   *                        teethNumbers:
    *                            type: array
    *                            items:
    *                                type: string
@@ -70,7 +69,7 @@ export class QuotationsController extends BaseController {
    */
   /**
    * @swagger
-   * /treatment/create-quotations:
+   * /treatment/quotations/create-quotations:
    *   post:
    *     tags:
    *       - Quotations
@@ -98,8 +97,8 @@ export class QuotationsController extends BaseController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       const quotationData = {
-        date: req.body.Date,
-        expire: req.body.Expire,
+        date: req.body.date,
+        expire: req.body.expire,
         treatmentId: req.body.treatmentId,
         note: req.body.note,
         locationId: req.body.locationId,
@@ -113,18 +112,22 @@ export class QuotationsController extends BaseController {
         const quotationDetailsData: any = [];
         req.body.quotationsDetails.map((item: any) => {
           if (item.teeth.includes('2H')) {
-            if (item.teetType === 'adult') item.quantity = TEETH_ADULT.length;
+            if (item.teethType === 'adult') item.quantity = TEETH_ADULT.length;
             else item.quantity = TEETH_CHILD.length;
           } else item.quantity = item.teeth.length;
           Object.assign(item, { quotationsDentalId: quotationsId });
           quotationDetailsData.push(item);
         });
-        const quotationsDetails = await QuotationsDentalDetailModel.insertMany(quotationData);
-        let totalPrice: any;
+
+        const quotationsDetails = await QuotationsDentalDetailModel.insertMany(quotationDetailsData);
+        let totalPrice: number = 0;
         await Promise.resolve(
-          QuotationsDentalDetailModel.find({ _id: quotationsId }, (err: any, result: any) => {
+          QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsId }, (err: any, result: any) => {
             if (err) throw err;
-            return (totalPrice += result.price);
+            totalPrice = parseInt(
+              result.map((item: any) => +item.price),
+              10
+            );
           }) as any
         );
         await QuotationsDentalModel.update({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
@@ -141,7 +144,7 @@ export class QuotationsController extends BaseController {
 
   /**
    * @swagger
-   * /treatment/get-quotations/{treatmentId}:
+   * /treatment/quotations/get-quotations/{treatmentId}:
    *   post:
    *     tags:
    *       - Quotations
@@ -299,7 +302,7 @@ export class QuotationsController extends BaseController {
           const qdDetail = await QuotationsDentalDetailModel.findById(quotationsDentalDetail.quotationsId).exec();
           if (!qdDetail) {
             throw new CustomError(
-              treatmentErrorDetails.E_3906(`quotations dental detail ${quotationsData.quotationsId} not found`),
+              treatmentErrorDetails.E_3904(`quotations dental detail ${quotationsData.quotationsId} not found`),
               httpStatus.NOT_FOUND
             );
           }

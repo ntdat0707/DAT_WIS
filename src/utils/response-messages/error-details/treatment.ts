@@ -14,20 +14,31 @@ const treatmentErrorDetails = {
     const e = buildErrorDetail('3902', 'Treatment not found', detail);
     return e;
   },
+
   E_3903(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3903', 'Diagnostic not found', detail);
-    return e;
-  },
-  E_3904(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('3904', 'Diagnosis not found', detail);
-    return e;
-  },
-  E_3905(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3905', 'Quotations dental not found', detail);
     return e;
   },
-  E_3906(detail: string = null): IErrorDetail {
+  E_3904(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('3906', 'Quotations dental detail not found', detail);
+    return e;
+  },
+  E_3905(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3905', 'Procedure not found', detail);
+    return e;
+  },
+
+  //Diagnosis and diagnostic
+  E_4101(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4101', 'Diagnostic is already exists', detail);
+    return e;
+  },
+  E_4100(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4100', 'Diagnostic not found', detail);
+    return e;
+  },
+  E_4102(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4102', 'Diagnosis not found', detail);
     return e;
   }
 };

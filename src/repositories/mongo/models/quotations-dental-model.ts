@@ -3,8 +3,8 @@ import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../utils/c
 
 interface IQuotationsDental extends mongoose.Document {
   quoteCode: string;
-  Date: Date;
-  Expire: Date;
+  date: Date;
+  expire: Date;
   treatmentId: string;
   note: string;
   locationId: string;
@@ -20,8 +20,8 @@ interface IQuotationsDental extends mongoose.Document {
 
 const QuotationsDentalSchema = new mongoose.Schema({
   quoteCode: { type: String, required: false },
-  Date: { type: Date, required: true },
-  Expire: { type: Date, required: true },
+  date: { type: Date, required: true },
+  expire: { type: Date, required: true },
   treatmentId: { type: String, required: true },
   note: { type: String, required: false },
   locationId: { type: String, required: true },
@@ -36,5 +36,9 @@ const QuotationsDentalSchema = new mongoose.Schema({
 });
 
 //Model
-const QuotationsDentalModel = mongoose.model<IQuotationsDental>('QuotationsDental', QuotationsDentalSchema);
+const QuotationsDentalModel = mongoose.model<IQuotationsDental>(
+  'QuotationsDental',
+  QuotationsDentalSchema,
+  'quotation_dental'
+);
 export { QuotationsDentalModel, IQuotationsDental };

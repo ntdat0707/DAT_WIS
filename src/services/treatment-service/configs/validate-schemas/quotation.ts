@@ -1,11 +1,11 @@
 import Joi from 'joi';
-import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../../utils/consts';
+import { EQuotationDiscountType, EQuotationCurrencyUnit, EQuotationTeethType } from '../../../../utils/consts';
 import { TEETH_2H, TEETH_ADULT, TEETH_CHILD } from '../consts';
 
 const quotationsDentalDetailSchema = Joi.object({
-  _id: Joi.string()
-    .regex(/^[0-9a-fA-F]{24}$/)
-    .label('quotationDentalDetailId'),
+  // _id: Joi.string()
+  //   .regex(/^[0-9a-fA-F]{24}$/)
+  //   .label('quotationDentalDetailId'),
   isAccept: Joi.boolean().required().label('isAccept'),
   serviceId: Joi.string()
     .guid({
@@ -33,7 +33,11 @@ const quotationsDentalDetailSchema = Joi.object({
   tax: Joi.string().allow(null, '').label('tax'),
   currencyUnit: Joi.string()
     .valid(...Object.values(EQuotationCurrencyUnit))
-    .label('currencyUnit')
+    .label('currencyUnit'),
+  teethType: Joi.string()
+    .valid(...Object.values(EQuotationTeethType))
+    .label('teethType'),
+  price: Joi.number().label('price')
 });
 
 const createQuotationsDentalSchema = Joi.object({
@@ -57,6 +61,8 @@ const createQuotationsDentalSchema = Joi.object({
     .required()
     .label('customerId'),
   note: Joi.string().max(150).allow(null, '').label('note'),
+  date: Joi.date().label('date'),
+  expire: Joi.date().required().label('expire'),
   quotationsDetails: Joi.array().items(quotationsDentalDetailSchema).label('quotationsDentalDetails')
 });
 
@@ -70,6 +76,7 @@ const updateQuotationsDentalSchema = Joi.object({
     .required()
     .label('locationId'),
   note: Joi.string().max(150).allow(null, '').label('note'),
+  date: Joi.date().label('date'),
   quotationsDetails: Joi.array().items(quotationsDentalDetailSchema).label('quotationsDentalDetails')
 });
 
