@@ -8,12 +8,17 @@ import {
   updateQuotationsDentalSchema
 } from '../configs/validate-schemas';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
-import { QuotationsDentalModel, QuotationsDentalDetailModel } from '../../../repositories/mongo/models';
+import {
+  QuotationsDentalModel,
+  QuotationsDentalDetailModel,
+  ProcedureModel,
+  TeethModel
+} from '../../../repositories/mongo/models';
 import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
 import { TEETH_ADULT, TEETH_CHILD, TEETH_2H } from '../configs/consts';
 import { ETeeth } from '../../../utils/consts';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-
+import { ServiceModel } from '../../../repositories/postgres/models/service';
 export class QuotationsController extends BaseController {
   /**
    * @swagger
@@ -61,11 +66,9 @@ export class QuotationsController extends BaseController {
    *                            enum: [percent, money]
    *                        currencyUnit:
    *                            type: string
-   *                            enum: [usd, vnd]
+   *                            enum: [vnd, usd]
    *                        tax:
    *                            type: string
-   *                        price:
-   *                            type: number
    */
   /**
    * @swagger
@@ -109,17 +112,66 @@ export class QuotationsController extends BaseController {
         const createQuotation = new QuotationsDentalModel(quotationData);
         const quotationsId = createQuotation._id;
         createQuotation.save();
-        const quotationDetailsData: any = [];
-        req.body.quotationsDetails.map((item: any) => {
-          if (item.teeth.includes('2H')) {
-            if (item.teethType === 'adult') item.quantity = TEETH_ADULT.length;
-            else item.quantity = TEETH_CHILD.length;
-          } else item.quantity = item.teeth.length;
-          Object.assign(item, { quotationsDentalId: quotationsId });
-          quotationDetailsData.push(item);
-        });
-
+        let quotationDetailsData: any = [];
+        let data: any = [];
+        data = await Promise.all(
+          req.body.quotationsDetails.map(async (item: any) => {
+            if ('2H' in item.teethNumbers) {
+              item.quantity = 1;
+            } else item.quantity = item.teethNumbers.length;
+            Object.assign(item, { quotationsDentalId: quotationsId.toString() });
+            const serviceId = item.serviceId;
+            const servicePrice = await ServiceModel.findOne({
+              where: { id: serviceId },
+              attributes: ['sale_price'],
+              raw: true
+            }).then((salePrice: any) => {
+              return salePrice.sale_price;
+            });
+            item.price = servicePrice * item.quantity;
+            return item;
+          })
+        );
+        quotationDetailsData = data;
         const quotationsDetails = await QuotationsDentalDetailModel.insertMany(quotationDetailsData);
+        let teethIds: any = [];
+        let newProcedures: any = [];
+        newProcedures = await Promise.all(
+          quotationDetailsData.map(async (item: any) => {
+            if (item.isAccept === true) {
+              teethIds = await Promise.all(
+                item.teethNumbers.map(async (i: any) => {
+                  const teethId = await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).then((teeth: any) => {
+                    return teeth._id;
+                  });
+                  return teethId.toString();
+                })
+              );
+              const serviceId = item.serviceId;
+              const serviceData = await ServiceModel.findOne({
+                where: { id: serviceId },
+                attributes: ['name', 'sale_price'],
+                raw: true
+              }).then((serviceName: any) => {
+                return serviceName;
+              });
+              item.serviceName = serviceData.name;
+              item.price = serviceData.sale_price;
+              delete Object.assign(item, { ['teethId']: item.teethNumbers }).teethNumbers;
+              item.teethId = teethIds;
+              item.totalPrice = item.price * item.quantity;
+              item.locationId = req.body.locationId;
+              item.customerId = req.body.customerId;
+              item.treatmentId = req.body.treatmentId;
+              delete item.isAccept;
+              delete item.quotationsDentalId;
+              delete item.currencyUnit;
+              delete item.tax;
+              delete item.teethType;
+              return item;
+            }
+          })
+        );
         let totalPrice: number = 0;
         await Promise.resolve(
           QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsId }, (err: any, result: any) => {
@@ -130,7 +182,8 @@ export class QuotationsController extends BaseController {
             );
           }) as any
         );
-        await QuotationsDentalModel.update({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
+        await QuotationsDentalModel.updateOne({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
+        await ProcedureModel.insertMany(newProcedures);
         return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDetails));
       } else {
         const createQuotation = new QuotationsDentalModel(quotationData);

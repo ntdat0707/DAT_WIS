@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { EStatusProcedure } from '../../../utils/consts';
+import { EStatusProcedure, EQuotationDiscountType } from '../../../utils/consts';
 
 interface IProcedure extends mongoose.Document {
   treatmentId: string;
@@ -10,6 +10,7 @@ interface IProcedure extends mongoose.Document {
   price: number;
   quantity: number;
   discount: number;
+  discountType: string;
   totalPrice: number;
   status: string;
   note: string;
@@ -25,6 +26,7 @@ const ProcedureSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   quantity: { type: Number, required: true },
   discount: { type: Number, default: 0 },
+  discountType: { type: String, enum: Object.values(EQuotationDiscountType), default: EQuotationDiscountType.MONEY },
   totalPrice: { type: Number, required: true },
   status: { type: String, enum: Object.values(EStatusProcedure), default: EStatusProcedure.NEW },
   note: { type: String, required: false },
