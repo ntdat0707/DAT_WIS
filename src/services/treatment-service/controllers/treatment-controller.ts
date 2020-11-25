@@ -22,6 +22,7 @@ import {
   procedureSchema
 } from '../configs/validate-schemas';
 import {
+  branchErrorDetails,
   customerErrorDetails,
   staffErrorDetails,
   treatmentErrorDetails
@@ -29,7 +30,7 @@ import {
 import _ from 'lodash';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { TeethModel, TreatmentModel, ProcedureModel } from '../../../repositories/mongo/models';
-import { EStatusProcedure } from '../../../utils/consts';
+import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
 
 export class TreatmentController extends BaseController {
   /**
@@ -263,6 +264,9 @@ export class TreatmentController extends BaseController {
    *               type: integer
    *           discount:
    *               type: integer
+   *           discountType:
+   *               type: string
+   *               enum: ['percent', 'money']
    *           totalPrice:
    *               type: integer
    *           note:
@@ -284,6 +288,10 @@ export class TreatmentController extends BaseController {
    *       required: true
    *       properties:
    *           treatmentId:
+   *               type: string
+   *           locationId:
+   *               type: string
+   *           customerId:
    *               type: string
    *           procedures:
    *               type: array
@@ -309,6 +317,13 @@ export class TreatmentController extends BaseController {
         throw new CustomError(
           treatmentErrorDetails.E_3902(`treatmentId ${req.body.treatmentId} not found`),
           httpStatus.NOT_FOUND
+        );
+      }
+      const { workingLocationIds } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(req.body.locationId)) {
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+          httpStatus.FORBIDDEN
         );
       }
       for (let i = 0; i < req.body.procedures.length; i++) {
@@ -340,8 +355,12 @@ export class TreatmentController extends BaseController {
           );
         }
         let discount = 0;
-        if (req.body.procedures[i].discount) {
-          discount = (service.salePrice * req.body.procedures[i].discount) / 100;
+        if (req.body.procedures[i].discount && req.body.procedures[i].discountType) {
+          if (req.body.procedures[i].discountType === EQuotationDiscountType.PERCENT) {
+            discount = (service.salePrice * req.body.procedures[i].discount) / 100;
+          } else {
+            discount = req.body.procedures[i].discount;
+          }
         }
         const totalPrice = req.body.procedures[i].quantity * service.salePrice - discount;
         if (req.body.procedures[i].totalPrice !== totalPrice) {
@@ -349,6 +368,8 @@ export class TreatmentController extends BaseController {
         }
         const data = {
           treatmentId: req.body.treatmentId,
+          locationId: req.body.locationId,
+          customerId: req.body.customerId,
           serviceName: service.name,
           price: service.salePrice,
           ...req.body.procedures[i]
@@ -360,9 +381,29 @@ export class TreatmentController extends BaseController {
       const procedureIds: any = [];
       for (const procedure of procedures) {
         procedureIds.push(procedure._id);
+
+        //const quotationsDental = await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }).exec();
+        // if (quotationsDental) {
+        //   const quotationDentalDetail = {
+        //     isAccept: true,
+        //     quotationsDentalId: quotationsDental._id
+        //     // serviceId: string;
+        //     // createdAt: Date;
+        //     // staffId: string;
+        //     // teethNumbers: [string];
+        //     // teethType: string;
+        //     // discount: number;
+        //     // discountType: string;
+        //     // quantity: number;
+        //     // tax: number;
+        //     // currencyUnit: string;
+        //     // price: number;
+        //   };
+        // }
       }
-      treatment.procedureIds = procedureIds;
-      await TreatmentModel.update({ _id: treatment._id }, treatment).exec();
+      treatment.procedureIds.push(procedureIds);
+      await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
+
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
@@ -498,7 +539,15 @@ export class TreatmentController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
+      const treatment = await TreatmentModel.findOne({ _id: treatmentId }).exec();
+      if (!treatment) {
+        throw new CustomError(
+          treatmentErrorDetails.E_3902(`treatmentId ${treatmentId} not found`),
+          httpStatus.BAD_REQUEST
+        );
+      }
       const procedures = await ProcedureModel.find({ treatmentId: treatmentId }).exec();
+
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);

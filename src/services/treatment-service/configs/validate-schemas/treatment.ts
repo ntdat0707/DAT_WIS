@@ -31,6 +31,12 @@ const createProcedureSchema = Joi.object({
     .regex(/^[0-9a-fA-F]{24}$/)
     .required()
     .label('treatmentId'),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
   procedures: Joi.array()
     .min(1)
     .required()
