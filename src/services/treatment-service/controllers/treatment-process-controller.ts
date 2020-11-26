@@ -10,11 +10,15 @@ import {
   MedicineModel
 } from '../../../repositories/mongo/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
-import { createTreatmentProcessSchema } from '../configs/validate-schemas/treatment-process';
+import {
+  createTreatmentProcessSchema,
+  updateTreatmentProcessSchema
+} from '../configs/validate-schemas/treatment-process';
 import { LocationModel } from '../../../repositories/postgres/models/location';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
+import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
 
 export class TreatmentProcessController extends BaseController {
   /**
@@ -24,26 +28,13 @@ export class TreatmentProcessController extends BaseController {
    *       required:
    *           - name
    *           - locationId
-   *           - locationName
-   *           - staffId
-   *           - staffName
    *           - treatmentId
-   *           - createdById
-   *           - createdByName
    *           - procedures
    *           - status
    *       properties:
    *           name:
    *               type: string
    *           locationId:
-   *               type: string
-   *           locationName:
-   *               type: string
-   *           staffId:
-   *               type: string
-   *           staffName:
-   *               type: string
-   *           processDescription:
    *               type: string
    *           treatmentId:
    *               type: string
@@ -52,10 +43,6 @@ export class TreatmentProcessController extends BaseController {
    *           createOn:
    *               type: string
    *               format: date
-   *           createdById:
-   *               type: string
-   *           createdByName:
-   *               type: string
    *           procedures:
    *               type: array
    *               items:
@@ -66,8 +53,8 @@ export class TreatmentProcessController extends BaseController {
    *                      status:
    *                        type: string
    *                        enum: ['new','in-progress','completed','reject']
-   *           detailTreatment:
-   *                   type: string
+   *                      detailTreatment:
+   *                        type: string
    *           prescription:
    *                   type: object
    *                   properties:
@@ -75,9 +62,6 @@ export class TreatmentProcessController extends BaseController {
    *                            type: string
    *                        note:
    *                            type: string
-   *                        createDate:
-   *                            type: string
-   *                            format: date
    *                        drugList:
    *                            type: array
    *                            items:
@@ -113,7 +97,8 @@ export class TreatmentProcessController extends BaseController {
    */
   public createTreatmentProcess = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const dataInput = req.body;
+      const createdById = res.locals.staffPayload.id;
+      const dataInput = { ...req.body, createdById: createdById };
       const validateErrors = validate(dataInput, createTreatmentProcessSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
@@ -125,10 +110,6 @@ export class TreatmentProcessController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      const staff = await StaffModel.findOne({ where: { id: dataInput.staffId } });
-      if (!staff) {
-        throw new CustomError(staffErrorDetails.E_4000(`Staff ${dataInput.staffId} not found`));
-      }
       const creator = await StaffModel.findOne({ where: { id: dataInput.createdById } });
       if (!creator) {
         throw new CustomError(staffErrorDetails.E_4000(`Creator ${dataInput.createdById} not found`));
@@ -136,12 +117,16 @@ export class TreatmentProcessController extends BaseController {
       const treatmentProcessData: any = { ...dataInput };
       const procedureIds: any = [];
       for (const item of req.body.procedures) {
-        await ProcedureModel.updateOne({ _id: item.id }, { status: item.status }).exec();
+        await ProcedureModel.updateOne(
+          { _id: item.id },
+          { status: item.status, detailTreatment: item.detailTreatment }
+        ).exec();
         procedureIds.push(item.id);
       }
       treatmentProcessData.procedureIds = procedureIds;
       if (dataInput.prescription) {
         const prescriptionData = { ...dataInput.prescription };
+
         const prescription: any = new PrescriptionModel(prescriptionData);
         treatmentProcessData.prescriptionId = prescription._id;
         await prescription.save();
@@ -175,6 +160,149 @@ export class TreatmentProcessController extends BaseController {
     try {
       const medicines = await MedicineModel.find({}).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(medicines));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * definitions:
+   *   TreatmentProcessUpdate:
+   *       properties:
+   *           name:
+   *               type: string
+   *           locationId:
+   *               type: string
+   *           treatmentId:
+   *               type: string
+   *           note:
+   *               type: string
+   *           createOn:
+   *               type: string
+   *               format: date
+   *           procedures:
+   *               type: array
+   *               items:
+   *                   type: object
+   *                   properties:
+   *                      id:
+   *                        type: string
+   *                      status:
+   *                        type: string
+   *                        enum: ['new','in-progress','completed','reject']
+   *                      detailTreatment:
+   *                        type: string
+   *           prescription:
+   *                   type: object
+   *                   properties:
+   *                        prescriptionId:
+   *                            type: string
+   *                        diagnosis:
+   *                            type: string
+   *                        note:
+   *                            type: string
+   *                        drugList:
+   *                            type: array
+   *                            items:
+   *                                type: object
+   *                                properties:
+   *                                    medicineId:
+   *                                        type: string
+   *                                    quantity:
+   *                                        type: number
+   */
+  /**
+   * @swagger
+   * /treatment/treatment-process/update/{treatmentProcessId}:
+   *   put:
+   *     tags:
+   *       - TreatmentProcess
+   *     security:
+   *       - Bearer: []
+   *     name: updateTreatmentProcess
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/TreatmentProcessUpdate'
+   *     - in: path
+   *       name: treatmentProcessId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public updateTreatmentProcess = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const createdById = res.locals.staffPayload.id;
+      const treatmentProcessId = req.params.treatmentProcessId;
+      const dataInput = { ...req.body, treatmentProcessId: treatmentProcessId, createdById: createdById };
+      const validateErrors = validate(dataInput, updateTreatmentProcessSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const treatmentProcess: any = await TreatmentProcessModel.findById({ _id: treatmentProcessId }).exec();
+      if (!treatmentProcess) {
+        throw new CustomError(
+          treatmentErrorDetails.E_3910(`Treatment process ${treatmentProcessId} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
+      if (dataInput.locationId) {
+        const location = await LocationModel.findOne({ where: { id: dataInput.locationId } });
+        if (!location) {
+          throw new CustomError(
+            locationErrorDetails.E_1000(`Location ${dataInput.locationId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+      }
+      if (dataInput.createdById) {
+        const creator: any = await StaffModel.findOne({ where: { id: dataInput.createdById } });
+        if (!creator) {
+          throw new CustomError(staffErrorDetails.E_4000(`Creator ${dataInput.createdById} not found`));
+        }
+      }
+      if (dataInput.procedures) {
+        if (dataInput.procedures.length > treatmentProcess.procedureIds.length) {
+          throw new CustomError(treatmentErrorDetails.E_3911(`Procedures input not valid`), httpStatus.BAD_REQUEST);
+        }
+        const procedureIds: any = [];
+        for (const item of dataInput.procedures) {
+          await ProcedureModel.updateOne(
+            { _id: item.id },
+            { status: item.status, detailTreatment: item.detailTreatment }
+          ).exec();
+          procedureIds.push(item.id);
+        }
+        dataInput.procedureIds = procedureIds;
+      }
+      if (dataInput.prescription) {
+        if (!dataInput.prescription.prescriptionId) {
+          const prescriptionData = { ...dataInput.prescription };
+          const prescription: any = new PrescriptionModel(prescriptionData);
+          await prescription.save();
+        } else {
+          const prescription: any = await PrescriptionModel.findById(dataInput.prescription.prescriptionId).exec();
+          if (!prescription) {
+            throw new CustomError(
+              treatmentErrorDetails.E_3909(`Prescription ${dataInput.prescription.prescriptionId} not found`),
+              httpStatus.NOT_FOUND
+            );
+          }
+          const prescriptionData = { ...dataInput.prescription };
+          await PrescriptionModel.updateOne({ _id: dataInput.prescription.prescriptionId }, prescriptionData).exec();
+        }
+      }
+      await TreatmentProcessModel.updateOne({ _id: treatmentProcessId }, dataInput).exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
     } catch (error) {
       return next(error);
     }
