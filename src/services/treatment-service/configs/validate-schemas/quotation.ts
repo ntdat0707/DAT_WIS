@@ -79,7 +79,6 @@ const updateQuotationsDentalSchema = Joi.object({
   quotationsDetails: Joi.array().items(quotationsDentalDetailSchema).label('quotationsDentalDetails')
 });
 
-
 const quotationDentalIdSchema = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
   .label('quotationDentalSchema');

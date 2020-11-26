@@ -396,7 +396,15 @@ export class TreatmentController extends BaseController {
         const quotationsId = quotationsDental._id;
         const quotationsDentalDetailsData: any = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
-          element = _.omit(element, ['totalPrice', 'note', 'treatmentId', 'customerId', 'locationId', 'serviceName', 'teethId']);
+          element = _.omit(element, [
+            'totalPrice',
+            'note',
+            'treatmentId',
+            'customerId',
+            'locationId',
+            'serviceName',
+            'teethId'
+          ]);
           element.quotationsDentalId = quotationsId;
           element.isAccept = true;
           return element;
@@ -410,7 +418,15 @@ export class TreatmentController extends BaseController {
         const quotationsId = quotationsDental._id;
         const quotationsDentalDetailsData: any[] = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
-          element = _.omit(element, ['totalPrice','note', 'treatmentId', 'customerId', 'locationId', 'serviceName', 'teethId']);
+          element = _.omit(element, [
+            'totalPrice',
+            'note',
+            'treatmentId',
+            'customerId',
+            'locationId',
+            'serviceName',
+            'teethId'
+          ]);
           element.quotationsDentalId = quotationsId;
           element.isAccept = true;
           return element;

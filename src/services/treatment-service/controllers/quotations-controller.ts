@@ -145,7 +145,7 @@ export class QuotationsController extends BaseController {
             if (item.isAccept === true) {
               teethIds = await Promise.all(
                 item.teethNumbers.map(async (i: any) =>
-                  (await TeethModel.findOne({ toothNumber: parseInt(i, 10) }))._id.toString()
+                  (await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).exec())._id.toString()
                 )
               );
               const serviceId = item.serviceId;
@@ -172,7 +172,9 @@ export class QuotationsController extends BaseController {
         let totalPrice: number = 0;
         await Promise.resolve(
           QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsId }, (err: any, result: any) => {
-            if (err) { throw err; }
+            if (err) {
+              throw err;
+            }
             totalPrice = parseInt(
               result.map((item: any) => +item.price),
               10
@@ -401,7 +403,7 @@ export class QuotationsController extends BaseController {
           return item;
         })
       );
-      const newProcedures: any =  [];
+      const newProcedures: any = [];
       for (const quotationsDentalDetail of quotationsData.quotationsDetails) {
         let flagNewProcedure = false;
         if (quotationsDentalDetail._id) {
@@ -412,10 +414,7 @@ export class QuotationsController extends BaseController {
               httpStatus.NOT_FOUND
             );
           }
-          await QuotationsDentalDetailModel.updateOne(
-            { _id: qdDetail._id },
-            quotationsDentalDetail
-          ).exec();
+          await QuotationsDentalDetailModel.updateOne({ _id: qdDetail._id }, quotationsDentalDetail).exec();
           flagNewProcedure = !qdDetail.isAccept && quotationsDentalDetail.isAccept;
         } else {
           const quotationsDentalDetails = new QuotationsDentalDetailModel({
@@ -454,13 +453,17 @@ export class QuotationsController extends BaseController {
             customerId: quotationsDental.customerId,
             treatmentId: quotationsDental.treatmentId
           };
-          newProcedures.push(_.omit(newProcedure, ['isAccept', 'quotationsDentalId', 'currencyUnit', 'tax', 'teethType', 'teethNumbers']));
+          newProcedures.push(
+            _.omit(newProcedure, ['isAccept', 'quotationsDentalId', 'currencyUnit', 'tax', 'teethType', 'teethNumbers'])
+          );
         }
       }
       if (newProcedures.length) {
         await ProcedureModel.insertMany(newProcedures);
       }
-      const quotationsDentalDetailsData: any = await QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsDental._id }).exec();
+      const quotationsDentalDetailsData: any = await QuotationsDentalDetailModel.find({
+        quotationsDentalId: quotationsDental._id
+      }).exec();
       const totalPrice = quotationsDentalDetailsData.reduce((acc: number, item: any) => acc + item.price, 0);
       quotationsDental.totalPrice = totalPrice;
       await quotationsDental.save();
@@ -472,7 +475,6 @@ export class QuotationsController extends BaseController {
         .exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(quotationDetailsResult));
     } catch (error) {
-      console.log(error);
       return next(error);
     }
   };
