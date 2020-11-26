@@ -40,6 +40,6 @@ const TreatmentProcessSchema = new mongoose.Schema({
 const TreatmentProcessModel = mongoose.model<ITreatmentProcess>(
   'TreatmentProcess',
   TreatmentProcessSchema,
-  'treatmentProcess'
+  'treatment_process'
 );
 export { TreatmentProcessModel, ITreatmentProcess };
