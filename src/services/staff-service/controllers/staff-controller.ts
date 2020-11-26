@@ -1751,8 +1751,6 @@ export class StaffController {
    *   post:
    *     tags:
    *       - Staff
-   *     security:
-   *       - Bearer: []
    *     name: initPositionStaff
    *     parameters:
    *     - in: path
@@ -1775,12 +1773,10 @@ export class StaffController {
       if (!workingLocationIds.includes(req.params.locationId)) {
         throw new CustomError(branchErrorDetails.E_1001(), HttpStatus.FORBIDDEN);
       }
-
       const existLocationId = await PositionModel.findOne({ where: { locationId: req.params.locationId } });
       if (existLocationId) {
         throw new CustomError(staffErrorDetails.E_4012(), HttpStatus.BAD_REQUEST);
       }
-
       const staffs = await StaffModel.findAll({
         include: [
           {
@@ -1791,16 +1787,13 @@ export class StaffController {
           }
         ]
       });
-
       const dataPosition = staffs.map((x, index) => ({
         ownerId: res.locals.staffPayload.id,
         staffId: x.id,
         index: index,
         locationId: req.params.locationId
       }));
-
       await PositionModel.bulkCreate(dataPosition);
-
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
