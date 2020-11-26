@@ -305,7 +305,10 @@ export class DiagnosticController extends BaseController {
       if (treatment.diagnosisIds.length > 0) {
         for (const diagnosticId of treatment.diagnosisIds) {
           if (diagnosticId === dataInput.diagnosisId) {
-            throw new CustomError(treatmentErrorDetails.E_3906(`Diagnostic ${diagnosticId} is already exists`));
+            throw new CustomError(
+              treatmentErrorDetails.E_3906(`Diagnostic ${diagnosticId} is already exists`),
+              httpStatus.BAD_REQUEST
+            );
           }
         }
       }

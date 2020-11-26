@@ -614,7 +614,7 @@ export class TreatmentController extends BaseController {
       if (!treatment) {
         throw new CustomError(
           treatmentErrorDetails.E_3902(`treatmentId ${treatmentId} not found`),
-          httpStatus.BAD_REQUEST
+          httpStatus.NOT_FOUND
         );
       }
       let procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
@@ -689,7 +689,7 @@ export class TreatmentController extends BaseController {
       if (procedure.status !== EStatusProcedure.COMPLETE) {
         procedure.status = EStatusProcedure.REJECT;
       }
-      await procedure.save();
+      await ProcedureModel.updateOne({ _id: procedureId }, procedure).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedure));
     } catch (error) {
       return next(error);
