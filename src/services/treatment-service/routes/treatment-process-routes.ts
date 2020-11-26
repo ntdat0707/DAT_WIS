@@ -18,5 +18,15 @@ export class TreatmentProcessRoutes {
       isAuthenticated,
       this.treatmentProcessController.updateTreatmentProcess
     );
+    this.router.get(
+      '/get-all-treatment-process/:treatmentId',
+      isAuthenticated,
+      this.treatmentProcessController.getAllTreatmentProcess
+    );
+    this.router.get(
+      '/get-treatment-process/:treatmentProcessId',
+      isAuthenticated,
+      this.treatmentProcessController.getTreatmentProcess
+    );
   }
 }
