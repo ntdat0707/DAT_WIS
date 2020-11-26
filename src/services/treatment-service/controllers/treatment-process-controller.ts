@@ -15,6 +15,7 @@ import { LocationModel } from '../../../repositories/postgres/models/location';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
+import { treatmentIdSchema, treatmentProcessIdSchema } from '../configs/validate-schemas';
 
 export class TreatmentProcessController extends BaseController {
   /**
@@ -175,6 +176,101 @@ export class TreatmentProcessController extends BaseController {
     try {
       const medicines = await MedicineModel.find({}).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(medicines));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/get-all-treatment-process/{treatmentId}:
+   *   get:
+   *     tags:
+   *       - TreatmentProcess
+   *     security:
+   *       - Bearer: []
+   *     name: getAllTreatmentProcess
+   *     parameters:
+   *     - in: path
+   *       name: treatmentId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllTreatmentProcess = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const treatmentId = req.params.treatmentId;
+      const validateErrors = validate(treatmentId, treatmentIdSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const treatmentProcess: any = await TreatmentProcessModel.find({ treatmentId: treatmentId }).exec();
+      for (let i = 0; i < treatmentProcess.length; i++) {
+        const staff = await StaffModel.findOne({
+          where: { id: treatmentProcess[i].createdById },
+          attributes: { exclude: ['password'] }
+        });
+        treatmentProcess[i] = {
+          ...treatmentProcess[i]._doc,
+          createdBy: staff,
+          createdById: undefined
+        };
+      }
+      return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/get-treatment-process/{treatmentProcessId}:
+   *   get:
+   *     tags:
+   *       - TreatmentProcess
+   *     security:
+   *       - Bearer: []
+   *     name: getTreatmentProcess
+   *     parameters:
+   *     - in: path
+   *       name: treatmentProcessId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getTreatmentProcess = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const treatmentProcessId = req.params.treatmentProcessId;
+      const validateErrors = validate(treatmentProcessId, treatmentProcessIdSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      let treatmentProcess: any = await TreatmentProcessModel.findById({ _id: treatmentProcessId })
+        .populate('procedureIds')
+        .populate('prescriptionId')
+        .exec();
+      const staff = await StaffModel.findOne({
+        where: { id: treatmentProcess.createdById },
+        attributes: { exclude: ['password'] }
+      });
+      treatmentProcess = {
+        ...treatmentProcess._doc,
+        createdBy: staff,
+        createdById: undefined
+      };
+      return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
     } catch (error) {
       return next(error);
     }
