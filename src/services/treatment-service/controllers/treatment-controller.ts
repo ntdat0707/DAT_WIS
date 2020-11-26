@@ -405,14 +405,11 @@ export class TreatmentController extends BaseController {
           accountedBy: res.locals.staffPayload.id,
           customerId: req.body.customerId
         };
-        const quotationsDental = new QuotationsDentalModel(quotationsDentalData);
-        quotationsDental.save();
-
+        let quotationsDental: any = new QuotationsDentalModel(quotationsDentalData);
         const quotationsId = quotationsDental._id;
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
-          delete element.price;
           delete element.note;
           delete element.treatmentId;
           delete element.customerId;
@@ -423,36 +420,32 @@ export class TreatmentController extends BaseController {
           delete element.teethId;
           return element;
         });
-        let id: any;
-        let detailsIds: any = [];
-        await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData, (result: any) => {
-          id = result.map((a: any) => a.quotationsDentalId);
-          detailsIds = result.map((i: any) => {
-            return i._id;
-          });
-        });
+        const detailsIds: any = [];
+        const quotationsDetail: any = await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
+        for (const quotationsdetail of quotationsDetail) {
+          detailsIds.push(quotationsdetail._id);
+        }
         let totalPrice: number = 0;
         quotationsDentalDetailsData.map((b: any) => {
-          totalPrice += b.price;
+          totalPrice += b.price * b.quantity;
         });
-        await QuotationsDentalModel.findByIdAndUpdate(
-          { _id: id },
-          { totalPrice: totalPrice, quotationDentalDetails: detailsIds }
-        ).exec();
+        quotationsDental.totalPrice = totalPrice;
+        quotationsDental = {
+          ...quotationsDental._doc,
+          quotationsDentalDetails: detailsIds
+        };
+        await QuotationsDentalModel.create(quotationsDental);
       } else {
         let quotationsId: any;
-        let totalPrice: number;
-        let detailsIds: any = [];
+        let totalPrice: number = 0;
+        const detailsIds: any = [];
         const quotationsDental: any = await QuotationsDentalModel.findOne(
           { treatmentId: req.body.treatmentId },
           (err: any, quotations: any) => {
             if (err) throw err;
             quotationsId = quotations._id;
-            detailsIds = quotations.quotationsDentalDetails;
           }
         ).exec();
-        totalPrice = quotationsDental.totalPrice || 0;
-        quotationsDental.quotationDentalDetails = quotationsDental.quotationDentalDetails || [];
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
@@ -470,19 +463,15 @@ export class TreatmentController extends BaseController {
           totalPrice += b.price;
         });
         const quotationDentalDetails: any = await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
-        quotationDentalDetails.map((item: any) => {
-          detailsIds.push(item._id);
-        });
-        quotationsDental.totalPrice = totalPrice;
-        detailsIds.map((item: any) => quotationsDental.quotationDentalDetails.push(item));
-        //console.log('quotationdental:::', quotationsDental);
-        await QuotationsDentalModel.updateOne({ _id: quotationsId }, quotationsDental, (err: any) => {
-          if (err) throw err;
-        }).exec();
+        for (const quotaionsdetail of quotationDentalDetails) {
+          detailsIds.push(quotaionsdetail._id);
+        }
+        quotationsDental.totalPrice += totalPrice;
+        quotationsDental.quotationsDentalDetails.push(...detailsIds);
+        quotationsDental.save();
       }
       treatment.procedureIds.push(procedureIds);
       await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
-
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
