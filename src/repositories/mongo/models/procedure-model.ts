@@ -1,8 +1,7 @@
-import mongoose from '../configs/connector';
-import { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
 
-interface IProcedure extends Document {
+interface IProcedure extends mongoose.Document {
   treatmentId: string;
   locationId: string;
   customerId: string;
@@ -21,7 +20,7 @@ interface IProcedure extends Document {
   createDate: Date;
 }
 
-const ProcedureSchema = new Schema({
+const ProcedureSchema = new mongoose.Schema({
   treatmentId: { type: Schema.Types.ObjectId, ref: 'Treatment' },
   locationId: { type: String, required: true },
   customerId: { type: String, required: true },

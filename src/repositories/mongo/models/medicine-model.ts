@@ -1,7 +1,6 @@
-import mongoose from '../configs/connector';
-import { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-interface IMedicine extends Document {
+interface IMedicine extends mongoose.Document {
   name: string;
   content: string;
   unit: string;
@@ -10,7 +9,7 @@ interface IMedicine extends Document {
   companyId: string;
 }
 
-const MedicineSchema = new Schema({
+const MedicineSchema = new mongoose.Schema({
   name: { type: String, required: true },
   content: { type: String, required: false },
   unit: { type: String, required: false },
