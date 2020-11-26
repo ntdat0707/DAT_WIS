@@ -38,6 +38,10 @@ const treatmentErrorDetails = {
   E_3908(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_3908', 'Diagnosis not found', detail);
     return e;
+  },
+  E_3909(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_3909', 'Prescription not found', detail);
+    return e;
   }
 };
 
