@@ -5,6 +5,7 @@ import { TEETH_2H, TEETH_ADULT, TEETH_CHILD } from '../consts';
 const quotationsDentalDetailSchema = Joi.object({
   _id: Joi.string()
     .regex(/^[0-9a-fA-F]{24}$/)
+    .allow(null, '')
     .label('quotationDentalDetailId'),
   isAccept: Joi.boolean().required().label('isAccept'),
   serviceId: Joi.string()
@@ -66,8 +67,7 @@ const createQuotationsDentalSchema = Joi.object({
 });
 
 const updateQuotationsDentalSchema = Joi.object({
-  expire: Joi.date().required().label('expire'),
-  treatmentId: Joi.string().required().label('treatmentId'),
+  expire: Joi.date().label('expire'),
   locationId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -79,4 +79,14 @@ const updateQuotationsDentalSchema = Joi.object({
   quotationsDetails: Joi.array().items(quotationsDentalDetailSchema).label('quotationsDentalDetails')
 });
 
-export { createQuotationsDentalSchema, updateQuotationsDentalSchema, quotationsDentalDetailSchema };
+
+const quotationDentalIdSchema = Joi.string()
+  .regex(/^[0-9a-fA-F]{24}$/)
+  .label('quotationDentalSchema');
+
+export {
+  createQuotationsDentalSchema,
+  updateQuotationsDentalSchema,
+  quotationsDentalDetailSchema,
+  quotationDentalIdSchema
+};

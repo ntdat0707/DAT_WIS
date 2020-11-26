@@ -14,7 +14,7 @@ export class QuotationsRoutes {
     this.router.post('/create-quotations', isAuthenticated, this.quotationsController.createQuotationsDental);
     this.router.get('/get-quotations/:treatmentId', isAuthenticated, this.quotationsController.getQuotationsDental);
     this.router.put(
-      '/update-quotations-dental/:quotationId',
+      '/update-quotations-dental/:quotationsId',
       isAuthenticated,
       this.quotationsController.updateQuotationsDental
     );

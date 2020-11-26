@@ -390,12 +390,8 @@ export class TreatmentController extends BaseController {
       let isQuotation: boolean;
       let quotationsDentalData: any = {};
       await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }, (err: any, quotations: any) => {
-        if (err) throw err;
-        if (quotations) {
-          isQuotation = true;
-        } else {
-          isQuotation = false;
-        }
+        if (err) { throw err; }
+        isQuotation = !!quotations;
       }).exec();
       if (isQuotation === false) {
         quotationsDentalData = {
@@ -410,14 +406,9 @@ export class TreatmentController extends BaseController {
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
-          delete element.note;
-          delete element.treatmentId;
-          delete element.customerId;
-          delete element.locationId;
-          delete element.serviceName;
+          element = _.omit(element, ['note', 'treatmentId', 'customerId', 'locationId', 'serviceName', 'teethId']);
           element.quotationsDentalId = quotationsId;
           element.isAccept = true;
-          delete element.teethId;
           return element;
         });
         const detailsIds: any = [];
@@ -442,7 +433,7 @@ export class TreatmentController extends BaseController {
         const quotationsDental: any = await QuotationsDentalModel.findOne(
           { treatmentId: req.body.treatmentId },
           (err: any, quotations: any) => {
-            if (err) throw err;
+            if (err) { throw err; }
             quotationsId = quotations._id;
           }
         ).exec();

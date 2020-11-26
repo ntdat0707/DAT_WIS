@@ -19,7 +19,7 @@ interface IQuotationsDentalDetail extends Document {
 }
 
 const QuotationsDentalSchema = new Schema({
-  isAccept: { type: Boolean, required: false },
+  isAccept: { type: Boolean, required: false, default: false },
   quotationsDentalId: { type: Schema.Types.ObjectId, ref: 'QuotationsDental' },
   serviceId: { type: String, required: false },
   createdAt: { type: String, default: Date.now },

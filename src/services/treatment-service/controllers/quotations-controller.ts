@@ -5,7 +5,8 @@ import { validate } from '../../../utils/validator';
 import {
   createQuotationsDentalSchema,
   treatmentIdSchema,
-  updateQuotationsDentalSchema
+  updateQuotationsDentalSchema,
+  quotationDentalIdSchema
 } from '../configs/validate-schemas';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import {
@@ -18,6 +19,9 @@ import { treatmentErrorDetails } from '../../../utils/response-messages/error-de
 import { TEETH_2H } from '../configs/consts';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
+import { Types } from 'mongoose';
+import _ from 'lodash';
+
 export class QuotationsController extends BaseController {
   /**
    * @swagger
@@ -74,7 +78,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/create-quotations:
    *   post:
    *     tags:
-   *       - Quotations
+   *       - Treatment
    *     security:
    *       - Bearer: []
    *     name: createQuotations
@@ -154,19 +158,15 @@ export class QuotationsController extends BaseController {
               }).then((serviceName: any) => {
                 return serviceName;
               });
+              delete Object.assign(item, { ['teethId']: item.teethNumbers }).teethNumbers;
               item.serviceName = serviceData.name;
               item.price = serviceData.sale_price;
-              delete Object.assign(item, { ['teethId']: item.teethNumbers }).teethNumbers;
               item.teethId = teethIds;
               item.totalPrice = item.price * item.quantity;
               item.locationId = req.body.locationId;
               item.customerId = req.body.customerId;
               item.treatmentId = req.body.treatmentId;
-              delete item.isAccept;
-              delete item.quotationsDentalId;
-              delete item.currencyUnit;
-              delete item.tax;
-              delete item.teethType;
+              item = _.omit(item, ['isAccept', 'quotationsDentalId', 'currencyUnit', 'tax', 'teethType']);
               return item;
             }
           })
@@ -174,7 +174,7 @@ export class QuotationsController extends BaseController {
         let totalPrice: number = 0;
         await Promise.resolve(
           QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsId }, (err: any, result: any) => {
-            if (err) throw err;
+            if (err) { throw err; }
             totalPrice = parseInt(
               result.map((item: any) => +item.price),
               10
@@ -199,7 +199,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/get-quotations/{treatmentId}:
    *   get:
    *     tags:
-   *       - Quotations
+   *       - Treatment
    *     security:
    *       - Bearer: []
    *     name: getQuotationsDental
@@ -281,7 +281,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/update-quotations-dental/{quotationsId}:
    *   put:
    *     tags:
-   *       - Quotations
+   *       - Treatment
    *     security:
    *       - Bearer: []
    *     name: updateQuotationsDental
@@ -305,8 +305,12 @@ export class QuotationsController extends BaseController {
    */
   public updateQuotationsDental = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const quotationsId = req.params.quotationsId;
+      const validateQuotationsIdErrors = validate(quotationsId, quotationDentalIdSchema);
+      if (validateQuotationsIdErrors) {
+        throw new CustomError(validateQuotationsIdErrors, httpStatus.BAD_REQUEST);
+      }
       const quotationsData = {
-        quotationsId: req.params.quotationsId,
         date: req.body.date,
         expire: req.body.expire,
         locationId: req.body.locationId,
@@ -317,16 +321,16 @@ export class QuotationsController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const quotationsDental: any = await QuotationsDentalModel.findById(quotationsData.quotationsId).exec();
+      const quotationsDental: any = await QuotationsDentalModel.findById(Types.ObjectId(quotationsId)).exec();
       if (!quotationsDental) {
         throw new CustomError(
-          treatmentErrorDetails.E_3903(`quotations dental ${quotationsData.quotationsId} not found`),
+          treatmentErrorDetails.E_3903(`quotations dental ${quotationsId} not found`),
           httpStatus.NOT_FOUND
         );
       }
       await QuotationsDentalModel.updateOne(
         {
-          _id: quotationsData.quotationsId
+          _id: Types.ObjectId(quotationsId)
         },
         {
           ...quotationsDental,
@@ -353,11 +357,11 @@ export class QuotationsController extends BaseController {
       );
       for (const quotationsDentalDetail of quotationsData.quotationsDetails) {
         let flagNewProcedure = false;
-        if (quotationsDentalDetail.quotationsId) {
-          const qdDetail = await QuotationsDentalDetailModel.findById(quotationsDentalDetail.quotationsId).exec();
+        if (quotationsDentalDetail._id) {
+          const qdDetail = await QuotationsDentalDetailModel.findById(Types.ObjectId(quotationsDentalDetail)).exec();
           if (!qdDetail) {
             throw new CustomError(
-              treatmentErrorDetails.E_3904(`quotations dental detail ${quotationsData.quotationsId} not found`),
+              treatmentErrorDetails.E_3904(`quotations dental detail ${quotationsId} not found`),
               httpStatus.NOT_FOUND
             );
           }
@@ -401,15 +405,14 @@ export class QuotationsController extends BaseController {
           newProcedure.locationId = req.body.locationId;
           newProcedure.customerId = req.body.customerId;
           newProcedure.treatmentId = req.body.treatmentId;
-          const { isAccept, quotationsDentalId, currencyUnit, tax, teethType, ...data } = newProcedure;
-          newProcedure = data;
+          newProcedure = _.omit(newProcedure, ['isAccept', 'quotationsDentalId', 'currencyUnit', 'tax', 'teethType']);
           await ProcedureModel.insertMany([newProcedure]);
         }
       }
       let totalPrice: number = 0;
       await Promise.resolve(
         QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsDental._id }, (err: any, result: any) => {
-          if (err) throw err;
+          if (err) { throw err; }
           totalPrice = parseInt(
             result.map((item: any) => +item.price),
             10
