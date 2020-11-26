@@ -1,13 +1,12 @@
-import mongoose from '../configs/connector';
-import { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-interface IMqttUser extends Document {
+interface IMqttUser extends mongoose.Document {
   isSupperUser: boolean;
   password: string;
   username: string;
 }
 
-const MqttUserSchema = new Schema({
+const MqttUserSchema = new mongoose.Schema({
   isSupperUser: { type: Boolean, required: true },
   password: { type: String, required: true },
   username: { type: String, required: true }

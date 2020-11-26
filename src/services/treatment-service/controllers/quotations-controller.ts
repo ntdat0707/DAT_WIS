@@ -5,8 +5,7 @@ import { validate } from '../../../utils/validator';
 import {
   createQuotationsDentalSchema,
   treatmentIdSchema,
-  updateQuotationsDentalSchema,
-  quotationDentalIdSchema
+  updateQuotationsDentalSchema
 } from '../configs/validate-schemas';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import {
@@ -16,7 +15,8 @@ import {
   TeethModel
 } from '../../../repositories/mongo/models';
 import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
-import { TEETH_2H } from '../configs/consts';
+import { TEETH_ADULT, TEETH_CHILD, TEETH_2H } from '../configs/consts';
+import { ETeeth } from '../../../utils/consts';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { ServiceModel } from '../../../repositories/postgres/models/service';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
@@ -77,7 +77,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/create-quotations:
    *   post:
    *     tags:
-   *       - Treatment
+   *       - Quotations
    *     security:
    *       - Bearer: []
    *     name: createQuotations
@@ -117,7 +117,9 @@ export class QuotationsController extends BaseController {
         let data: any = [];
         data = await Promise.all(
           req.body.quotationsDetails.map(async (item: any) => {
-            item.quantity = TEETH_2H in item.teethNumbers ? 1 : item.teethNumbers.length;
+            if ('2H' in item.teethNumbers) {
+              item.quantity = 1;
+            } else item.quantity = item.teethNumbers.length;
             Object.assign(item, { quotationsDentalId: quotationsId.toString() });
             const serviceId = item.serviceId;
             const servicePrice = await ServiceModel.findOne({
@@ -144,9 +146,12 @@ export class QuotationsController extends BaseController {
           quotationDetailsData.map(async (item: any) => {
             if (item.isAccept === true) {
               teethIds = await Promise.all(
-                item.teethNumbers.map(async (i: any) =>
-                  (await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).exec())._id.toString()
-                )
+                item.teethNumbers.map(async (i: any) => {
+                  const teethId = await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).then((teeth: any) => {
+                    return teeth._id;
+                  });
+                  return teethId.toString();
+                })
               );
               const serviceId = item.serviceId;
               const serviceData = await ServiceModel.findOne({
@@ -156,15 +161,18 @@ export class QuotationsController extends BaseController {
               }).then((serviceName: any) => {
                 return serviceName;
               });
-              delete Object.assign(item, { ['teethId']: item.teethNumbers }).teethNumbers;
               item.serviceName = serviceData.name;
               item.price = serviceData.sale_price;
+              delete Object.assign(item, { ['teethId']: item.teethNumbers }).teethNumbers;
               item.teethId = teethIds;
               item.totalPrice = item.price * item.quantity;
               item.locationId = req.body.locationId;
               item.customerId = req.body.customerId;
               item.treatmentId = req.body.treatmentId;
-              item = _.omit(item, ['isAccept', 'quotationsDentalId', 'currencyUnit', 'tax', 'teethType']);
+              delete item.isAccept;
+              delete item.quotationsDentalId;
+              delete item.currencyUnit;
+              delete item.teethType;
               return item;
             }
           })
@@ -172,9 +180,7 @@ export class QuotationsController extends BaseController {
         let totalPrice: number = 0;
         await Promise.resolve(
           QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsId }, (err: any, result: any) => {
-            if (err) {
-              throw err;
-            }
+            if (err) throw err;
             totalPrice = parseInt(
               result.map((item: any) => +item.price),
               10
@@ -182,16 +188,10 @@ export class QuotationsController extends BaseController {
           }) as any
         );
         await QuotationsDentalModel.updateOne({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
-        if (newProcedures.length) {
+        if (newProcedures.length === 0) {
           await ProcedureModel.insertMany(newProcedures);
         }
-        const quotationDetailsResult = await QuotationsDentalModel.findById(quotationsId)
-          .populate({
-            path: 'quotationsDentalDetails',
-            model: 'QuotationsDentalDetail'
-          })
-          .exec();
-        return res.status(httpStatus.OK).send(buildSuccessMessage(quotationDetailsResult));
+        return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDetails));
       } else {
         const createQuotation = new QuotationsDentalModel(quotationData);
         const quotations = createQuotation.save();
@@ -207,7 +207,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/get-quotations/{treatmentId}:
    *   get:
    *     tags:
-   *       - Treatment
+   *       - Quotations
    *     security:
    *       - Bearer: []
    *     name: getQuotationsDental
@@ -251,20 +251,20 @@ export class QuotationsController extends BaseController {
           where: { id: quotations.customerId },
           raw: true
         });
-        const quotationsDentalDetailsData: any = quotations.quotationsDentalDetails;
-        for (let i = 0; i < quotationsDentalDetailsData.length; i++) {
+        const quotationsdentalDetailsData: any = quotations.quotationsDentalDetails;
+        for (let i = 0; i < quotationsdentalDetailsData.length; i++) {
           const service: any = await ServiceModel.findOne({
-            where: { id: quotationsDentalDetailsData[i].serviceId },
+            where: { id: quotationsdentalDetailsData[i].serviceId },
             raw: true
           });
-          quotationsDentalDetailsData[i] = {
-            ...quotationsDentalDetailsData[i]._doc,
+          quotationsdentalDetailsData[i] = {
+            ...quotationsdentalDetailsData[i]._doc,
             service: service
           };
         }
         let quotationsDental: any = {
           ...quotations._doc,
-          quotationsDentalDetails: quotationsDentalDetailsData,
+          quotationsDentalDetails: quotationsdentalDetailsData,
           accountedBy: accountedBy,
           location: location,
           customerWisere: customerWisere
@@ -288,15 +288,21 @@ export class QuotationsController extends BaseController {
    * definitions:
    *   quotationUpdate:
    *       properties:
-   *           date:
+   *           Date:
    *               type: string
    *               format: date
-   *           expire:
+   *           Expire:
    *               type: string
    *               format: date
+   *           treatmentId:
+   *               type: string
    *           note:
    *               type: string
    *           locationId:
+   *               type: string
+   *           customerId:
+   *               type: string
+   *           accountedBy:
    *               type: string
    *           quotationsDetails:
    *               type: array
@@ -309,13 +315,10 @@ export class QuotationsController extends BaseController {
    *                            type: string
    *                        staffId:
    *                            type: string
-   *                        teethNumbers:
+   *                        teeth:
    *                            type: array
    *                            items:
    *                                type: string
-   *                        teethType:
-   *                            type: string
-   *                            enum: [adult, child]
    *                        discount:
    *                            type: number
    *                        discountType:
@@ -330,7 +333,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/update-quotations-dental/{quotationsId}:
    *   put:
    *     tags:
-   *       - Treatment
+   *       - Quotations
    *     security:
    *       - Bearer: []
    *     name: updateQuotationsDental
@@ -354,13 +357,8 @@ export class QuotationsController extends BaseController {
    */
   public updateQuotationsDental = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const quotationsId = req.params.quotationsId;
-      const validateQuotationsIdErrors = validate(quotationsId, quotationDentalIdSchema);
-      if (validateQuotationsIdErrors) {
-        throw new CustomError(validateQuotationsIdErrors, httpStatus.BAD_REQUEST);
-      }
       const quotationsData = {
-        date: req.body.date,
+        quotationsId: req.params.quotationsId,
         expire: req.body.expire,
         locationId: req.body.locationId,
         note: req.body.note,
@@ -370,110 +368,60 @@ export class QuotationsController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const quotationsDental: any = await QuotationsDentalModel.findById(quotationsId).exec();
+      const quotationsDental: any = await QuotationsDentalModel.findById(quotationsData.quotationsId).exec();
       if (!quotationsDental) {
         throw new CustomError(
-          treatmentErrorDetails.E_3903(`quotations dental ${quotationsId} not found`),
+          treatmentErrorDetails.E_3903(`quotations dental ${quotationsData.quotationsId} not found`),
           httpStatus.NOT_FOUND
         );
       }
-      await QuotationsDentalModel.updateOne(
+      await QuotationsDentalModel.update(
         {
-          _id: quotationsId
+          _id: quotationsData.quotationsId
         },
         {
-          date: quotationsData.date,
+          ...quotationsDental,
           expire: quotationsData.expire,
           locationId: quotationsData.locationId,
           note: quotationsData.note
         }
       ).exec();
-      quotationsData.quotationsDetails = await Promise.all(
-        quotationsData.quotationsDetails.map(async (item: any) => {
-          item.quantity = TEETH_2H in item.teethNumbers ? 1 : item.teethNumbers.length;
-          const serviceId = item.serviceId;
-          const servicePrice = await ServiceModel.findOne({
-            where: { id: serviceId },
-            attributes: ['sale_price'],
-            raw: true
-          }).then((salePrice: any) => {
-            return salePrice.sale_price;
-          });
-          item.price = servicePrice * item.quantity;
-          return item;
-        })
-      );
-      const newProcedures: any = [];
+      quotationsData.quotationsDetails = quotationsData.quotationsDetails.map((item: any) => {
+        if (item.teeth.includes(TEETH_2H)) {
+          if (item.teethType === ETeeth.ADULT) {
+            item.quantity = TEETH_ADULT.length;
+          } else {
+            item.quantity = TEETH_CHILD.length;
+          }
+        } else {
+          item.quantity = item.teeth.length;
+        }
+        return item;
+      });
       for (const quotationsDentalDetail of quotationsData.quotationsDetails) {
-        let flagNewProcedure = false;
-        if (quotationsDentalDetail._id) {
-          const qdDetail = await QuotationsDentalDetailModel.findById(quotationsDentalDetail._id).exec();
+        if (quotationsDentalDetail.quotationsId) {
+          const qdDetail = await QuotationsDentalDetailModel.findById(quotationsDentalDetail.quotationsId).exec();
           if (!qdDetail) {
             throw new CustomError(
-              treatmentErrorDetails.E_3904(`quotations dental detail ${quotationsId} not found`),
+              treatmentErrorDetails.E_3904(`quotations dental detail ${quotationsData.quotationsId} not found`),
               httpStatus.NOT_FOUND
             );
           }
-          await QuotationsDentalDetailModel.updateOne({ _id: qdDetail._id }, quotationsDentalDetail).exec();
-          flagNewProcedure = !qdDetail.isAccept && quotationsDentalDetail.isAccept;
+          await QuotationsDentalDetailModel.update(
+            { _id: quotationsDentalDetail.quotationsId },
+            quotationsDentalDetail
+          ).exec();
         } else {
           const quotationsDentalDetails = new QuotationsDentalDetailModel({
             ...quotationsDentalDetail,
-            quotationsDentalId: quotationsDental._id
+            quotationsDental: quotationsDental
           });
           await quotationsDentalDetails.save();
-          quotationsDental.quotationsDentalDetails.push(quotationsDentalDetails._id);
-          flagNewProcedure = quotationsDentalDetail.isAccept;
-        }
-
-        if (flagNewProcedure) {
-          const teethIds = await Promise.all(
-            quotationsDentalDetail.teethNumbers.map(async (i: any) => {
-              const teethId = await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).then((teeth: any) => {
-                return teeth._id;
-              });
-              return teethId.toString();
-            })
-          );
-          const serviceId = quotationsDentalDetail.serviceId;
-          const serviceData = await ServiceModel.findOne({
-            where: { id: serviceId },
-            attributes: ['name', 'sale_price'],
-            raw: true
-          }).then((serviceName: any) => {
-            return serviceName;
-          });
-          const newProcedure = {
-            ...JSON.parse(JSON.stringify(quotationsDentalDetail)),
-            serviceName: serviceData.name,
-            price: serviceData.sale_price,
-            teethId: teethIds,
-            totalPrice: quotationsDentalDetail.price * quotationsDentalDetail.quantity,
-            locationId: quotationsData.locationId,
-            customerId: quotationsDental.customerId,
-            treatmentId: quotationsDental.treatmentId
-          };
-          newProcedures.push(
-            _.omit(newProcedure, ['isAccept', 'quotationsDentalId', 'currencyUnit', 'tax', 'teethType', 'teethNumbers'])
-          );
+          quotationsDental.quotationsDentalDetails.push(quotationsDentalDetails);
         }
       }
-      if (newProcedures.length) {
-        await ProcedureModel.insertMany(newProcedures);
-      }
-      const quotationsDentalDetailsData: any = await QuotationsDentalDetailModel.find({
-        quotationsDentalId: quotationsDental._id
-      }).exec();
-      const totalPrice = quotationsDentalDetailsData.reduce((acc: number, item: any) => acc + item.price, 0);
-      quotationsDental.totalPrice = totalPrice;
       await quotationsDental.save();
-      const quotationDetailsResult = await QuotationsDentalModel.findById(quotationsId)
-        .populate({
-          path: 'quotationsDentalDetails',
-          model: 'QuotationsDentalDetail'
-        })
-        .exec();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(quotationDetailsResult));
+      return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
