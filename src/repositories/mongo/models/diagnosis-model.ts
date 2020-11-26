@@ -1,7 +1,8 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose from '../configs/connector';
+import { Schema, Document } from 'mongoose';
 import { EDiagnosis } from '../../../utils/consts';
 
-interface IDiagnosis extends mongoose.Document {
+interface IDiagnosis extends Document {
   teethId: string;
   teethNumber: number;
   staffId: string;
@@ -13,7 +14,7 @@ interface IDiagnosis extends mongoose.Document {
   timestamp: Date;
 }
 
-const DiagnosisSchema = new mongoose.Schema({
+const DiagnosisSchema = new Schema({
   teethId: { type: Schema.Types.ObjectId, ref: 'Teeth' },
   teethNumber: { type: Number, required: false },
   staffId: { type: String, required: true },

@@ -1,7 +1,8 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose from '../configs/connector';
+import { Schema, Document } from 'mongoose';
 import { EStatusTreatment } from '../../../utils/consts';
 
-interface ITreatment extends mongoose.Document {
+interface ITreatment extends Document {
   name: string;
   code: string;
   createDate: Date;
@@ -13,7 +14,7 @@ interface ITreatment extends mongoose.Document {
   treatmentProcessIds: [string];
 }
 
-const TreatmentSchema = new mongoose.Schema({
+const TreatmentSchema = new Schema({
   name: { type: String, required: true },
   code: { type: String, required: true },
   createDate: { type: Date, default: Date.now },

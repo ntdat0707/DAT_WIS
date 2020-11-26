@@ -383,92 +383,57 @@ export class TreatmentController extends BaseController {
         dataProcedures.push(data);
       }
       const procedures = await ProcedureModel.insertMany(dataProcedures);
-      const procedureIds: any = [];
-      for (const procedure of procedures) {
-        procedureIds.push(procedure._id);
-      }
-      let isQuotation: boolean;
-      let quotationsDentalData: any = {};
-      await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }, (err: any, quotations: any) => {
-        if (err) throw err;
-        if (quotations) {
-          isQuotation = true;
-        } else {
-          isQuotation = false;
-        }
-      }).exec();
-      if (isQuotation === false) {
-        quotationsDentalData = {
+      const procedureIds: any = procedures.map((item: any) => item._id);
+      const quotationsDentalData = await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }).exec();
+      if (!quotationsDentalData) {
+        const quotationsDental: any = new QuotationsDentalModel({
           date: Date.now(),
           treatmentId: req.body.treatmentId,
           locationId: req.body.locationId,
           accountedBy: res.locals.staffPayload.id,
           customerId: req.body.customerId
-        };
-        let quotationsDental: any = new QuotationsDentalModel(quotationsDentalData);
+        });
         const quotationsId = quotationsDental._id;
-        let quotationsDentalDetailsData: any = [];
-        quotationsDentalDetailsData = dataProcedures.map((element: any) => {
+        const quotationsDentalDetailsData: any = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
-          delete element.totalPrice;
-          delete element.note;
-          delete element.treatmentId;
-          delete element.customerId;
-          delete element.locationId;
-          delete element.serviceName;
+          element = _.omit(element, [
+            'totalPrice',
+            'note',
+            'treatmentId',
+            'customerId',
+            'locationId',
+            'serviceName',
+            'teethId'
+          ]);
           element.quotationsDentalId = quotationsId;
           element.isAccept = true;
-          delete element.teethId;
           return element;
         });
-        const detailsIds: any = [];
         const quotationsDetail: any = await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
-        for (const quotationsdetail of quotationsDetail) {
-          detailsIds.push(quotationsdetail._id);
-        }
-        let totalPrice: number = 0;
-        quotationsDentalDetailsData.map((b: any) => {
-          totalPrice += b.price;
-        });
-        quotationsDental.totalPrice = totalPrice;
-        quotationsDental = {
-          ...quotationsDental._doc,
-          quotationsDentalDetails: detailsIds
-        };
+        quotationsDental.totalPrice = quotationsDentalDetailsData.reduce((acc: number, b: any) => acc + b.price, 0);
+        quotationsDental.quotationsDentalDetails = quotationsDetail.map((item: any) => item._id);
         await QuotationsDentalModel.create(quotationsDental);
       } else {
-        let quotationsId: any;
-        let totalPrice: number = 0;
-        const detailsIds: any = [];
-        const quotationsDental: any = await QuotationsDentalModel.findOne(
-          { treatmentId: req.body.treatmentId },
-          (err: any, quotations: any) => {
-            if (err) throw err;
-            quotationsId = quotations._id;
-          }
-        ).exec();
-        let quotationsDentalDetailsData: any = [];
-        quotationsDentalDetailsData = dataProcedures.map((element: any) => {
+        const quotationsDental: any = await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }).exec();
+        const quotationsId = quotationsDental._id;
+        const quotationsDentalDetailsData: any[] = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
-          delete element.note;
-          delete element.totalPrice;
-          delete element.treatmentId;
-          delete element.customerId;
-          delete element.locationId;
-          delete element.serviceName;
+          element = _.omit(element, [
+            'totalPrice',
+            'note',
+            'treatmentId',
+            'customerId',
+            'locationId',
+            'serviceName',
+            'teethId'
+          ]);
           element.quotationsDentalId = quotationsId;
           element.isAccept = true;
-          delete element.teethId;
           return element;
         });
-        quotationsDentalDetailsData.map((b: any) => {
-          totalPrice += b.price;
-        });
         const quotationDentalDetails: any = await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
-        for (const quotaionsdetail of quotationDentalDetails) {
-          detailsIds.push(quotaionsdetail._id);
-        }
-        quotationsDental.totalPrice += totalPrice;
+        const detailsIds: any = quotationDentalDetails.map((item: any) => item._id);
+        quotationsDental.totalPrice += quotationsDentalDetailsData.reduce((acc: number, b: any) => acc + b.price, 0);
         quotationsDental.quotationsDentalDetails.push(...detailsIds);
         quotationsDental.save();
       }
