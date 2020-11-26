@@ -3,7 +3,12 @@ import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
-import { TreatmentProcessModel, ProcedureModel, PrescriptionModel } from '../../../repositories/mongo/models';
+import {
+  TreatmentProcessModel,
+  ProcedureModel,
+  PrescriptionModel,
+  MedicineModel
+} from '../../../repositories/mongo/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { createTreatmentProcessSchema } from '../configs/validate-schemas/treatment-process';
 import { LocationModel } from '../../../repositories/postgres/models/location';
@@ -144,6 +149,32 @@ export class TreatmentProcessController extends BaseController {
       const treatmentProcess = new TreatmentProcessModel(treatmentProcessData);
       await treatmentProcess.save();
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/get-medicines:
+   *   get:
+   *     tags:
+   *       - TreatmentProcess
+   *     security:
+   *       - Bearer: []
+   *     name: getAllMedicine
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllMedicine = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const medicines = await MedicineModel.find({}).exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(medicines));
     } catch (error) {
       return next(error);
     }
