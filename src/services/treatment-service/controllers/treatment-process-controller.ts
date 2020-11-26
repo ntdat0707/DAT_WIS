@@ -165,8 +165,6 @@ export class TreatmentProcessController extends BaseController {
       return next(error);
     }
   };
-<<<<<<< HEAD
-=======
 
   /**
    * @swagger
@@ -405,5 +403,4 @@ export class TreatmentProcessController extends BaseController {
       return next(error);
     }
   };
->>>>>>> feature/treatment
 }
