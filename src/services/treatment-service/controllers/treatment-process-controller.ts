@@ -66,7 +66,7 @@ export class TreatmentProcessController extends BaseController {
    *           prescription:
    *                   type: object
    *                   properties:
-   *                        treatmentProcessId:
+   *                        diagnosis:
    *                            type: string
    *                        note:
    *                            type: string
