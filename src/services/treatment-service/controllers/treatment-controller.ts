@@ -599,6 +599,9 @@ export class TreatmentController extends BaseController {
    *       name: treatmentId
    *       type: string
    *       required: true
+   *     - in: query
+   *       name: isTreatmentProcess
+   *       type: boolean
    *     responses:
    *       200:
    *         description: success
@@ -621,7 +624,7 @@ export class TreatmentController extends BaseController {
           httpStatus.BAD_REQUEST
         );
       }
-      const procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
+      let procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
       for (let i = 0; i < procedures.length; i++) {
         const service = await ServiceModel.findOne({ where: { id: procedures[i].serviceId }, raw: true });
         const staff = await StaffModel.findOne({ where: { id: procedures[i].staffId }, raw: true });
@@ -632,6 +635,24 @@ export class TreatmentController extends BaseController {
           staffId: undefined,
           serviceId: undefined
         };
+      }
+      const isTreatmentProcess = req.query.isTreatmentProcess;
+      if (isTreatmentProcess && isTreatmentProcess === 'true') {
+        const treatmentProcess: any = await ProcedureModel.find({
+          $and: [{ treatmentId: treatmentId }, { $or: [{ status: 'new' }, { status: 'in-progress' }] }]
+        }).exec();
+        for (let i = 0; i < treatmentProcess.length; i++) {
+          const service = await ServiceModel.findOne({ where: { id: treatmentProcess[i].serviceId }, raw: true });
+          const staff = await StaffModel.findOne({ where: { id: treatmentProcess[i].staffId }, raw: true });
+          treatmentProcess[i] = {
+            ...treatmentProcess[i]._doc,
+            service: service,
+            staff: staff,
+            staffId: undefined,
+            serviceId: undefined
+          };
+          procedures = treatmentProcess;
+        }
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
