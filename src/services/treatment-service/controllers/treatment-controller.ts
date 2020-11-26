@@ -410,6 +410,7 @@ export class TreatmentController extends BaseController {
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
+          delete element.totalPrice;
           delete element.note;
           delete element.treatmentId;
           delete element.customerId;
@@ -427,7 +428,7 @@ export class TreatmentController extends BaseController {
         }
         let totalPrice: number = 0;
         quotationsDentalDetailsData.map((b: any) => {
-          totalPrice += b.price * b.quantity;
+          totalPrice += b.price;
         });
         quotationsDental.totalPrice = totalPrice;
         quotationsDental = {
@@ -450,6 +451,7 @@ export class TreatmentController extends BaseController {
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
           delete element.note;
+          delete element.totalPrice;
           delete element.treatmentId;
           delete element.customerId;
           delete element.locationId;
