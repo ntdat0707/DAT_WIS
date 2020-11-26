@@ -14,3 +14,5 @@ export * from './treatment-process-model';
 export * from './treatment-model';
 export * from './quotations-dental-model';
 export * from './quotations-dental-detail-model';
+import mongoose from '../configs/connector';
+export { mongoose };

@@ -1,7 +1,8 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose from '../configs/connector';
+import { Schema, Document } from 'mongoose';
 import { EQuotationDiscountType, EQuotationCurrencyUnit } from '../../../utils/consts';
 
-interface IQuotationsDental extends mongoose.Document {
+interface IQuotationsDental extends Document {
   quoteCode: string;
   date: Date;
   expire: Date;
@@ -18,7 +19,7 @@ interface IQuotationsDental extends mongoose.Document {
   totalPrice: number;
 }
 
-const QuotationsDentalSchema = new mongoose.Schema({
+const QuotationsDentalSchema = new Schema({
   quoteCode: { type: String, required: false },
   date: { type: Date, required: true },
   expire: { type: Date, required: false },

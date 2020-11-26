@@ -1,5 +1,7 @@
-import mongoose, { Schema } from 'mongoose';
-interface IDiagnosticPath extends mongoose.Document {
+import mongoose from '../configs/connector';
+import { Schema, Document } from 'mongoose';
+
+interface IDiagnosticPath extends Document {
   diagnosticId: string;
   pathologicalIds: [string];
   color: string;
@@ -7,7 +9,7 @@ interface IDiagnosticPath extends mongoose.Document {
   timestamp: Date;
 }
 
-const DiagnosticPathSchema = new mongoose.Schema({
+const DiagnosticPathSchema = new Schema({
   diagnosticId: { type: Schema.Types.ObjectId, ref: 'Diagnostic' },
   pathologicalIds: [{ type: Schema.Types.ObjectId, ref: 'ToothNotation' }],
   color: { type: String, required: false },
