@@ -70,8 +70,6 @@ export class QuotationsController extends BaseController {
    *                        currencyUnit:
    *                            type: string
    *                            enum: [vnd, usd]
-   *                        tax:
-   *                            type: string
    */
   /**
    * @swagger
@@ -272,9 +270,7 @@ export class QuotationsController extends BaseController {
    *                            enum: [percent, money]
    *                        currencyUnit:
    *                            type: string
-   *                            enum: [vnd, usd]
-   *                        tax:
-   *                            type: string
+   *                            enum: [usd, vnd]
    */
   /**
    * @swagger
