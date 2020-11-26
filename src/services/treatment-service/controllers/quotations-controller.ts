@@ -113,13 +113,9 @@ export class QuotationsController extends BaseController {
         const createQuotation = new QuotationsDentalModel(quotationData);
         const quotationsId = createQuotation._id;
         createQuotation.save();
-        let quotationDetailsData: any = [];
-        let data: any = [];
-        data = await Promise.all(
+        const quotationDetailsData: any = await Promise.all(
           req.body.quotationsDetails.map(async (item: any) => {
-            if ('2H' in item.teethNumbers) {
-              item.quantity = 1;
-            } else item.quantity = item.teethNumbers.length;
+            item.quantity = TEETH_2H in item.teethNumbers ? 1 : item.teethNumbers.length;
             Object.assign(item, { quotationsDentalId: quotationsId.toString() });
             const serviceId = item.serviceId;
             const servicePrice = await ServiceModel.findOne({
@@ -133,20 +129,16 @@ export class QuotationsController extends BaseController {
             return item;
           })
         );
-        quotationDetailsData = data;
-        const quotationsDetails = await QuotationsDentalDetailModel.insertMany(quotationDetailsData);
+        const quotationsDetails: any = await QuotationsDentalDetailModel.insertMany(quotationDetailsData);
         let teethIds: any = [];
         let newProcedures: any = [];
         newProcedures = await Promise.all(
           quotationDetailsData.map(async (item: any) => {
             if (item.isAccept === true) {
               teethIds = await Promise.all(
-                item.teethNumbers.map(async (i: any) => {
-                  const teethId = await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).then((teeth: any) => {
-                    return teeth._id;
-                  });
-                  return teethId.toString();
-                })
+                item.teethNumbers.map(async (i: any) =>
+                  (await TeethModel.findOne({ toothNumber: parseInt(i, 10) }))._id.toString()
+                )
               );
               const serviceId = item.serviceId;
               const serviceData = await ServiceModel.findOne({
@@ -179,9 +171,18 @@ export class QuotationsController extends BaseController {
             );
           }) as any
         );
-        await QuotationsDentalModel.updateOne({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
+        const QuotationDentalIds = quotationsDetails.map((item: any) => item._id);
+        await QuotationsDentalModel.updateOne(
+          { _id: quotationsId },
+          {
+            quotationsDentalDetails: QuotationDentalIds,
+            totalPrice: totalPrice
+          }
+        ).exec();
         await ProcedureModel.insertMany(newProcedures);
-        return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDetails));
+        const quotationsDentalResult = await QuotationsDentalModel.findById(quotationsId)
+          .populate('QuotationsDentalDetail').exec();
+        return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDentalResult));
       } else {
         const createQuotation = new QuotationsDentalModel(quotationData);
         const quotations = createQuotation.save();
@@ -419,6 +420,7 @@ export class QuotationsController extends BaseController {
       await quotationsDental.save();
       return res.status(httpStatus.OK).send();
     } catch (error) {
+      console.log(error);
       return next(error);
     }
   };
