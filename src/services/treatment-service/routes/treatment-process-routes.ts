@@ -12,6 +12,5 @@ export class TreatmentProcessRoutes {
   }
   private config(): void {
     this.router.post('/create', isAuthenticated, this.treatmentProcessController.createTreatmentProcess);
-    this.router.post('/create-prescription', isAuthenticated, this.treatmentProcessController.createPrescription);
   }
 }

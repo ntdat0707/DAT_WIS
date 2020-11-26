@@ -28,8 +28,14 @@ import {
 } from '../../../utils/response-messages/error-details';
 import _ from 'lodash';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
-import { TeethModel, TreatmentModel, ProcedureModel } from '../../../repositories/mongo/models';
-import { EStatusProcedure } from '../../../utils/consts';
+import {
+  TeethModel,
+  TreatmentModel,
+  ProcedureModel,
+  QuotationsDentalModel,
+  QuotationsDentalDetailModel
+} from '../../../repositories/mongo/models';
+import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
 
 export class TreatmentController extends BaseController {
   /**
@@ -253,16 +259,19 @@ export class TreatmentController extends BaseController {
    *       properties:
    *           staffId:
    *               type: string
-   *           teethNumber:
+   *           teethNumbers:
    *               type: array
    *               items:
-   *                   type: integer
+   *                   type: string
    *           serviceId:
    *               type: string
    *           quantity:
    *               type: integer
    *           discount:
    *               type: integer
+   *           discountType:
+   *               type: string
+   *               enum: ['percent', 'money']
    *           totalPrice:
    *               type: integer
    *           note:
@@ -284,6 +293,10 @@ export class TreatmentController extends BaseController {
    *       required: true
    *       properties:
    *           treatmentId:
+   *               type: string
+   *           locationId:
+   *               type: string
+   *           customerId:
    *               type: string
    *           procedures:
    *               type: array
@@ -311,15 +324,22 @@ export class TreatmentController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
+      // const { workingLocationIds } = res.locals.staffPayload;
+      // if (!workingLocationIds.includes(req.body.locationId)) {
+      //   throw new CustomError(
+      //     branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+      //     httpStatus.FORBIDDEN
+      //   );
+      // }
       for (let i = 0; i < req.body.procedures.length; i++) {
         const teethIds = [];
-        for (let j = 0; j < req.body.procedures[i].teethNumber.length; j++) {
+        for (let j = 0; j < req.body.procedures[i].teethNumbers.length; j++) {
           const teeth: any = await TeethModel.findOne({
-            toothNumber: req.body.procedures[i].teethNumber[j]
+            toothNumber: parseInt(req.body.procedures[i].teethNumbers[j], 10)
           }).exec();
           if (!teeth) {
             throw new CustomError(
-              treatmentErrorDetails.E_3900(`teeth number ${req.body.procedures[i].teethNumber[j]} not found`),
+              treatmentErrorDetails.E_3900(`teeth number ${req.body.procedures[i].teethNumbers[j]} not found`),
               httpStatus.NOT_FOUND
             );
           }
@@ -340,8 +360,12 @@ export class TreatmentController extends BaseController {
           );
         }
         let discount = 0;
-        if (req.body.procedures[i].discount) {
-          discount = (service.salePrice * req.body.procedures[i].discount) / 100;
+        if (req.body.procedures[i].discount && req.body.procedures[i].discountType) {
+          if (req.body.procedures[i].discountType === EQuotationDiscountType.PERCENT) {
+            discount = (service.salePrice * req.body.procedures[i].discount) / 100;
+          } else {
+            discount = req.body.procedures[i].discount;
+          }
         }
         const totalPrice = req.body.procedures[i].quantity * service.salePrice - discount;
         if (req.body.procedures[i].totalPrice !== totalPrice) {
@@ -349,6 +373,8 @@ export class TreatmentController extends BaseController {
         }
         const data = {
           treatmentId: req.body.treatmentId,
+          locationId: req.body.locationId,
+          customerId: req.body.customerId,
           serviceName: service.name,
           price: service.salePrice,
           ...req.body.procedures[i]
@@ -361,8 +387,102 @@ export class TreatmentController extends BaseController {
       for (const procedure of procedures) {
         procedureIds.push(procedure._id);
       }
-      treatment.procedureIds = procedureIds;
-      await TreatmentModel.update({ _id: treatment._id }, treatment).exec();
+      let isQuotation: boolean;
+      let quotationsDentalData: any = {};
+      await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }, (err: any, quotations: any) => {
+        if (err) throw err;
+        if (quotations) {
+          isQuotation = true;
+        } else {
+          isQuotation = false;
+        }
+      }).exec();
+      if (isQuotation === false) {
+        quotationsDentalData = {
+          date: Date.now(),
+          treatmentId: req.body.treatmentId,
+          locationId: req.body.locationId,
+          accountedBy: res.locals.staffPayload.id,
+          customerId: req.body.customerId
+        };
+        const quotationsDental = new QuotationsDentalModel(quotationsDentalData);
+        quotationsDental.save();
+
+        const quotationsId = quotationsDental._id;
+        let quotationsDentalDetailsData: any = [];
+        quotationsDentalDetailsData = dataProcedures.map((element: any) => {
+          delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
+          delete element.price;
+          delete element.note;
+          delete element.treatmentId;
+          delete element.customerId;
+          delete element.locationId;
+          delete element.serviceName;
+          element.quotationsDentalId = quotationsId;
+          element.isAccept = true;
+          delete element.teethId;
+          return element;
+        });
+        let id: any;
+        let detailsIds: any = [];
+        await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData, (result: any) => {
+          id = result.map((a: any) => a.quotationsDentalId);
+          detailsIds = result.map((i: any) => {
+            return i._id;
+          });
+        });
+        let totalPrice: number = 0;
+        quotationsDentalDetailsData.map((b: any) => {
+          totalPrice += b.price;
+        });
+        await QuotationsDentalModel.findByIdAndUpdate(
+          { _id: id },
+          { totalPrice: totalPrice, quotationDentalDetails: detailsIds }
+        ).exec();
+      } else {
+        let quotationsId: any;
+        let totalPrice: number;
+        let detailsIds: any = [];
+        const quotationsDental: any = await QuotationsDentalModel.findOne(
+          { treatmentId: req.body.treatmentId },
+          (err: any, quotations: any) => {
+            if (err) throw err;
+            quotationsId = quotations._id;
+            detailsIds = quotations.quotationsDentalDetails;
+          }
+        ).exec();
+        totalPrice = quotationsDental.totalPrice || 0;
+        quotationsDental.quotationDentalDetails = quotationsDental.quotationDentalDetails || [];
+        let quotationsDentalDetailsData: any = [];
+        quotationsDentalDetailsData = dataProcedures.map((element: any) => {
+          delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
+          delete element.note;
+          delete element.treatmentId;
+          delete element.customerId;
+          delete element.locationId;
+          delete element.serviceName;
+          element.quotationsDentalId = quotationsId;
+          element.isAccept = true;
+          delete element.teethId;
+          return element;
+        });
+        quotationsDentalDetailsData.map((b: any) => {
+          totalPrice += b.price;
+        });
+        const quotationDentalDetails: any = await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
+        quotationDentalDetails.map((item: any) => {
+          detailsIds.push(item._id);
+        });
+        quotationsDental.totalPrice = totalPrice;
+        detailsIds.map((item: any) => quotationsDental.quotationDentalDetails.push(item));
+        //console.log('quotationdental:::', quotationsDental);
+        await QuotationsDentalModel.updateOne({ _id: quotationsId }, quotationsDental, (err: any) => {
+          if (err) throw err;
+        }).exec();
+      }
+      treatment.procedureIds.push(procedureIds);
+      await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
+
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
@@ -483,6 +603,9 @@ export class TreatmentController extends BaseController {
    *       name: treatmentId
    *       type: string
    *       required: true
+   *     - in: query
+   *       name: isTreatmentProcess
+   *       type: boolean
    *     responses:
    *       200:
    *         description: success
@@ -498,12 +621,44 @@ export class TreatmentController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).exec();
-      const treatmentProcess = await ProcedureModel.find({
-        $and: [{ treatmentId: treatmentId }, { $or: [{ status: 'new' }, { status: 'in-progress' }] }]
-      }).exec();
-      const allProcedures: any = { procedures: procedures, treatmentProcess: treatmentProcess };
-      return res.status(httpStatus.OK).send(buildSuccessMessage(allProcedures));
+      const treatment = await TreatmentModel.findOne({ _id: treatmentId }).exec();
+      if (!treatment) {
+        throw new CustomError(
+          treatmentErrorDetails.E_3902(`treatmentId ${treatmentId} not found`),
+          httpStatus.BAD_REQUEST
+        );
+      }
+      let procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
+      for (let i = 0; i < procedures.length; i++) {
+        const service = await ServiceModel.findOne({ where: { id: procedures[i].serviceId }, raw: true });
+        const staff = await StaffModel.findOne({ where: { id: procedures[i].staffId }, raw: true });
+        procedures[i] = {
+          ...procedures[i]._doc,
+          service: service,
+          staff: staff,
+          staffId: undefined,
+          serviceId: undefined
+        };
+      }
+      const isTreatmentProcess = req.query.isTreatmentProcess;
+      if (isTreatmentProcess && isTreatmentProcess === 'true') {
+        const treatmentProcess: any = await ProcedureModel.find({
+          $and: [{ treatmentId: treatmentId }, { $or: [{ status: 'new' }, { status: 'in-progress' }] }]
+        }).exec();
+        for (let i = 0; i < treatmentProcess.length; i++) {
+          const service = await ServiceModel.findOne({ where: { id: treatmentProcess[i].serviceId }, raw: true });
+          const staff = await StaffModel.findOne({ where: { id: treatmentProcess[i].staffId }, raw: true });
+          treatmentProcess[i] = {
+            ...treatmentProcess[i]._doc,
+            service: service,
+            staff: staff,
+            staffId: undefined,
+            serviceId: undefined
+          };
+          procedures = treatmentProcess;
+        }
+      }
+      return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
     }

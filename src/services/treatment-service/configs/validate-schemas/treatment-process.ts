@@ -19,9 +19,6 @@ const createTreatmentProcessSchema = Joi.object({
     .label('staffId'),
   staffName: Joi.string().label('staffName'),
   processDescription: Joi.string().label('processDescription'),
-  prescriptionId: Joi.string()
-    .regex(/^[0-9a-fA-F]{24}$/)
-    .label('prescriptionId'),
   treatmentId: Joi.string()
     .required()
     .regex(/^[0-9a-fA-F]{24}$/)
@@ -43,27 +40,25 @@ const createTreatmentProcessSchema = Joi.object({
     .min(1)
     .required()
     .label('procedures'),
-  detailTreatment: Joi.string().label('detailTreatment')
+  detailTreatment: Joi.string().label('detailTreatment'),
+  prescription: Joi.object({
+    diagnosis: Joi.string().label('diagnosis'),
+    note: Joi.string().label('note'),
+    createDate: Joi.date().label('createDate'),
+    drugList: Joi.array()
+      .min(1)
+      .required()
+      .items(
+        Joi.object({
+          medicineId: Joi.string()
+            .regex(/^[0-9a-fA-F]{24}$/)
+            .label('medicineId'),
+          quantity: Joi.number().label('quantity'),
+          note: Joi.string().label('note')
+        })
+      )
+      .label('drugList')
+  }).label('prescription')
 });
 
-const createPrescriptionSchema = Joi.object({
-  treatmentProcessId: Joi.string()
-    .required()
-    .regex(/^[0-9a-fA-F]{24}$/)
-    .label('treatmentProcessId'),
-  note: Joi.string().label('note'),
-  createDate: Joi.date().label('createDate'),
-  drugList: Joi.array()
-    .min(1)
-    .required()
-    .items(
-      Joi.object({
-        medicineId: Joi.string()
-          .regex(/^[0-9a-fA-F]{24}$/)
-          .label('medicineId'),
-        quantity: Joi.number().label('quantity')
-      })
-    )
-    .label('drugList')
-});
-export { createTreatmentProcessSchema, createPrescriptionSchema };
+export { createTreatmentProcessSchema };
