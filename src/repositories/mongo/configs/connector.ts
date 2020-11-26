@@ -6,7 +6,8 @@ const mongoURL = 'mongodb://' + process.env.MONGO_HOST + ':' + process.env.MONGO
 const options = {
   user: process.env.MONGO_USERNAME,
   pass: process.env.MONGO_PASSWORD,
-  useNewUrlParser: true
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 };
 const mongoose = new Mongoose();
 mongoose
