@@ -275,7 +275,7 @@ export class CustomerController {
         if (!company) {
           data.code = 0;
         } else {
-          if (company.lengthCode === 0 || company.lengthCode < total) {
+          if (company.lengthCode === 0 || !company.lengthCode) {
             throw new CustomError(
               customerErrorDetails.E_3013(`Length code ${company.lengthCode} is smaller than total customer-wisere`),
               HttpStatus.BAD_REQUEST
