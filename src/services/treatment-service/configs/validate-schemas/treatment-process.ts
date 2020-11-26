@@ -60,5 +60,28 @@ const createTreatmentProcessSchema = Joi.object({
       .label('drugList')
   }).label('prescription')
 });
+const updatePrescriptionIdSchema = Joi.object({
+  prescriptionId: Joi.string()
+    .required()
+    .required()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .label('prescriptionId'),
+  diagnosis: Joi.string().label('diagnosis'),
+  note: Joi.string().label('note'),
+  createDate: Joi.date().label('createDate'),
+  drugList: Joi.array()
+    .min(1)
+    .required()
+    .items(
+      Joi.object({
+        medicineId: Joi.string()
+          .regex(/^[0-9a-fA-F]{24}$/)
+          .label('medicineId'),
+        quantity: Joi.number().label('quantity'),
+        note: Joi.string().label('note')
+      })
+    )
+    .label('drugList')
+});
 
-export { createTreatmentProcessSchema };
+export { createTreatmentProcessSchema, updatePrescriptionIdSchema };
