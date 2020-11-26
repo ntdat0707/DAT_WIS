@@ -42,6 +42,17 @@ const treatmentErrorDetails = {
   E_3909(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_3909', 'Prescription not found', detail);
     return e;
+<<<<<<< HEAD
+=======
+  },
+  E_3910(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_3910', 'Treatment process not found', detail);
+    return e;
+  },
+  E_3911(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_3911', 'Procedures not valid', detail);
+    return e;
+>>>>>>> feature/treatment
   }
 };
 

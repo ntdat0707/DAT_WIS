@@ -13,5 +13,23 @@ export class TreatmentProcessRoutes {
   private config(): void {
     this.router.post('/create', isAuthenticated, this.treatmentProcessController.createTreatmentProcess);
     this.router.get('/get-medicines', isAuthenticated, this.treatmentProcessController.getAllMedicine);
+<<<<<<< HEAD
+=======
+    this.router.put(
+      '/update/:treatmentProcessId',
+      isAuthenticated,
+      this.treatmentProcessController.updateTreatmentProcess
+    );
+    this.router.get(
+      '/get-all-treatment-process/:treatmentId',
+      isAuthenticated,
+      this.treatmentProcessController.getAllTreatmentProcess
+    );
+    this.router.get(
+      '/get-treatment-process/:treatmentProcessId',
+      isAuthenticated,
+      this.treatmentProcessController.getTreatmentProcess
+    );
+>>>>>>> feature/treatment
   }
 }
