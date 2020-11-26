@@ -10,7 +10,7 @@ export * from './diagnostic-path-model';
 export * from './tooth-notation-model';
 export * from './medicine-model';
 export * from './prescription-model';
-export * from './treatment-process';
+export * from './treatment-process-model';
 export * from './treatment-model';
 export * from './quotations-dental-model';
 export * from './quotations-dental-detail-model';

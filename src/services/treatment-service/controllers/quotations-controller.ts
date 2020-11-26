@@ -323,7 +323,7 @@ export class QuotationsController extends BaseController {
       const quotationsDental: any = await QuotationsDentalModel.findById(quotationsData.quotationsId).exec();
       if (!quotationsDental) {
         throw new CustomError(
-          treatmentErrorDetails.E_3905(`quotations dental ${quotationsData.quotationsId} not found`),
+          treatmentErrorDetails.E_3903(`quotations dental ${quotationsData.quotationsId} not found`),
           httpStatus.NOT_FOUND
         );
       }

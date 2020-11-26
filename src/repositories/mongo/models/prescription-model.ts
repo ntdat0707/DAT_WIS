@@ -8,18 +8,20 @@ interface IPrescription extends mongoose.Document {
     {
       medicineId: string;
       quantity: number;
+      note: string;
     }
   ];
 }
 
 const PrescriptionSchema = new mongoose.Schema({
-  diagnosis: { type: String, required: true },
+  diagnosis: { type: String, required: false },
   note: { type: String, required: false },
   createDate: { type: Date, default: Date.now },
   drugList: [
     {
       medicineId: { type: Schema.Types.ObjectId, ref: 'Medicine' },
-      quantity: { type: Number, required: false }
+      quantity: { type: Number, required: false },
+      note: { type: String, required: false }
     }
   ]
 });

@@ -10,9 +10,12 @@ interface ITreatmentProcess extends mongoose.Document {
   prescriptionId: string;
   treatmentId: string;
   note: string;
-  createDate: Date;
-  creatorId: string;
-  creatorName: string;
+  createOn: Date;
+  createdById: string;
+  createdByName: string;
+  procedureIds: [string];
+  detailTreatment: string;
+  //laboId:string;
 }
 
 const TreatmentProcessSchema = new mongoose.Schema({
@@ -21,13 +24,16 @@ const TreatmentProcessSchema = new mongoose.Schema({
   locationName: { type: String, required: true },
   staffId: { type: String, required: true },
   staffName: { type: String, required: true },
-  processDescription: { type: String, required: true },
+  processDescription: { type: String, required: false },
   prescriptionId: { type: Schema.Types.ObjectId, ref: 'Prescription' },
   treatmentId: { type: Schema.Types.ObjectId, ref: 'Treatment' },
   note: { type: String, required: false },
-  createDate: { type: Date, default: Date.now },
-  creatorId: { type: String, required: true },
-  creatorName: { type: String, required: true }
+  createOn: { type: Date, default: Date.now },
+  createdById: { type: String, required: true },
+  createdByName: { type: String, required: true },
+  procedureIds: [{ type: Schema.Types.ObjectId, ref: 'Procedure' }],
+  detailTreatment: { type: String, required: false }
+  //laboId:{}
 });
 
 //Model

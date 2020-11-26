@@ -305,7 +305,10 @@ export class DiagnosticController extends BaseController {
       if (treatment.diagnosisIds.length > 0) {
         for (const diagnosticId of treatment.diagnosisIds) {
           if (diagnosticId === dataInput.diagnosisId) {
-            throw new CustomError(treatmentErrorDetails.E_4101(`Diagnostic ${diagnosticId} is already exists`));
+            throw new CustomError(
+              treatmentErrorDetails.E_3906(`Diagnostic ${diagnosticId} is already exists`),
+              httpStatus.BAD_REQUEST
+            );
           }
         }
       }
@@ -490,7 +493,7 @@ export class DiagnosticController extends BaseController {
       }
       const diagnosis = await DiagnosisModel.findById(diagnosisId).exec();
       if (!diagnosis) {
-        throw new CustomError(treatmentErrorDetails.E_4102(`diagnosis ${diagnosisId} not found`), httpStatus.NOT_FOUND);
+        throw new CustomError(treatmentErrorDetails.E_3908(`diagnosis ${diagnosisId} not found`), httpStatus.NOT_FOUND);
       }
       await DiagnosisModel.findByIdAndDelete(diagnosisId).exec();
       return res.status(httpStatus.OK).send();
@@ -541,7 +544,7 @@ export class DiagnosticController extends BaseController {
       const diagnostic = await DiagnosticModel.findById({ _id: diagnosticId }).exec();
       if (!diagnostic) {
         throw new CustomError(
-          treatmentErrorDetails.E_4100(`diagnostic ${diagnosticId} not found`),
+          treatmentErrorDetails.E_3907(`diagnostic ${diagnosticId} not found`),
           httpStatus.NOT_FOUND
         );
       }

@@ -405,14 +405,11 @@ export class TreatmentController extends BaseController {
           accountedBy: res.locals.staffPayload.id,
           customerId: req.body.customerId
         };
-        const quotationsDental = new QuotationsDentalModel(quotationsDentalData);
-        quotationsDental.save();
-
+        let quotationsDental: any = new QuotationsDentalModel(quotationsDentalData);
         const quotationsId = quotationsDental._id;
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
-          delete element.price;
           delete element.note;
           delete element.treatmentId;
           delete element.customerId;
@@ -423,36 +420,32 @@ export class TreatmentController extends BaseController {
           delete element.teethId;
           return element;
         });
-        let id: any;
-        let detailsIds: any = [];
-        await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData, (result: any) => {
-          id = result.map((a: any) => a.quotationsDentalId);
-          detailsIds = result.map((i: any) => {
-            return i._id;
-          });
-        });
+        const detailsIds: any = [];
+        const quotationsDetail: any = await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
+        for (const quotationsdetail of quotationsDetail) {
+          detailsIds.push(quotationsdetail._id);
+        }
         let totalPrice: number = 0;
         quotationsDentalDetailsData.map((b: any) => {
-          totalPrice += b.price;
+          totalPrice += b.price * b.quantity;
         });
-        await QuotationsDentalModel.findByIdAndUpdate(
-          { _id: id },
-          { totalPrice: totalPrice, quotationDentalDetails: detailsIds }
-        ).exec();
+        quotationsDental.totalPrice = totalPrice;
+        quotationsDental = {
+          ...quotationsDental,
+          quotationDentalDetails: detailsIds
+        };
+        quotationsDental.save();
       } else {
         let quotationsId: any;
         let totalPrice: number;
-        let detailsIds: any = [];
+        const detailsIds: any = [];
         const quotationsDental: any = await QuotationsDentalModel.findOne(
           { treatmentId: req.body.treatmentId },
           (err: any, quotations: any) => {
             if (err) throw err;
             quotationsId = quotations._id;
-            detailsIds = quotations.quotationsDentalDetails;
           }
         ).exec();
-        totalPrice = quotationsDental.totalPrice || 0;
-        quotationsDental.quotationDentalDetails = quotationsDental.quotationDentalDetails || [];
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
@@ -470,15 +463,18 @@ export class TreatmentController extends BaseController {
           totalPrice += b.price;
         });
         const quotationDentalDetails: any = await QuotationsDentalDetailModel.insertMany(quotationsDentalDetailsData);
-        quotationDentalDetails.map((item: any) => {
-          detailsIds.push(item._id);
-        });
+        for (const quotaionsdetail of quotationDentalDetails) {
+          detailsIds.push(quotaionsdetail._id);
+        }
         quotationsDental.totalPrice = totalPrice;
-        detailsIds.map((item: any) => quotationsDental.quotationDentalDetails.push(item));
-        //console.log('quotationdental:::', quotationsDental);
-        await QuotationsDentalModel.updateOne({ _id: quotationsId }, quotationsDental, (err: any) => {
-          if (err) throw err;
-        }).exec();
+        quotationsDental.save();
+        await QuotationsDentalModel.updateOne(
+          { _id: quotationsId },
+          { $push: { quotationsDentalDetails: detailsIds } },
+          (err: any) => {
+            if (err) throw err;
+          }
+        ).exec();
       }
       treatment.procedureIds.push(procedureIds);
       await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
@@ -603,6 +599,9 @@ export class TreatmentController extends BaseController {
    *       name: treatmentId
    *       type: string
    *       required: true
+   *     - in: query
+   *       name: isTreatmentProcess
+   *       type: boolean
    *     responses:
    *       200:
    *         description: success
@@ -622,10 +621,10 @@ export class TreatmentController extends BaseController {
       if (!treatment) {
         throw new CustomError(
           treatmentErrorDetails.E_3902(`treatmentId ${treatmentId} not found`),
-          httpStatus.BAD_REQUEST
+          httpStatus.NOT_FOUND
         );
       }
-      const procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
+      let procedures: any = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
       for (let i = 0; i < procedures.length; i++) {
         const service = await ServiceModel.findOne({ where: { id: procedures[i].serviceId }, raw: true });
         const staff = await StaffModel.findOne({ where: { id: procedures[i].staffId }, raw: true });
@@ -636,6 +635,24 @@ export class TreatmentController extends BaseController {
           staffId: undefined,
           serviceId: undefined
         };
+      }
+      const isTreatmentProcess = req.query.isTreatmentProcess;
+      if (isTreatmentProcess && isTreatmentProcess === 'true') {
+        const treatmentProcess: any = await ProcedureModel.find({
+          $and: [{ treatmentId: treatmentId }, { $or: [{ status: 'new' }, { status: 'in-progress' }] }]
+        }).exec();
+        for (let i = 0; i < treatmentProcess.length; i++) {
+          const service = await ServiceModel.findOne({ where: { id: treatmentProcess[i].serviceId }, raw: true });
+          const staff = await StaffModel.findOne({ where: { id: treatmentProcess[i].staffId }, raw: true });
+          treatmentProcess[i] = {
+            ...treatmentProcess[i]._doc,
+            service: service,
+            staff: staff,
+            staffId: undefined,
+            serviceId: undefined
+          };
+          procedures = treatmentProcess;
+        }
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
@@ -679,7 +696,7 @@ export class TreatmentController extends BaseController {
       if (procedure.status !== EStatusProcedure.COMPLETE) {
         procedure.status = EStatusProcedure.REJECT;
       }
-      await procedure.save();
+      await ProcedureModel.updateOne({ _id: procedureId }, procedure).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedure));
     } catch (error) {
       return next(error);
