@@ -431,13 +431,13 @@ export class TreatmentController extends BaseController {
         });
         quotationsDental.totalPrice = totalPrice;
         quotationsDental = {
-          ...quotationsDental,
-          quotationDentalDetails: detailsIds
+          ...quotationsDental._doc,
+          quotationsDentalDetails: detailsIds
         };
-        quotationsDental.save();
+        await QuotationsDentalModel.create(quotationsDental);
       } else {
         let quotationsId: any;
-        let totalPrice: number;
+        let totalPrice: number = 0;
         const detailsIds: any = [];
         const quotationsDental: any = await QuotationsDentalModel.findOne(
           { treatmentId: req.body.treatmentId },
@@ -466,19 +466,12 @@ export class TreatmentController extends BaseController {
         for (const quotaionsdetail of quotationDentalDetails) {
           detailsIds.push(quotaionsdetail._id);
         }
-        quotationsDental.totalPrice = totalPrice;
+        quotationsDental.totalPrice += totalPrice;
+        quotationsDental.quotationsDentalDetails.push(...detailsIds);
         quotationsDental.save();
-        await QuotationsDentalModel.updateOne(
-          { _id: quotationsId },
-          { $push: { quotationsDentalDetails: detailsIds } },
-          (err: any) => {
-            if (err) throw err;
-          }
-        ).exec();
       }
       treatment.procedureIds.push(procedureIds);
       await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
-
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
