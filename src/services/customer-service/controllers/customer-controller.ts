@@ -61,7 +61,8 @@ import { ICustomerRecoveryPasswordTemplate } from '../../../utils/emailer/templa
 import * as ejs from 'ejs';
 import * as path from 'path';
 import { sendEmail } from '../../../utils/emailer';
-import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
+import { MqttUserModel } from '../../../repositories/mongo/models';
+import md5 from 'md5';
 
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.MARKETPLACE_URL;
@@ -1154,13 +1155,14 @@ export class CustomerController {
             facebookId: req.body.providerId,
             avatarPath: req.body.avatarPath ? req.body.avatarPath : ''
           };
+          data.id = uuidv4();
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newCustomer = await CustomerModel.create(data, { transaction });
           mqttUserData = {
             isSupperUser: false,
-            username: data.email
+            username: data.id
           };
-          mqttUserData.password = data.password;
+          mqttUserData.password = md5(data.id + data.email);
           mqttUserModel = new MqttUserModel(mqttUserData);
           await mqttUserModel.save();
           accessTokenData = {
@@ -1219,12 +1221,13 @@ export class CustomerController {
             avatarPath: req.body.avatarPath ? req.body.avatarPath : null
           };
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
+          data.id = uuidv4();
           newCustomer = await CustomerModel.create(data, { transaction });
           mqttUserData = {
             isSupperUser: false,
-            username: data.email
+            username: data.id
           };
-          mqttUserData.password = data.password;
+          mqttUserData.password = md5(data.id + data.email);
           mqttUserModel = new MqttUserModel(mqttUserData);
           await mqttUserModel.save();
           accessTokenData = {
@@ -1350,13 +1353,14 @@ export class CustomerController {
           appleId: req.body.appleId,
           isBusinessAccount: false
         };
+        data.id = uuidv4();
         data.password = await hash(password, PASSWORD_SALT_ROUNDS);
         const newCustomer = await CustomerModel.create(data, { transaction });
         const mqttUserData: any = {
           isSupperUser: false,
-          username: data.email
+          username: data.id
         };
-        mqttUserData.password = data.password;
+        mqttUserData.password = md5(data.id + newCustomer.email);
         const mqttUserModel = new MqttUserModel(mqttUserData);
         await mqttUserModel.save();
         accessTokenData = {
@@ -1478,14 +1482,16 @@ export class CustomerController {
         if (existEmail) throw new CustomError(customerErrorDetails.E_3000(), HttpStatus.BAD_REQUEST);
       }
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
+      data.id = uuidv4();
       // start transaction
+      data.id = uuidv4();
       transaction = await sequelize.transaction();
       const customer = await CustomerModel.create(data, { transaction });
       const mqttUserData: any = {
         isSupperUser: false,
         username: data.email
       };
-      mqttUserData.password = data.password;
+      mqttUserData.password = md5(data.id + data.email);
       const mqttUserModel = new MqttUserModel(mqttUserData);
       await mqttUserModel.save();
       //commit transaction
