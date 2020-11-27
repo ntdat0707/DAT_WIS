@@ -472,7 +472,7 @@ export class TreatmentController extends BaseController {
         quotationsDental.quotationsDentalDetails.push(...detailsIds);
         quotationsDental.save();
       }
-      treatment.procedureIds.push(procedureIds);
+      treatment.procedureIds.push(...procedureIds);
       await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
