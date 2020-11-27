@@ -176,7 +176,7 @@ export class QuotationsController extends BaseController {
               throw err;
             }
             totalPrice = parseInt(
-              result.map((item: any) => +item.price),
+              result.reduce((acc: any, item: any) => (acc = item.price), 0),
               10
             );
           }) as any
@@ -237,7 +237,7 @@ export class QuotationsController extends BaseController {
           model: 'QuotationsDentalDetail'
         })
         .exec();
-      if (quotations.length !== 0) {
+      if (quotations !== null) {
         const accountedBy: any = await StaffModel.findOne({
           where: { id: quotations.accountedBy },
           attributes: { exclude: ['password'] },
@@ -279,7 +279,7 @@ export class QuotationsController extends BaseController {
         quotationsDental = _.omit(quotationsDental, ['locationId', 'customerId']);
         return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDental));
       } else {
-        return res.status(httpStatus.OK).send(buildSuccessMessage(quotations));
+        return res.status(httpStatus.OK).send(buildSuccessMessage([]));
       }
     } catch (error) {
       return next(error);
