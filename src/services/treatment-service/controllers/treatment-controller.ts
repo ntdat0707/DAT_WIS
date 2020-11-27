@@ -575,7 +575,7 @@ export class TreatmentController extends BaseController {
       const treatmentId = req.params.treatmentId;
       const dataInput = {
         treatmentId: req.params.treatmentId,
-        isTreatmentProcess: req.query.isTreatmentProcess
+        isTreatmentProcess: req.query.isTreatmentProcess ? req.query.isTreatmentProcess : false
       };
       const validateErrors = validate(dataInput, getAllProcedureSchema);
       if (validateErrors) {

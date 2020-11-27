@@ -111,7 +111,7 @@ const getAllProcedureSchema = Joi.object({
     .regex(/^[0-9a-fA-F]{24}$/)
     .required()
     .label('treatmentId'),
-  isTreatmentProcess: Joi.boolean().required().label('isTreatmentProcess')
+  isTreatmentProcess: Joi.boolean().allow(null).label('isTreatmentProcess')
 });
 
 export {
