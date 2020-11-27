@@ -28,7 +28,8 @@ const QuotationsDentalSchema = new Schema({
   discountType: { type: String, enum: Object.values(EQuotationDiscountType), default: EQuotationDiscountType.PERCENT },
   quantity: { type: Number, required: false },
   currencyUnit: { type: String, enum: Object.values(EQuotationCurrencyUnit), default: EQuotationCurrencyUnit.VND },
-  price: { type: Number, required: false }
+  price: { type: Number, required: false },
+  staffId: { type: String, required: false }
 });
 
 //Model
