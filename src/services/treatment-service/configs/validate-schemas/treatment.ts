@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EDiscountType, EStatusTreatment } from '../../../../utils/consts';
+import { EQuotationDiscountType, EStatusTreatment } from '../../../../utils/consts';
 
 const languageSchema = Joi.string().valid('en', 'vi').required().label('language');
 
@@ -54,7 +54,7 @@ const createProcedureSchema = Joi.object({
           })
           .required()
           .label('staffId'),
-        teethNumbers: Joi.array().items(Joi.number().integer()).required().label('teethNumbers'),
+        teethNumbers: Joi.array().items(Joi.string()).required().label('teethNumbers'),
         serviceId: Joi.string()
           .guid({
             version: ['uuidv4']
@@ -64,7 +64,7 @@ const createProcedureSchema = Joi.object({
         quantity: Joi.number().integer().min(1).required().label('quantity'),
         discount: Joi.number().integer().min(0).allow(null).label('discount'),
         discountType: Joi.string()
-          .valid(...Object.values(EDiscountType))
+          .valid(...Object.values(EQuotationDiscountType))
           .label('discountType'),
         totalPrice: Joi.number().integer().min(1).required().label('totalPrice'),
         note: Joi.string().max(150).allow(null, '').label('note')
