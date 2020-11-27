@@ -117,7 +117,9 @@ export class QuotationsController extends BaseController {
         let data: any = [];
         data = await Promise.all(
           req.body.quotationsDetails.map(async (item: any) => {
-            item.quantity = TEETH_2H in item.teethNumbers ? 1 : item.teethNumbers.length;
+            if ('2H' in item.teethNumbers) {
+              item.quantity = 1;
+            } else item.quantity = item.teethNumbers.length;
             Object.assign(item, { quotationsDentalId: quotationsId.toString() });
             const serviceId = item.serviceId;
             const servicePrice = await ServiceModel.findOne({
@@ -144,9 +146,12 @@ export class QuotationsController extends BaseController {
           quotationDetailsData.map(async (item: any) => {
             if (item.isAccept === true) {
               teethIds = await Promise.all(
-                item.teethNumbers.map(async (i: any) =>
-                  (await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).exec())._id.toString()
-                )
+                item.teethNumbers.map(async (i: any) => {
+                  const teethId = await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).then((teeth: any) => {
+                    return teeth._id;
+                  });
+                  return teethId.toString();
+                })
               );
               const serviceId = item.serviceId;
               const serviceData = await ServiceModel.findOne({
@@ -156,15 +161,18 @@ export class QuotationsController extends BaseController {
               }).then((serviceName: any) => {
                 return serviceName;
               });
-              delete Object.assign(item, { ['teethId']: item.teethNumbers }).teethNumbers;
               item.serviceName = serviceData.name;
               item.price = serviceData.sale_price;
+              delete Object.assign(item, { ['teethId']: item.teethNumbers }).teethNumbers;
               item.teethId = teethIds;
               item.totalPrice = item.price * item.quantity;
               item.locationId = req.body.locationId;
               item.customerId = req.body.customerId;
               item.treatmentId = req.body.treatmentId;
-              item = _.omit(item, ['isAccept', 'quotationsDentalId', 'currencyUnit', 'tax', 'teethType']);
+              delete item.isAccept;
+              delete item.quotationsDentalId;
+              delete item.currencyUnit;
+              delete item.teethType;
               return item;
             }
           })
@@ -172,9 +180,7 @@ export class QuotationsController extends BaseController {
         let totalPrice: number = 0;
         await Promise.resolve(
           QuotationsDentalDetailModel.find({ quotationsDentalId: quotationsId }, (err: any, result: any) => {
-            if (err) {
-              throw err;
-            }
+            if (err) throw err;
             totalPrice = parseInt(
               result.reduce((acc: any, item: any) => (acc = item.price), 0),
               10
@@ -182,16 +188,10 @@ export class QuotationsController extends BaseController {
           }) as any
         );
         await QuotationsDentalModel.updateOne({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
-        if (newProcedures.length) {
+        if (newProcedures.length === 0) {
           await ProcedureModel.insertMany(newProcedures);
         }
-        const quotationDetailsResult = await QuotationsDentalModel.findById(quotationsId)
-          .populate({
-            path: 'quotationsDentalDetails',
-            model: 'QuotationsDentalDetail'
-          })
-          .exec();
-        return res.status(httpStatus.OK).send(buildSuccessMessage(quotationDetailsResult));
+        return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDetails));
       } else {
         const createQuotation = new QuotationsDentalModel(quotationData);
         const quotations = createQuotation.save();
