@@ -257,9 +257,11 @@ export class QuotationsController extends BaseController {
             where: { id: quotationsdentalDetailsData[i].serviceId },
             raw: true
           });
+          const staff = await StaffModel.findOne({ where: { id: quotationsdentalDetailsData[i].staffId }, raw: true });
           quotationsdentalDetailsData[i] = {
             ...quotationsdentalDetailsData[i]._doc,
-            service: service
+            service: service,
+            staff: staff
           };
         }
         let quotationsDental: any = {
@@ -269,6 +271,7 @@ export class QuotationsController extends BaseController {
           location: location,
           customerWisere: customerWisere
         };
+
         quotationsDental.quotationsDentalDetails = quotationsDental.quotationsDentalDetails.map((item: any) => {
           item = _.omit(item, ['serviceId']);
           return item;
