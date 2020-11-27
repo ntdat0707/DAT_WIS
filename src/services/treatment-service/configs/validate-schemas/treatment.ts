@@ -106,6 +106,14 @@ const treatmentProcessIdSchema = Joi.string()
   .required()
   .label('treatmentProcessId');
 
+const getAllProcedureSchema = Joi.object({
+  treatmentId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .required()
+    .label('treatmentId'),
+  isTreatmentProcess: Joi.boolean().allow(null).label('isTreatmentProcess')
+});
+
 export {
   languageSchema,
   customerWisereIdSchema,
@@ -114,5 +122,6 @@ export {
   createTreatmentSchema,
   treatmentIdSchema,
   procedureSchema,
-  treatmentProcessIdSchema
+  treatmentProcessIdSchema,
+  getAllProcedureSchema
 };
