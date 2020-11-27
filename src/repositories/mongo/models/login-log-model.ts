@@ -1,7 +1,6 @@
-import mongoose from '../configs/connector';
-import { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-interface ILoginLog extends Document {
+interface ILoginLog extends mongoose.Document {
   email: string;
   location: string;
   ip: string;
@@ -13,7 +12,7 @@ interface ILoginLog extends Document {
   os: string;
 }
 
-const LoginLogSchema = new Schema({
+const LoginLogSchema = new mongoose.Schema({
   email: { type: String, required: false },
   location: { type: String, required: true },
   ip: { type: String, required: true },

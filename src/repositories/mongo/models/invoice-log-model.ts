@@ -1,9 +1,7 @@
-import mongoose from '../configs/connector';
-import { Schema, Document } from 'mongoose';
-
+import mongoose from 'mongoose';
 import { IInvoiceDetailLog } from './invoice-detail-log-model';
 
-interface IInvoiceLog extends Document {
+interface IInvoiceLog extends mongoose.Document {
   invoiceId: string;
   locationId: string;
   appointmentId: string;
@@ -22,7 +20,7 @@ interface IInvoiceLog extends Document {
   timestamp: Date;
 }
 
-const InvoiceSchema = new Schema({
+const InvoiceSchema = new mongoose.Schema({
   invoiceId: { type: String, required: true },
   locationId: { type: String, required: true },
   appointmentId: { type: String, required: false },

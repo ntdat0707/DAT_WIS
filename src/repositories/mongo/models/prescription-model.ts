@@ -1,7 +1,6 @@
-import mongoose from '../configs/connector';
-import { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-interface IPrescription extends Document {
+interface IPrescription extends mongoose.Document {
   diagnosis: string;
   note: string;
   createDate: Date;

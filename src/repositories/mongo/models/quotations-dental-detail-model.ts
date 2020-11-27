@@ -1,8 +1,7 @@
-import mongoose from '../configs/connector';
-import { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { EQuotationDiscountType, EQuotationCurrencyUnit, EQuotationTeethType } from '../../../utils/consts';
 
-interface IQuotationsDentalDetail extends Document {
+interface IQuotationsDentalDetail extends mongoose.Document {
   isAccept: boolean;
   quotationsDentalId: string;
   serviceId: string;
@@ -17,11 +16,11 @@ interface IQuotationsDentalDetail extends Document {
   price: number;
 }
 
-const QuotationsDentalSchema = new Schema({
-  isAccept: { type: Boolean, required: false, default: false },
+const QuotationsDentalSchema = new mongoose.Schema({
+  isAccept: { type: Boolean, required: false },
   quotationsDentalId: { type: Schema.Types.ObjectId, ref: 'QuotationsDental' },
   serviceId: { type: String, required: false },
-  createdAt: { type: String, default: Date.now },
+  createdAt: { type: Date, default: Date.now },
   teethNumbers: [{ type: String, required: false }],
   teethType: { type: String, enum: Object.values(EQuotationTeethType), required: false },
   discount: { type: Number, default: 0 },

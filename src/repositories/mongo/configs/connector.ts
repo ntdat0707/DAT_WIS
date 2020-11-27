@@ -1,28 +1,24 @@
-import { Mongoose } from 'mongoose';
+import mongoose from 'mongoose';
 import { logger } from '../../../utils/logger';
 require('dotenv').config();
-
-const mongoURL = 'mongodb://' + process.env.MONGO_HOST + ':' + process.env.MONGO_PORT + '/' + process.env.MONGO_NAME;
-const options = {
-  user: process.env.MONGO_USERNAME,
-  pass: process.env.MONGO_PASSWORD,
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-};
-const mongoose = new Mongoose();
-mongoose
-  .connect(mongoURL, options)
-  .then(() => {
+export default async (): Promise<typeof mongoose> => {
+  const mongoURL = 'mongodb://' + process.env.MONGO_HOST + ':' + process.env.MONGO_PORT + '/' + process.env.MONGO_NAME;
+  const options = {
+    user: process.env.MONGO_USERNAME,
+    pass: process.env.MONGO_PASSWORD,
+    useNewUrlParser: true
+  };
+  try {
+    const rs = await mongoose.connect(mongoURL, options);
     logger.info({
-      message: 'Connect to database successfully',
+      message: 'Connect to database successfull',
       label: 'MongoDB'
     });
-  })
-  .catch((error) => {
+    return rs;
+  } catch (error) {
     logger.info({
       message: 'Connect to database failed' + error,
       label: 'MongoDB'
     });
-  });
-
-export default mongoose;
+  }
+};
