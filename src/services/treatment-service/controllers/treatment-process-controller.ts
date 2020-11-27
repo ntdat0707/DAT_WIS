@@ -14,7 +14,7 @@ import {
   createTreatmentProcessSchema,
   updateTreatmentProcessSchema
 } from '../configs/validate-schemas/treatment-process';
-import { LocationModel } from '../../../repositories/postgres/models/location';
+import { LocationModel, ServiceModel } from '../../../repositories/postgres/models/location';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
@@ -243,18 +243,33 @@ export class TreatmentProcessController extends BaseController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       let treatmentProcess: any = await TreatmentProcessModel.findById({ _id: treatmentProcessId })
-        .populate('procedureIds')
+        .populate({ path: 'procedureIds', model: 'Procedure', populate: { path: 'teethId', model: 'Teeth' } })
         .populate('prescriptionId')
         .exec();
-      const staff = await StaffModel.findOne({
+      const creator = await StaffModel.findOne({
         where: { id: treatmentProcess.createdById },
         attributes: { exclude: ['password'] }
       });
       treatmentProcess = {
         ...treatmentProcess._doc,
-        createdBy: staff,
+        createdBy: creator,
         createdById: undefined
       };
+      for (let i = 0; i < treatmentProcess.procedureIds.length; i++) {
+        const service = await ServiceModel.findOne({
+          where: { id: treatmentProcess.procedureIds[i].serviceId },
+          raw: true
+        });
+        const staff = await StaffModel.findOne({ where: { id: treatmentProcess.procedureIds[i].staffId }, raw: true });
+
+        treatmentProcess.procedureIds[i] = {
+          ...treatmentProcess.procedureIds[i]._doc,
+          service: service,
+          staff: staff,
+          staffId: undefined,
+          serviceId: undefined
+        };
+      }
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
     } catch (error) {
       return next(error);
