@@ -237,7 +237,7 @@ export class QuotationsController extends BaseController {
           model: 'QuotationsDentalDetail'
         })
         .exec();
-      if (quotations !== null) {
+      if (quotations) {
         const accountedBy: any = await StaffModel.findOne({
           where: { id: quotations.accountedBy },
           attributes: { exclude: ['password'] },

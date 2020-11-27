@@ -437,16 +437,17 @@ export class TreatmentController extends BaseController {
         };
         await QuotationsDentalModel.create(quotationsDental);
       } else {
-        let quotationsId: any;
+        // let quotationsId: any;
         let totalPrice: number = 0;
         const detailsIds: any = [];
-        const quotationsDental: any = await QuotationsDentalModel.findOne(
-          { treatmentId: req.body.treatmentId },
-          (err: any, quotations: any) => {
-            if (err) throw err;
-            quotationsId = quotations._id;
-          }
-        ).exec();
+        const quotationsDental: any = await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }).exec();
+        // { treatmentId: req.body.treatmentId },
+        // (err: any, quotations: any) => {
+        //   if (err) throw err;
+        //   quotationsId = quotations._id;
+        // }
+        // ()
+
         let quotationsDentalDetailsData: any = [];
         quotationsDentalDetailsData = dataProcedures.map((element: any) => {
           delete Object.assign(element, { ['price']: element.totalPrice }).totalPrice;
@@ -456,7 +457,7 @@ export class TreatmentController extends BaseController {
           delete element.customerId;
           delete element.locationId;
           delete element.serviceName;
-          element.quotationsDentalId = quotationsId;
+          element.quotationsDentalId = quotationsDental._id;
           element.isAccept = true;
           delete element.teethId;
           return element;
