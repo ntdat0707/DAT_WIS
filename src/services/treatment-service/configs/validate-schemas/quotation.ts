@@ -29,7 +29,7 @@ const quotationsDentalDetailSchema = Joi.object({
     .valid(...Object.values(ETeeth))
     .required()
     .label('teethType'),
-  discount: Joi.number().integer().min(0).required().label('discount'),
+  discount: Joi.number().integer().min(0).allow(null, '').label('discount'),
   discountType: Joi.string()
     .valid(...Object.values(EQuotationDiscountType))
     .allow(null, '')
