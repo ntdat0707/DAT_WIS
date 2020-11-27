@@ -257,9 +257,9 @@ export class QuotationsController extends BaseController {
             where: { id: quotationsDentalDetailsData[i].serviceId },
             raw: true
           });
-          const staff = await StaffModel.findOne({ where: { id: quotationsdentalDetailsData[i].staffId }, raw: true });
-          quotationsdentalDetailsData[i] = {
-            ...quotationsdentalDetailsData[i]._doc,
+          const staff = await StaffModel.findOne({ where: { id: quotationsDentalDetailsData[i].staffId }, raw: true });
+          quotationsDentalDetailsData[i] = {
+            ...quotationsDentalDetailsData[i]._doc,
             service: service,
             staff: staff
           };
