@@ -20,7 +20,7 @@ const QuotationsDentalSchema = new mongoose.Schema({
   isAccept: { type: Boolean, required: false },
   quotationsDentalId: { type: Schema.Types.ObjectId, ref: 'QuotationsDental' },
   serviceId: { type: String, required: false },
-  createdAt: { type: String, default: Date.now },
+  createdAt: { type: Date, default: Date.now },
   teethNumbers: [{ type: String, required: false }],
   teethType: { type: String, enum: Object.values(EQuotationTeethType), required: false },
   discount: { type: Number, default: 0 },
