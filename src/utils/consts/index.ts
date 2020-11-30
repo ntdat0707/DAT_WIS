@@ -223,13 +223,29 @@ export enum EDiagnosis {
 }
 
 export enum EStatusProcedure {
-  CONFIRMED = 'confirmed',
-  REJECTED = 'rejected',
-  COMPLETE = 'complete'
+  NEW = 'new',
+  INPROGRESS = 'in-progress',
+  COMPLETE = 'complete',
+  REJECT = 'reject'
 }
 
 export enum EStatusTreatment {
   PLANNING = 'planning',
   CONFIRMED = 'confirmed',
   COMPLETE = 'complete'
+}
+
+export enum EQuotationDiscountType {
+  PERCENT = 'percent',
+  MONEY = 'money'
+}
+
+export enum EQuotationCurrencyUnit {
+  USD = 'usd',
+  VND = 'vnd'
+}
+
+export enum EQuotationTeethType {
+  ADULT = 'adult',
+  CHILD = 'child'
 }

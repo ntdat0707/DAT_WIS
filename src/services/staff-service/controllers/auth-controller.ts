@@ -49,7 +49,8 @@ import { generatePWD } from '../../../utils/lib/generatePassword';
 import { v4 } from 'public-ip';
 import { LoginLogModel } from '../../../repositories/mongo/models';
 import geoip from 'geoip-lite';
-import { MqttUserModel } from '../../../repositories/mongo/models';
+import { MqttUserModel } from '../../../repositories/mongo/models/mqtt-user-model';
+import md5 from 'md5';
 const recoveryPasswordUrlExpiresIn = process.env.RECOVERY_PASSWORD_URL_EXPIRES_IN;
 const frontEndUrl = process.env.FRONT_END_URL;
 export class AuthController {
@@ -274,9 +275,9 @@ export class AuthController {
       await PipelineStageModel.bulkCreate(dataStage, { transaction });
       const mqttUserData: any = {
         isSupperUser: false,
-        username: data.email
+        username: staffId
       };
-      mqttUserData.password = data.password;
+      mqttUserData.password = md5(staffId + data.email);
       const mqttUserModel = new MqttUserModel(mqttUserData);
       await mqttUserModel.save();
       //commit transaction
@@ -727,6 +728,8 @@ export class AuthController {
       let socialInfor: any;
       let loginData: any;
       let loginLogModel: any;
+      let mqttUserData: any;
+      let mqttUserModel: any;
       const validateErrors = validate(req.body, loginSocialSchema);
       if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       if (req.body.email) {
@@ -981,9 +984,17 @@ export class AuthController {
             isBusinessAccount: true,
             onboardStep: 0
           };
+          data.id = uuidv4();
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
-          await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
+          await CompanyModel.create({ ownerId: data.id }, { transaction });
+          mqttUserData = {
+            isSupperUser: false,
+            username: data.id
+          };
+          mqttUserData.password = md5(data.id + data.email);
+          mqttUserModel = new MqttUserModel(mqttUserData);
+          await mqttUserModel.save();
           accessTokenData = {
             userId: newStaff.id,
             userName: `${newStaff.firstName} ${newStaff.lastName}`,
@@ -1089,9 +1100,17 @@ export class AuthController {
             isBusinessAccount: true,
             onboardStep: 0
           };
+          data.id = uuidv4();
           data.password = await hash(password, PASSWORD_SALT_ROUNDS);
           newStaff = await StaffModel.create(data, { transaction });
-          await CompanyModel.create({ ownerId: newStaff.id }, { transaction });
+          await CompanyModel.create({ ownerId: data.id }, { transaction });
+          mqttUserData = {
+            isSupperUser: false,
+            username: data.id
+          };
+          mqttUserData.password = md5(data.id + data.email);
+          mqttUserModel = new MqttUserModel(mqttUserData);
+          await mqttUserModel.save();
           accessTokenData = {
             userId: newStaff.id,
             userName: `${newStaff.firstName} ${newStaff.lastName}`,

@@ -1,8 +1,10 @@
 import mongoose, { Schema } from 'mongoose';
-import { EStatusProcedure } from '../../../utils/consts';
+import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
 
 interface IProcedure extends mongoose.Document {
   treatmentId: string;
+  locationId: string;
+  customerId: string;
   staffId: string;
   teethId: [string];
   serviceId: string;
@@ -10,14 +12,18 @@ interface IProcedure extends mongoose.Document {
   price: number;
   quantity: number;
   discount: number;
+  discountType: string;
   totalPrice: number;
   status: string;
   note: string;
+  detailTreatment: string;
   createDate: Date;
 }
 
 const ProcedureSchema = new mongoose.Schema({
   treatmentId: { type: Schema.Types.ObjectId, ref: 'Treatment' },
+  locationId: { type: String, required: true },
+  customerId: { type: String, required: true },
   staffId: { type: String, required: true },
   teethId: [{ type: Schema.Types.ObjectId, ref: 'Teeth' }],
   serviceId: { type: String, required: true },
@@ -25,9 +31,11 @@ const ProcedureSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   quantity: { type: Number, required: true },
   discount: { type: Number, default: 0 },
+  discountType: { type: String, enum: Object.values(EQuotationDiscountType), default: EQuotationDiscountType.PERCENT },
   totalPrice: { type: Number, required: true },
-  status: { type: String, enum: Object.values(EStatusProcedure), required: true },
+  status: { type: String, enum: Object.values(EStatusProcedure), default: EStatusProcedure.NEW },
   note: { type: String, required: false },
+  detailTreatment: { type: String, required: false, default: '' },
   createDate: { type: Date, default: Date.now }
 });
 

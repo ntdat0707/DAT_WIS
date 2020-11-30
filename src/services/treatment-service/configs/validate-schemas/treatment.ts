@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EStatusProcedure, EStatusTreatment } from '../../../../utils/consts';
+import { EQuotationDiscountType, EStatusTreatment } from '../../../../utils/consts';
 
 const languageSchema = Joi.string().valid('en', 'vi').required().label('language');
 
@@ -27,25 +27,34 @@ const updateMedicalHistorySchema = Joi.object({
 });
 
 const createProcedureSchema = Joi.object({
+  treatmentId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .required()
+    .label('treatmentId'),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('locationId'),
+  customerId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .required()
+    .label('customerId'),
   procedures: Joi.array()
     .min(1)
     .required()
     .items(
       Joi.object({
-        treatmentId: Joi.string()
-          .regex(/^[0-9a-fA-F]{24}$/)
-          .required()
-          .label('treatmentId'),
         staffId: Joi.string()
           .guid({
             version: ['uuidv4']
           })
           .required()
           .label('staffId'),
-        teethId: Joi.array()
-          .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
-          .required()
-          .label('teethId'),
+        teethNumbers: Joi.array().items(Joi.string()).required().label('teethNumbers'),
         serviceId: Joi.string()
           .guid({
             version: ['uuidv4']
@@ -54,11 +63,10 @@ const createProcedureSchema = Joi.object({
           .label('serviceId'),
         quantity: Joi.number().integer().min(1).required().label('quantity'),
         discount: Joi.number().integer().min(0).allow(null).label('discount'),
+        discountType: Joi.string()
+          .valid(...Object.values(EQuotationDiscountType))
+          .label('discountType'),
         totalPrice: Joi.number().integer().min(1).required().label('totalPrice'),
-        status: Joi.string()
-          .valid(...Object.values(EStatusProcedure))
-          .required()
-          .label('status'),
         note: Joi.string().max(150).allow(null, '').label('note')
       })
     )
@@ -82,10 +90,38 @@ const createTreatmentSchema = Joi.object({
     .required()
     .label('customerId')
 });
+
+const treatmentIdSchema = Joi.string()
+  .regex(/^[0-9a-fA-F]{24}$/)
+  .required()
+  .label('treatmentId');
+
+const procedureSchema = Joi.string()
+  .regex(/^[0-9a-fA-F]{24}$/)
+  .required()
+  .label('procedureSchema');
+
+const treatmentProcessIdSchema = Joi.string()
+  .regex(/^[0-9a-fA-F]{24}$/)
+  .required()
+  .label('treatmentProcessId');
+
+const getAllProcedureSchema = Joi.object({
+  treatmentId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .required()
+    .label('treatmentId'),
+  isTreatmentProcess: Joi.boolean().allow(null).label('isTreatmentProcess')
+});
+
 export {
   languageSchema,
   customerWisereIdSchema,
   updateMedicalHistorySchema,
   createProcedureSchema,
-  createTreatmentSchema
+  createTreatmentSchema,
+  treatmentIdSchema,
+  procedureSchema,
+  treatmentProcessIdSchema,
+  getAllProcedureSchema
 };

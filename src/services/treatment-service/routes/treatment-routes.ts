@@ -22,8 +22,10 @@ export class TreatmentRoutes {
       isAuthenticated,
       this.treatmentController.updateMedicalHistoryOfCustomer
     );
+    this.router.get('/get-all-procedure/:treatmentId', isAuthenticated, this.treatmentController.getAllProcedure);
     this.router.post('/create-procedures', isAuthenticated, this.treatmentController.createProcedures);
     this.router.get('/get-all-treatment/:customerWisereId', isAuthenticated, this.treatmentController.getAllTreatment);
     this.router.post('/create-treatment', isAuthenticated, this.treatmentController.createTreatment);
+    this.router.put('/update-procedure/:procedureId', isAuthenticated, this.treatmentController.updateProcedureReject);
   }
 }

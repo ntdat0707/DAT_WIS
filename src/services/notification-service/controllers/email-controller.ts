@@ -4,7 +4,6 @@ import { Request, Response, NextFunction } from 'express';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import { Sendpulse } from '../../../utils/notification';
-// import { executeSendingEmail, IEmailOptions } from '../../../utils/emailer';
 
 export class EmailController extends BaseController {
   /**

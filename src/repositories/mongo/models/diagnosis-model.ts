@@ -8,7 +8,7 @@ interface IDiagnosis extends mongoose.Document {
   staffName: string;
   status: string;
   treatmentId: string;
-  diagnosticIds: [string];
+  diagnosticId: string;
   diagnosticName: string;
   timestamp: Date;
 }
@@ -21,11 +21,11 @@ const DiagnosisSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: Object.values(EDiagnosis),
-    default: Object.values(EDiagnosis.PENDING)
+    default: EDiagnosis.PENDING
   },
   treatmentId: { type: Schema.Types.ObjectId, required: 'Treatment' },
-  diagnosticIds: [{ type: Schema.Types.ObjectId, ref: 'Diagnostic' }],
-  diagnosticName: { type: String, required: true },
+  diagnosticId: { type: Schema.Types.ObjectId, ref: 'Diagnostic' },
+  diagnosticName: { type: String, required: false },
   timestamp: { type: Date, default: Date.now }
 });
 
