@@ -22,6 +22,7 @@ import {
   getAllProcedureSchema
 } from '../configs/validate-schemas';
 import {
+  branchErrorDetails,
   customerErrorDetails,
   staffErrorDetails,
   treatmentErrorDetails
@@ -325,13 +326,13 @@ export class TreatmentController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      // const { workingLocationIds } = res.locals.staffPayload;
-      // if (!workingLocationIds.includes(req.body.locationId)) {
-      //   throw new CustomError(
-      //     branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-      //     httpStatus.FORBIDDEN
-      //   );
-      // }
+      const { workingLocationIds } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(req.body.locationId)) {
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+          httpStatus.FORBIDDEN
+        );
+      }
       for (let i = 0; i < req.body.procedures.length; i++) {
         const teethIds = [];
         for (let j = 0; j < req.body.procedures[i].teethNumbers.length; j++) {
