@@ -785,16 +785,17 @@ export class CustomerController {
 
       if (req.query.searchValue) {
         const unaccentSearchValue = Unaccent(req.query.searchValue);
+        const searchVal = sequelize.escape(`%${unaccentSearchValue}%`);
         query.where = {
           ...query.where,
           ...{
             [Op.or]: [
               Sequelize.literal(
-                `unaccent(concat("CustomerWisereModel"."last_name", ' ', "CustomerWisereModel"."first_name")) ilike '%${unaccentSearchValue}%'`
+                `unaccent(concat("CustomerWisereModel"."last_name", ' ', "CustomerWisereModel"."first_name")) ilike ${searchVal}`
               ),
-              Sequelize.literal(`"CustomerWisereModel"."code" ilike '%${req.query.searchValue}%'`),
-              Sequelize.literal(`"CustomerWisereModel"."phone" like '%${req.query.searchValue}%'`),
-              Sequelize.literal(`"CustomerWisereModel"."email" ilike '%${req.query.searchValue}%'`)
+              Sequelize.literal(`"CustomerWisereModel"."code" ilike ${searchVal}`),
+              Sequelize.literal(`"CustomerWisereModel"."phone" like ${searchVal}`),
+              Sequelize.literal(`"CustomerWisereModel"."email" ilike ${searchVal}`)
             ]
           }
         };
