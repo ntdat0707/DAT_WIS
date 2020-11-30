@@ -16,7 +16,7 @@ interface IQuotationsDentalDetail extends mongoose.Document {
   price: number;
 }
 
-const QuotationsDentalSchema = new mongoose.Schema({
+const QuotationsDentalDetailSchema = new mongoose.Schema({
   isAccept: { type: Boolean, required: false },
   quotationsDentalId: { type: Schema.Types.ObjectId, ref: 'QuotationsDental' },
   serviceId: { type: String, required: false },
@@ -34,7 +34,7 @@ const QuotationsDentalSchema = new mongoose.Schema({
 //Model
 const QuotationsDentalDetailModel = mongoose.model<IQuotationsDentalDetail>(
   'QuotationsDentalDetail',
-  QuotationsDentalSchema,
+  QuotationsDentalDetailSchema,
   'quotation_dental_detail'
 );
 export { QuotationsDentalDetailModel, IQuotationsDentalDetail };

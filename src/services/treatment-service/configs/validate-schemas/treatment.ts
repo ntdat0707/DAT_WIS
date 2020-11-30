@@ -94,7 +94,7 @@ const createTreatmentSchema = Joi.object({
 const treatmentIdSchema = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
   .required()
-  .label('treatmentId');
+  .label('treatmentIdSchema');
 
 const procedureSchema = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
