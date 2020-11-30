@@ -14,12 +14,12 @@ import {
   createTreatmentProcessSchema,
   updateTreatmentProcessSchema
 } from '../configs/validate-schemas/treatment-process';
+import { LocationModel, ServiceModel } from '../../../repositories/postgres/models';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
 import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
 import { treatmentIdSchema, treatmentProcessIdSchema } from '../configs/validate-schemas';
-import { LocationModel, ServiceModel } from '../../../repositories/postgres/models';
 
 export class TreatmentProcessController extends BaseController {
   /**

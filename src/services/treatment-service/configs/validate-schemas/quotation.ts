@@ -1,11 +1,12 @@
 import Joi from 'joi';
-import { EQuotationDiscountType, EQuotationCurrencyUnit, EQuotationTeethType } from '../../../../utils/consts';
+import { EQuotationDiscountType, EQuotationCurrencyUnit, ETeeth } from '../../../../utils/consts';
 import { TEETH_2H, TEETH_ADULT, TEETH_CHILD } from '../consts';
 
 const quotationsDentalDetailSchema = Joi.object({
-  // _id: Joi.string()
-  //   .regex(/^[0-9a-fA-F]{24}$/)
-  //   .label('quotationDentalDetailId'),
+  _id: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .allow(null, '')
+    .label('quotationDentalDetailId'),
   isAccept: Joi.boolean().required().label('isAccept'),
   serviceId: Joi.string()
     .guid({
@@ -24,7 +25,11 @@ const quotationsDentalDetailSchema = Joi.object({
     .min(1)
     .required()
     .label('teeth'),
-  discount: Joi.number().integer().min(0).required().allow(null, '').label('discount'),
+  teethType: Joi.string()
+    .valid(...Object.values(ETeeth))
+    .required()
+    .label('teethType'),
+  discount: Joi.number().integer().min(0).allow(null, '').label('discount'),
   discountType: Joi.string()
     .valid(...Object.values(EQuotationDiscountType))
     .allow(null, '')
@@ -32,10 +37,7 @@ const quotationsDentalDetailSchema = Joi.object({
   tax: Joi.string().allow(null, '').label('tax'),
   currencyUnit: Joi.string()
     .valid(...Object.values(EQuotationCurrencyUnit))
-    .label('currencyUnit'),
-  teethType: Joi.string()
-    .valid(...Object.values(EQuotationTeethType))
-    .label('teethType')
+    .label('currencyUnit')
 });
 
 const createQuotationsDentalSchema = Joi.object({
@@ -65,8 +67,7 @@ const createQuotationsDentalSchema = Joi.object({
 });
 
 const updateQuotationsDentalSchema = Joi.object({
-  expire: Joi.date().required().label('expire'),
-  treatmentId: Joi.string().required().label('treatmentId'),
+  expire: Joi.date().label('expire'),
   locationId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -78,4 +79,13 @@ const updateQuotationsDentalSchema = Joi.object({
   quotationsDetails: Joi.array().items(quotationsDentalDetailSchema).label('quotationsDentalDetails')
 });
 
-export { createQuotationsDentalSchema, updateQuotationsDentalSchema, quotationsDentalDetailSchema };
+const quotationDentalIdSchema = Joi.string()
+  .regex(/^[0-9a-fA-F]{24}$/)
+  .label('quotationDentalSchema');
+
+export {
+  createQuotationsDentalSchema,
+  updateQuotationsDentalSchema,
+  quotationsDentalDetailSchema,
+  quotationDentalIdSchema
+};
