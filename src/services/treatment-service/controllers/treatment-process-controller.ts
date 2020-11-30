@@ -115,7 +115,6 @@ export class TreatmentProcessController extends BaseController {
       if (!creator) {
         throw new CustomError(staffErrorDetails.E_4000(`Creator ${dataInput.createdById} not found`));
       }
-      const treatmentProcessData: any = { ...dataInput };
       const procedureIds: any = [];
       for (const item of req.body.procedures) {
         await ProcedureModel.updateOne(
@@ -124,15 +123,15 @@ export class TreatmentProcessController extends BaseController {
         ).exec();
         procedureIds.push(item.id);
       }
-      treatmentProcessData.procedureIds = procedureIds;
+      dataInput.procedureIds = procedureIds;
       if (dataInput.prescription) {
         const prescriptionData = { ...dataInput.prescription };
 
         const prescription: any = new PrescriptionModel(prescriptionData);
-        treatmentProcessData.prescriptionId = prescription._id;
+        dataInput.prescriptionId = prescription._id;
         await prescription.save();
       }
-      const treatmentProcess = new TreatmentProcessModel(treatmentProcessData);
+      const treatmentProcess = new TreatmentProcessModel(dataInput);
       await treatmentProcess.save();
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
     } catch (error) {
