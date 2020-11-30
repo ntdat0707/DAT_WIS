@@ -15,7 +15,7 @@ const createTreatmentProcessSchema = Joi.object({
   treatmentId: Joi.string()
     .required()
     .regex(/^[0-9a-fA-F]{24}$/)
-    .label('prescriptionId'),
+    .label('treatmentId'),
   note: Joi.string().max(150).allow(null, '').label('note'),
   createOn: Joi.date().label('createOn'),
   createdById: Joi.string()
@@ -64,7 +64,7 @@ const updateTreatmentProcessSchema = Joi.object({
   treatmentId: Joi.string()
     .required()
     .regex(/^[0-9a-fA-F]{24}$/)
-    .label('prescriptionId'),
+    .label('treatmentId'),
   note: Joi.string().max(150).allow(null, '').label('note'),
   createOn: Joi.date().label('createOn'),
   createdById: Joi.string()

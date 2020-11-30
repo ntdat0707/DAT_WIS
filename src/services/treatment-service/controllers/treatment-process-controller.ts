@@ -78,7 +78,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/create:
    *   post:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: createTreatmentProcess
@@ -126,7 +126,6 @@ export class TreatmentProcessController extends BaseController {
       dataInput.procedureIds = procedureIds;
       if (dataInput.prescription) {
         const prescriptionData = { ...dataInput.prescription };
-
         const prescription: any = new PrescriptionModel(prescriptionData);
         dataInput.prescriptionId = prescription._id;
         await prescription.save();
@@ -144,7 +143,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/get-medicines:
    *   get:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: getAllMedicine
@@ -170,7 +169,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/get-all-treatment-process/{treatmentId}:
    *   get:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: getAllTreatmentProcess
@@ -217,7 +216,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/get-treatment-process/{treatmentProcessId}:
    *   get:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: getTreatmentProcess
@@ -327,7 +326,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/update/{treatmentProcessId}:
    *   put:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: updateTreatmentProcess
