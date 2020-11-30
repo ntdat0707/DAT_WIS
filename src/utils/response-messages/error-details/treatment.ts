@@ -50,6 +50,16 @@ const treatmentErrorDetails = {
   E_3911(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_3911', 'Procedures not valid', detail);
     return e;
+  },
+
+  // #Medical Document Errors
+  E_4100(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4100', 'Medical Document not found', detail);
+    return e;
+  },
+  E_4101(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4101', 'Medical File not found', detail);
+    return e;
   }
 };
 

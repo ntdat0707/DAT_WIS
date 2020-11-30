@@ -22,6 +22,7 @@ import {
   getAllProcedureSchema
 } from '../configs/validate-schemas';
 import {
+  branchErrorDetails,
   customerErrorDetails,
   staffErrorDetails,
   treatmentErrorDetails
@@ -35,7 +36,8 @@ import {
   QuotationsDentalModel,
   QuotationsDentalDetailModel
 } from '../../../repositories/mongo/models';
-import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
+import { EMedicalDocumentStatusType, EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
+import { MedicalDocumentModel } from '../../../repositories/mongo/models/medical-document-model';
 
 export class TreatmentController extends BaseController {
   /**
@@ -324,13 +326,13 @@ export class TreatmentController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      // const { workingLocationIds } = res.locals.staffPayload;
-      // if (!workingLocationIds.includes(req.body.locationId)) {
-      //   throw new CustomError(
-      //     branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-      //     httpStatus.FORBIDDEN
-      //   );
-      // }
+      const { workingLocationIds } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(req.body.locationId)) {
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+          httpStatus.FORBIDDEN
+        );
+      }
       for (let i = 0; i < req.body.procedures.length; i++) {
         const teethIds = [];
         for (let j = 0; j < req.body.procedures[i].teethNumbers.length; j++) {
@@ -501,12 +503,41 @@ export class TreatmentController extends BaseController {
       };
       const treatment = new TreatmentModel(data);
       const savedTreatment = await treatment.save();
+      //create medical documents (mc)
+      let medicalDocuments: any = [];
+      medicalDocuments = this.createMedicalDocument(
+        medicalDocuments,
+        treatment._id,
+        EMedicalDocumentStatusType.RE_TREATMENT
+      );
+      medicalDocuments = this.createMedicalDocument(
+        medicalDocuments,
+        treatment._id,
+        EMedicalDocumentStatusType.DURING_TREATMENT
+      );
+      medicalDocuments = this.createMedicalDocument(
+        medicalDocuments,
+        treatment._id,
+        EMedicalDocumentStatusType.AFTER_TREATMENT
+      );
+      medicalDocuments = this.createMedicalDocument(medicalDocuments, treatment._id, EMedicalDocumentStatusType.OTHER);
+      await MedicalDocumentModel.insertMany(medicalDocuments);
+
       return res.status(httpStatus.OK).send(buildSuccessMessage(savedTreatment));
     } catch (error) {
       return next(error);
     }
   };
 
+  private createMedicalDocument(medicalDocuments: any, treatmentId: string, status: string) {
+    const medicalDocumentData: any = {
+      treatmentId: treatmentId,
+      status: status
+    };
+    const medicalDocument = new MedicalDocumentModel(medicalDocumentData);
+    medicalDocuments.push(medicalDocument);
+    return medicalDocuments;
+  }
   /**
    * @swagger
    * /treatment/get-all-treatment/{customerWisereId}:

@@ -7,21 +7,71 @@ import {
   TreatmentProcessModel,
   ProcedureModel,
   PrescriptionModel,
-  MedicineModel
+  MedicineModel,
+  LaboModel,
+  TreatmentModel
 } from '../../../repositories/mongo/models';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   createTreatmentProcessSchema,
   updateTreatmentProcessSchema
 } from '../configs/validate-schemas/treatment-process';
-import { LocationModel, ServiceModel } from '../../../repositories/postgres/models';
+import { CustomerWisereModel, LocationModel, ServiceModel } from '../../../repositories/postgres/models';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
-import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
+import { customerErrorDetails, treatmentErrorDetails } from '../../../utils/response-messages/error-details';
 import { treatmentIdSchema, treatmentProcessIdSchema } from '../configs/validate-schemas';
 
 export class TreatmentProcessController extends BaseController {
+  /**
+   * @swagger
+   * definitions:
+   *   LaboSchema:
+   *       type: object
+   *       properties:
+   *           status:
+   *               type: string
+   *               enum: ['ordered', 'deliveried']
+   *           customerId:
+   *               type: string
+   *           staffId:
+   *               type: string
+   *           labo:
+   *               type: string
+   *           sentDate:
+   *               type: string
+   *           receivedDate:
+   *               type: string
+   *           diagnostic:
+   *               type: string
+   *           note:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   PrescriptionSchema:
+   *       type: object
+   *       properties:
+   *           diagnosis:
+   *               type: string
+   *           note:
+   *               type: string
+   *           drugList:
+   *               type: array
+   *               items:
+   *                   type: object
+   *                   properties:
+   *                       medicineId:
+   *                          type: string
+   *                       quantity:
+   *                          type: integer
+   *                       note:
+   *                           type: string
+   *
+   */
   /**
    * @swagger
    * definitions:
@@ -57,28 +107,17 @@ export class TreatmentProcessController extends BaseController {
    *                      detailTreatment:
    *                        type: string
    *           prescription:
-   *                   type: object
-   *                   properties:
-   *                        diagnosis:
-   *                            type: string
-   *                        note:
-   *                            type: string
-   *                        drugList:
-   *                            type: array
-   *                            items:
-   *                                type: object
-   *                                properties:
-   *                                    medicineId:
-   *                                        type: string
-   *                                    quantity:
-   *                                        type: number
+   *               $ref: '#/definitions/PrescriptionSchema'
+   *           labo:
+   *               $ref: '#/definitions/LaboSchema'
+   *
    */
   /**
    * @swagger
    * /treatment/treatment-process/create:
    *   post:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: createTreatmentProcess
@@ -98,26 +137,32 @@ export class TreatmentProcessController extends BaseController {
    */
   public createTreatmentProcess = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const createdById = res.locals.staffPayload.id;
-      const dataInput = { ...req.body, createdById: createdById };
-      const validateErrors = validate(dataInput, createTreatmentProcessSchema);
+      const validateErrors = validate(req.body, createTreatmentProcessSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const location = await LocationModel.findOne({ where: { id: dataInput.locationId } });
+      const createdById = res.locals.staffPayload.id;
+      const treatmentProcessData = { ...req.body, createdById: createdById };
+      const location = await LocationModel.findOne({ where: { id: treatmentProcessData.locationId } });
       if (!location) {
         throw new CustomError(
-          locationErrorDetails.E_1000(`Location ${dataInput.locationId} not found`),
+          locationErrorDetails.E_1000(`Location ${treatmentProcessData.locationId} not found`),
           httpStatus.NOT_FOUND
         );
       }
-      const creator = await StaffModel.findOne({ where: { id: dataInput.createdById } });
-      if (!creator) {
-        throw new CustomError(staffErrorDetails.E_4000(`Creator ${dataInput.createdById} not found`));
+      const treatment = await TreatmentModel.findById(treatmentProcessData.treatmentId).exec();
+      if (!treatment) {
+        throw new CustomError(
+          treatmentErrorDetails.E_3902(`treatmentId ${treatmentProcessData.treatmentId} not found`),
+          httpStatus.NOT_FOUND
+        );
       }
-      const treatmentProcessData: any = { ...dataInput };
       const procedureIds: any = [];
       for (const item of req.body.procedures) {
+        const procedure = await ProcedureModel.findById({ _id: item.id }).exec();
+        if (!procedure) {
+          throw new CustomError(treatmentErrorDetails.E_3905(`procedureId ${item.id} not found`), httpStatus.NOT_FOUND);
+        }
         await ProcedureModel.updateOne(
           { _id: item.id },
           { status: item.status, detailTreatment: item.detailTreatment }
@@ -125,14 +170,33 @@ export class TreatmentProcessController extends BaseController {
         procedureIds.push(item.id);
       }
       treatmentProcessData.procedureIds = procedureIds;
-      if (dataInput.prescription) {
-        const prescriptionData = { ...dataInput.prescription };
-
-        const prescription: any = new PrescriptionModel(prescriptionData);
+      if (treatmentProcessData.prescription) {
+        const prescription: any = new PrescriptionModel(treatmentProcessData.prescription);
         treatmentProcessData.prescriptionId = prescription._id;
         await prescription.save();
       }
+      if (treatmentProcessData.labo) {
+        const customer = await CustomerWisereModel.findOne({ where: { id: treatmentProcessData.labo.customerId } });
+        if (!customer) {
+          throw new CustomError(
+            customerErrorDetails.E_3001(`customerWisereId ${treatmentProcessData.labo.customerId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        const staff = await StaffModel.findOne({ where: { id: treatmentProcessData.labo.staffId } });
+        if (!staff) {
+          throw new CustomError(
+            staffErrorDetails.E_4000(`staff Id ${treatmentProcessData.labo.staffId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        const labo = new LaboModel(treatmentProcessData.labo);
+        treatmentProcessData.laboId = labo._id;
+        await labo.save();
+      }
       const treatmentProcess = new TreatmentProcessModel(treatmentProcessData);
+      treatment.treatmentProcessIds.push(treatmentProcess._id);
+      await TreatmentModel.updateOne({ _id: treatmentProcessData.treatmentId }, treatment).exec();
       await treatmentProcess.save();
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
     } catch (error) {
@@ -145,7 +209,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/get-medicines:
    *   get:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: getAllMedicine
@@ -171,7 +235,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/get-all-treatment-process/{treatmentId}:
    *   get:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: getAllTreatmentProcess
@@ -218,7 +282,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/get-treatment-process/{treatmentProcessId}:
    *   get:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: getTreatmentProcess
@@ -328,7 +392,7 @@ export class TreatmentProcessController extends BaseController {
    * /treatment/treatment-process/update/{treatmentProcessId}:
    *   put:
    *     tags:
-   *       - TreatmentProcess
+   *       - Treatment Process
    *     security:
    *       - Bearer: []
    *     name: updateTreatmentProcess

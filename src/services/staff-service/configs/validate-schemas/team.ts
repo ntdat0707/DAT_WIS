@@ -26,7 +26,6 @@ const createTeamSchema = Joi.object({
       })
     ),
   subTeamIds: Joi.array()
-    .min(1)
     .max(100)
     .items(Joi.string().guid({ version: ['uuidv4'] }))
     .label('subTeamIds'),

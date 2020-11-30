@@ -25,6 +25,7 @@ import {
 import { teamErrorDetails, teamSubErrorDetails } from '../../../utils/response-messages/error-details/team';
 import { branchErrorDetails } from '../../../utils/response-messages/error-details/branch';
 import _ from 'lodash';
+import { Unaccent } from '../../../utils/unaccent';
 
 export class TeamController {
   /**
@@ -133,10 +134,12 @@ export class TeamController {
         ];
       }
       if (req.query.searchValue) {
+        const unaccentSearchValue = Unaccent(req.query.searchValue);
+        const searchVal = sequelize.escape(`%${unaccentSearchValue}%`);
         query.where = {
           ...query.where,
           ...{
-            [Op.or]: [Sequelize.literal(`unaccent("TeamModel"."name") ilike unaccent('%${req.query.searchValue}%')`)]
+            [Op.or]: [Sequelize.literal(`unaccent("TeamModel"."name") ilike ${searchVal}`)]
           }
         };
       }
