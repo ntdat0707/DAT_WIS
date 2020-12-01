@@ -86,7 +86,7 @@ export class TeamController {
           {
             model: StaffModel,
             as: 'staffs',
-            through: { attributes: [] },
+            through: { attributes: ['position'] },
             required: true
           }
         ],
@@ -142,12 +142,23 @@ export class TeamController {
           }
         };
       }
-      const teamStaffs = await paginate(
+      let teamStaffs = await paginate(
         TeamModel,
         query,
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
+      teamStaffs = JSON.parse(JSON.stringify(teamStaffs));
+      teamStaffs.data = teamStaffs.data.map((element: any) => {
+        return {
+          ...element,
+          staffs: element.staffs.map((staff: any) => ({
+            ...staff,
+            position: staff.TeamStaffModel?.position || null,
+            TeamStaffModel: undefined
+          }))
+        };
+      });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(teamStaffs));
     } catch (error) {
       return next(error);
