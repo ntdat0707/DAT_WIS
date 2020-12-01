@@ -77,7 +77,6 @@ const teamIdSchema = Joi.string()
   .label('teamId');
 
 const locationIdsSchema = Joi.array()
-  .min(1)
   .items(Joi.string().guid({ version: ['uuidv4'] }))
   .allow(null)
   .label('locationIds');
