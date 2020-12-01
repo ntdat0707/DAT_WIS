@@ -252,14 +252,15 @@ export class StaffController {
       }
       if (req.query.searchValue) {
         const unaccentSearchValue = Unaccent(req.query.searchValue);
+        const searchVal = sequelize.escape(`%${unaccentSearchValue}%`);
         query.where = {
           [Op.or]: [
             Sequelize.literal(
-              `unaccent(concat("StaffModel"."last_name", ' ', "StaffModel"."first_name")) ilike '%${unaccentSearchValue}%'`
+              `unaccent(concat("StaffModel"."last_name", ' ', "StaffModel"."first_name")) ilike ${searchVal}`
             ),
-            Sequelize.literal(`"StaffModel"."staff_code" ilike '%${req.query.searchValue}%'`),
-            Sequelize.literal(`"StaffModel"."phone" like '%${req.query.searchValue}%'`),
-            Sequelize.literal(`"StaffModel"."email" ilike '%${req.query.searchValue}%'`)
+            Sequelize.literal(`"StaffModel"."staff_code" ilike ${searchVal}`),
+            Sequelize.literal(`"StaffModel"."phone" like ${searchVal}`),
+            Sequelize.literal(`"StaffModel"."email" ilike ${searchVal}`)
           ]
         };
       }

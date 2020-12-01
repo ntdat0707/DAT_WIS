@@ -123,7 +123,6 @@ export class ServiceController {
    *         description:
    */
   public createService = async ({ body, files }: Request, res: Response, next: NextFunction) => {
-    let transaction: Transaction;
     try {
       const diff = _.difference(body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
       if (diff.length) {
@@ -179,8 +178,9 @@ export class ServiceController {
         extraTimeDuration: body.extraTimeDuration
       };
 
-      transaction = await sequelize.transaction();
-      const service = await ServiceModel.create(data, { transaction });
+      const service = await sequelize.transaction(async (transaction: any) => {
+        return await ServiceModel.create(data, { transaction: transaction });
+      });
 
       if (files.length) {
         const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
@@ -188,8 +188,9 @@ export class ServiceController {
           path: x.location,
           isAvatar: index === 0 ? true : false
         }));
-
-        await ServiceImageModel.bulkCreate(images, { transaction: transaction });
+        await sequelize.transaction(async (transaction: any) => {
+          return await ServiceImageModel.bulkCreate(images, { transaction: transaction });
+        });
       }
 
       /**
@@ -199,7 +200,9 @@ export class ServiceController {
         locationId: locationId,
         serviceId: service.id
       }));
-      await LocationServiceModel.bulkCreate(locationServices, { transaction: transaction });
+      await sequelize.transaction(async (transaction: any) => {
+        return await LocationServiceModel.bulkCreate(locationServices, { transaction: transaction });
+      });
 
       if (body.staffIds && body.staffIds.length > 0) {
         const staffs = await StaffModel.findAll({
@@ -228,13 +231,16 @@ export class ServiceController {
           serviceId: service.id,
           staffId: id
         }));
-        await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
+        await sequelize.transaction(async (transaction: any) => {
+          await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
+        });
       }
       if (body.resourceIds && body.resourceIds.length > 0) {
         const serviceResourceData = (body.resourceIds as []).map((x) => ({ resourceId: x, serviceId: service.id }));
-        await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
+        await sequelize.transaction(async (transaction: any) => {
+          await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
+        });
       }
-      await transaction.commit();
       const serviceData = await ServiceModel.findOne({
         where: {
           id: data.id
@@ -284,7 +290,6 @@ export class ServiceController {
         delete serviceMapping.staffs;
         return serviceMapping;
       });
-
       await esClient.create({
         id: data.id,
         index: env!.ELS_INDEX_GET_SERVICES,
@@ -296,9 +301,6 @@ export class ServiceController {
 
       return res.status(HttpStatus.OK).send(buildSuccessMessage(service));
     } catch (error) {
-      if (transaction) {
-        await transaction.rollback();
-      }
       return next(error);
     }
   };

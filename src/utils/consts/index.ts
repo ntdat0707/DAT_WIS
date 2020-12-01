@@ -249,3 +249,9 @@ export enum EQuotationTeethType {
   ADULT = 'adult',
   CHILD = 'child'
 }
+export enum EMedicalDocumentStatusType {
+  RE_TREATMENT = 're-treatment',
+  DURING_TREATMENT = 'during-treatment',
+  AFTER_TREATMENT = 'after-treatment',
+  OTHER = 'other'
+}
