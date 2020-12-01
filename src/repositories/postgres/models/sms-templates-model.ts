@@ -1,7 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../configs/db-connector';
 
-class EmailTemplatesModel extends Model {
+class SmsTemplatesModel extends Model {
   public id: string;
   public companyId!: string;
   public templateName: string;
@@ -10,7 +10,7 @@ class EmailTemplatesModel extends Model {
   public readonly deletedAt: Date;
   public updatedAt: Date;
 }
-EmailTemplatesModel.init(
+SmsTemplatesModel.init(
   {
     id: {
       field: 'id',
@@ -57,4 +57,4 @@ EmailTemplatesModel.init(
     paranoid: true
   }
 );
-export { EmailTemplatesModel };
+export { SmsTemplatesModel };
