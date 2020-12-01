@@ -183,6 +183,12 @@ export class MedicalDocumentController extends BaseController {
         throw new CustomError(treatmentErrorDetails.E_4100(`Medical file ${medicalFileId} not found`));
       }
       await MedicalFileModel.deleteOne({ _id: medicalFileId }).exec();
+      const medicalDocument = await MedicalDocumentModel.findById(medicalFile.medicalDocumentId).exec();
+      const index = medicalDocument.medicalFileIds.indexOf(medicalFileId, 0);
+      if (index > -1) {
+        medicalDocument.medicalFileIds.splice(index, 1);
+      }
+      await MedicalDocumentModel.updateOne({ _id: medicalFile.medicalDocumentId }, medicalDocument).exec();
       return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);
