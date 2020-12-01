@@ -87,8 +87,7 @@ export class TeamController {
             model: StaffModel,
             as: 'staffs',
             through: { attributes: [] },
-            required: true,
-            attributes: ['id', 'avatarPath']
+            required: true
           }
         ],
         order: [['updatedAt', 'DESC']]
