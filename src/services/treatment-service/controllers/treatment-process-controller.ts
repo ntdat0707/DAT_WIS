@@ -27,7 +27,7 @@ export class TreatmentProcessController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   LaboSchema:
+   *   laboCreate:
    *       type: object
    *       properties:
    *           status:
@@ -41,8 +41,10 @@ export class TreatmentProcessController extends BaseController {
    *               type: string
    *           sentDate:
    *               type: string
+   *               format: date
    *           receivedDate:
    *               type: string
+   *               format: date
    *           diagnostic:
    *               type: string
    *           note:
@@ -52,7 +54,7 @@ export class TreatmentProcessController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   PrescriptionSchema:
+   *   prescriptionCreate:
    *       type: object
    *       properties:
    *           diagnosis:
@@ -75,7 +77,7 @@ export class TreatmentProcessController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   TreatmentProcessCreate:
+   *   treatmentProcessCreate:
    *       required:
    *           - name
    *           - locationId
@@ -107,9 +109,9 @@ export class TreatmentProcessController extends BaseController {
    *                      detailTreatment:
    *                        type: string
    *           prescription:
-   *               $ref: '#/definitions/PrescriptionSchema'
+   *               $ref: '#/definitions/prescriptionCreate'
    *           labo:
-   *               $ref: '#/definitions/LaboSchema'
+   *               $ref: '#/definitions/laboCreate'
    *
    */
   /**
@@ -126,7 +128,7 @@ export class TreatmentProcessController extends BaseController {
    *       name: "body"
    *       required: true
    *       schema:
-   *          $ref: '#/definitions/TreatmentProcessCreate'
+   *          $ref: '#/definitions/treatmentProcessCreate'
    *     responses:
    *       200:
    *         description: success
@@ -309,6 +311,7 @@ export class TreatmentProcessController extends BaseController {
       let treatmentProcess: any = await TreatmentProcessModel.findById({ _id: treatmentProcessId })
         .populate({ path: 'procedureIds', model: 'Procedure', populate: { path: 'teethId', model: 'Teeth' } })
         .populate('prescriptionId')
+        .populate('laboId')
         .exec();
       const creator = await StaffModel.findOne({
         where: { id: treatmentProcess.createdById },
@@ -343,13 +346,65 @@ export class TreatmentProcessController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   TreatmentProcessUpdate:
+   *   laboUpdate:
+   *       type: object
+   *       properties:
+   *           laboId:
+   *               type: string
+   *           status:
+   *               type: string
+   *               enum: ['ordered', 'deliveried']
+   *           customerId:
+   *               type: string
+   *           staffId:
+   *               type: string
+   *           labo:
+   *               type: string
+   *           sentDate:
+   *               type: string
+   *               format: date
+   *           receivedDate:
+   *               type: string
+   *               format: date
+   *           diagnostic:
+   *               type: string
+   *           note:
+   *               type: string
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   prescriptionUpdate:
+   *       type: object
+   *       properties:
+   *           prescriptionId:
+   *               type: string
+   *           diagnosis:
+   *               type: string
+   *           note:
+   *               type: string
+   *           drugList:
+   *               type: array
+   *               items:
+   *                   type: object
+   *                   properties:
+   *                       medicineId:
+   *                          type: string
+   *                       quantity:
+   *                          type: integer
+   *                       note:
+   *                           type: string
+   *
+   */
+  /**
+   * @swagger
+   * definitions:
+   *   treatmentProcessUpdate:
    *       properties:
    *           name:
    *               type: string
    *           locationId:
-   *               type: string
-   *           treatmentId:
    *               type: string
    *           note:
    *               type: string
@@ -369,23 +424,10 @@ export class TreatmentProcessController extends BaseController {
    *                      detailTreatment:
    *                        type: string
    *           prescription:
-   *                   type: object
-   *                   properties:
-   *                        prescriptionId:
-   *                            type: string
-   *                        diagnosis:
-   *                            type: string
-   *                        note:
-   *                            type: string
-   *                        drugList:
-   *                            type: array
-   *                            items:
-   *                                type: object
-   *                                properties:
-   *                                    medicineId:
-   *                                        type: string
-   *                                    quantity:
-   *                                        type: number
+   *               $ref: '#/definitions/prescriptionUpdate'
+   *           labo:
+   *               $ref: '#/definitions/laboUpdate'
+   *
    */
   /**
    * @swagger
@@ -397,15 +439,15 @@ export class TreatmentProcessController extends BaseController {
    *       - Bearer: []
    *     name: updateTreatmentProcess
    *     parameters:
-   *     - in: "body"
-   *       name: "body"
-   *       required: true
-   *       schema:
-   *          $ref: '#/definitions/TreatmentProcessUpdate'
    *     - in: path
    *       name: treatmentProcessId
    *       type: string
    *       required: true
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       schema:
+   *          $ref: '#/definitions/treatmentProcessUpdate'
    *     responses:
    *       200:
    *         description: success
@@ -416,9 +458,8 @@ export class TreatmentProcessController extends BaseController {
    */
   public updateTreatmentProcess = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const createdById = res.locals.staffPayload.id;
       const treatmentProcessId = req.params.treatmentProcessId;
-      const dataInput = { ...req.body, treatmentProcessId: treatmentProcessId, createdById: createdById };
+      const dataInput = { ...req.body, treatmentProcessId: treatmentProcessId };
       const validateErrors = validate(dataInput, updateTreatmentProcessSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
@@ -430,39 +471,29 @@ export class TreatmentProcessController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      if (dataInput.locationId) {
-        const location = await LocationModel.findOne({ where: { id: dataInput.locationId } });
-        if (!location) {
-          throw new CustomError(
-            locationErrorDetails.E_1000(`Location ${dataInput.locationId} not found`),
-            httpStatus.NOT_FOUND
-          );
-        }
+      const location = await LocationModel.findOne({ where: { id: dataInput.locationId } });
+      if (!location) {
+        throw new CustomError(
+          locationErrorDetails.E_1000(`Location ${dataInput.locationId} not found`),
+          httpStatus.NOT_FOUND
+        );
       }
-      if (dataInput.createdById) {
-        const creator: any = await StaffModel.findOne({ where: { id: dataInput.createdById } });
-        if (!creator) {
-          throw new CustomError(staffErrorDetails.E_4000(`Creator ${dataInput.createdById} not found`));
-        }
+      if (dataInput.procedures.length > treatmentProcess.procedureIds.length) {
+        throw new CustomError(treatmentErrorDetails.E_3911(`Procedures input not valid`), httpStatus.BAD_REQUEST);
       }
-      if (dataInput.procedures) {
-        if (dataInput.procedures.length > treatmentProcess.procedureIds.length) {
-          throw new CustomError(treatmentErrorDetails.E_3911(`Procedures input not valid`), httpStatus.BAD_REQUEST);
-        }
-        const procedureIds: any = [];
-        for (const item of dataInput.procedures) {
-          await ProcedureModel.updateOne(
-            { _id: item.id },
-            { status: item.status, detailTreatment: item.detailTreatment }
-          ).exec();
-          procedureIds.push(item.id);
-        }
-        dataInput.procedureIds = procedureIds;
+      const procedureIds: any = [];
+      for (const item of dataInput.procedures) {
+        await ProcedureModel.updateOne(
+          { _id: item.id },
+          { status: item.status, detailTreatment: item.detailTreatment }
+        ).exec();
+        procedureIds.push(item.id);
       }
+      dataInput.procedureIds = procedureIds;
       if (dataInput.prescription) {
         if (!dataInput.prescription.prescriptionId) {
-          const prescriptionData = { ...dataInput.prescription };
-          const prescription: any = new PrescriptionModel(prescriptionData);
+          const prescription: any = new PrescriptionModel(dataInput.prescription);
+          dataInput.prescriptionId = prescription._id;
           await prescription.save();
         } else {
           const prescription: any = await PrescriptionModel.findById(dataInput.prescription.prescriptionId).exec();
@@ -472,12 +503,45 @@ export class TreatmentProcessController extends BaseController {
               httpStatus.NOT_FOUND
             );
           }
-          const prescriptionData = { ...dataInput.prescription };
-          await PrescriptionModel.updateOne({ _id: dataInput.prescription.prescriptionId }, prescriptionData).exec();
+          await PrescriptionModel.updateOne(
+            { _id: dataInput.prescription.prescriptionId },
+            dataInput.prescription
+          ).exec();
         }
       }
+      if (dataInput.labo) {
+        const customer = await CustomerWisereModel.findOne({ where: { id: dataInput.labo.customerId } });
+        if (!customer) {
+          throw new CustomError(
+            customerErrorDetails.E_3001(`customerWisereId ${dataInput.labo.customerId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        const staff = await StaffModel.findOne({ where: { id: dataInput.labo.staffId } });
+        if (!staff) {
+          throw new CustomError(
+            staffErrorDetails.E_4000(`staff Id ${dataInput.labo.staffId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        if (!dataInput.labo.laboId) {
+          const labo = new LaboModel(dataInput.labo);
+          dataInput.laboId = labo._id;
+          await labo.save();
+        } else {
+          const labo = await LaboModel.findById(dataInput.labo.laboId).exec();
+          if (!labo) {
+            throw new CustomError(
+              treatmentErrorDetails.E_3907(`laboId ${dataInput.labo.laboId} not found`),
+              httpStatus.NOT_FOUND
+            );
+          }
+          await LaboModel.updateOne({ _id: dataInput.labo.laboId }, dataInput.labo).exec();
+        }
+      }
+      dataInput.createdById = treatmentProcess.createdById;
       await TreatmentProcessModel.updateOne({ _id: treatmentProcessId }, dataInput).exec();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
+      return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);
     }

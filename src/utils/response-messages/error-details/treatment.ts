@@ -32,7 +32,7 @@ const treatmentErrorDetails = {
     return e;
   },
   E_3907(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('E_3907', 'Diagnostic not found', detail);
+    const e = buildErrorDetail('E_3907', 'Labo not found', detail);
     return e;
   },
   E_3908(detail: string = null): IErrorDetail {
