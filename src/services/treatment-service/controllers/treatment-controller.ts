@@ -337,7 +337,7 @@ export class TreatmentController extends BaseController {
         const teethIds = [];
         for (let j = 0; j < req.body.procedures[i].teethNumbers.length; j++) {
           const teeth: any = await TeethModel.findOne({
-            toothNumber: parseInt(req.body.procedures[i].teethNumbers[j], 10)
+            toothNumber: req.body.procedures[i].teethNumbers[j]
           }).exec();
           if (!teeth) {
             throw new CustomError(

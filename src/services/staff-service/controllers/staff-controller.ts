@@ -244,7 +244,7 @@ export class StaffController {
             {
               model: TeamModel,
               as: 'teamStaffs',
-              required: false,
+              required: true,
               where: { id: filter.teamIds }
             }
           ]
