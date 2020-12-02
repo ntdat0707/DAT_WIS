@@ -8,7 +8,12 @@ import { DiagnosisModel } from '../../../repositories/mongo/models/diagnosis-mod
 import { DiagnosticModel } from '../../../repositories/mongo/models/diagnostic-model';
 import { DiagnosticPathModel } from '../../../repositories/mongo/models/diagnostic-path-model';
 import { validate } from '../../../utils/validator';
-import { createDiagnosis, deleteDiagnosis, updateDiagnosis } from '../configs/validate-schemas/diagnosis';
+import {
+  createDiagnosis,
+  deleteDiagnosis,
+  teethNumberSchema,
+  updateDiagnosis
+} from '../configs/validate-schemas/diagnosis';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
 import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
@@ -67,9 +72,16 @@ export class DiagnosticController extends BaseController {
   public getTeeth = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const teethId = req.params.teethId;
+      const validateErrors = validate(teethId, teethNumberSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
       const teeth: any = await TeethModel.findOne({ _id: teethId })
         .populate({ path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } })
         .exec();
+      if (!teeth) {
+        throw new CustomError(treatmentErrorDetails.E_3900(`Teeth ${teethId} not found`));
+      }
       return res.status(httpStatus.OK).send(buildSuccessMessage(teeth));
     } catch (error) {
       return next(error);
@@ -348,9 +360,6 @@ export class DiagnosticController extends BaseController {
       diagnosis.teethId = !dataInput.teethId ? diagnosis.teethId : dataInput.teethId;
       diagnosis.diagnosticId = !dataInput.diagnosticId ? diagnosis.diagnosticId : dataInput.diagnosticId;
       diagnosis.status = !dataInput.status ? diagnosis.status : dataInput.status;
-      // diagnosis.diagnosticPathIds = !dataInput.diagnosticPathIds
-      //   ? diagnosis.diagnosticPathIds
-      //   : dataInput.diagnosticPathIds;
       diagnosis.diagnosticName = !dataInput.diagnosticName ? diagnosis.diagnosticName : dataInput.diagnosticName;
       if (dataInput.staffId) {
         diagnosis.staffId = !dataInput.staffId ? diagnosis.staffId : dataInput.staffId;

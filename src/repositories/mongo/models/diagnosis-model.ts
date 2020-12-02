@@ -3,7 +3,7 @@ import { EDiagnosis } from '../../../utils/consts';
 
 interface IDiagnosis extends mongoose.Document {
   teethId: string;
-  teethNumber: number;
+  teethNumber: string;
   staffId: string;
   staffName: string;
   status: string;
@@ -15,7 +15,7 @@ interface IDiagnosis extends mongoose.Document {
 
 const DiagnosisSchema = new mongoose.Schema({
   teethId: { type: Schema.Types.ObjectId, ref: 'Teeth' },
-  teethNumber: { type: Number, required: false },
+  teethNumber: { type: String, required: false },
   staffId: { type: String, required: true },
   staffName: { type: String, required: false },
   status: {

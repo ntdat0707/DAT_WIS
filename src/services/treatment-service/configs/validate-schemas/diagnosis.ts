@@ -1,19 +1,15 @@
 import Joi from 'joi';
+import { TEETH_2H, TEETH_ADULT, TEETH_CHILD } from '../consts';
 
 const createDiagnosis = Joi.object({
-  teethNumber: Joi.number().integer().label('teethNumber'),
+  teethNumber: Joi.string()
+    .required()
+    .valid(TEETH_2H, ...TEETH_ADULT, ...TEETH_CHILD)
+    .label('teethNumber'),
   staffId: Joi.string()
     .guid({ version: ['uuidv4'] })
     .required()
     .label('staffId'),
-  // diagnosticPathIds: Joi.array()
-  //   .min(1)
-  //   .required()
-  //   .items(
-  //     Joi.string()
-  //       .regex(/^[0-9a-fA-F]{24}$/)
-  //       .label('diagnosticPathId')
-  //   ),
   diagnosticId: Joi.string()
     .regex(/^[0-9a-fA-F]{24}$/)
     .label('diagnosticId'),
@@ -29,7 +25,10 @@ const updateDiagnosis = Joi.object({
     .regex(/^[0-9a-fA-F]{24}$/)
     .required()
     .label('diagnosisId'),
-  teethNumber: Joi.number().integer().label('teethNumber'),
+  teethNumber: Joi.string()
+    .required()
+    .valid(TEETH_2H, ...TEETH_ADULT, ...TEETH_CHILD)
+    .label('teethNumber'),
   teethId: Joi.string()
     .required()
     .regex(/^[0-9a-fA-F]{24}$/)
@@ -56,4 +55,8 @@ const updateDiagnosis = Joi.object({
 const deleteDiagnosis = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
   .label('diagnosisId');
-export { createDiagnosis, updateDiagnosis, deleteDiagnosis };
+const teethNumberSchema = Joi.string()
+  .required()
+  .valid(TEETH_2H, ...TEETH_ADULT, ...TEETH_CHILD)
+  .label('teethNumber');
+export { createDiagnosis, updateDiagnosis, deleteDiagnosis, teethNumberSchema };
