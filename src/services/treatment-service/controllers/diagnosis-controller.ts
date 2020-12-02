@@ -3,7 +3,6 @@ import httpStatus from 'http-status';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 import { BaseController } from '../../booking-service/controllers/base-controller';
 import { TeethModel } from '../../../repositories/mongo/models/teeth-model';
-import { ToothNotationModel } from '../../../repositories/mongo/models/tooth-notation-model';
 import mongoose from 'mongoose';
 import { DiagnosisModel } from '../../../repositories/mongo/models/diagnosis-model';
 import { DiagnosticModel } from '../../../repositories/mongo/models/diagnostic-model';
@@ -45,98 +44,8 @@ export class DiagnosticController extends BaseController {
 
   /**
    * @swagger
-   * definitions:
-   *   ToothNotation:
-   *       required:
-   *           toothCode
-   *           position
-   *           toothName
-   *           toothImage
-   *       properties:
-   *           toothName:
-   *               type: string
-   *           toothImage:
-   *               type: string
-   *           position:
-   *               type: string
-   *           toothCode:
-   *               type: string
-   *
-   */
-  /**
-   * @swagger
-   * definitions:
-   *   TeethInformation:
-   *       required:
-   *           toothNumber
-   *           toothNotations
-   *           type
-   *       properties:
-   *           toothNumber:
-   *               type: string
-   *           toothNotations:
-   *               type: array
-   *               items:
-   *                   $ref: '#/definitions/ToothNotation'
-   *           type:
-   *              type: string
-   */
-  /**
-   * @swagger
-   * /treatment/diagnosis/create-teeth:
-   *   post:
-   *     tags:
-   *       - Treatment
-   *     security:
-   *       - Bearer: []
-   *     name: createTeeth
-   *     parameters:
-   *     - in: "body"
-   *       name: "body"
-   *       required: true
-   *       type: string
-   *       schema:
-   *            $ref: '#/definitions/TeethInformation'
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public createTeeth = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const dataInput = req.body;
-      const teethData: any = {
-        type: dataInput.type,
-        toothNumber: dataInput.toothNumber
-      };
-      const toothNotationIds: any = [];
-      for (const tooth of dataInput.toothNotations) {
-        tooth.teethId = teethData._id;
-        const toothData = new ToothNotationModel(tooth);
-        toothNotationIds.push(toothData._id);
-        await toothData.save();
-      }
-      teethData.toothNotationIds = toothNotationIds;
-      const teeth = new TeethModel(teethData);
-      await teeth.save();
-
-      //check find populate and sort
-      const result3 = await TeethModel.findOne({ toothNumber: dataInput.toothNumber })
-        .populate({ path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } })
-        .exec();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(result3));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
    * /treatment/diagnosis/get-teeth/{teethId}:
-   *   post:
+   *   get:
    *     tags:
    *       - Treatment
    *     security:
