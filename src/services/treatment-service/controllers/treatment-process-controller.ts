@@ -114,6 +114,7 @@ export class TreatmentProcessController extends BaseController {
    *               $ref: '#/definitions/laboCreate'
    *
    */
+
   /**
    * @swagger
    * /treatment/treatment-process/create:
