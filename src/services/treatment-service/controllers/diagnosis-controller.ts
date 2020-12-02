@@ -8,12 +8,7 @@ import { DiagnosisModel } from '../../../repositories/mongo/models/diagnosis-mod
 import { DiagnosticModel } from '../../../repositories/mongo/models/diagnostic-model';
 import { DiagnosticPathModel } from '../../../repositories/mongo/models/diagnostic-path-model';
 import { validate } from '../../../utils/validator';
-import {
-  createDiagnosis,
-  deleteDiagnosis,
-  teethNumberSchema,
-  updateDiagnosis
-} from '../configs/validate-schemas/diagnosis';
+import { createDiagnosis, deleteDiagnosis, teethNumberSchema } from '../configs/validate-schemas/diagnosis';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
 import { treatmentErrorDetails } from '../../../utils/response-messages/error-details';
@@ -80,7 +75,7 @@ export class DiagnosticController extends BaseController {
         .populate({ path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } })
         .exec();
       if (!teeth) {
-        throw new CustomError(treatmentErrorDetails.E_3900(`Teeth ${teethId} not found`));
+        throw new CustomError(treatmentErrorDetails.E_3900(`Teeth ${teethId} not found`), httpStatus.NOT_FOUND);
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(teeth));
     } catch (error) {
@@ -178,6 +173,8 @@ export class DiagnosticController extends BaseController {
    *   post:
    *     tags:
    *       - Treatment
+   *     security:
+   *       - Bearer: []
    *     name: createDiagnosis
    *     parameters:
    *     - in: "body"
@@ -288,93 +285,8 @@ export class DiagnosticController extends BaseController {
       if (!treatment) {
         throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${treatmentId} not found`), httpStatus.NOT_FOUND);
       }
-      diagnosis = await DiagnosisModel.find({ treatmentId: treatmentId })
-        // .populate({ path: 'diagnosticId', model: 'Diagnostic' })
-        // .populate({
-        //   path: 'teethId',
-        //   model: 'Teeth',
-        //   populate: { path: 'toothNotationIds', model: 'ToothNotation', options: { sort: { position: 1 } } }
-        // })
-        .exec();
+      diagnosis = await DiagnosisModel.find({ treatmentId: treatmentId }).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(diagnosis));
-    } catch (error) {
-      return next(error);
-    }
-  };
-
-  /**
-   * @swagger
-   * definitions:
-   *   UpdateDiagnosis:
-   *       properties:
-   *           teethId:
-   *               type: array
-   *               items:
-   *                   type: string
-   *           staffId:
-   *               type: string
-   *           diagnosticId:
-   *               type: string
-   *           status:
-   *               type: string
-   *               enum: ['pending', 'confirmed', 'resolved']
-   *           diagnosticName:
-   *               type: string
-   *           teethNumber:
-   *               type: string
-   *
-   */
-  /**
-   * @swagger
-   * /treatment/diagnosis/update-diagnosis/{diagnosisId}:
-   *   put:
-   *     tags:
-   *       - Treatment
-   *     security:
-   *       - Bearer: []
-   *     name: updateDiagnosis
-   *     parameters:
-   *     - in: path
-   *       name: diagnosisId
-   *       type: string
-   *     - in: "body"
-   *       name: "body"
-   *       $ref: '#/definitions/UpdateDiagnosis'
-   *     responses:
-   *       200:
-   *         description: success
-   *       400:
-   *         description: bad request
-   *       500:
-   *         description:
-   */
-  public updateDiagnosis = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const dataInput = req.body;
-      dataInput.diagnosisId = req.params.diagnosisId;
-      const validateErrors = validate(dataInput, updateDiagnosis);
-      if (validateErrors) {
-        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
-      }
-      const diagnosis: any = await DiagnosisModel.find({ _id: dataInput.diagnosisId }).exec();
-      diagnosis.teethId = !dataInput.teethId ? diagnosis.teethId : dataInput.teethId;
-      diagnosis.diagnosticId = !dataInput.diagnosticId ? diagnosis.diagnosticId : dataInput.diagnosticId;
-      diagnosis.status = !dataInput.status ? diagnosis.status : dataInput.status;
-      diagnosis.diagnosticName = !dataInput.diagnosticName ? diagnosis.diagnosticName : dataInput.diagnosticName;
-      if (dataInput.staffId) {
-        diagnosis.staffId = !dataInput.staffId ? diagnosis.staffId : dataInput.staffId;
-        const staff = await StaffModel.findOne({
-          where: { id: dataInput.staffId },
-          attributes: ['firstName'],
-          raw: true
-        });
-        if (!staff) {
-          throw new CustomError(staffErrorDetails.E_4000(`Staff ${dataInput.staffId} not found`), httpStatus.NOT_FOUND);
-        }
-        diagnosis.staffName = staff.firstName;
-      }
-      await DiagnosisModel.update({ _id: dataInput.diagnosisId }, diagnosis).exec();
-      return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);
     }
