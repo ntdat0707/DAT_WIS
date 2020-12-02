@@ -60,6 +60,10 @@ const treatmentErrorDetails = {
   E_4101(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_4101', 'Medical File not found', detail);
     return e;
+  },
+  E_4102(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4102', 'File upload not found', detail);
+    return e;
   }
 };
 
