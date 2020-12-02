@@ -54,10 +54,14 @@ export class MedicalDocumentController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
+      if (!req.file) {
+        throw new CustomError(treatmentErrorDetails.E_4102(`File upload not found`), httpStatus.NOT_FOUND);
+      }
       const medicalDocument: any = await MedicalDocumentModel.findById(dataInput.medicalDocumentId).exec();
       if (!medicalDocument) {
         throw new CustomError(
-          treatmentErrorDetails.E_4100(`Medical Document ${dataInput.medicalDocumentId} not found`)
+          treatmentErrorDetails.E_4100(`Medical Document ${dataInput.medicalDocumentId} not found`),
+          httpStatus.NOT_FOUND
         );
       }
       if (req.file) dataInput.path = (req.file as any).location;
@@ -102,7 +106,7 @@ export class MedicalDocumentController extends BaseController {
       }
       const medicalDocument: any = await MedicalDocumentModel.find({ treatmentId: treatmentId }).exec();
       if (!medicalDocument) {
-        throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${treatmentId} not found`));
+        throw new CustomError(treatmentErrorDetails.E_3902(`Treatment ${treatmentId} not found`), httpStatus.NOT_FOUND);
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(medicalDocument));
     } catch (error) {
@@ -139,11 +143,14 @@ export class MedicalDocumentController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const medicalDocument: any = await MedicalDocumentModel.findById({ _id: medicalDocumentId }).exec();
-      if (!medicalDocument) {
-        throw new CustomError(treatmentErrorDetails.E_4100(`Medical Document ${medicalDocumentId} not found`));
+      const medicalFiles: any = await MedicalFileModel.find({ medicalDocumentId: medicalDocumentId }).exec();
+      if (!medicalFiles) {
+        throw new CustomError(
+          treatmentErrorDetails.E_4100(`Medical Document ${medicalDocumentId} not found`),
+          httpStatus.NOT_FOUND
+        );
       }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(medicalDocument));
+      return res.status(httpStatus.OK).send(buildSuccessMessage(medicalFiles));
     } catch (error) {
       return next(error);
     }
@@ -180,7 +187,10 @@ export class MedicalDocumentController extends BaseController {
       }
       const medicalFile: any = await MedicalFileModel.findById(medicalFileId).exec();
       if (!medicalFile) {
-        throw new CustomError(treatmentErrorDetails.E_4100(`Medical file ${medicalFileId} not found`));
+        throw new CustomError(
+          treatmentErrorDetails.E_4101(`Medical file ${medicalFileId} not found`),
+          httpStatus.NOT_FOUND
+        );
       }
       await MedicalFileModel.deleteOne({ _id: medicalFileId }).exec();
       const medicalDocument = await MedicalDocumentModel.findById(medicalFile.medicalDocumentId).exec();
