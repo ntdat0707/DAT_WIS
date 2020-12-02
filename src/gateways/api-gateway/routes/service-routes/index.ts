@@ -10,6 +10,7 @@ import {
   treatmentServiceConfigs
 } from './configs';
 import { API_BASE_PATH } from '../configs';
+import { productServiceConfigs } from './configs/product';
 
 require('dotenv').config();
 
@@ -54,6 +55,8 @@ class ServiceRoutes {
       return `${API_BASE_PATH}${saleServiceConfigs.route}`;
     if (originalUrl.startsWith(`${API_BASE_PATH}${treatmentServiceConfigs.route}`))
       return `${API_BASE_PATH}${treatmentServiceConfigs.route}`;
+    if (originalUrl.startsWith(`${API_BASE_PATH}${treatmentServiceConfigs.route}`))
+      return `${API_BASE_PATH}${productServiceConfigs.route}`;
     else return '';
   };
 
@@ -115,6 +118,15 @@ class ServiceRoutes {
       treatmentServiceConfigs.route,
       createProxyMiddleware({
         ...treatmentServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq }
+      })
+    );
+
+    //PRODUCT SERVICE
+    this.router.use(
+      productServiceConfigs.route,
+      createProxyMiddleware({
+        ...productServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq }
       })
     );

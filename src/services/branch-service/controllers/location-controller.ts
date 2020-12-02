@@ -917,8 +917,8 @@ export class LocationController {
         const even = (element: any) => {
           return !moment(element.range[0], 'hh:mm').isBefore(moment(element.range[1], 'hh:mm'));
         };
-        const checkValidWoringTime = await body.workingTimes.some(even);
-        if (checkValidWoringTime) {
+        const checkValidWorkingTime = await body.workingTimes.some(even);
+        if (checkValidWorkingTime) {
           throw new CustomError(locationErrorDetails.E_1004('startTime not before endTime'), HttpStatus.BAD_REQUEST);
         }
         const existLocationWorkingHour = await LocationWorkingHourModel.findOne({

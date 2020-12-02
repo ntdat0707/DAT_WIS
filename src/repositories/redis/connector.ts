@@ -15,20 +15,20 @@ const opts: ClientOpts = {
 
 const redisClient: RedisClient = createClient(opts);
 redisClient.on('error', (_err) => {
-  logger.error({
-    label: 'Redis',
-    message: `Redis connect to ${opts.host} failed ${_err}`
-  });
-  //console.log(_err);
+  // logger.error({
+  //   label: 'Redis',
+  //   message: `Redis connect to ${opts.host} failed ${_err}`
+  // });
+  console.log(_err);
 });
 
 //
 redisClient.on('connect', () => {
-  logger.info({
-    label: 'Redis',
-    message: `Redis connected to ${opts.host}`
-  });
-  //console.log(`Redis connected to ${opts.host}`);
+  // logger.info({
+  //   label: 'Redis',
+  //   message: `Redis connected to ${opts.host}`
+  // });
+  console.log(`Redis connected to ${opts.host}`);
 });
 
 export default redisClient;

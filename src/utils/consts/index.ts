@@ -78,6 +78,30 @@ enum ETypeMarketPlaceField {
   BOOLEAN = 'BOOLEAN'
 }
 
+enum ETypeOfPeople {
+  CUSTOMER = 'CUSTOMER',
+  STAFF = 'STAFF',
+  ORGANIZATION = 'ORGANIZATION'
+}
+
+enum ETypeCustomField {
+  NUMBER = 'NUMBER',
+  STRING = 'STRING',
+  BOOLEAN = 'BOOLEAN',
+  SINGLE_SELECT = 'SINGLE_SELECT',
+  MULTI_SELECT = 'MULTI_SELECT',
+  TEXT = 'TEXT',
+  EMAIL = 'EMAIL',
+  FILES = 'FILES',
+  PEOPLE = 'PEOPLE',
+  PHONE = 'PHONE',
+  MONEY = 'MONEY',
+  WEBSITE = 'WEBSITE',
+  FORMULA = 'FORMULA',
+  LOCATION = 'LOCATION',
+  RATING = 'RATING'
+}
+
 enum ESearchBy {
   COMPANY = 'company',
   CATE_SERVICE = 'cate-service',
@@ -102,8 +126,10 @@ export {
   EOrder,
   ESearchBy,
   ETypeMarketPlaceField,
+  ETypeCustomField,
   IManagementLockAppointmentData,
-  IManagementEditAppointmentDetailData
+  IManagementEditAppointmentDetailData,
+  ETypeOfPeople
 };
 
 export enum EAppointmentBookingSource {
@@ -251,4 +277,10 @@ export enum EMedicalDocumentStatusType {
   DURING_TREATMENT = 'during-treatment',
   AFTER_TREATMENT = 'after-treatment',
   OTHER = 'other'
+}
+
+export enum ETraceability {
+  NO_TRACKING = 'NO_TRACKING',
+  BY_LOTS = 'BY_LOTS',
+  BY_UNIQUE_SERIAL_NUMBER = 'BY_UNIQUE_SERIAL_NUMBER'
 }
