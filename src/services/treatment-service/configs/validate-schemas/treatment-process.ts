@@ -28,7 +28,7 @@ const createTreatmentProcessSchema = Joi.object({
         assistantId: Joi.string()
           .guid({ version: ['uuidv4'] })
           .label('assistantId'),
-        detailTreatmentNote: Joi.string().required().label('detailTreatmentNote')
+        detailTreatment: Joi.string().required().label('detailTreatment')
       })
     )
     .min(1)
@@ -94,10 +94,13 @@ const updateTreatmentProcessSchema = Joi.object({
   procedures: Joi.array()
     .items(
       Joi.object({
-        id: Joi.string().required().label('id'),
+        procedureId: Joi.string().required().label('procedureId'),
         status: Joi.valid(...Object.values(EStatusProcedure))
           .required()
           .label('status'),
+        assistantId: Joi.string()
+          .guid({ version: ['uuidv4'] })
+          .label('assistantId'),
         detailTreatment: Joi.string().required().label('detailTreatment')
       })
     )

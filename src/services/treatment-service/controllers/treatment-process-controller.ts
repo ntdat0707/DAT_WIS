@@ -110,7 +110,7 @@ export class TreatmentProcessController extends BaseController {
    *                        enum: ['new','in-progress','completed','reject']
    *                      assistantId:
    *                        type: string
-   *                      detailTreatmentNote:
+   *                      detailTreatment:
    *                        type: string
    *           prescription:
    *               $ref: '#/definitions/prescriptionCreate'
@@ -165,7 +165,6 @@ export class TreatmentProcessController extends BaseController {
         );
       }
       //Procedure
-      //const procedureIds: any = [];
       for (let i = 0; i < treatmentProcessData.procedures.length; i++) {
         const procedure = await ProcedureModel.findById(treatmentProcessData.procedures[i].procedureId).exec();
         if (!procedure) {
@@ -174,40 +173,26 @@ export class TreatmentProcessController extends BaseController {
             httpStatus.NOT_FOUND
           );
         }
-        if (treatmentProcessData.procedures[i].status) {
-          await ProcedureModel.updateOne(
-            { _id: treatmentProcessData.procedures[i].procedureId },
-            {
-              status: treatmentProcessData.procedures[i].status
-            }
-          ).exec();
-        }
-
-        //check assistantId --- Pending
-        // if(item.assistantId){
-        //   let assistant = await TeamStaffModel({where:{staffId: item.assistantId}});
-        //   if(!assiatannt){
-        //     throw new CustomError();
-        //   }
-        // }
-        if (treatmentProcessData.procedures[i].detailTreatmentNote) {
-          const detailTreatment: any = await ServiceNoteModel.find({
-            _id: treatmentProcessData.procedures[i].detailTreatmentNote
-          }).exec();
-          if (!detailTreatment) {
-            const newTreatmentNoteData = {
-              name: treatmentProcessData.procedures[i].detailTreatmentNote,
-              serviceId: procedure.serviceId
-            };
-            const newNote = new ServiceNoteModel(newTreatmentNoteData);
-            await newNote.save();
-            treatmentProcessData.procedures[i].detailTreatmentNote = newNote.name;
-          } else {
-            treatmentProcessData.procedures[i].detailTreatmentNote = detailTreatment.name;
+        await ProcedureModel.updateOne(
+          { _id: treatmentProcessData.procedures[i].procedureId },
+          {
+            status: treatmentProcessData.procedures[i].status
           }
+        ).exec();
+        //AssistantId --Pending
+
+        const detailTreatment: any = await ServiceNoteModel.findOne({
+          name: treatmentProcessData.procedures[i].detailTreatment
+        }).exec();
+        if (!detailTreatment) {
+          const newTreatmentNoteData = {
+            name: treatmentProcessData.procedures[i].detailTreatment,
+            serviceId: procedure.serviceId
+          };
+          const newNote = new ServiceNoteModel(newTreatmentNoteData);
+          await newNote.save();
         }
       }
-
       if (treatmentProcessData.prescription) {
         const prescription: any = new PrescriptionModel(treatmentProcessData.prescription);
         treatmentProcessData.prescriptionId = prescription._id;
@@ -455,6 +440,10 @@ export class TreatmentProcessController extends BaseController {
    *                      status:
    *                        type: string
    *                        enum: ['new','in-progress','completed','reject']
+   *                      assistantId:
+   *                        type: string
+   *                      detailTreatment:
+   *                        type: string
    *           prescription:
    *               $ref: '#/definitions/prescriptionUpdate'
    *           labo:
@@ -510,12 +499,13 @@ export class TreatmentProcessController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      if (dataInput.procedures.length > treatmentProcess.procedureIds.length) {
+      if (dataInput.procedures.length > treatmentProcess.procedures.length) {
         throw new CustomError(treatmentErrorDetails.E_3911(`Procedures input not valid`), httpStatus.BAD_REQUEST);
       }
       //Procedures
       for (const item of dataInput.procedures) {
-        const currProcedures = treatmentProcess.procedures.map((p: any) => p.procedureId);
+        const procedure = await ProcedureModel.findById(item.procedureId).exec();
+        const currProcedures = treatmentProcess.procedures.map((x: any) => x.procedureId.toString());
         const inputProcedures = dataInput.procedures.map((p: any) => p.procedureId);
         const diffProcedure = _.difference(currProcedures, inputProcedures);
         if (diffProcedure.length > 0) {
@@ -526,7 +516,18 @@ export class TreatmentProcessController extends BaseController {
             httpStatus.BAD_REQUEST
           );
         }
-        await ProcedureModel.updateOne({ _id: item.procedureId }, { status: item.status }).exec();
+        const detailTreatment: any = await ServiceNoteModel.findOne({
+          name: item.detailTreatment
+        }).exec();
+        if (!detailTreatment) {
+          const newTreatmentNoteData = {
+            name: item.detailTreatment,
+            serviceId: procedure.serviceId
+          };
+          const newNote = new ServiceNoteModel(newTreatmentNoteData);
+          await newNote.save();
+        }
+        await ProcedureModel.updateOne({ _id: item.procedureId }, item).exec();
       }
       if (dataInput.prescription) {
         if (!dataInput.prescription.prescriptionId) {
