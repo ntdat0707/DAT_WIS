@@ -198,8 +198,6 @@ export class TreatmentProcessController extends BaseController {
         await labo.save();
       }
       const treatmentProcess = new TreatmentProcessModel(treatmentProcessData);
-      treatment.treatmentProcessIds.push(treatmentProcess._id);
-      await TreatmentModel.updateOne({ _id: treatmentProcessData.treatmentId }, treatment).exec();
       await treatmentProcess.save();
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
     } catch (error) {
