@@ -16,7 +16,6 @@ interface IProcedure extends mongoose.Document {
   totalPrice: number;
   status: string;
   note: string;
-  //detailTreatment: string;
   createDate: Date;
 }
 
@@ -35,7 +34,6 @@ const ProcedureSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true },
   status: { type: String, enum: Object.values(EStatusProcedure), default: EStatusProcedure.NEW },
   note: { type: String, required: false },
-  //detailTreatment: { type: String, required: false, default: '' },
   createDate: { type: Date, default: Date.now }
 });
 
