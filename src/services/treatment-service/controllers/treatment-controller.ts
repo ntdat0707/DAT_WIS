@@ -621,8 +621,8 @@ export class TreatmentController extends BaseController {
         procedures = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
       }
       procedures.map(async (item: any) => {
-        const service: any = await ServiceModel.findOne({ where: { id: item.serviceId }, raw: true });
-        const staff: any = await StaffModel.findOne({ where: { id: item.staffId }, raw: true });
+        let service: any = await ServiceModel.findOne({ where: { id: item.serviceId }, raw: true });
+        let staff: any = await StaffModel.findOne({ where: { id: item.staffId }, raw: true });
         item = {
           ...item._doc,
           service: service,
