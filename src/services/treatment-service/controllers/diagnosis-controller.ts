@@ -220,21 +220,8 @@ export class DiagnosticController extends BaseController {
         );
       }
       dataInput.teethId = teeth._id;
-      if (treatment.diagnosisIds.length > 0) {
-        for (const diagnosticId of treatment.diagnosisIds) {
-          if (diagnosticId === dataInput.diagnosisId) {
-            throw new CustomError(
-              treatmentErrorDetails.E_3906(`Diagnostic ${diagnosticId} is already exists`),
-              httpStatus.BAD_REQUEST
-            );
-          }
-        }
-      }
       const diagnosis: any = new DiagnosisModel(dataInput);
       await diagnosis.save();
-      //update treatment
-      treatment.diagnosisIds.push(diagnosis._id);
-      await TreatmentModel.updateOne({ _id: dataInput.treatmentId }, treatment).exec();
       const diagnosticPath: any = await DiagnosticPathModel.find({ diagnosticId: dataInput.diagnosticId })
         .populate({
           path: 'pathologicalIds',
