@@ -620,7 +620,8 @@ export class TreatmentController extends BaseController {
       } else {
         procedures = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
       }
-      procedures.map(async (item: any) => {
+      let newProcedures: any = [];
+      newProcedures = await Promise.all(procedures.map(async (item: any) => {
         let service: any = await ServiceModel.findOne({ where: { id: item.serviceId }, raw: true });
         let staff: any = await StaffModel.findOne({ where: { id: item.staffId }, raw: true });
         item = {
@@ -630,8 +631,9 @@ export class TreatmentController extends BaseController {
           staffId: undefined,
           serviceId: undefined
         };
-      });
-      return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
+        return item;
+      }))
+      return res.status(httpStatus.OK).send(buildSuccessMessage(newProcedures));
     } catch (error) {
       return next(error);
     }
