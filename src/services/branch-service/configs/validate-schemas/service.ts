@@ -42,7 +42,8 @@ const createServiceSchema = Joi.object({
     .valid(EExtraTimeType.BLOCKED, EExtraTimeType.PROCESSING)
     .allow(null, '')
     .label('extraTimeType'),
-  extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration')
+  extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration'),
+  detailTreatmentNote: Joi.string().allow(null).label('detailTreatmentNote')
 });
 
 const createCateServiceSchema = Joi.object({

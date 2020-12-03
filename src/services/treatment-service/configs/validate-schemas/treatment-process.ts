@@ -18,14 +18,17 @@ const createTreatmentProcessSchema = Joi.object({
   procedures: Joi.array()
     .items(
       Joi.object({
-        id: Joi.string()
+        procedureId: Joi.string()
           .required()
           .regex(/^[0-9a-fA-F]{24}$/)
-          .label('id'),
+          .label('procedureId'),
         status: Joi.valid(...Object.values(EStatusProcedure))
           .required()
           .label('status'),
-        detailTreatment: Joi.string().required().label('detailTreatment')
+        assistantId: Joi.string()
+          .guid({ version: ['uuidv4'] })
+          .label('assistantId'),
+        detailTreatmentNote: Joi.string().required().label('detailTreatmentNote')
       })
     )
     .min(1)
