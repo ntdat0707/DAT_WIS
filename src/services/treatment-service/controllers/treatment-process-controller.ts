@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
@@ -22,6 +21,9 @@ import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
 import { customerErrorDetails, treatmentErrorDetails } from '../../../utils/response-messages/error-details';
 import { treatmentIdSchema, treatmentProcessIdSchema } from '../configs/validate-schemas';
+import { ServiceNoteModel } from '../../../repositories/mongo/models/service-note-model';
+import httpStatus from 'http-status';
+import _ from 'lodash';
 
 export class TreatmentProcessController extends BaseController {
   /**
@@ -101,11 +103,13 @@ export class TreatmentProcessController extends BaseController {
    *               items:
    *                   type: object
    *                   properties:
-   *                      id:
+   *                      procedureId:
    *                        type: string
    *                      status:
    *                        type: string
    *                        enum: ['new','in-progress','completed','reject']
+   *                      assistantId:
+   *                        type: string
    *                      detailTreatment:
    *                        type: string
    *           prescription:
@@ -160,19 +164,35 @@ export class TreatmentProcessController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      const procedureIds: any = [];
-      for (const item of req.body.procedures) {
-        const procedure = await ProcedureModel.findById({ _id: item.id }).exec();
+      //Procedure
+      for (let i = 0; i < treatmentProcessData.procedures.length; i++) {
+        const procedure = await ProcedureModel.findById(treatmentProcessData.procedures[i].procedureId).exec();
         if (!procedure) {
-          throw new CustomError(treatmentErrorDetails.E_3905(`procedureId ${item.id} not found`), httpStatus.NOT_FOUND);
+          throw new CustomError(
+            treatmentErrorDetails.E_3905(`procedureId ${treatmentProcessData.procedures[i].procedureId} not found`),
+            httpStatus.NOT_FOUND
+          );
         }
         await ProcedureModel.updateOne(
-          { _id: item.id },
-          { status: item.status, detailTreatment: item.detailTreatment }
+          { _id: treatmentProcessData.procedures[i].procedureId },
+          {
+            status: treatmentProcessData.procedures[i].status
+          }
         ).exec();
-        procedureIds.push(item.id);
+        //AssistantId --Pending
+
+        const detailTreatment: any = await ServiceNoteModel.findOne({
+          name: treatmentProcessData.procedures[i].detailTreatment
+        }).exec();
+        if (!detailTreatment) {
+          const newTreatmentNoteData = {
+            name: treatmentProcessData.procedures[i].detailTreatment,
+            serviceId: procedure.serviceId
+          };
+          const newNote = new ServiceNoteModel(newTreatmentNoteData);
+          await newNote.save();
+        }
       }
-      treatmentProcessData.procedureIds = procedureIds;
       if (treatmentProcessData.prescription) {
         const prescription: any = new PrescriptionModel(treatmentProcessData.prescription);
         treatmentProcessData.prescriptionId = prescription._id;
@@ -415,11 +435,13 @@ export class TreatmentProcessController extends BaseController {
    *               items:
    *                   type: object
    *                   properties:
-   *                      id:
+   *                      procedureId:
    *                        type: string
    *                      status:
    *                        type: string
    *                        enum: ['new','in-progress','completed','reject']
+   *                      assistantId:
+   *                        type: string
    *                      detailTreatment:
    *                        type: string
    *           prescription:
@@ -477,18 +499,36 @@ export class TreatmentProcessController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      if (dataInput.procedures.length > treatmentProcess.procedureIds.length) {
+      if (dataInput.procedures.length > treatmentProcess.procedures.length) {
         throw new CustomError(treatmentErrorDetails.E_3911(`Procedures input not valid`), httpStatus.BAD_REQUEST);
       }
-      const procedureIds: any = [];
+      //Procedures
       for (const item of dataInput.procedures) {
-        await ProcedureModel.updateOne(
-          { _id: item.id },
-          { status: item.status, detailTreatment: item.detailTreatment }
-        ).exec();
-        procedureIds.push(item.id);
+        const procedure = await ProcedureModel.findById(item.procedureId).exec();
+        const currProcedures = treatmentProcess.procedures.map((x: any) => x.procedureId.toString());
+        const inputProcedures = dataInput.procedures.map((p: any) => p.procedureId);
+        const diffProcedure = _.difference(currProcedures, inputProcedures);
+        if (diffProcedure.length > 0) {
+          throw new CustomError(
+            treatmentErrorDetails.E_3913(
+              `Procedure ${diffProcedure} not in this treatment process ${treatmentProcessId}`
+            ),
+            httpStatus.BAD_REQUEST
+          );
+        }
+        const detailTreatment: any = await ServiceNoteModel.findOne({
+          name: item.detailTreatment
+        }).exec();
+        if (!detailTreatment) {
+          const newTreatmentNoteData = {
+            name: item.detailTreatment,
+            serviceId: procedure.serviceId
+          };
+          const newNote = new ServiceNoteModel(newTreatmentNoteData);
+          await newNote.save();
+        }
+        await ProcedureModel.updateOne({ _id: item.procedureId }, item).exec();
       }
-      dataInput.procedureIds = procedureIds;
       if (dataInput.prescription) {
         if (!dataInput.prescription.prescriptionId) {
           const prescription: any = new PrescriptionModel(dataInput.prescription);

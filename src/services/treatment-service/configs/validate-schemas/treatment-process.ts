@@ -18,13 +18,16 @@ const createTreatmentProcessSchema = Joi.object({
   procedures: Joi.array()
     .items(
       Joi.object({
-        id: Joi.string()
+        procedureId: Joi.string()
           .required()
           .regex(/^[0-9a-fA-F]{24}$/)
-          .label('id'),
+          .label('procedureId'),
         status: Joi.valid(...Object.values(EStatusProcedure))
           .required()
           .label('status'),
+        assistantId: Joi.string()
+          .guid({ version: ['uuidv4'] })
+          .label('assistantId'),
         detailTreatment: Joi.string().required().label('detailTreatment')
       })
     )
@@ -91,10 +94,13 @@ const updateTreatmentProcessSchema = Joi.object({
   procedures: Joi.array()
     .items(
       Joi.object({
-        id: Joi.string().required().label('id'),
+        procedureId: Joi.string().required().label('procedureId'),
         status: Joi.valid(...Object.values(EStatusProcedure))
           .required()
           .label('status'),
+        assistantId: Joi.string()
+          .guid({ version: ['uuidv4'] })
+          .label('assistantId'),
         detailTreatment: Joi.string().required().label('detailTreatment')
       })
     )

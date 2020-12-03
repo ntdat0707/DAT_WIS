@@ -47,7 +47,14 @@ const treatmentErrorDetails = {
     const e = buildErrorDetail('E_3911', 'Procedures not valid', detail);
     return e;
   },
-
+  E_3912(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_3912', 'Detail treatment not found', detail);
+    return e;
+  },
+  E_3913(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_3913', 'Procedures  not in this treatment process', detail);
+    return e;
+  },
   // #Medical Document Errors
   E_4100(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_4100', 'Medical Document not found', detail);
