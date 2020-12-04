@@ -33,7 +33,7 @@ import { ServiceResourceModel } from '../../../repositories/postgres/models/serv
 import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
-import { ServiceNoteModel } from '../../../repositories/mongo/models/service-note-model';
+import { ServiceTherapeuticModel } from '../../../repositories/mongo/models/service-therapeutic-model';
 
 const { parsed: env } = dotenv.config();
 
@@ -202,7 +202,7 @@ export class ServiceController {
           name: data.detailTreatmentNote,
           serviceId: service.id
         };
-        const newNote = new ServiceNoteModel(detailTreatmentNoteData);
+        const newNote = new ServiceTherapeuticModel(detailTreatmentNoteData);
         await newNote.save();
       }
       /**
