@@ -1,17 +1,17 @@
-import mogoose from 'mongoose';
+import mongoose from 'mongoose';
 
-interface ITherapeuticTreatmentModel extends mogoose.Document {
+interface ITherapeuticTreatmentModel extends mongoose.Document {
   name: string;
   createDate: Date;
 }
 
-const TherapeuticTreatmentSchema = new mogoose.Schema({
+const TherapeuticTreatmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
   createDate: { type: Date, default: Date.now }
 });
 
 //Model
-const TherapeuticTreatmentModel = mogoose.model<ITherapeuticTreatmentModel>(
+const TherapeuticTreatmentModel = mongoose.model<ITherapeuticTreatmentModel>(
   'TherapeuticTreatment',
   TherapeuticTreatmentSchema,
   'therapeutic_treatment'

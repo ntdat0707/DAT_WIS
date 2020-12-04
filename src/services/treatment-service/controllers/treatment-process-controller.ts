@@ -621,8 +621,8 @@ export class TreatmentProcessController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const detailTreatment = await ServiceNoteModel.find({ serviceId: serviceId }).exec();
-      return res.status(httpStatus.OK).send(buildSuccessMessage(detailTreatment));
+      // const detailTreatment = await ServiceNoteModel.find({ serviceId: serviceId }).exec();
+      // return res.status(httpStatus.OK).send(buildSuccessMessage(detailTreatment));
     } catch (error) {
       return next(error);
     }
