@@ -437,6 +437,10 @@ export class AuthController {
             model: LocationModel,
             as: 'workingLocations',
             through: { attributes: [] }
+          },
+          {
+            model: RoleModel,
+            as: 'role'
           }
         ]
       });
