@@ -250,9 +250,10 @@ export class StaffController {
           ]
         ];
       }
-      if (req.query.searchValue) {
+      if (req.query.earchValue) {
         const unaccentSearchValue = Unaccent(req.query.searchValue);
         const searchVal = sequelize.escape(`%${unaccentSearchValue}%`);
+        // TODO: warning sql injection ilike email
         query.where = {
           [Op.or]: [
             Sequelize.literal(
@@ -260,7 +261,7 @@ export class StaffController {
             ),
             Sequelize.literal(`"StaffModel"."staff_code" ilike ${searchVal}`),
             Sequelize.literal(`"StaffModel"."phone" like ${searchVal}`),
-            Sequelize.literal(`"StaffModel"."email" ilike ${searchVal}`)
+            Sequelize.literal(`"StaffModel"."email" ilike %${unaccentSearchValue}%`)
           ]
         };
       }
