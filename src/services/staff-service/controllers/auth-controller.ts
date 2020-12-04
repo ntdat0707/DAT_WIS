@@ -91,9 +91,9 @@ export class AuthController {
    *         $ref: '#/definitions/RegisterBusinessAccount'
    *     responses:
    *       200:
-   *         description: Sucess
+   *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -110,12 +110,16 @@ export class AuthController {
       };
 
       const validateErrors = validate(data, createBusinessAccountSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
 
       const checkEmailExists = await StaffModel.scope('safe').findOne({ where: { email: data.email } });
-      if (checkEmailExists) throw new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST);
+      if (checkEmailExists) {
+        throw new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST);
+      }
 
-      //endscrypt password
+      //encrypt password
       data.password = await hash(data.password, PASSWORD_SALT_ROUNDS);
       const staffId = uuidv4();
       const companyId = uuidv4();
@@ -346,9 +350,9 @@ export class AuthController {
    *         $ref: '#/definitions/StaffLogin'
    *     responses:
    *       200:
-   *         description: Sucess
+   *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -366,7 +370,9 @@ export class AuthController {
       let loginData: any;
       let loginLogModel: any;
       const validateErrors = validate(data, loginSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
       if (!staff) {
         loginData = {
@@ -565,9 +571,13 @@ export class AuthController {
     try {
       const email = req.body.email;
       const validateErrors = validate({ email: email }, emailSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const staff = await StaffModel.scope('safe').findOne({ raw: true, where: { email: req.body.email } });
-      if (!staff) throw new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND);
+      if (!staff) {
+        throw new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND);
+      }
       const uuidToken = uuidv4();
       const dataSendMail: IStaffRecoveryPasswordTemplate = {
         staffEmail: email,
@@ -638,12 +648,18 @@ export class AuthController {
         newPassword: req.body.newPassword
       };
       const validateErrors = validate(body, changePasswordSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const tokenStoraged = await redis.getData(`${EKeys.STAFF_RECOVERY_PASSWORD_URL}-${body.token}`);
-      if (!tokenStoraged) throw new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED);
+      if (!tokenStoraged) {
+        throw new CustomError(staffErrorDetails.E_4004('Invalid token'), HttpStatus.UNAUTHORIZED);
+      }
       const data = JSON.parse(tokenStoraged);
       const staff = await StaffModel.findOne({ raw: true, where: { email: data.email } });
-      if (!staff) throw new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND);
+      if (!staff) {
+        throw new CustomError(staffErrorDetails.E_4000('Email not found'), HttpStatus.NOT_FOUND);
+      }
       const password = await hash(body.newPassword, PASSWORD_SALT_ROUNDS);
       await StaffModel.update(
         { password: password },
@@ -708,9 +724,9 @@ export class AuthController {
    *         $ref: '#/definitions/StaffLoginSocial'
    *     responses:
    *       200:
-   *         description: Sucess
+   *         description: Success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -732,7 +748,9 @@ export class AuthController {
       let mqttUserData: any;
       let mqttUserModel: any;
       const validateErrors = validate(req.body, loginSocialSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       if (req.body.email) {
         if (req.body.provider === ESocialType.GOOGLE) {
           socialInfor = await validateGoogleToken(req.body.token);
@@ -1207,6 +1225,7 @@ export class AuthController {
       if (transaction) {
         await transaction.rollback();
       }
+      return next(error);
     }
   };
 
@@ -1253,26 +1272,25 @@ export class AuthController {
       const accessTokenData = await verifyAccessToken(req.body.token);
       if (accessTokenData instanceof CustomError) {
         throw new CustomError(generalErrorDetails.E_0003());
-      } else {
-        const staff = await StaffModel.scope('safe').findOne({
-          where: { id: accessTokenData.userId },
-          include: [
-            {
-              model: LocationModel,
-              as: 'workingLocations',
-              through: { attributes: [] }
-            },
-            {
-              model: RoleModel,
-              as: 'role'
-            }
-          ]
-        });
-        if (!staff) {
-          throw new CustomError(generalErrorDetails.E_0003());
-        }
-        return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
       }
+      const staff = await StaffModel.scope('safe').findOne({
+        where: { id: accessTokenData.userId },
+        include: [
+          {
+            model: LocationModel,
+            as: 'workingLocations',
+            through: { attributes: [] }
+          },
+          {
+            model: RoleModel,
+            as: 'role'
+          }
+        ]
+      });
+      if (!staff) {
+        throw new CustomError(generalErrorDetails.E_0003());
+      }
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);
     }
