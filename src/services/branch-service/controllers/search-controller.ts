@@ -1231,59 +1231,61 @@ export class SearchController {
           ],
           group: ['CateServiceModel.id', 'services.id']
         });
-        nearLocation = await esClient
-          .search({
-            index: env!.ELS_INDEX_MARKETPLACE_SEARCH,
-            body: {
-              query: {
-                bool: {
-                  must_not: [
-                    {
-                      match: {
-                        id: location.id
-                      }
+        const searchNearLocationOptions = {
+          index: env!.ELS_INDEX_MARKETPLACE_SEARCH,
+          body: {
+            query: {
+              bool: {
+                must_not: [
+                  {
+                    match: {
+                      id: location.id
                     }
-                  ],
-                  must: {
-                    bool: {
-                      should: [
-                        {
-                          query_string: {
-                            fields: ['country'],
-                            query: `${location.country}~1`
-                          }
-                        },
-                        {
-                          query_string: {
-                            fields: ['countryCode'],
-                            query: `${location.countryCode}~1`
-                          }
+                  }
+                ],
+                must: {
+                  bool: {
+                    should: [
+                      {
+                        query_string: {
+                          fields: ['country'],
+                          query: `${location.country}~1`
                         }
-                      ]
-                    }
+                      },
+                      {
+                        query_string: {
+                          fields: ['countryCode'],
+                          query: `${location.countryCode}~1`
+                        }
+                      }
+                    ]
                   }
                 }
-              },
-              sort: [
-                {
-                  _geo_distance: {
-                    location: {
-                      lat: location.latitude,
-                      lon: location.longitude
-                    },
-                    order: 'asc',
-                    unit: 'km',
-                    distance_type: 'arc',
-                    ignore_unmapped: true
-                  }
+              }
+            },
+            sort: [
+              {
+                _geo_distance: {
+                  location: {
+                    lat: location.latitude,
+                    lon: location.longitude
+                  },
+                  order: 'asc',
+                  unit: 'km',
+                  distance_type: 'arc',
+                  ignore_unmapped: true
                 }
-              ],
-              from: 0,
-              size: 10
-            }
-          })
+              }
+            ],
+            from: 0,
+            size: 10
+          }
+        };
+        nearLocation = await esClient
+          .search(searchNearLocationOptions)
           .then(
-            (result: any) => result.hits?.hits.map((item: any) => ({ ...item._source, distance: item.sort[0] })) || []
+            (result: any) =>
+              result.body.hits?.hits.map((item: any) => ({ ...item._source, distance: item.sort[0] })) || []
           );
         nearLocation = nearLocation.map((loc: any) => {
           const locationDetailField = loc.marketplaceValues
@@ -1301,7 +1303,9 @@ export class SearchController {
             ...locationDetailField,
             ...loc.company,
             ['marketplaceValues']: undefined,
-            ['company']: undefined
+            ['company']: undefined,
+            ['@timestamp']: undefined,
+            ['@version']: undefined
           };
         });
       } else {
