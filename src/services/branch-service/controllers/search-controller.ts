@@ -1231,59 +1231,61 @@ export class SearchController {
           ],
           group: ['CateServiceModel.id', 'services.id']
         });
-        nearLocation = await esClient
-          .search({
-            index: env!.ELS_INDEX_MARKETPLACE_SEARCH,
-            body: {
-              query: {
-                bool: {
-                  must_not: [
-                    {
-                      match: {
-                        id: location.id
-                      }
+        const searchNearLocationOptions = {
+          index: env!.ELS_INDEX_MARKETPLACE_SEARCH,
+          body: {
+            query: {
+              bool: {
+                must_not: [
+                  {
+                    match: {
+                      id: location.id
                     }
-                  ],
-                  must: {
-                    bool: {
-                      should: [
-                        {
-                          query_string: {
-                            fields: ['country'],
-                            query: `${location.country}~1`
-                          }
-                        },
-                        {
-                          query_string: {
-                            fields: ['countryCode'],
-                            query: `${location.countryCode}~1`
-                          }
+                  }
+                ],
+                must: {
+                  bool: {
+                    should: [
+                      {
+                        query_string: {
+                          fields: ['country'],
+                          query: `${location.country}~1`
                         }
-                      ]
-                    }
+                      },
+                      {
+                        query_string: {
+                          fields: ['countryCode'],
+                          query: `${location.countryCode}~1`
+                        }
+                      }
+                    ]
                   }
                 }
-              },
-              sort: [
-                {
-                  _geo_distance: {
-                    location: {
-                      lat: location.latitude,
-                      lon: location.longitude
-                    },
-                    order: 'asc',
-                    unit: 'km',
-                    distance_type: 'arc',
-                    ignore_unmapped: true
-                  }
+              }
+            },
+            sort: [
+              {
+                _geo_distance: {
+                  location: {
+                    lat: location.latitude,
+                    lon: location.longitude
+                  },
+                  order: 'asc',
+                  unit: 'km',
+                  distance_type: 'arc',
+                  ignore_unmapped: true
                 }
-              ],
-              from: 0,
-              size: 10
-            }
-          })
+              }
+            ],
+            from: 0,
+            size: 10
+          }
+        };
+        nearLocation = await esClient
+          .search(searchNearLocationOptions)
           .then(
-            (result: any) => result.hits?.hits.map((item: any) => ({ ...item._source, distance: item.sort[0] })) || []
+            (result: any) =>
+              result.body.hits?.hits.map((item: any) => ({ ...item._source, distance: item.sort[0] })) || []
           );
         nearLocation = nearLocation.map((loc: any) => {
           const locationDetailField = loc.marketplaceValues
@@ -1301,7 +1303,9 @@ export class SearchController {
             ...locationDetailField,
             ...loc.company,
             ['marketplaceValues']: undefined,
-            ['company']: undefined
+            ['company']: undefined,
+            ['@timestamp']: undefined,
+            ['@version']: undefined
           };
         });
       } else {
@@ -1337,16 +1341,53 @@ export class SearchController {
           );
         }
       }
-
-      const locationDetails = {
-        locations: locations,
-        locationInformation: location,
-        cateServices: cateServices,
-        staffs: staffs,
-        nearLocation: nearLocation
-      };
-
-      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
+      const wellaholicPath = [
+        '2-Venture-Drive',
+        '1-Irving-Place',
+        '208-Hougang-Street-21',
+        '545-Orchard-Road',
+        '210A-Telok-Ayer-Street'
+      ];
+      if (wellaholicPath.includes(data.pathName)) {
+        const nearbyWellaholicId = [
+          'ca4cc69c-edf8-4bde-ad97-ae60b9a16b62',
+          '3c8bd088-491e-4fd2-9e00-2764480a8ab0',
+          'a1310b55-e172-4c1d-964f-593e677ad4b8',
+          'c752736e-d6f6-4cf1-bb7c-6b73edca8eaa'
+        ];
+        const nearbyLocation = await LocationModel.findAll({
+          where: {
+            id: {
+              [Op.in]: nearbyWellaholicId
+            }
+          },
+          include: [
+            {
+              model: LocationImageModel,
+              as: 'locationImages',
+              required: false,
+              attributes: ['path', 'is_avatar']
+            }
+          ],
+          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
+        });
+        const locationDetails = {
+          locations: locations,
+          locationInformation: location,
+          cateServices: cateServices,
+          staffs: staffs,
+          nearByLocation: nearbyLocation
+        };
+        return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
+      } else {
+        const locationDetails = {
+          locations: locations,
+          locationInformation: location,
+          cateServices: cateServices,
+          staffs: staffs
+        };
+        return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
+      }
     } catch (error) {
       // throw new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR);
       return next(error);

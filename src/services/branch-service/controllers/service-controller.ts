@@ -33,6 +33,7 @@ import { ServiceResourceModel } from '../../../repositories/postgres/models/serv
 import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
+import { ServiceNoteModel } from '../../../repositories/mongo/models/service-note-model';
 
 const { parsed: env } = dotenv.config();
 
@@ -111,6 +112,9 @@ export class ServiceController {
    *     - in: "formData"
    *       name: extraTimeDuration
    *       type: integer
+   *     - in: "formData"
+   *       name: detailTreatmentNote
+   *       type: string
    *     responses:
    *       200:
    *         description:
@@ -174,7 +178,8 @@ export class ServiceController {
         isAllowedMarketplace: body.isAllowedMarketplace,
         allowGender: body.allowGender,
         extraTimeType: body.extraTimeType,
-        extraTimeDuration: body.extraTimeDuration
+        extraTimeDuration: body.extraTimeDuration,
+        detailTreatmentNote: body.detailTreatmentNote
       };
 
       const service = await sequelize.transaction(async (transaction: any) => {
@@ -191,7 +196,15 @@ export class ServiceController {
           return await ServiceImageModel.bulkCreate(images, { transaction: transaction });
         });
       }
-
+      //create Detail Treatment Note
+      if (data.detailTreatmentNote) {
+        const detailTreatmentNoteData = {
+          name: data.detailTreatmentNote,
+          serviceId: service.id
+        };
+        const newNote = new ServiceNoteModel(detailTreatmentNoteData);
+        await newNote.save();
+      }
       /**
        * Prepare location service
        */

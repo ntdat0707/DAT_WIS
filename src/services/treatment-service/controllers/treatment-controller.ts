@@ -385,7 +385,6 @@ export class TreatmentController extends BaseController {
         dataProcedures.push(data);
       }
       const procedures = await ProcedureModel.insertMany(dataProcedures);
-      const procedureIds: any = procedures.map((item: any) => item._id);
       const quotationsDentalData = await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }).exec();
       if (!quotationsDentalData) {
         const quotationsDental: any = new QuotationsDentalModel({
@@ -439,8 +438,6 @@ export class TreatmentController extends BaseController {
         quotationsDental.quotationsDentalDetails.push(...detailsIds);
         quotationsDental.save();
       }
-      treatment.procedureIds.push(...procedureIds);
-      await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
@@ -620,18 +617,22 @@ export class TreatmentController extends BaseController {
       } else {
         procedures = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
       }
-      procedures.map(async (item: any) => {
-        const service: any = await ServiceModel.findOne({ where: { id: item.serviceId }, raw: true });
-        const staff: any = await StaffModel.findOne({ where: { id: item.staffId }, raw: true });
-        item = {
-          ...item._doc,
-          service: service,
-          staff: staff,
-          staffId: undefined,
-          serviceId: undefined
-        };
-      });
-      return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
+      let newProcedures: any = [];
+      newProcedures = await Promise.all(
+        procedures.map(async (item: any) => {
+          const service: any = await ServiceModel.findOne({ where: { id: item.serviceId }, raw: true });
+          const staff: any = await StaffModel.findOne({ where: { id: item.staffId }, raw: true });
+          item = {
+            ...item._doc,
+            service: service,
+            staff: staff,
+            staffId: undefined,
+            serviceId: undefined
+          };
+          return item;
+        })
+      );
+      return res.status(httpStatus.OK).send(buildSuccessMessage(newProcedures));
     } catch (error) {
       return next(error);
     }

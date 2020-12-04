@@ -188,7 +188,7 @@ export class QuotationsController extends BaseController {
           }) as any
         );
         await QuotationsDentalModel.updateOne({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
-        if (newProcedures.length === 0) {
+        if (newProcedures.length > 0) {
           await ProcedureModel.insertMany(newProcedures);
         }
         return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDetails));
