@@ -22,7 +22,7 @@ import {
   CompanyModel
 } from '../../../repositories/postgres/models';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
-import { branchErrorDetails } from '../../../utils/response-messages/error-details';
+import { branchErrorDetails, treatmentErrorDetails } from '../../../utils/response-messages/error-details';
 import { serviceErrorDetails } from '../../../utils/response-messages/error-details/branch/service';
 import { CateServiceModel } from '../../../repositories/postgres/models/cate-service';
 import { FindOptions, Transaction } from 'sequelize';
@@ -33,7 +33,8 @@ import { ServiceResourceModel } from '../../../repositories/postgres/models/serv
 import { esClient } from '../../../repositories/elasticsearch';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
-import { ServiceNoteModel } from '../../../repositories/mongo/models/service-note-model';
+import { ServiceTherapeuticModel } from '../../../repositories/mongo/models/service-therapeutic-model';
+import { TherapeuticTreatmentModel } from '../../../repositories/mongo/models/therapeutic-treatment-model';
 
 const { parsed: env } = dotenv.config();
 
@@ -113,8 +114,10 @@ export class ServiceController {
    *       name: extraTimeDuration
    *       type: integer
    *     - in: "formData"
-   *       name: detailTreatmentNote
-   *       type: string
+   *       name: therapeuticIds
+   *       type: array
+   *       items:
+   *          type: string
    *     responses:
    *       200:
    *         description:
@@ -179,7 +182,7 @@ export class ServiceController {
         allowGender: body.allowGender,
         extraTimeType: body.extraTimeType,
         extraTimeDuration: body.extraTimeDuration,
-        detailTreatmentNote: body.detailTreatmentNote
+        therapeuticIds: body.therapeuticIds
       };
 
       const service = await sequelize.transaction(async (transaction: any) => {
@@ -197,13 +200,22 @@ export class ServiceController {
         });
       }
       //create Detail Treatment Note
-      if (data.detailTreatmentNote) {
-        const detailTreatmentNoteData = {
-          name: data.detailTreatmentNote,
-          serviceId: service.id
-        };
-        const newNote = new ServiceNoteModel(detailTreatmentNoteData);
-        await newNote.save();
+      if (data.therapeuticIds.length > 0) {
+        const therapeutics: any = [];
+        for (const therapeuticId of data.therapeuticIds) {
+          const therapeutic = await TherapeuticTreatmentModel.findById(therapeuticId).exec();
+          if (!therapeutic) {
+            throw new CustomError(treatmentErrorDetails.E_3914(`Therapeutic ${therapeuticId} not found`));
+          }
+          const serviceTherapeuticData = {
+            name: therapeutic.name,
+            serviceId: service.id,
+            therapeuticId: therapeuticId
+          };
+          const serviceTherapeutic = new ServiceTherapeuticModel(serviceTherapeuticData);
+          therapeutics.push(serviceTherapeutic);
+        }
+        await ServiceTherapeuticModel.insertMany(therapeutics);
       }
       /**
        * Prepare location service
@@ -897,6 +909,11 @@ export class ServiceController {
    *     - in: "formData"
    *       name: extraTimeDuration
    *       type: integer
+   *     - in: "formData"
+   *       name: therapeuticIds
+   *       type: array
+   *       items:
+   *           type: string
    *     responses:
    *       200:
    *         description:
@@ -1018,7 +1035,29 @@ export class ServiceController {
           await ServiceResourceModel.bulkCreate(serviceResource, { transaction: transaction });
         }
       }
-
+      //check service therapeutic ids
+      if (body.therapeuticIds) {
+        const serviceTherapeuticIds = await ServiceTherapeuticModel.find({ serviceId: service.id }).exec();
+        const currTherapeuticIds = serviceTherapeuticIds.map((item: any) => item.therapeuticId.toString());
+        const removeTherapeuticIds = _.difference(currTherapeuticIds, body.therapeuticIds);
+        if (removeTherapeuticIds.length > 0) {
+          await ServiceTherapeuticModel.deleteMany({
+            therapeuticId: { $in: removeTherapeuticIds },
+            serviceId: service.id
+          }).exec();
+        }
+        const addTherapeuticIds = _.difference(body.therapeuticIds, currTherapeuticIds);
+        if (addTherapeuticIds.length > 0) {
+          const therapeutics = (await TherapeuticTreatmentModel.find({ _id: { $in: addTherapeuticIds } }).exec()).map(
+            (item: any) => ({
+              name: item.name,
+              therapeuticId: item._id,
+              serviceId: service.id
+            })
+          );
+          await ServiceTherapeuticModel.insertMany(therapeutics);
+        }
+      }
       const data: any = {
         description: body.description,
         salePrice: !isNaN(parseInt(body.salePrice, 10)) ? body.salePrice : service.salePrice,

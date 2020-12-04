@@ -28,10 +28,14 @@ export class TreatmentProcessRoutes {
       isAuthenticated,
       this.treatmentProcessController.getTreatmentProcess
     );
-    this.router.get(
-      '/get-detail-treatment/:serviceId',
+    this.router.get('/get-therapeutic/:serviceId', isAuthenticated, this.treatmentProcessController.getTherapeutic);
+    this.router.get('/get-all-therapeutic', isAuthenticated, this.treatmentProcessController.getAllTherapeutic);
+
+    this.router.post('/create-therapeutic', isAuthenticated, this.treatmentProcessController.createTherapeutic);
+    this.router.delete(
+      '/delete-therapeutic/:therapeuticId',
       isAuthenticated,
-      this.treatmentProcessController.getDetailTreatment
+      this.treatmentProcessController.deleteTherapeutic
     );
   }
 }
