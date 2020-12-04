@@ -24,7 +24,8 @@ import {
   LocationModel,
   PipelineModel,
   PipelineStageModel,
-  PaymentMethodModel
+  PaymentMethodModel,
+  RoleModel
 } from '../../../repositories/postgres/models';
 
 import { PASSWORD_SALT_ROUNDS } from '../configs/consts';
@@ -1260,6 +1261,10 @@ export class AuthController {
               model: LocationModel,
               as: 'workingLocations',
               through: { attributes: [] }
+            },
+            {
+              model: RoleModel,
+              as: 'role'
             }
           ]
         });
