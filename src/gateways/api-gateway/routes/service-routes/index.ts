@@ -74,7 +74,7 @@ class ServiceRoutes {
       createProxyMiddleware({
         ...customerServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq },
-        followRedirects: true,
+        followRedirects: true
       })
     );
 
@@ -84,7 +84,7 @@ class ServiceRoutes {
       createProxyMiddleware({
         ...staffServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq },
-        followRedirects: true,
+        followRedirects: true
       })
     );
 
@@ -94,7 +94,7 @@ class ServiceRoutes {
       createProxyMiddleware({
         ...branchServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq },
-        followRedirects: true,
+        followRedirects: true
       })
     );
 
@@ -104,7 +104,7 @@ class ServiceRoutes {
       createProxyMiddleware({
         ...bookingServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq },
-        followRedirects: true,
+        followRedirects: true
       })
     );
 
@@ -114,7 +114,7 @@ class ServiceRoutes {
       createProxyMiddleware({
         ...saleServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq },
-        followRedirects: true,
+        followRedirects: true
       })
     );
 
@@ -124,7 +124,7 @@ class ServiceRoutes {
       createProxyMiddleware({
         ...treatmentServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq },
-        followRedirects: true,
+        followRedirects: true
       })
     );
 
@@ -134,7 +134,7 @@ class ServiceRoutes {
       createProxyMiddleware({
         ...productServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq },
-        followRedirects: true,
+        followRedirects: true
       })
     );
   }

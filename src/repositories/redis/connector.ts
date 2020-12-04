@@ -1,6 +1,5 @@
 import { ClientOpts, RedisClient } from 'redis';
 import { createClient } from 'redis';
-import { logger } from '../../utils/logger';
 // import { promisify } from 'util';
 import dotenv from 'dotenv';
 

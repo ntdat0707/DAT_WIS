@@ -69,7 +69,7 @@ export class StaffController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -77,7 +77,9 @@ export class StaffController {
     try {
       const staffId = req.params.staffId;
       const validateErrors = validate(staffId, staffIdSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const staff: any = await StaffModel.scope('safe').findOne({
         where: { id: staffId },
         include: [
@@ -94,7 +96,9 @@ export class StaffController {
           }
         ]
       });
-      if (!staff) throw new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND);
+      if (!staff) {
+        throw new CustomError(staffErrorDetails.E_4000(`staffId ${staffId} not found`), HttpStatus.NOT_FOUND);
+      }
       return res.status(HttpStatus.OK).send(buildSuccessMessage(staff));
     } catch (error) {
       return next(error);
@@ -162,14 +166,18 @@ export class StaffController {
         pageSize: req.query.pageSize
       };
       const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const filter = {
         workingLocationIds: req.query.workingLocationIds,
         teamIds: req.query.teamIds,
         isServiceProvider: req.query.isServiceProvider
       };
       const validateFilterErrors = validate(filter, filterStaffSchema);
-      if (validateFilterErrors) throw new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST);
+      if (validateFilterErrors) {
+        throw new CustomError(validateFilterErrors, HttpStatus.BAD_REQUEST);
+      }
       const query: FindOptions = {
         include: [],
         where: {},
@@ -253,6 +261,7 @@ export class StaffController {
       if (req.query.searchValue) {
         const unaccentSearchValue = Unaccent(req.query.searchValue);
         const searchVal = sequelize.escape(`%${unaccentSearchValue}%`);
+        // TODO: warning sql injection ilike email
         query.where = {
           [Op.or]: [
             Sequelize.literal(
@@ -260,7 +269,7 @@ export class StaffController {
             ),
             Sequelize.literal(`"StaffModel"."staff_code" ilike ${searchVal}`),
             Sequelize.literal(`"StaffModel"."phone" like ${searchVal}`),
-            Sequelize.literal(`"StaffModel"."email" ilike ${searchVal}`)
+            Sequelize.literal(`"StaffModel"."email" ilike %${unaccentSearchValue}%`)
           ]
         };
       }
@@ -388,9 +397,13 @@ export class StaffController {
       }
       if (req.body.email) {
         const checkEmailExists = await StaffModel.scope('safe').findOne({ where: { email: req.body.email } });
-        if (checkEmailExists) throw new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST);
+        if (checkEmailExists) {
+          throw new CustomError(staffErrorDetails.E_4001(), HttpStatus.BAD_REQUEST);
+        }
       }
-      if (req.file) profile.avatarPath = (req.file as any).location;
+      if (req.file) {
+        profile.avatarPath = (req.file as any).location;
+      }
       if (profile.roleId) {
         const role = await RoleModel.findOne({ where: { id: profile.roleId } });
         if (!role) {
@@ -577,7 +590,9 @@ export class StaffController {
         roleId: req.body.roleId,
         statusRole: req.body.statusRole
       };
-      if (req.file) profile.avatarPath = (req.file as any).location;
+      if (req.file) {
+        profile.avatarPath = (req.file as any).location;
+      }
 
       if (req.body.workingLocationIds) {
         const diff = _.difference(req.body.workingLocationIds, res.locals.staffPayload.workingLocationIds);
@@ -791,7 +806,7 @@ export class StaffController {
    *       200:
    *         description: success
    *       403:
-   *         description: Forbiden
+   *         description: Forbidden
    *       500:
    *         description: Server internal error
    */
@@ -799,7 +814,9 @@ export class StaffController {
     try {
       const { workingLocationIds } = res.locals.staffPayload;
       const validateErrors = validate(req.query, filterStaffSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const query: FindOptions = {
         include: [],
         where: {}
@@ -897,7 +914,7 @@ export class StaffController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -908,13 +925,16 @@ export class StaffController {
         staffId: req.params.staffId
       };
       const validateErrors = validate(dataDelete, deleteStaffSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const staff = await StaffModel.scope('safe').findOne({ where: { id: dataDelete.staffId } });
-      if (!staff)
+      if (!staff) {
         throw new CustomError(
           staffErrorDetails.E_4000(`staffId ${dataDelete.staffId} not found`),
           HttpStatus.NOT_FOUND
         );
+      }
 
       transaction = await sequelize.transaction();
       await StaffModel.destroy({ where: { id: dataDelete.staffId }, transaction });
@@ -1006,11 +1026,12 @@ export class StaffController {
         };
         profiles.push(profile);
       }
-      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId))
+      if (!res.locals.staffPayload.workingLocationIds.includes(req.body.locationId)) {
         throw new CustomError(
           branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
           HttpStatus.FORBIDDEN
         );
+      }
       transaction = await sequelize.transaction();
       const staffs = await StaffModel.bulkCreate(profiles, { transaction });
       const workingLocationData = (staffs as []).map((x: any) => ({
@@ -1064,7 +1085,7 @@ export class StaffController {
    *           </br> xxx2: Internal server errors
    */
 
-  public completeOnboard = async (req: Request, res: Response, next: NextFunction) => {
+  public completeOnboard = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const company = await CompanyModel.findOne({ where: { id: res.locals.staffPayload.companyId } });
       await StaffModel.update({ onboardStep: 5 }, { where: { id: company.ownerId } });
@@ -1115,7 +1136,9 @@ export class StaffController {
     try {
       const dataInput = { ...req.body };
       const validateErrors = validate(dataInput, getStaffMultipleService);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const staffs = await StaffModel.findAll({
         include: [
           {
@@ -1141,7 +1164,7 @@ export class StaffController {
       }
       res.status(HttpStatus.OK).send(buildSuccessMessage(staffs));
     } catch (error) {
-      return error;
+      return next(error);
     }
   };
 
@@ -1192,14 +1215,16 @@ export class StaffController {
    */
   public getStaffAvailableTimeSlots = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const rangelist: number[] = [];
+      const rangeList: number[] = [];
       const dataInput = { ...req.body };
       const validateErrors = validate(dataInput.staffId, staffIdSchema);
       const workDay = dataInput.workDay;
       const serviceDuration = dataInput.serviceDuration;
       const durationTime = minutesToNum(serviceDuration);
       const timeZone = moment.parseZone(dataInput.currentTime).utcOffset();
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
       const workingTime = await StaffModel.scope('safe').findOne({
         attributes: [],
         include: [
@@ -1290,7 +1315,7 @@ export class StaffController {
             timeSlot[firstTime] = false;
             timeSlot[finTimeSlot] = false;
           }
-          rangelist.push(finalTimeSlot);
+          rangeList.push(finalTimeSlot);
           Object.keys(timeSlot).forEach((key: any, index: any) => {
             const indexStart = Object.keys(timeSlot).indexOf(firstTime);
             const indexEndTime = Object.keys(timeSlot).indexOf(finTimeSlot);
@@ -1301,34 +1326,34 @@ export class StaffController {
         });
       }
 
-      for (let i = 0; i < rangelist.length - 1; i++) {
-        for (let k = 1; k < rangelist.length; k++) {
+      for (let i = 0; i < rangeList.length - 1; i++) {
+        for (let k = 1; k < rangeList.length; k++) {
           if (i + 1 === k) {
-            if (rangelist[k] - rangelist[i] <= durationTime) {
+            if (rangeList[k] - rangeList[i] <= durationTime) {
               let temp;
-              while (rangelist[i] < rangelist[k]) {
-                rangelist[i] = rangelist[i] + 5;
-                if (rangelist[i] % 100 === 60) {
-                  rangelist[i] = (Math.floor(rangelist[i] / 100) + 1) * 100;
+              while (rangeList[i] < rangeList[k]) {
+                rangeList[i] = rangeList[i] + 5;
+                if (rangeList[i] % 100 === 60) {
+                  rangeList[i] = (Math.floor(rangeList[i] / 100) + 1) * 100;
                 }
-                temp = moment(rangelist[i], 'hmm').format('HH:mm');
+                temp = moment(rangeList[i], 'hmm').format('HH:mm');
                 timeSlot[temp] = false;
               }
             }
-            const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm')
+            const stringEndTime = moment(workTime.endTime.split(':').join(''), 'hmm')
               .add(-timeZone, 'm')
               .format('HH:mm');
-            //let semiEndtime = moment();
-            const endTime = parseInt(stringEndtime.split(':').join(''), 10);
-            timeSlot[stringEndtime] = false;
-            if (endTime - rangelist[k] < durationTime) {
+            //let semiEndTime = moment();
+            const endTime = parseInt(stringEndTime.split(':').join(''), 10);
+            timeSlot[stringEndTime] = false;
+            if (endTime - rangeList[k] < durationTime) {
               let temp;
-              while (rangelist[k] < endTime) {
-                rangelist[k] = rangelist[k] + 5;
-                if (rangelist[k] % 100 === 60) {
-                  rangelist[k] = (Math.floor(rangelist[k] / 100) + 1) * 100;
+              while (rangeList[k] < endTime) {
+                rangeList[k] = rangeList[k] + 5;
+                if (rangeList[k] % 100 === 60) {
+                  rangeList[k] = (Math.floor(rangeList[k] / 100) + 1) * 100;
                 }
-                temp = moment(rangelist[k], 'hmm').format('HH:mm');
+                temp = moment(rangeList[k], 'hmm').format('HH:mm');
                 timeSlot[temp] = false;
               }
             }
@@ -1338,8 +1363,8 @@ export class StaffController {
       Object.keys(timeSlot).forEach((key: any) => {
         let temp;
         if (timeSlot[key] === true) {
-          const stringEndtime = moment(workTime.endTime.split(':').join(''), 'hmm').add(-timeZone, 'm').format('HH:mm');
-          const endTime = parseInt(stringEndtime.split(':').join(''), 10);
+          const stringEndTime = moment(workTime.endTime.split(':').join(''), 'hmm').add(-timeZone, 'm').format('HH:mm');
+          const endTime = parseInt(stringEndTime.split(':').join(''), 10);
           temp = parseInt(key.split(':').join(''), 10);
           let tempTime = temp + durationTime;
           let firstTwoDigits = Math.floor(tempTime / 100);
@@ -1391,7 +1416,7 @@ export class StaffController {
       }
       res.status(HttpStatus.OK).send(buildSuccessMessage(newTimeSlot));
     } catch (error) {
-      return error;
+      return next(error);
     }
   };
 
@@ -1555,7 +1580,7 @@ export class StaffController {
   /**
    * @swagger
    * definitions:
-   *   PostionStaffDetail:
+   *   PositionStaffDetail:
    *       required:
    *           - staffId
    *           - index
@@ -1572,14 +1597,14 @@ export class StaffController {
    *   SettingPositionStaff:
    *       required:
    *           - locationId
-   *           - listPostionStaff
+   *           - listPositionStaff
    *       properties:
    *           locationId:
    *              type: string
-   *           listPostionStaff:
+   *           listPositionStaff:
    *               type: array
    *               items:
-   *                   $ref: '#/definitions/PostionStaffDetail'
+   *                   $ref: '#/definitions/PositionStaffDetail'
    */
   /**
    * @swagger
@@ -1615,13 +1640,15 @@ export class StaffController {
       const dataInput = { ...req.body };
       const id = res.locals.staffPayload.id;
       const validateErrors = validate(dataInput, settingPositionStaffSchema);
-      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      }
 
       const existPosition1 = await PositionModel.findOne({
         where: {
           ownerId: id,
-          staffId: dataInput.listPostionStaff[0].staffId,
-          index: dataInput.listPostionStaff[0].index,
+          staffId: dataInput.listPositionStaff[0].staffId,
+          index: dataInput.listPositionStaff[0].index,
           locationId: req.body.locationId
         }
       });
@@ -1629,8 +1656,8 @@ export class StaffController {
       const existPosition2 = await PositionModel.findOne({
         where: {
           ownerId: id,
-          staffId: dataInput.listPostionStaff[1].staffId,
-          index: dataInput.listPostionStaff[1].index,
+          staffId: dataInput.listPositionStaff[1].staffId,
+          index: dataInput.listPositionStaff[1].index,
           locationId: req.body.locationId
         }
       });
@@ -1654,7 +1681,7 @@ export class StaffController {
       if (transaction) {
         await transaction.rollback();
       }
-      return error;
+      return next(error);
     }
   };
 
@@ -1726,7 +1753,7 @@ export class StaffController {
       //       as: 'services',
       //       required: true,
       //       through: {attributes:[]},
-      //       attributes:{exclude: ['createdAt','uddatedAt','deletedAt']},
+      //       attributes:{exclude: ['createdAt','updatedAt','deletedAt']},
       //       include: [
       //         {
       //           model: CateServiceModel,

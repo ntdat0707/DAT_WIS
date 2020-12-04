@@ -15,7 +15,7 @@ const branchServiceConfigs: IServiceConfigs = {
       ['^' + API_BASE_PATH + ROUTE]: ''
     },
     headers: {
-      "Connection": "keep-alive"
+      Connection: 'keep-alive'
     }
   }
 };
