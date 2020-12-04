@@ -399,7 +399,7 @@ export class InvoiceController {
             required: false
           }
         ],
-        order: [['updatedAt', 'DESC']]
+        order: [['createdAt', 'DESC']]
       };
       if (conditions.fromDate || conditions.toDate) {
         const createdAt: any = {};

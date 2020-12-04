@@ -329,7 +329,10 @@ export class TreatmentProcessController extends BaseController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       let treatmentProcess: any = await TreatmentProcessModel.findById({ _id: treatmentProcessId })
-        .populate({ path: 'procedureIds', model: 'Procedure', populate: { path: 'teethId', model: 'Teeth' } })
+        .populate({
+          path: 'procedures',
+          populate: { path: 'procedureId', model: 'Procedure', populate: { path: 'teethId', model: 'Teeth' } }
+        })
         .populate('prescriptionId')
         .populate('laboId')
         .exec();
@@ -342,15 +345,17 @@ export class TreatmentProcessController extends BaseController {
         createdBy: creator,
         createdById: undefined
       };
-      for (let i = 0; i < treatmentProcess.procedureIds.length; i++) {
+      for (let i = 0; i < treatmentProcess.procedures.length; i++) {
         const service = await ServiceModel.findOne({
-          where: { id: treatmentProcess.procedureIds[i].serviceId },
+          where: { id: treatmentProcess.procedures[i].procedureId.serviceId },
           raw: true
         });
-        const staff = await StaffModel.findOne({ where: { id: treatmentProcess.procedureIds[i].staffId }, raw: true });
-
-        treatmentProcess.procedureIds[i] = {
-          ...treatmentProcess.procedureIds[i]._doc,
+        const staff = await StaffModel.findOne({
+          where: { id: treatmentProcess.procedures[i].procedureId.staffId },
+          raw: true
+        });
+        treatmentProcess.procedures[i] = {
+          ...treatmentProcess.procedures[i].procedureId._doc,
           service: service,
           staff: staff,
           staffId: undefined,
