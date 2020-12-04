@@ -14,7 +14,7 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   createTreatmentProcessSchema,
   updateTreatmentProcessSchema
-} from '../configs/validate-schemas/treatment-process';
+} from '../../treatment-service/configs/validate-schemas';
 import { CustomerWisereModel, LocationModel, ServiceModel } from '../../../repositories/postgres/models';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
@@ -24,6 +24,7 @@ import { treatmentIdSchema, treatmentProcessIdSchema } from '../configs/validate
 import { ServiceNoteModel } from '../../../repositories/mongo/models/service-note-model';
 import httpStatus from 'http-status';
 import _ from 'lodash';
+import { serviceIdSchema } from '../../branch-service/configs/validate-schemas';
 
 export class TreatmentProcessController extends BaseController {
   /**
@@ -586,6 +587,42 @@ export class TreatmentProcessController extends BaseController {
       dataInput.createdById = treatmentProcess.createdById;
       await TreatmentProcessModel.updateOne({ _id: treatmentProcessId }, dataInput).exec();
       return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/get-detail-treatment/{serviceId}:
+   *   get:
+   *     tags:
+   *       - Treatment Process
+   *     security:
+   *       - Bearer: []
+   *     name: getDetailTreatment
+   *     parameters:
+   *     - in: path
+   *       name: serviceId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getDetailTreatment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const serviceId = req.params.serviceId;
+      const validateErrors = validate(serviceId, serviceIdSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const detailTreatment = await ServiceNoteModel.find({ serviceId: serviceId }).exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(detailTreatment));
     } catch (error) {
       return next(error);
     }
