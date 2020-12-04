@@ -28,10 +28,7 @@ export class TreatmentProcessRoutes {
       isAuthenticated,
       this.treatmentProcessController.getTreatmentProcess
     );
-    this.router.get(
-      '/get-detail-treatment/:serviceId',
-      isAuthenticated,
-      this.treatmentProcessController.getDetailTreatment
-    );
+    this.router.get('/get-therapeutic/:serviceId', isAuthenticated, this.treatmentProcessController.getTherapeutic);
+    this.router.get('/get-all-therapeutic', isAuthenticated, this.treatmentProcessController.getAllTherapeutic);
   }
 }

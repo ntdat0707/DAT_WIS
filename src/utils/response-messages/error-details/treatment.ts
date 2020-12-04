@@ -55,6 +55,10 @@ const treatmentErrorDetails = {
     const e = buildErrorDetail('E_3913', 'Procedures  not in this treatment process', detail);
     return e;
   },
+  E_3914(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_3914', 'Therapeutic not found', detail);
+    return e;
+  },
   // #Medical Document Errors
   E_4100(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_4100', 'Medical Document not found', detail);

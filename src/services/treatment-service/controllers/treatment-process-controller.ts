@@ -594,13 +594,13 @@ export class TreatmentProcessController extends BaseController {
 
   /**
    * @swagger
-   * /treatment/treatment-process/get-detail-treatment/{serviceId}:
+   * /treatment/treatment-process/get-therapeutic/{serviceId}:
    *   get:
    *     tags:
    *       - Treatment Process
    *     security:
    *       - Bearer: []
-   *     name: getDetailTreatment
+   *     name: getTherapeutic
    *     parameters:
    *     - in: path
    *       name: serviceId
@@ -614,15 +614,41 @@ export class TreatmentProcessController extends BaseController {
    *       500:
    *         description:
    */
-  public getDetailTreatment = async (req: Request, res: Response, next: NextFunction) => {
+  public getTherapeutic = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const serviceId = req.params.serviceId;
       const validateErrors = validate(serviceId, serviceIdSchema);
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      // const detailTreatment = await ServiceNoteModel.find({ serviceId: serviceId }).exec();
-      // return res.status(httpStatus.OK).send(buildSuccessMessage(detailTreatment));
+      const therapeutic = await ServiceTherapeuticModel.find({ serviceId: serviceId }, 'name therapeuticId').exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(therapeutic));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/get-all-therapeutic:
+   *   get:
+   *     tags:
+   *       - Treatment Process
+   *     security:
+   *       - Bearer: []
+   *     name: getAllTherapeutic
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllTherapeutic = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const therapeutic = await ServiceTherapeuticModel.find().select('name therapeuticId').exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(therapeutic));
     } catch (error) {
       return next(error);
     }
