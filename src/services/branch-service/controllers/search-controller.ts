@@ -1376,7 +1376,7 @@ export class SearchController {
           locationInformation: location,
           cateServices: cateServices,
           staffs: staffs,
-          nearByLocation: nearbyLocation
+          nearLocation: nearbyLocation
         };
         return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
       } else {
@@ -1384,7 +1384,8 @@ export class SearchController {
           locations: locations,
           locationInformation: location,
           cateServices: cateServices,
-          staffs: staffs
+          staffs: staffs,
+          nearLocation: nearLocation
         };
         return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
       }
