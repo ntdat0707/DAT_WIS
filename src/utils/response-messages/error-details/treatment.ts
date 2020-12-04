@@ -27,6 +27,10 @@ const treatmentErrorDetails = {
     const e = buildErrorDetail('3905', 'Procedure not found', detail);
     return e;
   },
+  E_3906(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3906', 'Therapeutic name already exists', detail);
+    return e;
+  },
   E_3907(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_3907', 'Labo not found', detail);
     return e;
