@@ -27,6 +27,10 @@ const treatmentErrorDetails = {
     const e = buildErrorDetail('3905', 'Procedure not found', detail);
     return e;
   },
+  E_3906(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('3906', 'Therapeutic name already exists', detail);
+    return e;
+  },
   E_3907(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_3907', 'Labo not found', detail);
     return e;
@@ -53,6 +57,10 @@ const treatmentErrorDetails = {
   },
   E_3913(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_3913', 'Procedures  not in this treatment process', detail);
+    return e;
+  },
+  E_3914(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_3914', 'Therapeutic not found', detail);
     return e;
   },
   // #Medical Document Errors

@@ -33,5 +33,11 @@ export class TreatmentProcessRoutes {
       isAuthenticated,
       this.treatmentProcessController.getDetailTreatment
     );
+    this.router.post('/create-therapeutic', isAuthenticated, this.treatmentProcessController.createTherapeutic);
+    this.router.delete(
+      '/delete-therapeutic/:therapeuticId',
+      isAuthenticated,
+      this.treatmentProcessController.deleteTherapeutic
+    );
   }
 }
