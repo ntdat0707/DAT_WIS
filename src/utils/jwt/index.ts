@@ -72,9 +72,13 @@ async function verifyAccessToken(accessToken: string): Promise<IAccessTokenData 
           if (err instanceof TokenExpiredError) {
             resolve(new CustomError(generalErrorDetails.E_0007()));
           }
-          if (err) return resolve(new CustomError(generalErrorDetails.E_0003()));
+          if (err) {
+            return resolve(new CustomError(generalErrorDetails.E_0003()));
+          }
           const tokenStoraged = await redis.getData(`${EKeys.ACCESS_TOKEN}-${accessToken}`);
-          if (!tokenStoraged) return resolve(new CustomError(generalErrorDetails.E_0003()));
+          if (!tokenStoraged) {
+            return resolve(new CustomError(generalErrorDetails.E_0003()));
+          }
           resolve(accessTokenData);
         }
       );
