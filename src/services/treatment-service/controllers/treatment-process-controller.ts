@@ -21,7 +21,7 @@ import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
 import { customerErrorDetails, treatmentErrorDetails } from '../../../utils/response-messages/error-details';
 import { treatmentIdSchema, treatmentProcessIdSchema } from '../configs/validate-schemas';
-import { ServiceNoteModel } from '../../../repositories/mongo/models/service-note-model';
+import { ServiceTherapeuticModel } from '../../../repositories/mongo/models/service-therapeutic-model';
 import httpStatus from 'http-status';
 import _ from 'lodash';
 import { serviceIdSchema } from '../../branch-service/configs/validate-schemas';
@@ -182,7 +182,7 @@ export class TreatmentProcessController extends BaseController {
         ).exec();
         //AssistantId --Pending
 
-        const detailTreatment: any = await ServiceNoteModel.findOne({
+        const detailTreatment: any = await ServiceTherapeuticModel.findOne({
           name: treatmentProcessData.procedures[i].detailTreatment
         }).exec();
         if (!detailTreatment) {
@@ -190,7 +190,7 @@ export class TreatmentProcessController extends BaseController {
             name: treatmentProcessData.procedures[i].detailTreatment,
             serviceId: procedure.serviceId
           };
-          const newNote = new ServiceNoteModel(newTreatmentNoteData);
+          const newNote = new ServiceTherapeuticModel(newTreatmentNoteData);
           await newNote.save();
         }
       }
@@ -522,7 +522,7 @@ export class TreatmentProcessController extends BaseController {
             httpStatus.BAD_REQUEST
           );
         }
-        const detailTreatment: any = await ServiceNoteModel.findOne({
+        const detailTreatment: any = await ServiceTherapeuticModel.findOne({
           name: item.detailTreatment
         }).exec();
         if (!detailTreatment) {
@@ -530,7 +530,7 @@ export class TreatmentProcessController extends BaseController {
             name: item.detailTreatment,
             serviceId: procedure.serviceId
           };
-          const newNote = new ServiceNoteModel(newTreatmentNoteData);
+          const newNote = new ServiceTherapeuticModel(newTreatmentNoteData);
           await newNote.save();
         }
         await ProcedureModel.updateOne({ _id: item.procedureId }, item).exec();
