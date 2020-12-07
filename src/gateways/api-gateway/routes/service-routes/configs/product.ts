@@ -1,12 +1,12 @@
 import { IServiceConfigs, API_BASE_PATH } from '../../configs';
 require('dotenv').config();
 
-const ROUTE = '/booking';
+const ROUTE = '/product';
 
-const bookingServiceConfigs: IServiceConfigs = {
+const productServiceConfigs: IServiceConfigs = {
   route: ROUTE,
   options: {
-    target: 'http://' + process.env.SVC_BOOKING_HOST + ':' + process.env.SVC_BOOKING_PORT,
+    target: 'http://' + process.env.SVC_PRODUCT_HOST + ':' + process.env.SVC_PRODUCT_PORT,
     changeOrigin: true,
     secure: false,
     logLevel: 'debug',
@@ -20,4 +20,4 @@ const bookingServiceConfigs: IServiceConfigs = {
   }
 };
 
-export { bookingServiceConfigs };
+export { productServiceConfigs };

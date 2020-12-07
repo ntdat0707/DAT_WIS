@@ -393,7 +393,7 @@ export class AppointmentDetailController extends BaseController {
    *       500:
    *         description: Internal server errors
    */
-  public getAppointmentDtail = async (req: Request, res: Response, next: NextFunction) => {
+  public getAppointmentDetail = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const appointmentDetailId = req.params.appointmentDetailId;
       const validateErrors = validate(appointmentDetailId, appointmentDetailIdSchema);
@@ -526,8 +526,54 @@ export class AppointmentDetailController extends BaseController {
           HttpStatus.NOT_FOUND
         );
       }
+      const query: FindOptions = {
+        where: {
+          id: appointmentDetail.id
+        },
+        include: [
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            required: true,
+            include: [
+              {
+                model: LocationModel,
+                as: 'location',
+                required: true
+              },
+              {
+                model: CustomerModel,
+                as: 'customer',
+                required: false
+              },
+              {
+                model: CustomerWisereModel,
+                as: 'customerWisere',
+                required: false
+              }
+            ]
+          },
+          {
+            model: ServiceModel,
+            as: 'service',
+            required: true
+          },
+          {
+            model: ResourceModel,
+            as: 'resource',
+            required: false
+          },
+          {
+            model: StaffModel,
+            as: 'staffs',
+            required: true,
+            through: { attributes: [] }
+          }
+        ]
+      };
+      const appointmentDetailData: any = await AppointmentDetailModel.findOne(query);
       await AppointmentDetailModel.update({ status: data.status }, { where: { id: data.appointmentDetailId } });
-      return res.status(HttpStatus.OK).send();
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(appointmentDetailData));
     } catch (error) {
       return next(error);
     }

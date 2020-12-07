@@ -10,6 +10,7 @@ import BranchService from '../services/branch-service/app';
 import BookingService from '../services/booking-service/app';
 import SaleService from '../services/sale-service/app';
 import TreatmentService from '../services/treatment-service/app';
+import ProductService from '../services/product-service/app';
 
 require('dotenv').config();
 const nodeName = process.env.NODE_NAME;
@@ -116,6 +117,17 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
         });
       });
       break;
+    case 'product-service':
+      const productService = new ProductService().app;
+      productService.listen(treatmentService.get('port'), (): void => {
+        logger.info({
+          label: 'product-service',
+          message: `App is running at http://localhost:${productService.get('port')} in mode ${productService.get(
+            'env'
+          )} `
+        });
+      });
+      break;
   }
 } else {
   // develop mode
@@ -188,6 +200,14 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
       message: `App is running at http://localhost:${treatmentService.get('port')} in mode ${treatmentService.get(
         'env'
       )} `
+    });
+  });
+
+  const productService = new ProductService().app;
+  productService.listen(productService.get('port'), (): void => {
+    logger.info({
+      label: 'product-service',
+      message: `App is running at http://localhost:${productService.get('port')} in mode ${productService.get('env')} `
     });
   });
 }

@@ -21,7 +21,7 @@ export class AppointmentDetailRoutes {
     this.router.get(
       '/get/:appointmentDetailId?',
       isAuthenticated,
-      this.appointmentDetailController.getAppointmentDtail
+      this.appointmentDetailController.getAppointmentDetail
     );
     this.router.put('/update-status', isAuthenticated, this.appointmentDetailController.updateAppointmentDetailStatus);
   }

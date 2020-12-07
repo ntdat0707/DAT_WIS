@@ -1191,7 +1191,7 @@ export class SearchController {
           ['marketplaceValues']: undefined,
           ['company']: undefined
         };
-
+        //console.log(JSON.parse(JSON.stringify(location.company)));
         const staffIds: any = (
           await LocationStaffModel.findAll({
             raw: true,
@@ -1258,7 +1258,12 @@ export class SearchController {
                           query: `${location.countryCode}~1`
                         }
                       }
-                    ]
+                    ],
+                    must_not: {
+                      match: {
+                        companyId: location.companyId
+                      }
+                    }
                   }
                 }
               }
@@ -1341,53 +1346,15 @@ export class SearchController {
           );
         }
       }
-      const wellaholicPath = [
-        '2-Venture-Drive',
-        '1-Irving-Place',
-        '208-Hougang-Street-21',
-        '545-Orchard-Road',
-        '210A-Telok-Ayer-Street'
-      ];
-      if (wellaholicPath.includes(data.pathName)) {
-        const nearbyWellaholicId = [
-          'ca4cc69c-edf8-4bde-ad97-ae60b9a16b62',
-          '3c8bd088-491e-4fd2-9e00-2764480a8ab0',
-          'a1310b55-e172-4c1d-964f-593e677ad4b8',
-          'c752736e-d6f6-4cf1-bb7c-6b73edca8eaa'
-        ];
-        const nearbyLocation = await LocationModel.findAll({
-          where: {
-            id: {
-              [Op.in]: nearbyWellaholicId
-            }
-          },
-          include: [
-            {
-              model: LocationImageModel,
-              as: 'locationImages',
-              required: false,
-              attributes: ['path', 'is_avatar']
-            }
-          ],
-          attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
-        });
-        const locationDetails = {
-          locations: locations,
-          locationInformation: location,
-          cateServices: cateServices,
-          staffs: staffs,
-          nearByLocation: nearbyLocation
-        };
-        return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
-      } else {
-        const locationDetails = {
-          locations: locations,
-          locationInformation: location,
-          cateServices: cateServices,
-          staffs: staffs
-        };
-        return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
-      }
+
+      const locationDetails = {
+        locations: locations,
+        locationInformation: location,
+        cateServices: cateServices,
+        staffs: staffs,
+        nearLocation: nearLocation
+      };
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
       // throw new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR);
       return next(error);
