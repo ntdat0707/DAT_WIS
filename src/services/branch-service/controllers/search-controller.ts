@@ -1644,7 +1644,7 @@ export class SearchController {
    *         description: Server internal errors
    */
 
-  public deleteAllRecentSearch = async (req: Request, res: Response, next: NextFunction) => {
+  public deleteAllRecentSearch = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = res.locals.customerPayload.id;
       await CustomerSearchModel.destroy({
@@ -1717,7 +1717,7 @@ export class SearchController {
    *       500:
    *         description: Server internal errors
    */
-  public deleteAllRecentView = async (req: Request, res: Response, next: NextFunction) => {
+  public deleteAllRecentView = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = res.locals.customerPayload.id;
       await RecentViewModel.destroy({
@@ -1791,7 +1791,7 @@ export class SearchController {
    *         description: Server internal errors
    */
 
-  public deleteAllRecentBooking = async (req: Request, res: Response, next: NextFunction) => {
+  public deleteAllRecentBooking = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const customerId = res.locals.customerPayload.id;
       await RecentBookingModel.destroy({
@@ -1821,7 +1821,7 @@ export class SearchController {
    *         description: Server internal errors
    */
 
-  public deleteAllRecent = async (req: Request, res: Response, next: NextFunction) => {
+  public deleteAllRecent = async (_req: Request, res: Response, next: NextFunction) => {
     let transaction: any = null;
     try {
       transaction = await sequelize.transaction();
