@@ -5,6 +5,7 @@ class ServiceMaterialModel extends Model {
   public id: string;
   public serviceId!: string;
   public materialId!: string;
+  public depreciation: number;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -26,6 +27,11 @@ ServiceMaterialModel.init(
     materialId: {
       field: 'material_id',
       type: DataTypes.UUIDV4,
+      allowNull: false
+    },
+    depreciation: {
+      field: 'depreciation',
+      type: DataTypes.FLOAT,
       allowNull: false
     },
     createdAt: {

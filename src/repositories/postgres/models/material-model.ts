@@ -49,7 +49,7 @@ MaterialModel.init(
     },
     price: {
       field: 'price',
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     createdAt: {

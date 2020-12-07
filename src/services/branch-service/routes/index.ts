@@ -5,6 +5,7 @@ import { ResourceRoutes } from './resource-routes';
 import { CateServiceRoutes } from './cateService-routes';
 import { CompanyRoutes } from './company';
 import { MarketPlaceRoutes } from './marketplace-routes';
+import { MaterialRoutes } from './material-routes';
 class MainRoutes {
   public router: express.Router = express.Router();
   private locationRoutes = new LocationRoutes().router;
@@ -13,6 +14,7 @@ class MainRoutes {
   private cateServiceRoutes = new CateServiceRoutes().router;
   private companyRoutes = new CompanyRoutes().router;
   private marketPlaceRoutes = new MarketPlaceRoutes().router;
+  private materialRoutes = new MaterialRoutes().router;
   constructor() {
     this.config();
   }
@@ -23,6 +25,7 @@ class MainRoutes {
     this.router.use('/cate-service', this.cateServiceRoutes);
     this.router.use('/company', this.companyRoutes);
     this.router.use('/marketplace', this.marketPlaceRoutes);
+    this.router.use('/material', this.materialRoutes);
   }
 }
 export const mainRoutes = new MainRoutes().router;

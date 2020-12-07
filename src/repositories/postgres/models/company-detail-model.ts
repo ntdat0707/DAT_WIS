@@ -42,7 +42,7 @@ CompanyDetailModel.init(
     },
     lengthCode: {
       field: 'length_code',
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0
     },
