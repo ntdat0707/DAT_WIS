@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import httpStatus from 'http-status';
 import { CustomError } from '../../../utils/error-handlers';
 import { validate } from '../../../utils/validator';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
@@ -15,13 +14,24 @@ import { buildSuccessMessage } from '../../../utils/response-messages';
 import {
   createTreatmentProcessSchema,
   updateTreatmentProcessSchema
-} from '../configs/validate-schemas/treatment-process';
+} from '../../treatment-service/configs/validate-schemas';
 import { CustomerWisereModel, LocationModel, ServiceModel } from '../../../repositories/postgres/models';
 import { locationErrorDetails } from '../../../utils/response-messages/error-details/branch/location';
 import { StaffModel } from '../../../repositories/postgres/models/staff-model';
 import { staffErrorDetails } from '../../../utils/response-messages/error-details/staff';
 import { customerErrorDetails, treatmentErrorDetails } from '../../../utils/response-messages/error-details';
-import { treatmentIdSchema, treatmentProcessIdSchema } from '../configs/validate-schemas';
+import {
+  treatmentIdSchema,
+  treatmentProcessIdSchema,
+  nameTherapeuticSchema,
+  therapeuticIdSchema
+} from '../configs/validate-schemas';
+import httpStatus from 'http-status';
+import _ from 'lodash';
+import { serviceIdSchema } from '../../branch-service/configs/validate-schemas';
+import { TherapeuticTreatmentModel } from '../../../repositories/mongo/models/therapeutic-treatment-model';
+import { EStatusProcedure } from '../../../utils/consts';
+import { ServiceTherapeuticModel } from '../../../repositories/mongo/models/service-therapeutic-model';
 
 export class TreatmentProcessController extends BaseController {
   /**
@@ -101,11 +111,12 @@ export class TreatmentProcessController extends BaseController {
    *               items:
    *                   type: object
    *                   properties:
-   *                      id:
+   *                      procedureId:
    *                        type: string
-   *                      status:
+   *                      progress:
+   *                        type: integer
+   *                      assistantId:
    *                        type: string
-   *                        enum: ['new','in-progress','completed','reject']
    *                      detailTreatment:
    *                        type: string
    *           prescription:
@@ -160,19 +171,24 @@ export class TreatmentProcessController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      const procedureIds: any = [];
-      for (const item of req.body.procedures) {
-        const procedure = await ProcedureModel.findById({ _id: item.id }).exec();
+      //Procedure
+      for (let i = 0; i < treatmentProcessData.procedures.length; i++) {
+        const procedure = await ProcedureModel.findById(treatmentProcessData.procedures[i].procedureId).exec();
         if (!procedure) {
-          throw new CustomError(treatmentErrorDetails.E_3905(`procedureId ${item.id} not found`), httpStatus.NOT_FOUND);
+          throw new CustomError(
+            treatmentErrorDetails.E_3905(`procedureId ${treatmentProcessData.procedures[i].procedureId} not found`),
+            httpStatus.NOT_FOUND
+          );
         }
-        await ProcedureModel.updateOne(
-          { _id: item.id },
-          { status: item.status, detailTreatment: item.detailTreatment }
-        ).exec();
-        procedureIds.push(item.id);
+        if (treatmentProcessData.procedures[i].progress > 0 && treatmentProcessData.procedures[i].progress < 100) {
+          procedure.status = EStatusProcedure.INPROGRESS;
+        } else if (treatmentProcessData.procedures[i].progress === 100) {
+          procedure.status = EStatusProcedure.COMPLETE;
+        }
+        procedure.progress = treatmentProcessData.procedures[i].progress;
+        await ProcedureModel.updateOne({ _id: treatmentProcessData.procedures[i].procedureId }, procedure).exec();
+        //AssistantId --Pending
       }
-      treatmentProcessData.procedureIds = procedureIds;
       if (treatmentProcessData.prescription) {
         const prescription: any = new PrescriptionModel(treatmentProcessData.prescription);
         treatmentProcessData.prescriptionId = prescription._id;
@@ -198,8 +214,6 @@ export class TreatmentProcessController extends BaseController {
         await labo.save();
       }
       const treatmentProcess = new TreatmentProcessModel(treatmentProcessData);
-      treatment.treatmentProcessIds.push(treatmentProcess._id);
-      await TreatmentModel.updateOne({ _id: treatmentProcessData.treatmentId }, treatment).exec();
       await treatmentProcess.save();
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
     } catch (error) {
@@ -310,7 +324,10 @@ export class TreatmentProcessController extends BaseController {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
       let treatmentProcess: any = await TreatmentProcessModel.findById({ _id: treatmentProcessId })
-        .populate({ path: 'procedureIds', model: 'Procedure', populate: { path: 'teethId', model: 'Teeth' } })
+        .populate({
+          path: 'procedures',
+          populate: { path: 'procedureId', model: 'Procedure', populate: { path: 'teethId', model: 'Teeth' } }
+        })
         .populate('prescriptionId')
         .populate('laboId')
         .exec();
@@ -323,15 +340,17 @@ export class TreatmentProcessController extends BaseController {
         createdBy: creator,
         createdById: undefined
       };
-      for (let i = 0; i < treatmentProcess.procedureIds.length; i++) {
+      for (let i = 0; i < treatmentProcess.procedures.length; i++) {
         const service = await ServiceModel.findOne({
-          where: { id: treatmentProcess.procedureIds[i].serviceId },
+          where: { id: treatmentProcess.procedures[i].procedureId.serviceId },
           raw: true
         });
-        const staff = await StaffModel.findOne({ where: { id: treatmentProcess.procedureIds[i].staffId }, raw: true });
-
-        treatmentProcess.procedureIds[i] = {
-          ...treatmentProcess.procedureIds[i]._doc,
+        const staff = await StaffModel.findOne({
+          where: { id: treatmentProcess.procedures[i].procedureId.staffId },
+          raw: true
+        });
+        treatmentProcess.procedures[i] = {
+          ...treatmentProcess.procedures[i].procedureId._doc,
           service: service,
           staff: staff,
           staffId: undefined,
@@ -417,11 +436,12 @@ export class TreatmentProcessController extends BaseController {
    *               items:
    *                   type: object
    *                   properties:
-   *                      id:
+   *                      procedureId:
    *                        type: string
-   *                      status:
+   *                      progress:
+   *                        type: integer
+   *                      assistantId:
    *                        type: string
-   *                        enum: ['new','in-progress','completed','reject']
    *                      detailTreatment:
    *                        type: string
    *           prescription:
@@ -479,18 +499,31 @@ export class TreatmentProcessController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      if (dataInput.procedures.length > treatmentProcess.procedureIds.length) {
+      if (dataInput.procedures.length > treatmentProcess.procedures.length) {
         throw new CustomError(treatmentErrorDetails.E_3911(`Procedures input not valid`), httpStatus.BAD_REQUEST);
       }
-      const procedureIds: any = [];
+      //Procedures
       for (const item of dataInput.procedures) {
-        await ProcedureModel.updateOne(
-          { _id: item.id },
-          { status: item.status, detailTreatment: item.detailTreatment }
-        ).exec();
-        procedureIds.push(item.id);
+        const procedure = await ProcedureModel.findById(item.procedureId).exec();
+        const currProcedures = treatmentProcess.procedures.map((x: any) => x.procedureId.toString());
+        const inputProcedures = dataInput.procedures.map((p: any) => p.procedureId);
+        const diffProcedure = _.difference(currProcedures, inputProcedures);
+        if (diffProcedure.length > 0) {
+          throw new CustomError(
+            treatmentErrorDetails.E_3913(
+              `Procedure ${diffProcedure} not in this treatment process ${treatmentProcessId}`
+            ),
+            httpStatus.BAD_REQUEST
+          );
+        }
+        if (item.progress > 0 && item.progress < 100) {
+          procedure.status = EStatusProcedure.INPROGRESS;
+        } else if (item.progress === 100) {
+          procedure.status = EStatusProcedure.COMPLETE;
+        }
+        procedure.progress = item.progress;
+        await ProcedureModel.updateOne({ _id: item.procedureId }, procedure).exec();
       }
-      dataInput.procedureIds = procedureIds;
       if (dataInput.prescription) {
         if (!dataInput.prescription.prescriptionId) {
           const prescription: any = new PrescriptionModel(dataInput.prescription);
@@ -542,6 +575,155 @@ export class TreatmentProcessController extends BaseController {
       }
       dataInput.createdById = treatmentProcess.createdById;
       await TreatmentProcessModel.updateOne({ _id: treatmentProcessId }, dataInput).exec();
+      return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/get-therapeutic/{serviceId}:
+   *   get:
+   *     tags:
+   *       - Treatment Process
+   *     security:
+   *       - Bearer: []
+   *     name: getTherapeutic
+   *     parameters:
+   *     - in: path
+   *       name: serviceId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getTherapeutic = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const serviceId = req.params.serviceId;
+      const validateErrors = validate(serviceId, serviceIdSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const therapeutic = await ServiceTherapeuticModel.find({ serviceId: serviceId }, 'name therapeuticId').exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(therapeutic));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/get-all-therapeutic:
+   *   get:
+   *     tags:
+   *       - Treatment Process
+   *     security:
+   *       - Bearer: []
+   *     name: getAllTherapeutic
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllTherapeutic = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const therapeutic = await ServiceTherapeuticModel.find().select('name therapeuticId').exec();
+      return res.status(httpStatus.OK).send(buildSuccessMessage(therapeutic));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/create-therapeutic:
+   *   post:
+   *     tags:
+   *       - Treatment Process
+   *     security:
+   *       - Bearer: []
+   *     name: createTherapeutic
+   *     parameters:
+   *     - in: "body"
+   *       name: "body"
+   *       required: true
+   *       properties:
+   *            name:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public createTherapeutic = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data: any = {
+        name: req.body.name
+      };
+      const validateErrors = validate(data.name, nameTherapeuticSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const checkExistName = await TherapeuticTreatmentModel.findOne({ name: data.name }).exec();
+      if (checkExistName) {
+        throw new CustomError(treatmentErrorDetails.E_3906(`name  ${data.name} exists`), httpStatus.BAD_REQUEST);
+      }
+      const therapeutic = await TherapeuticTreatmentModel.create(data);
+      return res.status(httpStatus.OK).send(buildSuccessMessage(therapeutic));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/delete-therapeutic/{therapeuticId}:
+   *   delete:
+   *     tags:
+   *       - Treatment Process
+   *     security:
+   *       - Bearer: []
+   *     name: deleteTherapeutic
+   *     parameters:
+   *     - in: path
+   *       name: therapeuticId
+   *       type: string
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public deleteTherapeutic = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const therapeuticId = req.params.therapeuticId;
+      const validateErrors = validate(therapeuticId, therapeuticIdSchema);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+      const therapeutic = await TherapeuticTreatmentModel.findById(therapeuticId).exec();
+      if (!therapeutic) {
+        throw new CustomError(
+          treatmentErrorDetails.E_3914(`therapeuticId  ${therapeuticId} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
+      await TherapeuticTreatmentModel.findByIdAndDelete(therapeuticId).exec();
       return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);

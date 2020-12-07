@@ -1,5 +1,4 @@
 import Joi from 'joi';
-import { EStatusProcedure } from '../../../../utils/consts';
 
 const createTreatmentProcessSchema = Joi.object({
   name: Joi.string().max(80).required().label('name'),
@@ -18,13 +17,14 @@ const createTreatmentProcessSchema = Joi.object({
   procedures: Joi.array()
     .items(
       Joi.object({
-        id: Joi.string()
+        procedureId: Joi.string()
           .required()
           .regex(/^[0-9a-fA-F]{24}$/)
-          .label('id'),
-        status: Joi.valid(...Object.values(EStatusProcedure))
-          .required()
-          .label('status'),
+          .label('procedureId'),
+        progress: Joi.number().integer().min(1).max(100).required().label('progress'),
+        assistantId: Joi.string()
+          .guid({ version: ['uuidv4'] })
+          .label('assistantId'),
         detailTreatment: Joi.string().required().label('detailTreatment')
       })
     )
@@ -91,10 +91,11 @@ const updateTreatmentProcessSchema = Joi.object({
   procedures: Joi.array()
     .items(
       Joi.object({
-        id: Joi.string().required().label('id'),
-        status: Joi.valid(...Object.values(EStatusProcedure))
-          .required()
-          .label('status'),
+        procedureId: Joi.string().required().label('procedureId'),
+        progress: Joi.number().integer().min(0).max(100).required().label('progress'),
+        assistantId: Joi.string()
+          .guid({ version: ['uuidv4'] })
+          .label('assistantId'),
         detailTreatment: Joi.string().required().label('detailTreatment')
       })
     )
@@ -151,4 +152,12 @@ const updateTreatmentProcessSchema = Joi.object({
     .allow(null)
     .label('labo')
 });
-export { createTreatmentProcessSchema, updateTreatmentProcessSchema };
+
+const nameTherapeuticSchema = Joi.string().required().label('name');
+
+const therapeuticIdSchema = Joi.string()
+  .regex(/^[0-9a-fA-F]{24}$/)
+  .required()
+  .label('therapeuticId');
+
+export { createTreatmentProcessSchema, updateTreatmentProcessSchema, nameTherapeuticSchema, therapeuticIdSchema };

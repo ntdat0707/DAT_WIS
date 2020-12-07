@@ -385,7 +385,6 @@ export class TreatmentController extends BaseController {
         dataProcedures.push(data);
       }
       const procedures = await ProcedureModel.insertMany(dataProcedures);
-      const procedureIds: any = procedures.map((item: any) => item._id);
       const quotationsDentalData = await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }).exec();
       if (!quotationsDentalData) {
         const quotationsDental: any = new QuotationsDentalModel({
@@ -439,8 +438,6 @@ export class TreatmentController extends BaseController {
         quotationsDental.quotationsDentalDetails.push(...detailsIds);
         quotationsDental.save();
       }
-      treatment.procedureIds.push(...procedureIds);
-      await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
