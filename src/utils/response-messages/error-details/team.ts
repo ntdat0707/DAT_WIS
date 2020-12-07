@@ -7,21 +7,9 @@ const teamErrorDetails = {
     return e;
   },
   E_5001(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('5001', 'This team is not exist', detail);
+    const e = buildErrorDetail('E_5001', 'This team is not exist', detail);
     return e;
   }
-  //   E_5002(detail: string = null): IErrorDetail {
-  //     const e = buildErrorDetail('3302', 'SubTotal of invoice is incorrect', detail);
-  //     return e;
-  //   },
-  //   E_5003(detail: string = null): IErrorDetail {
-  //     const e = buildErrorDetail('3303', 'Total amount of invoice is incorrect', detail);
-  //     return e;
-  //   },
-  //   E_5004(detail: string = null): IErrorDetail {
-  //     const e = buildErrorDetail('3304', 'Appointment existed in invoice', detail);
-  //     return e;
-  //   },
 };
 const teamStaffErrorDetails = {
   E_5100(detail: string = null): IErrorDetail {

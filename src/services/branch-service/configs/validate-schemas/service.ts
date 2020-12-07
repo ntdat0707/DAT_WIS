@@ -42,7 +42,11 @@ const createServiceSchema = Joi.object({
     .valid(EExtraTimeType.BLOCKED, EExtraTimeType.PROCESSING)
     .allow(null, '')
     .label('extraTimeType'),
-  extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration')
+  extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration'),
+  therapeuticIds: Joi.array()
+    .allow(null)
+    .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
+    .label('therapeuticId')
 });
 
 const createCateServiceSchema = Joi.object({
@@ -176,7 +180,11 @@ const updateServiceSchema = Joi.object({
     .valid(EExtraTimeType.BLOCKED, EExtraTimeType.PROCESSING)
     .allow(null)
     .label('extraTimeType'),
-  extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration')
+  extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration'),
+  therapeuticIds: Joi.array()
+    .allow(null)
+    .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
+    .label('therapeuticId')
 });
 export {
   createCateServiceSchema,

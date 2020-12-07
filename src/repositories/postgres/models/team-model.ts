@@ -28,7 +28,7 @@ TeamModel.init(
     parentId: {
       field: 'parent_id',
       type: DataTypes.UUIDV4,
-      allowNull: false
+      allowNull: true
     },
     description: {
       field: 'description',

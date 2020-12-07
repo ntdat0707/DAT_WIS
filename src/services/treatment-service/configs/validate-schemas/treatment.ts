@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import { EQuotationDiscountType, EStatusTreatment } from '../../../../utils/consts';
+import { TEETH_2H, TEETH_ADULT, TEETH_CHILD } from '../consts';
 
 const languageSchema = Joi.string().valid('en', 'vi').required().label('language');
 
@@ -54,7 +55,10 @@ const createProcedureSchema = Joi.object({
           })
           .required()
           .label('staffId'),
-        teethNumbers: Joi.array().items(Joi.string()).required().label('teethNumbers'),
+        teethNumbers: Joi.array()
+          .items(Joi.string().valid(TEETH_2H, ...TEETH_ADULT, ...TEETH_CHILD))
+          .required()
+          .label('teethNumbers'),
         serviceId: Joi.string()
           .guid({
             version: ['uuidv4']
@@ -94,7 +98,7 @@ const createTreatmentSchema = Joi.object({
 const treatmentIdSchema = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
   .required()
-  .label('treatmentId');
+  .label('treatmentIdSchema');
 
 const procedureSchema = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)

@@ -73,7 +73,8 @@ class ServiceRoutes {
       customerServiceConfigs.route,
       createProxyMiddleware({
         ...customerServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -82,7 +83,8 @@ class ServiceRoutes {
       staffServiceConfigs.route,
       createProxyMiddleware({
         ...staffServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -91,7 +93,8 @@ class ServiceRoutes {
       branchServiceConfigs.route,
       createProxyMiddleware({
         ...branchServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -100,7 +103,8 @@ class ServiceRoutes {
       bookingServiceConfigs.route,
       createProxyMiddleware({
         ...bookingServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -109,7 +113,8 @@ class ServiceRoutes {
       saleServiceConfigs.route,
       createProxyMiddleware({
         ...saleServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -118,7 +123,18 @@ class ServiceRoutes {
       treatmentServiceConfigs.route,
       createProxyMiddleware({
         ...treatmentServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
+      })
+    );
+
+    //PRODUCT SERVICE
+    this.router.use(
+      productServiceConfigs.route,
+      createProxyMiddleware({
+        ...productServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
