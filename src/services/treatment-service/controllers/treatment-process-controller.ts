@@ -636,7 +636,7 @@ export class TreatmentProcessController extends BaseController {
    */
   public getAllTherapeutic = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const therapeutic = await ServiceTherapeuticModel.find().select('name therapeuticId').exec();
+      const therapeutic = await TherapeuticTreatmentModel.find().select('name therapeuticId').exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(therapeutic));
     } catch (error) {
       return next(error);
