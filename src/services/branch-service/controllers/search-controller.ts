@@ -1105,13 +1105,13 @@ export class SearchController {
                 model: MarketPlaceValueModel,
                 as: 'marketplaceValues',
                 required: false,
-                attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] },
+                attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] },
                 include: [
                   {
                     model: MarketPlaceFieldsModel,
                     as: 'marketplaceField',
                     required: false,
-                    attributes: { exclude: ['id', 'createdAt', 'updateAt', 'deletedAt'] }
+                    attributes: { exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'] }
                   }
                 ]
               },
@@ -1125,14 +1125,14 @@ export class SearchController {
                     model: CompanyDetailModel,
                     as: 'companyDetail',
                     required: false,
-                    attributes: { exclude: ['createdAt', 'updateAt', 'deletedAt'] }
+                    attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
                   },
                   {
                     model: CompanyTypeDetailModel,
                     as: 'companyTypeDetails',
                     through: { attributes: [] },
                     required: false,
-                    attributes: { exclude: ['createdAt', 'updateAt', 'deletedAt'] }
+                    attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] }
                   }
                 ]
               },
@@ -1182,14 +1182,18 @@ export class SearchController {
           }),
           {}
         );
-
+        const company = JSON.parse(JSON.stringify(location.company));
         location = JSON.parse(JSON.stringify(location.dataValues));
         location = {
           ...location,
           ...locationDetail,
           ...location.company,
           ['marketplaceValues']: undefined,
-          ['company']: undefined
+          ['company']: {
+            ...company,
+            ['companyTypes']: company.companyTypeDetails,
+            ['companyTypeDetails']: undefined
+          }
         };
         //console.log(JSON.parse(JSON.stringify(location.company)));
         const staffIds: any = (
@@ -1357,6 +1361,7 @@ export class SearchController {
       return res.status(HttpStatus.OK).send(buildSuccessMessage(locationDetails));
     } catch (error) {
       // throw new CustomError(locationErrorDetails.E_1007(), HttpStatus.INTERNAL_SERVER_ERROR);
+      console.log(error);
       return next(error);
     }
   };
