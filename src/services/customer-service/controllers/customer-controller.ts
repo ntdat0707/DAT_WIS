@@ -680,7 +680,6 @@ export class CustomerController {
           companyId
         }
       });
-
       return res.status(HttpStatus.OK).send(buildSuccessMessage(customers));
     } catch (error) {
       return next(error);

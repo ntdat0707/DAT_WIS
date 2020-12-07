@@ -22,6 +22,7 @@ import {
   getAllProcedureSchema
 } from '../configs/validate-schemas';
 import {
+  branchErrorDetails,
   customerErrorDetails,
   staffErrorDetails,
   treatmentErrorDetails
@@ -35,7 +36,8 @@ import {
   QuotationsDentalModel,
   QuotationsDentalDetailModel
 } from '../../../repositories/mongo/models';
-import { EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
+import { EMedicalDocumentStatusType, EQuotationDiscountType, EStatusProcedure } from '../../../utils/consts';
+import { MedicalDocumentModel } from '../../../repositories/mongo/models/medical-document-model';
 
 export class TreatmentController extends BaseController {
   /**
@@ -324,18 +326,18 @@ export class TreatmentController extends BaseController {
           httpStatus.NOT_FOUND
         );
       }
-      // const { workingLocationIds } = res.locals.staffPayload;
-      // if (!workingLocationIds.includes(req.body.locationId)) {
-      //   throw new CustomError(
-      //     branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
-      //     httpStatus.FORBIDDEN
-      //   );
-      // }
+      const { workingLocationIds } = res.locals.staffPayload;
+      if (!workingLocationIds.includes(req.body.locationId)) {
+        throw new CustomError(
+          branchErrorDetails.E_1001(`You can not access to location ${req.body.locationId}`),
+          httpStatus.FORBIDDEN
+        );
+      }
       for (let i = 0; i < req.body.procedures.length; i++) {
         const teethIds = [];
         for (let j = 0; j < req.body.procedures[i].teethNumbers.length; j++) {
           const teeth: any = await TeethModel.findOne({
-            toothNumber: parseInt(req.body.procedures[i].teethNumbers[j], 10)
+            toothNumber: req.body.procedures[i].teethNumbers[j]
           }).exec();
           if (!teeth) {
             throw new CustomError(
@@ -501,6 +503,26 @@ export class TreatmentController extends BaseController {
       };
       const treatment = new TreatmentModel(data);
       const savedTreatment = await treatment.save();
+      //create medical documents (mc)
+      const medicalDocuments: any = [
+        {
+          treatmentId: treatment._id,
+          status: EMedicalDocumentStatusType.RE_TREATMENT
+        },
+        {
+          treatmentId: treatment._id,
+          status: EMedicalDocumentStatusType.DURING_TREATMENT
+        },
+        {
+          treatmentId: treatment._id,
+          status: EMedicalDocumentStatusType.AFTER_TREATMENT
+        },
+        {
+          treatmentId: treatment._id,
+          status: EMedicalDocumentStatusType.OTHER
+        }
+      ];
+      await MedicalDocumentModel.insertMany(medicalDocuments);
       return res.status(httpStatus.OK).send(buildSuccessMessage(savedTreatment));
     } catch (error) {
       return next(error);
@@ -598,18 +620,22 @@ export class TreatmentController extends BaseController {
       } else {
         procedures = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
       }
-      for (let i = 0; i < procedures.length; i++) {
-        const service = await ServiceModel.findOne({ where: { id: procedures[i].serviceId }, raw: true });
-        const staff = await StaffModel.findOne({ where: { id: procedures[i].staffId }, raw: true });
-        procedures[i] = {
-          ...procedures[i]._doc,
-          service: service,
-          staff: staff,
-          staffId: undefined,
-          serviceId: undefined
-        };
-      }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
+      let newProcedures: any = [];
+      newProcedures = await Promise.all(
+        procedures.map(async (item: any) => {
+          const service: any = await ServiceModel.findOne({ where: { id: item.serviceId }, raw: true });
+          const staff: any = await StaffModel.findOne({ where: { id: item.staffId }, raw: true });
+          item = {
+            ...item._doc,
+            service: service,
+            staff: staff,
+            staffId: undefined,
+            serviceId: undefined
+          };
+          return item;
+        })
+      );
+      return res.status(httpStatus.OK).send(buildSuccessMessage(newProcedures));
     } catch (error) {
       return next(error);
     }

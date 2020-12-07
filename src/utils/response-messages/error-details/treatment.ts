@@ -32,7 +32,7 @@ const treatmentErrorDetails = {
     return e;
   },
   E_3907(detail: string = null): IErrorDetail {
-    const e = buildErrorDetail('E_3907', 'Diagnostic not found', detail);
+    const e = buildErrorDetail('E_3907', 'Labo not found', detail);
     return e;
   },
   E_3908(detail: string = null): IErrorDetail {
@@ -49,6 +49,20 @@ const treatmentErrorDetails = {
   },
   E_3911(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_3911', 'Procedures not valid', detail);
+    return e;
+  },
+
+  // #Medical Document Errors
+  E_4100(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4100', 'Medical Document not found', detail);
+    return e;
+  },
+  E_4101(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4101', 'Medical File not found', detail);
+    return e;
+  },
+  E_4102(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_4102', 'File upload not found', detail);
     return e;
   }
 };
