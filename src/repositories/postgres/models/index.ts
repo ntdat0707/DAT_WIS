@@ -53,6 +53,8 @@ import { PlanWisereModel } from './plan-wisere-model';
 import { SmsUsageModel } from './sms-usage-model';
 import { EmailUsageModel } from './email-usage-model';
 import { SmsTemplatesModel } from './sms-templates-model';
+import { MaterialModel } from './material-model';
+import { ServiceMaterialModel } from './service-material-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -314,6 +316,9 @@ CustomerWisereModel.belongsToMany(MedicalHistoryModel, {
 CompanyModel.hasMany(SmsTemplatesModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'hasSmsTemplates' });
 SmsTemplatesModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'smsTemplatesOwner' });
 
+MaterialModel.belongsToMany(ServiceModel, { through: ServiceMaterialModel, as: 'services', foreignKey: 'materialId' });
+ServiceModel.belongsToMany(MaterialModel, { through: ServiceMaterialModel, as: 'materials', foreignKey: 'serviceId' });
+
 export {
   sequelize,
   StaffModel,
@@ -365,5 +370,7 @@ export {
   PlanWisereModel,
   EmailUsageModel,
   SmsUsageModel,
-  SmsTemplatesModel
+  SmsTemplatesModel,
+  MaterialModel,
+  ServiceMaterialModel
 };
