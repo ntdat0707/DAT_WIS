@@ -337,7 +337,7 @@ export class TreatmentController extends BaseController {
         const teethIds = [];
         for (let j = 0; j < req.body.procedures[i].teethNumbers.length; j++) {
           const teeth: any = await TeethModel.findOne({
-            toothNumber: parseInt(req.body.procedures[i].teethNumbers[j], 10)
+            toothNumber: req.body.procedures[i].teethNumbers[j]
           }).exec();
           if (!teeth) {
             throw new CustomError(
@@ -385,7 +385,6 @@ export class TreatmentController extends BaseController {
         dataProcedures.push(data);
       }
       const procedures = await ProcedureModel.insertMany(dataProcedures);
-      const procedureIds: any = procedures.map((item: any) => item._id);
       const quotationsDentalData = await QuotationsDentalModel.findOne({ treatmentId: req.body.treatmentId }).exec();
       if (!quotationsDentalData) {
         const quotationsDental: any = new QuotationsDentalModel({
@@ -439,8 +438,6 @@ export class TreatmentController extends BaseController {
         quotationsDental.quotationsDentalDetails.push(...detailsIds);
         quotationsDental.save();
       }
-      treatment.procedureIds.push(...procedureIds);
-      await TreatmentModel.updateOne({ _id: treatment._id }, treatment).exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
     } catch (error) {
       return next(error);
@@ -504,40 +501,31 @@ export class TreatmentController extends BaseController {
       const treatment = new TreatmentModel(data);
       const savedTreatment = await treatment.save();
       //create medical documents (mc)
-      let medicalDocuments: any = [];
-      medicalDocuments = this.createMedicalDocument(
-        medicalDocuments,
-        treatment._id,
-        EMedicalDocumentStatusType.RE_TREATMENT
-      );
-      medicalDocuments = this.createMedicalDocument(
-        medicalDocuments,
-        treatment._id,
-        EMedicalDocumentStatusType.DURING_TREATMENT
-      );
-      medicalDocuments = this.createMedicalDocument(
-        medicalDocuments,
-        treatment._id,
-        EMedicalDocumentStatusType.AFTER_TREATMENT
-      );
-      medicalDocuments = this.createMedicalDocument(medicalDocuments, treatment._id, EMedicalDocumentStatusType.OTHER);
+      const medicalDocuments: any = [
+        {
+          treatmentId: treatment._id,
+          status: EMedicalDocumentStatusType.RE_TREATMENT
+        },
+        {
+          treatmentId: treatment._id,
+          status: EMedicalDocumentStatusType.DURING_TREATMENT
+        },
+        {
+          treatmentId: treatment._id,
+          status: EMedicalDocumentStatusType.AFTER_TREATMENT
+        },
+        {
+          treatmentId: treatment._id,
+          status: EMedicalDocumentStatusType.OTHER
+        }
+      ];
       await MedicalDocumentModel.insertMany(medicalDocuments);
-
       return res.status(httpStatus.OK).send(buildSuccessMessage(savedTreatment));
     } catch (error) {
       return next(error);
     }
   };
 
-  private createMedicalDocument(medicalDocuments: any, treatmentId: string, status: string) {
-    const medicalDocumentData: any = {
-      treatmentId: treatmentId,
-      status: status
-    };
-    const medicalDocument = new MedicalDocumentModel(medicalDocumentData);
-    medicalDocuments.push(medicalDocument);
-    return medicalDocuments;
-  }
   /**
    * @swagger
    * /treatment/get-all-treatment/{customerWisereId}:
@@ -629,18 +617,22 @@ export class TreatmentController extends BaseController {
       } else {
         procedures = await ProcedureModel.find({ treatmentId: treatmentId }).populate('teethId').exec();
       }
-      for (let i = 0; i < procedures.length; i++) {
-        const service = await ServiceModel.findOne({ where: { id: procedures[i].serviceId }, raw: true });
-        const staff = await StaffModel.findOne({ where: { id: procedures[i].staffId }, raw: true });
-        procedures[i] = {
-          ...procedures[i]._doc,
-          service: service,
-          staff: staff,
-          staffId: undefined,
-          serviceId: undefined
-        };
-      }
-      return res.status(httpStatus.OK).send(buildSuccessMessage(procedures));
+      let newProcedures: any = [];
+      newProcedures = await Promise.all(
+        procedures.map(async (item: any) => {
+          const service: any = await ServiceModel.findOne({ where: { id: item.serviceId }, raw: true });
+          const staff: any = await StaffModel.findOne({ where: { id: item.staffId }, raw: true });
+          item = {
+            ...item._doc,
+            service: service,
+            staff: staff,
+            staffId: undefined,
+            serviceId: undefined
+          };
+          return item;
+        })
+      );
+      return res.status(httpStatus.OK).send(buildSuccessMessage(newProcedures));
     } catch (error) {
       return next(error);
     }

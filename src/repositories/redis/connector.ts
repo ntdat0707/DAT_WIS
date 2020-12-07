@@ -19,6 +19,7 @@ redisClient.on('error', (_err) => {
     label: 'Redis',
     message: `Redis connect to ${opts.host} failed ${_err}`
   });
+  //console.log(_err);
 });
 
 //
@@ -27,6 +28,7 @@ redisClient.on('connect', () => {
     label: 'Redis',
     message: `Redis connected to ${opts.host}`
   });
+  //console.log(`Redis connected to ${opts.host}`);
 });
 
 export default redisClient;

@@ -8,7 +8,7 @@ interface ITreatmentProcess extends mongoose.Document {
   note: string;
   createOn: Date;
   createdById: string;
-  procedureIds: [string];
+  procedures: [object];
   laboId: string;
 }
 
@@ -20,7 +20,13 @@ const TreatmentProcessSchema = new mongoose.Schema({
   note: { type: String, required: false },
   createOn: { type: Date, default: Date.now },
   createdById: { type: String, required: true },
-  procedureIds: [{ type: Schema.Types.ObjectId, ref: 'Procedure' }],
+  procedures: [
+    {
+      procedureId: { type: Schema.Types.ObjectId, ref: 'Procedure' },
+      assistantId: { type: String, required: false },
+      detailTreatment: { type: String, required: true }
+    }
+  ],
   laboId: { type: Schema.Types.ObjectId, ref: 'Labo' }
 });
 

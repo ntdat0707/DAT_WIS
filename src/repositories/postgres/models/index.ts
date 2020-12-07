@@ -284,6 +284,7 @@ CompanyModel.belongsToMany(CompanyTypeDetailModel, {
   foreignKey: 'companyId',
   as: 'companyTypeDetails'
 });
+
 CompanyTypeDetailModel.belongsToMany(CompanyModel, {
   through: CompanyTypeModel,
   foreignKey: 'companyTypeDetailId',
@@ -303,6 +304,7 @@ MedicalHistoryModel.belongsToMany(CustomerWisereModel, {
   foreignKey: 'medicalHistoryId',
   as: 'customers'
 });
+
 CustomerWisereModel.belongsToMany(MedicalHistoryModel, {
   through: MedicalHistoryCustomerModel,
   foreignKey: 'customerWisereId',

@@ -50,7 +50,6 @@ export class TeamController {
    *          type: integer
    *     - in: query
    *       name: searchValue
-   *       required: false
    *       schema:
    *          type: string
    *     - in: query
@@ -73,27 +72,25 @@ export class TeamController {
         pageNum: req.query.pageNum,
         pageSize: req.query.pageSize
       };
-      const validateErrors = validate(req.params.locationId, locationIdsSchema);
+      const validateErrors = validate(req.query.locationIds, locationIdsSchema);
+      if (validateErrors) {
+        throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
+      }
       const validatePaginationErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
       if (validatePaginationErrors) {
         throw next(new CustomError(validatePaginationErrors, HttpStatus.BAD_REQUEST));
-      }
-      if (validateErrors) {
-        throw next(new CustomError(validateErrors, HttpStatus.BAD_REQUEST));
       }
       const query: FindOptions = {
         include: [
           {
             model: StaffModel,
             as: 'staffs',
-            through: { attributes: [] },
-            required: true,
-            attributes: ['id', 'avatarPath']
+            through: { attributes: ['position'] },
+            required: true
           }
         ],
         order: [['updatedAt', 'DESC']]
       };
-
       if (req.query.locationIds) {
         const diffLocation = _.difference(
           req.query.locationIds as string[],
@@ -107,31 +104,21 @@ export class TeamController {
             )
           );
         }
-        query.include = [
-          ...query.include,
-          ...[
-            {
-              model: LocationModel,
-              as: 'locations',
-              required: true,
-              through: { attributes: [] },
-              where: { id: req.query.locationIds }
-            }
-          ]
-        ];
+        query.include.push({
+          model: LocationModel,
+          as: 'locations',
+          required: true,
+          through: { attributes: [] },
+          where: { id: req.query.locationIds }
+        });
       } else {
-        query.include = [
-          ...query.include,
-          ...[
-            {
-              model: LocationModel,
-              as: 'locations',
-              through: { attributes: [] },
-              required: true,
-              where: { id: res.locals.staffPayload.workingLocationIds }
-            }
-          ]
-        ];
+        query.include.push({
+          model: LocationModel,
+          as: 'locations',
+          through: { attributes: [] },
+          required: true,
+          where: { id: res.locals.staffPayload.workingLocationIds }
+        });
       }
       if (req.query.searchValue) {
         const unaccentSearchValue = Unaccent(req.query.searchValue);
@@ -143,12 +130,24 @@ export class TeamController {
           }
         };
       }
-      const teamStaffs = await paginate(
+      let teamStaffs = await paginate(
         TeamModel,
         query,
+
         { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
         fullPath
       );
+      teamStaffs = JSON.parse(JSON.stringify(teamStaffs));
+      teamStaffs.data = teamStaffs.data.map((element: any) => {
+        return {
+          ...element,
+          staffs: element.staffs.map((staff: any) => ({
+            ...staff,
+            position: staff.TeamStaffModel?.position || null,
+            TeamStaffModel: undefined
+          }))
+        };
+      });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(teamStaffs));
     } catch (error) {
       return next(error);

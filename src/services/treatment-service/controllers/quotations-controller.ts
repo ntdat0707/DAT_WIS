@@ -147,7 +147,7 @@ export class QuotationsController extends BaseController {
             if (item.isAccept === true) {
               teethIds = await Promise.all(
                 item.teethNumbers.map(async (i: any) => {
-                  const teethId = await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).then((teeth: any) => {
+                  const teethId = await TeethModel.findOne({ toothNumber: i }).then((teeth: any) => {
                     return teeth._id;
                   });
                   return teethId.toString();
@@ -188,7 +188,7 @@ export class QuotationsController extends BaseController {
           }) as any
         );
         await QuotationsDentalModel.updateOne({ _id: quotationsId }, { totalPrice: totalPrice }).exec();
-        if (newProcedures.length === 0) {
+        if (newProcedures.length > 0) {
           await ProcedureModel.insertMany(newProcedures);
         }
         return res.status(httpStatus.OK).send(buildSuccessMessage(quotationsDetails));
@@ -432,7 +432,7 @@ export class QuotationsController extends BaseController {
         if (flagNewProcedure) {
           const teethIds = await Promise.all(
             quotationsDentalDetail.teethNumbers.map(async (i: any) => {
-              const teethId = await TeethModel.findOne({ toothNumber: parseInt(i, 10) }).then((teeth: any) => {
+              const teethId = await TeethModel.findOne({ toothNumber: i }).then((teeth: any) => {
                 return teeth._id;
               });
               return teethId.toString();
