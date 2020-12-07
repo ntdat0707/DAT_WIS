@@ -1,34 +1,69 @@
-import amqp from 'amqplib';
+import httpStatus from 'http-status';
+import { logger } from '../../../utils/logger';
+import { Request, Response, NextFunction } from 'express';
+import { buildSuccessMessage } from '../../../utils/response-messages';
+import { BaseController } from '../../../services/booking-service/controllers/base-controller';
+import { Sendpulse } from '../../../utils/notification';
 
-// const rabbitmqURL = `amqp://${process.env.RABBITMQ_USERNAME}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
-import { EQueueNames, rabbitmqURL } from '../../../utils/event-queues';
-import { excuteSendingEmail, IEmailOptions } from '../../../utils/emailer';
+export class EmailController extends BaseController {
+  /**
+   * @swagger
+   * /notification/webhooks:
+   *   post:
+   *     tags:
+   *       - Notification
+   *     name: webhooks
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public webhooks = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      logger.info({
+        label: 'webhooks',
+        message: JSON.stringify(req.body, null, 2)
+      });
+      return res.status(httpStatus.OK).send(buildSuccessMessage({}));
+    } catch (error) {
+      return next(error);
+    }
+  };
 
-let open: any;
-export const sendEmail = async () => {
-  try {
-    open = await amqp.connect(rabbitmqURL + '?heartbeat=60');
-    const ch = await open.createChannel();
-    await ch.assertQueue(EQueueNames.EMAIL, { durable: false });
-    await ch.consume(
-      EQueueNames.EMAIL,
-      async (messageObj: any) => {
-        // mail send here
-        const msg = messageObj.content.toString();
-        const data: IEmailOptions = JSON.parse(msg);
-        await excuteSendingEmail(data);
-        // ch.ack(messageObj);
-      },
-      { noAck: true }
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
-process.on('exit', (_code) => {
-  if (open !== null) {
-    open.close();
-    //tslint:disable-next-line
-  }
-});
+  /**
+   * @swagger
+   * /notification/test-notification:
+   *   get:
+   *     tags:
+   *       - Notification
+   *     name: notificationTest
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public notificationTest = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      await Sendpulse.sendRequest({
+        path: 'blacklist',
+        method: 'get'
+      });
+      // const options: IEmailOptions = {
+      //   receivers: 'longvox98@gmail.com',
+      //   subject: 'hello',
+      //   message: 'hello',
+      //   type: 'text'
+      // };
+      // const mail = await executeSendingEmail(options);
+      // return res.status(httpStatus.OK).send(buildSuccessMessage({ status: mail }));
+    } catch (error) {
+      return next(error);
+    }
+  };
+}

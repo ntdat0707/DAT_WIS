@@ -49,6 +49,10 @@ import { CompanyTypeDetailModel } from './company-type-detail-model';
 import { CompanyTypeModel } from './company-type-model';
 import { MedicalHistoryModel } from './medical-history-model';
 import { MedicalHistoryCustomerModel } from './medical-history-customer-model';
+import { PlanWisereModel } from './plan-wisere-model';
+import { SmsUsageModel } from './sms-usage-model';
+import { EmailUsageModel } from './email-usage-model';
+import { SmsTemplatesModel } from './sms-templates-model';
 
 StaffModel.hasOne(CompanyModel, { foreignKey: 'ownerId', as: 'hasCompany' });
 CompanyModel.belongsTo(StaffModel, { foreignKey: 'ownerId', as: 'owner' });
@@ -286,6 +290,14 @@ CompanyTypeDetailModel.belongsToMany(CompanyModel, {
   foreignKey: 'companyTypeDetailId',
   as: 'companies'
 });
+CompanyModel.hasOne(PlanWisereModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'hasPlan' });
+PlanWisereModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'planOwner' });
+
+PlanWisereModel.hasOne(SmsUsageModel, { foreignKey: 'planId', sourceKey: 'id', as: 'hasSms' });
+SmsUsageModel.belongsTo(PlanWisereModel, { foreignKey: 'planId', as: 'smsOwner' });
+
+PlanWisereModel.hasOne(EmailUsageModel, { foreignKey: 'planId', sourceKey: 'id', as: 'hasEmail' });
+EmailUsageModel.belongsTo(PlanWisereModel, { foreignKey: 'planId', as: 'emailOwner' });
 
 MedicalHistoryModel.belongsToMany(CustomerWisereModel, {
   through: MedicalHistoryCustomerModel,
@@ -298,6 +310,9 @@ CustomerWisereModel.belongsToMany(MedicalHistoryModel, {
   foreignKey: 'customerWisereId',
   as: 'medicalHistories'
 });
+
+CompanyModel.hasMany(SmsTemplatesModel, { foreignKey: 'companyId', sourceKey: 'id', as: 'hasSmsTemplates' });
+SmsTemplatesModel.belongsTo(CompanyModel, { foreignKey: 'companyId', as: 'smsTemplatesOwner' });
 
 export {
   sequelize,
@@ -346,5 +361,9 @@ export {
   CompanyTypeModel,
   CompanyTypeDetailModel,
   MedicalHistoryModel,
-  MedicalHistoryCustomerModel
+  MedicalHistoryCustomerModel,
+  PlanWisereModel,
+  EmailUsageModel,
+  SmsUsageModel,
+  SmsTemplatesModel
 };

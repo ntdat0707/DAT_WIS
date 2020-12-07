@@ -1,5 +1,4 @@
 import * as nodemailer from 'nodemailer';
-import mailgun from 'nodemailer-mailgun-transport';
 require('dotenv').config();
 
 import { emit, EQueueNames } from '../event-queues';
@@ -29,7 +28,7 @@ function isEmailOptions(options: object): options is IEmailOptions {
 }
 
 /**
- * Push Email data <IEmailOptions> to messgae queue
+ * Push Email data <IEmailOptions> to message queue
  * return true if send push successful, return false if options is not IEmailOptions
  *
  * @param {IEmailOptions} options
@@ -54,7 +53,7 @@ const sendEmail = async (options: IEmailOptions): Promise<boolean> => {
  * @param {IEmailOptions} options
  * @returns {Promise<any>}
  */
-const excuteSendingEmail = async (options: IEmailOptions): Promise<any> => {
+const executeSendingEmail = async (options: IEmailOptions): Promise<any> => {
   try {
     const info = await sendEmailViaNodemailer(options);
     return info;
@@ -66,16 +65,21 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
   try {
     const receivers: string = Array.isArray(options.receivers) ? options.receivers.join(',') : options.receivers;
     let cc: string = null;
-    if (options.cc) cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc;
-
+    if (options.cc) {
+      cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc;
+    }
     const auth = {
       auth: {
-        api_key: process.env.MAIL_GUN_API_KEY,
-        domain: process.env.MAIL_GUN_DOMAIN
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS
       }
       // proxy: 'http://user:pass@localhost:8080' // optional proxy, default is false
     };
-    const nodemailerMailgun = nodemailer.createTransport(mailgun(auth));
+    const nodemailerTransporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      auth: auth.auth
+    });
 
     const sendEmailOptions: {
       from: string;
@@ -95,14 +99,16 @@ const sendEmailViaNodemailer = async (options: IEmailOptions): Promise<any> => {
     } else {
       sendEmailOptions.text = options.message;
     }
-    if (cc) sendEmailOptions.cc = cc;
+    if (cc) {
+      sendEmailOptions.cc = cc;
+    }
 
     //send
-    const info = await nodemailerMailgun.sendMail(sendEmailOptions);
+    const info = await nodemailerTransporter.sendMail(sendEmailOptions);
     return info;
   } catch (error) {
     throw error;
   }
 };
 
-export { sendEmail, IEmailOptions, excuteSendingEmail };
+export { sendEmail, IEmailOptions, executeSendingEmail };

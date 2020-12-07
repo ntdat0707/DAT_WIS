@@ -4,6 +4,7 @@ import {
   IManagementLockAppointmentData,
   IManagementEditAppointmentDetailData
 } from './appointment';
+import { EBusinessPlanType, BusinessPlanTypeRules } from './businessplantype';
 const buildingEnvs = ['develop', 'development', 'staging', 'test', 'testing'];
 
 enum ELocales {
@@ -129,7 +130,9 @@ export {
   ETypeCustomField,
   IManagementLockAppointmentData,
   IManagementEditAppointmentDetailData,
-  ETypeOfPeople
+  ETypeOfPeople,
+  EBusinessPlanType,
+  BusinessPlanTypeRules
 };
 
 export enum EAppointmentBookingSource {

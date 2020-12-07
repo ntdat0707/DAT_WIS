@@ -1,12 +1,12 @@
-import { sendEmail } from './controllers/email-controller';
-
+import cors from 'cors';
 import express from 'express';
 import * as bodyParser from 'body-parser';
-import cors from 'cors';
+import { mainRoutes } from './routes/index';
+import { sendEmail } from './controllers/email-action';
 import { handleCustomError, handleException } from '../../utils/error-handlers';
 require('dotenv').config();
 
-export default class SystemService {
+export default class NotificationService {
   public app: express.Application;
 
   constructor() {
@@ -15,13 +15,14 @@ export default class SystemService {
   }
 
   private async config(): Promise<void> {
-    // this.app.set('port', process.env.SVC_NOTIFICATION_PORT);
+    this.app.set('port', process.env.SVC_NOTIFICATION_PORT);
 
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
 
     this.app.use(cors());
     // this.app.use(passport.session());
+    this.app.use('/', mainRoutes);
     await sendEmail();
 
     //https://expressjs.com/en/guide/error-handling.html
