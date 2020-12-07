@@ -18,6 +18,7 @@ redisClient.on('error', (_err) => {
   //   label: 'Redis',
   //   message: `Redis connect to ${opts.host} failed ${_err}`
   // });
+  // tslint:disable-next-line: no-console
   console.log(_err);
 });
 
@@ -27,6 +28,8 @@ redisClient.on('connect', () => {
   //   label: 'Redis',
   //   message: `Redis connected to ${opts.host}`
   // });
+
+  // tslint:disable-next-line: no-console
   console.log(`Redis connected to ${opts.host}`);
 });
 
