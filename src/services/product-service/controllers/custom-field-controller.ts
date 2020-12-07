@@ -46,7 +46,7 @@ export class CustomFieldController {
   /**
    * @swagger
    * definitions:
-   *   CreateAppointmentDetail:
+   *   CreateAppointmentDetailssss:
    *       required:
    *           - serviceId
    *           - resourceId
@@ -95,7 +95,7 @@ export class CustomFieldController {
    *           appointmentDetails:
    *               type: array
    *               items:
-   *                   $ref: '#/definitions/CreateAppointmentDetail'
+   *                   $ref: '#/definitions/CreateAppointmentDetailssss'
    *
    */
 

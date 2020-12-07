@@ -40,6 +40,7 @@ export class AppointmentDetailController extends BaseController {
    *           - resourceId
    *           - staffIds
    *           - startTime
+   *           - duration
    *       properties:
    *           appointmentId:
    *               type: string
@@ -47,6 +48,8 @@ export class AppointmentDetailController extends BaseController {
    *               type: string
    *           resourceId:
    *               type: string
+   *           duration:
+   *               type: integer
    *           staffIds:
    *               type: array
    *               items:
@@ -77,7 +80,7 @@ export class AppointmentDetailController extends BaseController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       403:
    *         description: Forbidden
    *       500:
@@ -91,7 +94,8 @@ export class AppointmentDetailController extends BaseController {
         staffIds: req.body.staffIds,
         serviceId: req.body.serviceId,
         resourceId: req.body.resourceId,
-        startTime: req.body.startTime
+        startTime: req.body.startTime,
+        duration: req.body.duration
       };
       const validateErrors = validate(data, createAppointmentDetailFullSchema);
       if (validateErrors) {
@@ -146,6 +150,7 @@ export class AppointmentDetailController extends BaseController {
    *           - resourceId
    *           - staffIds
    *           - startTime
+   *           - duration
    *       properties:
    *           appointmentDetailId:
    *               type: string
@@ -153,6 +158,8 @@ export class AppointmentDetailController extends BaseController {
    *               type: string
    *           resourceId:
    *               type: string
+   *           duration:
+   *               type: number
    *           staffIds:
    *               type: array
    *               items:
@@ -198,7 +205,8 @@ export class AppointmentDetailController extends BaseController {
         staffIds: req.body.staffIds,
         serviceId: req.body.serviceId,
         resourceId: req.body.resourceId,
-        startTime: req.body.startTime
+        startTime: req.body.startTime,
+        duration: req.body.duration
       };
       const validateErrors = validate(data, updateAppointmentDetailSchema);
       if (validateErrors) {

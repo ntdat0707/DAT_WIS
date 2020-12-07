@@ -4,6 +4,7 @@ interface IAppointmentDetailInput {
   staffIds: string[];
   resourceId: string;
   startTime: Date;
+  duration: number;
 }
 interface IAppointmentDetail {
   appointmentId?: string;
