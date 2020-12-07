@@ -403,10 +403,10 @@ export class AppointmentController extends BaseController {
       //commit transaction
       await transaction.commit();
       const isPortReachable = require('is-port-reachable');
-      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      const isLiveHost = await isPortReachable(8443, { host: '10.104.0.8' });
       if (isLiveHost) {
         const options: IRequestOptions = {
-          url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+          url: 'http://10.104.0.8:8443/appointment/create-cron-job-auto-update-status',
           method: 'post',
           headers: {
             accept: '*/*',
@@ -1270,11 +1270,11 @@ export class AppointmentController extends BaseController {
       await transaction.commit();
       //commit transaction
       const isPortReachable = require('is-port-reachable');
-      const isLiveHost = await isPortReachable(3000, { host: '10.104.0.8' });
+      const isLiveHost = await isPortReachable(8443, { host: '10.104.0.8' });
       if (isLiveHost) {
         for (let i = 0; i < appointmentIds.length; i++) {
           const options: IRequestOptions = {
-            url: 'http://10.104.0.8:3000/appointment/create-cron-job-auto-update-status',
+            url: 'http://10.104.0.8:8443/appointment/create-cron-job-auto-update-status',
             method: 'post',
             headers: {
               accept: '*/*',

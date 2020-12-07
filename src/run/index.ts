@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { logger } from '../utils/logger';
 import { EEnvironments } from '../utils/consts';
 import APIGateway from '../gateways/api-gateway/app';
@@ -10,6 +9,7 @@ import BranchService from '../services/branch-service/app';
 import BookingService from '../services/booking-service/app';
 import SaleService from '../services/sale-service/app';
 import TreatmentService from '../services/treatment-service/app';
+import ProductService from '../services/product-service/app';
 
 require('dotenv').config();
 const nodeName = process.env.NODE_NAME;
@@ -60,9 +60,13 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
       break;
     case 'notification-service':
       const notificationService = new NotificationService().app;
-      logger.info({
-        label: 'notification-service',
-        message: `App is running in mode ${notificationService.get('env')} `
+      notificationService.listen(notificationService.get('port'), (): void => {
+        logger.info({
+          label: 'notification-service',
+          message: `App is running at http://localhost:${notificationService.get(
+            'port'
+          )} in mode ${notificationService.get('env')} `
+        });
       });
       break;
     case 'staff-service':
@@ -116,6 +120,17 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
         });
       });
       break;
+    case 'product-service':
+      const productService = new ProductService().app;
+      productService.listen(treatmentService.get('port'), (): void => {
+        logger.info({
+          label: 'product-service',
+          message: `App is running at http://localhost:${productService.get('port')} in mode ${productService.get(
+            'env'
+          )} `
+        });
+      });
+      break;
   }
 } else {
   // develop mode
@@ -134,9 +149,13 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
   });
 
   const notificationService = new NotificationService().app;
-  logger.info({
-    label: 'notification-service',
-    message: `App is running in mode ${notificationService.get('env')} `
+  notificationService.listen(notificationService.get('port'), (): void => {
+    logger.info({
+      label: 'notification-service',
+      message: `App is running at http://localhost:${notificationService.get('port')} in mode ${notificationService.get(
+        'env'
+      )} `
+    });
   });
 
   const staffService = new StaffService().app;
@@ -188,6 +207,14 @@ if (process.env.NODE_ENV === EEnvironments.PRODUCTION || process.env.NODE_ENV ==
       message: `App is running at http://localhost:${treatmentService.get('port')} in mode ${treatmentService.get(
         'env'
       )} `
+    });
+  });
+
+  const productService = new ProductService().app;
+  productService.listen(productService.get('port'), (): void => {
+    logger.info({
+      label: 'product-service',
+      message: `App is running at http://localhost:${productService.get('port')} in mode ${productService.get('env')} `
     });
   });
 }

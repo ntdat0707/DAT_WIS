@@ -7,9 +7,11 @@ import {
   branchServiceConfigs,
   bookingServiceConfigs,
   saleServiceConfigs,
-  treatmentServiceConfigs
+  treatmentServiceConfigs,
+  notificationServiceConfigs
 } from './configs';
 import { API_BASE_PATH } from '../configs';
+import { productServiceConfigs } from './configs/product';
 
 require('dotenv').config();
 
@@ -42,26 +44,35 @@ class ServiceRoutes {
   };
 
   private getServiceBasePath = (originalUrl: string): string => {
-    if (originalUrl.startsWith(`${API_BASE_PATH}${customerServiceConfigs.route}`))
+    if (originalUrl.startsWith(`${API_BASE_PATH}${customerServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${customerServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${staffServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${staffServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${staffServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${branchServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${branchServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${branchServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${bookingServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${bookingServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${bookingServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${saleServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${saleServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${saleServiceConfigs.route}`;
-    if (originalUrl.startsWith(`${API_BASE_PATH}${treatmentServiceConfigs.route}`))
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${treatmentServiceConfigs.route}`)) {
       return `${API_BASE_PATH}${treatmentServiceConfigs.route}`;
-    else return '';
+    }
+    if (originalUrl.startsWith(`${API_BASE_PATH}${notificationServiceConfigs.route}`)) {
+      return `${API_BASE_PATH}${notificationServiceConfigs.route}`;
+    }
+    return '';
   };
 
   constructor() {
     if (buildingEnvs.includes(process.env.NODE_ENV)) {
       this.config();
-    } else {
-      if (this.nodeName === this.apiGatewayName) this.config();
+    } else if (this.nodeName === this.apiGatewayName) {
+      this.config();
     }
   }
   private config(): void {
@@ -70,7 +81,8 @@ class ServiceRoutes {
       customerServiceConfigs.route,
       createProxyMiddleware({
         ...customerServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -79,7 +91,8 @@ class ServiceRoutes {
       staffServiceConfigs.route,
       createProxyMiddleware({
         ...staffServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -88,7 +101,8 @@ class ServiceRoutes {
       branchServiceConfigs.route,
       createProxyMiddleware({
         ...branchServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -97,7 +111,8 @@ class ServiceRoutes {
       bookingServiceConfigs.route,
       createProxyMiddleware({
         ...bookingServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -106,7 +121,8 @@ class ServiceRoutes {
       saleServiceConfigs.route,
       createProxyMiddleware({
         ...saleServiceConfigs.options,
-        ...{ onProxyReq: this.onProxyReq }
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
       })
     );
 
@@ -115,6 +131,35 @@ class ServiceRoutes {
       treatmentServiceConfigs.route,
       createProxyMiddleware({
         ...treatmentServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
+      })
+    );
+
+    //PRODUCT SERVICE
+    this.router.use(
+      productServiceConfigs.route,
+      createProxyMiddleware({
+        ...productServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq },
+        followRedirects: true
+      })
+    );
+
+    //PRODUCT SERVICE
+    this.router.use(
+      productServiceConfigs.route,
+      createProxyMiddleware({
+        ...productServiceConfigs.options,
+        ...{ onProxyReq: this.onProxyReq }
+      })
+    );
+
+    //NOTIFICATION SERVICE
+    this.router.use(
+      notificationServiceConfigs.route,
+      createProxyMiddleware({
+        ...notificationServiceConfigs.options,
         ...{ onProxyReq: this.onProxyReq }
       })
     );

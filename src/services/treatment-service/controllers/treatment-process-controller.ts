@@ -724,6 +724,7 @@ export class TreatmentProcessController extends BaseController {
         );
       }
       await TherapeuticTreatmentModel.findByIdAndDelete(therapeuticId).exec();
+      await ServiceTherapeuticModel.deleteMany({ therapeuticId: therapeuticId }).exec();
       return res.status(httpStatus.OK).send();
     } catch (error) {
       return next(error);

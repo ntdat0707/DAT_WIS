@@ -13,6 +13,9 @@ const bookingServiceConfigs: IServiceConfigs = {
     prependPath: false,
     pathRewrite: {
       ['^' + API_BASE_PATH + ROUTE]: ''
+    },
+    headers: {
+      Connection: 'keep-alive'
     }
   }
 };
