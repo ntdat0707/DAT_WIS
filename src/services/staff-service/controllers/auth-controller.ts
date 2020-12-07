@@ -39,7 +39,7 @@ import {
 } from '../configs/validate-schemas';
 
 import { IStaffRecoveryPasswordTemplate } from '../../../utils/emailer/templates';
-import { sendEmail } from '../../../utils/emailer';
+import { excuteSendingEmail } from '../../../utils/emailer';
 import { redis, EKeys } from '../../../repositories/redis';
 import { ESocialType } from '../../../utils/consts';
 import { validateGoogleToken, validateFacebookToken } from '../../../utils/validator/validate-social-token';
@@ -294,7 +294,7 @@ export class AuthController {
       const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/staff-register-account.ejs');
       ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
         if (!err) {
-          await sendEmail({
+          await excuteSendingEmail({
             receivers: dataSendMail.staffEmail,
             subject: 'Welcome to Wisere',
             type: 'html',
@@ -594,7 +594,7 @@ export class AuthController {
       const pathFile = path.join(process.cwd(), 'src/utils/emailer/templates/staff-recovery-password.ejs');
       ejs.renderFile(pathFile, dataSendMail, async (err: any, dataEjs: any) => {
         if (!err) {
-          await sendEmail({
+          await excuteSendingEmail({
             receivers: email,
             subject: 'Your Login information for Wisere',
             type: 'html',
