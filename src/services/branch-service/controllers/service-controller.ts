@@ -1051,34 +1051,37 @@ export class ServiceController {
         }
       }
       //check service therapeutic ids
-      if (body.therapeuticIds) {
-        for (const therapeuticId of body.therapeuticIds) {
-          const therapeutic = await TherapeuticTreatmentModel.findById(therapeuticId).exec();
-          if (!therapeutic) {
-            throw new CustomError(treatmentErrorDetails.E_3914(`Therapeutic ${therapeuticId} not found`));
-          }
-        }
-        const serviceTherapeuticIds = await ServiceTherapeuticModel.find({ serviceId: service.id }).exec();
-        const currTherapeuticIds = serviceTherapeuticIds.map((item: any) => item.therapeuticId.toString());
-        const removeTherapeuticIds = _.difference(currTherapeuticIds, body.therapeuticIds);
-        if (removeTherapeuticIds.length > 0) {
-          await ServiceTherapeuticModel.deleteMany({
-            therapeuticId: { $in: removeTherapeuticIds },
-            serviceId: service.id
-          }).exec();
-        }
-        const addTherapeuticIds = _.difference(body.therapeuticIds, currTherapeuticIds);
-        if (addTherapeuticIds.length > 0) {
-          const therapeutics = (await TherapeuticTreatmentModel.find({ _id: { $in: addTherapeuticIds } }).exec()).map(
-            (item: any) => ({
-              name: item.name,
-              therapeuticId: item._id,
-              serviceId: service.id
-            })
-          );
-          await ServiceTherapeuticModel.insertMany(therapeutics);
+      if (!body.therapeuticIds) {
+        body.therapeuticIds = [];
+      }
+      // if (body.therapeuticIds) {
+      for (const therapeuticId of body.therapeuticIds) {
+        const therapeutic = await TherapeuticTreatmentModel.findById(therapeuticId).exec();
+        if (!therapeutic) {
+          throw new CustomError(treatmentErrorDetails.E_3914(`Therapeutic ${therapeuticId} not found`));
         }
       }
+      const serviceTherapeuticIds = await ServiceTherapeuticModel.find({ serviceId: service.id }).exec();
+      const currTherapeuticIds = serviceTherapeuticIds.map((item: any) => item.therapeuticId.toString());
+      const removeTherapeuticIds = _.difference(currTherapeuticIds, body.therapeuticIds);
+      if (removeTherapeuticIds.length > 0) {
+        await ServiceTherapeuticModel.deleteMany({
+          therapeuticId: { $in: removeTherapeuticIds },
+          serviceId: service.id
+        }).exec();
+      }
+      const addTherapeuticIds = _.difference(body.therapeuticIds, currTherapeuticIds);
+      if (addTherapeuticIds.length > 0) {
+        const therapeutics = (await TherapeuticTreatmentModel.find({ _id: { $in: addTherapeuticIds } }).exec()).map(
+          (item: any) => ({
+            name: item.name,
+            therapeuticId: item._id,
+            serviceId: service.id
+          })
+        );
+        await ServiceTherapeuticModel.insertMany(therapeutics);
+      }
+      // }
       // check materials
       // if (body.materials) {
       //   const currMaterials = await ServiceMaterialModel.findAll({

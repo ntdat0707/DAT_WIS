@@ -335,6 +335,12 @@ export class TreatmentProcessController extends BaseController {
         .populate('prescriptionId')
         .populate('laboId')
         .exec();
+      if (!treatmentProcess) {
+        throw new CustomError(
+          treatmentErrorDetails.E_3910(`Treatment process ${treatmentProcessId} not found`),
+          httpStatus.NOT_FOUND
+        );
+      }
       const creator = await StaffModel.findOne({
         where: { id: treatmentProcess.createdById },
         attributes: { exclude: ['password'] }
@@ -353,10 +359,14 @@ export class TreatmentProcessController extends BaseController {
           where: { id: treatmentProcess.procedures[i].procedureId.staffId },
           raw: true
         });
-        const assistant = await StaffModel.findOne({
-          where: { id: treatmentProcess.procedures[i].assistantId },
-          raw: true
-        });
+        let assistant = null;
+        if (treatmentProcess.procedures[i].assistantId) {
+          assistant = await StaffModel.findOne({
+            where: { id: treatmentProcess.procedures[i].assistantId },
+            raw: true
+          });
+        }
+
         treatmentProcess.procedures[i] = {
           ...treatmentProcess.procedures[i]._doc,
           ...treatmentProcess.procedures[i].procedureId._doc,
