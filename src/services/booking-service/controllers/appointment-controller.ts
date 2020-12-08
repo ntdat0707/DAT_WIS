@@ -64,11 +64,14 @@ export class AppointmentController extends BaseController {
    *           - resourceId
    *           - staffIds
    *           - startTime
+   *           - duration
    *       properties:
    *           serviceId:
    *               type: string
    *           resourceId:
    *               type: string
+   *           duration:
+   *               type: integer
    *           staffIds:
    *               type: array
    *               items:
@@ -316,36 +319,6 @@ export class AppointmentController extends BaseController {
         transaction
       });
       await AppointmentDetailStaffModel.bulkCreate(appointmentDetailStaffData, { transaction });
-      // const findQuery: FindOptions = {
-      //   where: { id: appointmentId },
-      //   include: [
-      //     {
-      //       model: AppointmentDetailModel,
-      //       as: 'appointmentDetails',
-      //       include: [
-      //         {
-      //           model: ServiceModel,
-      //           as: 'service'
-      //         },
-      //         {
-      //           model: ResourceModel,
-      //           as: 'resource'
-      //         },
-      //         {
-      //           model: StaffModel.scope('safe'),
-      //           as: 'staffs',
-      //           through: { attributes: [] }
-      //         }
-      //       ]
-      //     }
-      //   ],
-      //   transaction
-      // };
-      // if (dataInput.customerId)
-      //   findQuery.include.push({
-      //     model: CustomerModel,
-      //     as: 'customer'
-      //   });
       const query: FindOptions = {
         include: [
           {
@@ -468,7 +441,7 @@ export class AppointmentController extends BaseController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
@@ -795,29 +768,6 @@ export class AppointmentController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   CreateNewAppointmentDetail:
-   *       required:
-   *           - serviceId
-   *           - staffIds
-   *           - startTime
-   *       properties:
-   *           resourceId:
-   *               type: string
-   *           startTime:
-   *               type: string
-   *               format: date-time
-   *               description: YYYY-MM-DD HH:mm:ss
-   *           serviceId:
-   *               type: string
-   *           staffIds:
-   *               type: array
-   *               items:
-   *                   type: string
-   *
-   */
-  /**
-   * @swagger
-   * definitions:
    *   UpdateAppointmentDetail:
    *       required:
    *           - appointmentDetailId
@@ -828,6 +778,8 @@ export class AppointmentController extends BaseController {
    *               type: string
    *           serviceId:
    *               type: string
+   *           duration:
+   *               type: integer
    *           startTime:
    *               type: string
    *               format: date-time
@@ -869,7 +821,7 @@ export class AppointmentController extends BaseController {
    *           createNewAppointmentDetails:
    *               type: array
    *               items:
-   *                   $ref: '#/definitions/CreateNewAppointmentDetail'
+   *                   $ref: '#/definitions/CreateAppointmentDetail'
    *           updateAppointmentDetails:
    *               type: array
    *               items:
@@ -907,7 +859,7 @@ export class AppointmentController extends BaseController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       403:
    *         description: FORBIDDEN
    *       404:
@@ -1438,11 +1390,14 @@ export class AppointmentController extends BaseController {
    *           - resourceId
    *           - staffIds
    *           - startTime
+   *           - duration
    *       properties:
    *           serviceId:
    *               type: string
    *           resourceId:
    *               type: string
+   *           duration:
+   *               type: integer
    *           staffIds:
    *               type: array
    *               items:
