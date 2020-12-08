@@ -1054,7 +1054,6 @@ export class ServiceController {
       if (!body.therapeuticIds) {
         body.therapeuticIds = [];
       }
-      // if (body.therapeuticIds) {
       for (const therapeuticId of body.therapeuticIds) {
         const therapeutic = await TherapeuticTreatmentModel.findById(therapeuticId).exec();
         if (!therapeutic) {
@@ -1081,7 +1080,6 @@ export class ServiceController {
         );
         await ServiceTherapeuticModel.insertMany(therapeutics);
       }
-      // }
       // check materials
       // if (body.materials) {
       //   const currMaterials = await ServiceMaterialModel.findAll({
