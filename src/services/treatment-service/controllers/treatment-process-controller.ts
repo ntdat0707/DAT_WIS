@@ -610,7 +610,10 @@ export class TreatmentProcessController extends BaseController {
       if (validateErrors) {
         throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
       }
-      const therapeutic = await ServiceTherapeuticModel.find({ serviceId: serviceId }, 'name therapeuticId').exec();
+      const therapeutic = (await ServiceTherapeuticModel.find({ serviceId: serviceId }).exec()).map((item: any) => ({
+        _id: item.therapeuticId,
+        name: item.name
+      }));
       return res.status(httpStatus.OK).send(buildSuccessMessage(therapeutic));
     } catch (error) {
       return next(error);

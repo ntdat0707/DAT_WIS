@@ -19,7 +19,8 @@ import {
   LocationModel,
   sequelize,
   ResourceModel,
-  CompanyModel
+  CompanyModel,
+  ServiceMaterialModel
 } from '../../../repositories/postgres/models';
 import { Unaccent } from '../../../utils/unaccent';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
@@ -926,6 +927,16 @@ export class ServiceController {
    *       type: array
    *       items:
    *           type: string
+   *     - in: "formData"
+   *       name: materials
+   *       type: array
+   *       items:
+   *           type: object
+   *           properties:
+   *              materialId:
+   *                    type: string
+   *              depreciation:
+   *                    type: number
    *     responses:
    *       200:
    *         description:
@@ -1049,6 +1060,10 @@ export class ServiceController {
       }
       //check service therapeutic ids
       if (body.therapeuticIds) {
+        const therapeutic = await TherapeuticTreatmentModel.find().where('_id').in(body.therapeuticIds).exec();
+        if (!therapeutic) {
+          throw new CustomError(treatmentErrorDetails.E_3914(`One therapeutic of list not found`));
+        }
         const serviceTherapeuticIds = await ServiceTherapeuticModel.find({ serviceId: service.id }).exec();
         const currTherapeuticIds = serviceTherapeuticIds.map((item: any) => item.therapeuticId.toString());
         const removeTherapeuticIds = _.difference(currTherapeuticIds, body.therapeuticIds);
@@ -1068,6 +1083,28 @@ export class ServiceController {
             })
           );
           await ServiceTherapeuticModel.insertMany(therapeutics);
+        }
+      }
+      // check materials
+      if (body.materials) {
+        const currMaterials = await ServiceMaterialModel.findAll({
+          where: { serviceId: service.id },
+          attributes: ['material_id', 'depreciation']
+        });
+        const removeMaterials: any = _.difference(currMaterials, body.materials);
+        if (removeMaterials.length > 0) {
+          await ServiceMaterialModel.destroy({
+            where: { serviceId: service.id, materialId: removeMaterials },
+            transaction
+          });
+        }
+        const addMaterials: any = _.difference(body.materials, currMaterials);
+        if (addMaterials.length > 0) {
+          const materials = (addMaterials as []).map((materialId: string) => ({
+            materialId: materialId,
+            serviceId: service.id
+          }));
+          await ServiceMaterialModel.bulkCreate(materials, { transaction: transaction });
         }
       }
       const data: any = {

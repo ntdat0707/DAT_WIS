@@ -11,6 +11,6 @@ export class MaterialRoutes {
     this.config();
   }
   private config(): void {
-    this.router.get('/get-all-material', isAuthenticated, this.materialController.getMaterial);
+    this.router.get('/get-all-material', isAuthenticated, this.materialController.getAllMaterial);
   }
 }
