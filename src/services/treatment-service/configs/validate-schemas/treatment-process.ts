@@ -21,7 +21,7 @@ const createTreatmentProcessSchema = Joi.object({
           .required()
           .regex(/^[0-9a-fA-F]{24}$/)
           .label('procedureId'),
-        progress: Joi.number().integer().min(1).max(100).required().label('progress'),
+        progress: Joi.number().integer().min(1).max(100).allow(null).label('progress'),
         assistantId: Joi.string()
           .guid({ version: ['uuidv4'] })
           .label('assistantId'),

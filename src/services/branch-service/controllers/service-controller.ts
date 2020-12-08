@@ -19,8 +19,7 @@ import {
   LocationModel,
   sequelize,
   ResourceModel,
-  CompanyModel,
-  ServiceMaterialModel
+  CompanyModel
 } from '../../../repositories/postgres/models';
 import { Unaccent } from '../../../utils/unaccent';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
@@ -131,6 +130,7 @@ export class ServiceController {
    *         description:
    */
   public createService = async ({ body, files }: Request, res: Response, next: NextFunction) => {
+    let transaction = null;
     try {
       const diff = _.difference(body.locationIds as string[], res.locals.staffPayload.workingLocationIds);
       if (diff.length) {
@@ -186,10 +186,8 @@ export class ServiceController {
         extraTimeDuration: body.extraTimeDuration,
         therapeuticIds: body.therapeuticIds
       };
-
-      const service = await sequelize.transaction(async (transaction: any) => {
-        return await ServiceModel.create(data, { transaction: transaction });
-      });
+      transaction = await sequelize.transaction();
+      const service = await ServiceModel.create(data, { transaction });
 
       if (files.length) {
         const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
@@ -197,12 +195,10 @@ export class ServiceController {
           path: x.location,
           isAvatar: index === 0 ? true : false
         }));
-        await sequelize.transaction(async (transaction: any) => {
-          return await ServiceImageModel.bulkCreate(images, { transaction: transaction });
-        });
+        await ServiceImageModel.bulkCreate(images, { transaction: transaction });
       }
       //create Detail Treatment Note
-      if (data.therapeuticIds.length > 0) {
+      if (data.therapeuticIds) {
         const therapeutics: any = [];
         for (const therapeuticId of data.therapeuticIds) {
           const therapeutic = await TherapeuticTreatmentModel.findById(therapeuticId).exec();
@@ -219,6 +215,17 @@ export class ServiceController {
         }
         await ServiceTherapeuticModel.insertMany(therapeutics);
       }
+
+      // create service material
+      // if (body.materials) {
+      //   const materials = (body.materials as []).map((material: any) => ({
+      //     serviceId: service.id,
+      //     materialId: material.materialId,
+      //     depreciation: material.depreciation
+      //   }));
+      //   await ServiceMaterialModel.bulkCreate(materials, { transaction });
+      // }
+
       /**
        * Prepare location service
        */
@@ -226,9 +233,7 @@ export class ServiceController {
         locationId: locationId,
         serviceId: service.id
       }));
-      await sequelize.transaction(async (transaction: any) => {
-        return await LocationServiceModel.bulkCreate(locationServices, { transaction: transaction });
-      });
+      await LocationServiceModel.bulkCreate(locationServices, { transaction });
 
       if (body.staffIds && body.staffIds.length > 0) {
         const staffs = await StaffModel.findAll({
@@ -257,16 +262,13 @@ export class ServiceController {
           serviceId: service.id,
           staffId: id
         }));
-        await sequelize.transaction(async (transaction: any) => {
-          await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
-        });
+        await ServiceStaffModel.bulkCreate(prepareServiceStaff, { transaction });
       }
       if (body.resourceIds && body.resourceIds.length > 0) {
         const serviceResourceData = (body.resourceIds as []).map((x) => ({ resourceId: x, serviceId: service.id }));
-        await sequelize.transaction(async (transaction: any) => {
-          await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
-        });
+        await ServiceResourceModel.bulkCreate(serviceResourceData, { transaction });
       }
+      await transaction.commit();
       const serviceData = await ServiceModel.findOne({
         where: {
           id: data.id
@@ -927,16 +929,6 @@ export class ServiceController {
    *       type: array
    *       items:
    *           type: string
-   *     - in: "formData"
-   *       name: materials
-   *       type: array
-   *       items:
-   *           type: object
-   *           properties:
-   *              materialId:
-   *                    type: string
-   *              depreciation:
-   *                    type: number
    *     responses:
    *       200:
    *         description:
@@ -1088,27 +1080,27 @@ export class ServiceController {
         }
       }
       // check materials
-      if (body.materials) {
-        const currMaterials = await ServiceMaterialModel.findAll({
-          where: { serviceId: service.id },
-          attributes: ['material_id', 'depreciation']
-        });
-        const removeMaterials: any = _.difference(currMaterials, body.materials);
-        if (removeMaterials.length > 0) {
-          await ServiceMaterialModel.destroy({
-            where: { serviceId: service.id, materialId: removeMaterials },
-            transaction
-          });
-        }
-        const addMaterials: any = _.difference(body.materials, currMaterials);
-        if (addMaterials.length > 0) {
-          const materials = (addMaterials as []).map((materialId: string) => ({
-            materialId: materialId,
-            serviceId: service.id
-          }));
-          await ServiceMaterialModel.bulkCreate(materials, { transaction: transaction });
-        }
-      }
+      // if (body.materials) {
+      //   const currMaterials = await ServiceMaterialModel.findAll({
+      //     where: { serviceId: service.id },
+      //     attributes: ['material_id', 'depreciation']
+      //   });
+      //   const removeMaterials: any = _.difference(currMaterials, body.materials);
+      //   if (removeMaterials.length > 0) {
+      //     await ServiceMaterialModel.destroy({
+      //       where: { serviceId: service.id, materialId: removeMaterials },
+      //       transaction
+      //     });
+      //   }
+      //   const addMaterials: any = _.difference(body.materials, currMaterials);
+      //   if (addMaterials.length > 0) {
+      //     const materials = (addMaterials as []).map((materialId: string) => ({
+      //       materialId: materialId,
+      //       serviceId: service.id
+      //     }));
+      //     await ServiceMaterialModel.bulkCreate(materials, { transaction: transaction });
+      //   }
+      // }
       const data: any = {
         description: body.description,
         salePrice: !isNaN(parseInt(body.salePrice, 10)) ? body.salePrice : service.salePrice,

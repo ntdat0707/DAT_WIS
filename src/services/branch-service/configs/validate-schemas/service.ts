@@ -44,9 +44,25 @@ const createServiceSchema = Joi.object({
     .label('extraTimeType'),
   extraTimeDuration: Joi.number().integer().allow(null).label('extraTimeDuration'),
   therapeuticIds: Joi.array()
+    .min(1)
     .allow(null)
     .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
     .label('therapeuticId')
+  // materials: Joi.array()
+  //   .allow(null)
+  //   .min(1)
+  //   .items(
+  //     Joi.object({
+  //       materialId: Joi.string()
+  //         .guid({
+  //           version: ['uuidv4']
+  //         })
+  //         .required()
+  //         .label('materialId'),
+  //       depreciation: Joi.number().required().label('depreciation')
+  //     })
+  //   )
+  //   .label('materials')
 });
 
 const createCateServiceSchema = Joi.object({
@@ -184,18 +200,18 @@ const updateServiceSchema = Joi.object({
   therapeuticIds: Joi.array()
     .allow(null)
     .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
-    .label('therapeuticId'),
-  materials: Joi.array()
-    .allow(null)
-    .items(
-      Joi.object({
-        materialId: Joi.string()
-          .guid({ version: ['uuidv4'] })
-          .label('materialId'),
-        depreciation: Joi.number().label('depreciation')
-      })
-    )
-    .label('materials')
+    .label('therapeuticId')
+  // materials: Joi.array()
+  //   .allow(null)
+  //   .items(
+  //     Joi.object({
+  //       materialId: Joi.string()
+  //         .guid({ version: ['uuidv4'] })
+  //         .label('materialId'),
+  //       depreciation: Joi.number().label('depreciation')
+  //     })
+  //   )
+  //   .label('materials')
 });
 export {
   createCateServiceSchema,

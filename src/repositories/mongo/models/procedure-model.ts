@@ -35,7 +35,7 @@ const ProcedureSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true },
   status: { type: String, enum: Object.values(EStatusProcedure), default: EStatusProcedure.NEW },
   note: { type: String, required: false },
-  progress: { type: Number, required: false },
+  progress: { type: Number, default: 0 },
   createDate: { type: Date, default: Date.now }
 });
 

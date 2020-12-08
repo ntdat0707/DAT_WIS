@@ -180,12 +180,16 @@ export class TreatmentProcessController extends BaseController {
             httpStatus.NOT_FOUND
           );
         }
-        if (treatmentProcessData.procedures[i].progress > 0 && treatmentProcessData.procedures[i].progress < 100) {
-          procedure.status = EStatusProcedure.INPROGRESS;
-        } else if (treatmentProcessData.procedures[i].progress === 100) {
-          procedure.status = EStatusProcedure.COMPLETE;
+        if (treatmentProcessData.procedures[i].progress) {
+          if (treatmentProcessData.procedures[i].progress > 0 && treatmentProcessData.procedures[i].progress < 100) {
+            procedure.status = EStatusProcedure.INPROGRESS;
+          } else if (treatmentProcessData.procedures[i].progress === 100) {
+            procedure.status = EStatusProcedure.COMPLETE;
+          }
+          procedure.progress = treatmentProcessData.procedures[i].progress;
+        } else {
+          procedure.progress = 0;
         }
-        procedure.progress = treatmentProcessData.procedures[i].progress;
         await ProcedureModel.updateOne({ _id: treatmentProcessData.procedures[i].procedureId }, procedure).exec();
         //AssistantId --Pending
       }
