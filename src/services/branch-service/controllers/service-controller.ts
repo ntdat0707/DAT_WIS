@@ -1060,9 +1060,11 @@ export class ServiceController {
       }
       //check service therapeutic ids
       if (body.therapeuticIds) {
-        const therapeutic = await TherapeuticTreatmentModel.find().where('_id').in(body.therapeuticIds).exec();
-        if (!therapeutic) {
-          throw new CustomError(treatmentErrorDetails.E_3914(`One therapeutic of list not found`));
+        for (const therapeuticId of body.therapeuticIds) {
+          const therapeutic = await TherapeuticTreatmentModel.findById(therapeuticId).exec();
+          if (!therapeutic) {
+            throw new CustomError(treatmentErrorDetails.E_3914(`Therapeutic ${therapeuticId} not found`));
+          }
         }
         const serviceTherapeuticIds = await ServiceTherapeuticModel.find({ serviceId: service.id }).exec();
         const currTherapeuticIds = serviceTherapeuticIds.map((item: any) => item.therapeuticId.toString());

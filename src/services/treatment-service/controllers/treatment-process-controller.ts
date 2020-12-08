@@ -349,12 +349,20 @@ export class TreatmentProcessController extends BaseController {
           where: { id: treatmentProcess.procedures[i].procedureId.staffId },
           raw: true
         });
+        const assistant = await StaffModel.findOne({
+          where: { id: treatmentProcess.procedures[i].assistantId },
+          raw: true
+        });
         treatmentProcess.procedures[i] = {
+          ...treatmentProcess.procedures[i]._doc,
           ...treatmentProcess.procedures[i].procedureId._doc,
           service: service,
           staff: staff,
+          assistant: assistant,
+          assistantId: undefined,
           staffId: undefined,
-          serviceId: undefined
+          serviceId: undefined,
+          procedureId: undefined
         };
       }
       return res.status(httpStatus.OK).send(buildSuccessMessage(treatmentProcess));
