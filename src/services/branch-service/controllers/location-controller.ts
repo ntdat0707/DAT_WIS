@@ -138,6 +138,9 @@ export class LocationController {
    *       type: array
    *       items:
    *           type: object
+   *     - in: "formData"
+   *       name: "prefixCode"
+   *       type: string
    *     responses:
    *       200:
    *         description:
@@ -169,7 +172,8 @@ export class LocationController {
         openedAt: req.body.openedAt,
         placeId: req.body.placeId,
         addressInfor: req.body.addressInfor,
-        fullAddress: req.body.fullAddress
+        fullAddress: req.body.fullAddress,
+        prefixCode: req.body.prefixCode
       };
       const validateErrors = validate(data, createLocationSchema);
       if (validateErrors) {
@@ -247,20 +251,20 @@ export class LocationController {
       if (!existLocation) {
         updateStaff = true;
       }
-      //check prefixCode
-      // if (data.prefixCode) {
-      //   const prefixCode = await LocationModel.findOne({
-      //     where: {
-      //       prefixCode: data.prefixCode
-      //     }
-      //   });
-      //   if (prefixCode) {
-      //     throw new CustomError(
-      //       locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
-      //       HttpStatus.BAD_REQUEST
-      //     );
-      //   }
-      // }
+      // check prefixCode
+      if (data.prefixCode) {
+        const prefixCode = await LocationModel.findOne({
+          where: {
+            prefixCode: data.prefixCode
+          }
+        });
+        if (prefixCode) {
+          throw new CustomError(
+            locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+            HttpStatus.BAD_REQUEST
+          );
+        }
+      }
 
       // start transaction
       transaction = await sequelize.transaction();
@@ -786,6 +790,9 @@ export class LocationController {
    *       type: array
    *       items:
    *          type: string
+   *     - in: "formData"
+   *       name: prefixCode
+   *       type: string
    *     responses:
    *       200:
    *         description:
@@ -851,8 +858,8 @@ export class LocationController {
         countryCode: location.countryCode,
         provinceCode: location.provinceCode,
         street: location.street,
-        streetCode: location.streetCode
-        // prefixCode: body.prefixCode
+        streetCode: location.streetCode,
+        prefixCode: body.prefixCode
       };
 
       if (body.placeId && body.placeId !== location.placeId) {
@@ -897,6 +904,19 @@ export class LocationController {
           throw new CustomError(locationErrorDetails.E_1008(), HttpStatus.BAD_REQUEST);
         }
         data.placeId = body.placeId;
+      }
+      if (data.prefixCode) {
+        const prefixCode = await LocationModel.findOne({
+          where: {
+            prefixCode: data.prefixCode
+          }
+        });
+        if (prefixCode) {
+          throw new CustomError(
+            locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+            HttpStatus.BAD_REQUEST
+          );
+        }
       }
 
       // start transaction
