@@ -120,8 +120,7 @@ export class BaseController {
         }
       }
       const result = appointmentDetails.map((element, i) => ({
-        ...element,
-        ...{ duration: servicesFind[i].duration }
+        ...element
       }));
       return result;
     } catch (error) {

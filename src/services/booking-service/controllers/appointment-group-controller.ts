@@ -98,7 +98,7 @@ export class AppointmentGroupController extends BaseController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       403:
    *         description: Forbidden
    *       500:
@@ -133,7 +133,7 @@ export class AppointmentGroupController extends BaseController {
       if (countPrimary !== 1) {
         throw new CustomError(bookingErrorDetails.E_2006(), HttpStatus.BAD_REQUEST);
       }
-      // veriry appointment details
+      // verify appointment details
       if (verifyAppointmentDetailTask.length > 0) {
         const verifyAppointmentDetailResults = await Promise.all(verifyAppointmentDetailTask);
         for (const verifyResult of verifyAppointmentDetailResults) {
@@ -142,7 +142,7 @@ export class AppointmentGroupController extends BaseController {
       }
       const appointmentIds = [];
       const newAppointmentGroupId = uuidv4();
-      //create appoinment
+      //create appointment
       const createAppointmentTasks = [];
       const createAppointmentDetailTasks = [];
       const createAppointmentDetailStaffTasks = [];
@@ -212,6 +212,7 @@ export class AppointmentGroupController extends BaseController {
             serviceId: apptDetailData.serviceId,
             startTime: apptDetailData.startTime,
             resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+            duration: apptDetailData.duration,
             status: statusAppDetail
           });
 
@@ -422,29 +423,6 @@ export class AppointmentGroupController extends BaseController {
   /**
    * @swagger
    * definitions:
-   *   CreateNewAppointmentDetail:
-   *       required:
-   *           - serviceId
-   *           - staffIds
-   *           - startTime
-   *       properties:
-   *           resourceId:
-   *               type: string
-   *           startTime:
-   *               type: string
-   *               format: date-time
-   *               description: YYYY-MM-DD HH:mm:ss
-   *           serviceId:
-   *               type: string
-   *           staffIds:
-   *               type: array
-   *               items:
-   *                   type: string
-   *
-   */
-  /**
-   * @swagger
-   * definitions:
    *   UpdateAppointmentInGroup:
    *       required:
    *           - isPrimary
@@ -509,7 +487,7 @@ export class AppointmentGroupController extends BaseController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       403:
    *         description: Forbidden
    *       500:
@@ -664,14 +642,14 @@ export class AppointmentGroupController extends BaseController {
           // if (apt.isPrimary === true) countPrimary++;
           verifyAppointmentDetailTask.push(this.verifyAppointmentDetails(apt.appointmentDetails, data.locationId));
         }
-        // veriry appointment details
+        // verify appointment details
         if (verifyAppointmentDetailTask.length > 0) {
           const verifyAppointmentDetailResults = await Promise.all(verifyAppointmentDetailTask);
           for (const verifyResult of verifyAppointmentDetailResults) {
             if (verifyResult instanceof CustomError) throw verifyResult;
           }
         }
-        //create appoinment
+        //create appointment
         const createAppointmentTasks = [];
         const createAppointmentDetailTasks = [];
         const createAppointmentDetailStaffTasks = [];
@@ -727,6 +705,7 @@ export class AppointmentGroupController extends BaseController {
               serviceId: apptDetailData.serviceId,
               startTime: apptDetailData.startTime,
               resourceId: apptDetailData.resourceId ? apptDetailData.resourceId : null,
+              duration: apptDetailData.duration,
               status: statusAppDetail
             });
 
