@@ -546,9 +546,7 @@ export class TreatmentProcessController extends BaseController {
       for (const item of dataInput.procedures) {
         const procedure = await ProcedureModel.findById(item.procedureId).exec();
         const currProcedures = treatmentProcess.procedures.map((x: any) => x.procedureId.toString());
-        // console.log('Current', currProcedures);
         const inputProcedures = dataInput.procedures.map((p: any) => p.procedureId.toString());
-        // console.log('input::', inputProcedures);
         if (currProcedures.length > inputProcedures.length) {
           if (!currProcedures.includes(inputProcedures)) {
             throw new CustomError(
