@@ -48,8 +48,8 @@ const createLocationSchema = Joi.object({
   openedAt: Joi.string().isoDate(),
   placeId: Joi.string().label('placeId'),
   fullAddress: Joi.string().label('fullAddress'),
-  addressInfor: Joi.array().required().min(3).items(Joi.object().required()).label('addressInfor')
-  // prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
+  addressInfor: Joi.array().required().min(3).items(Joi.object().required()).label('addressInfor'),
+  prefixCode: Joi.string().allow('null').uppercase().label('prefixCode')
 });
 
 const locationIdSchema = Joi.string()
@@ -175,8 +175,8 @@ const updateLocationSchema = Joi.object({
     .label('workingTimes'),
   placeId: Joi.string().label('placeId'),
   fullAddress: Joi.string().label('fullAddress'),
-  addressInfor: Joi.array().items(Joi.object().required()).label('addressInfor')
-  // prefixCode: Joi.string().min(1).max(10).uppercase().label('prefixCode')
+  addressInfor: Joi.array().items(Joi.object().required()).label('addressInfor'),
+  prefixCode: Joi.string().allow(null, '')
 });
 
 const searchSchema = Joi.object({

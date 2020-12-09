@@ -63,6 +63,10 @@ const treatmentErrorDetails = {
     const e = buildErrorDetail('E_3914', 'Therapeutic not found', detail);
     return e;
   },
+  E_3915(detail: string = null): IErrorDetail {
+    const e = buildErrorDetail('E_3915', 'Labo type not found', detail);
+    return e;
+  },
   // #Medical Document Errors
   E_4100(detail: string = null): IErrorDetail {
     const e = buildErrorDetail('E_4100', 'Medical Document not found', detail);

@@ -37,5 +37,6 @@ export class TreatmentProcessRoutes {
       isAuthenticated,
       this.treatmentProcessController.deleteTherapeutic
     );
+    this.router.get('/get-all-labo-type', isAuthenticated, this.treatmentProcessController.getAllLaboType);
   }
 }
