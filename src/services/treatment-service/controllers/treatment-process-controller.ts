@@ -363,6 +363,8 @@ export class TreatmentProcessController extends BaseController {
       });
       treatmentProcess = {
         ...treatmentProcess._doc,
+        labo: treatmentProcess.laboId ? treatmentProcess.laboId : '',
+        laboId: undefined,
         createdBy: creator,
         createdById: undefined
       };
@@ -544,15 +546,28 @@ export class TreatmentProcessController extends BaseController {
       for (const item of dataInput.procedures) {
         const procedure = await ProcedureModel.findById(item.procedureId).exec();
         const currProcedures = treatmentProcess.procedures.map((x: any) => x.procedureId.toString());
-        const inputProcedures = dataInput.procedures.map((p: any) => p.procedureId);
-        const diffProcedure = _.difference(currProcedures, inputProcedures);
-        if (diffProcedure.length > 0) {
-          throw new CustomError(
-            treatmentErrorDetails.E_3913(
-              `Procedure ${diffProcedure} not in this treatment process ${treatmentProcessId}`
-            ),
-            httpStatus.BAD_REQUEST
-          );
+        // console.log('Current', currProcedures);
+        const inputProcedures = dataInput.procedures.map((p: any) => p.procedureId.toString());
+        // console.log('input::', inputProcedures);
+        if (currProcedures.length > inputProcedures.length) {
+          if (!currProcedures.includes(inputProcedures)) {
+            throw new CustomError(
+              treatmentErrorDetails.E_3913(
+                `Procedure ${inputProcedures} not in this treatment process ${treatmentProcessId}`
+              ),
+              httpStatus.BAD_REQUEST
+            );
+          }
+        } else {
+          const diffProcedure = _.difference(currProcedures, inputProcedures);
+          if (diffProcedure.length > 0) {
+            throw new CustomError(
+              treatmentErrorDetails.E_3913(
+                `Procedure ${diffProcedure} not in this treatment process ${treatmentProcessId}`
+              ),
+              httpStatus.BAD_REQUEST
+            );
+          }
         }
         if (item.progress > 0 && item.progress < 100) {
           procedure.status = EStatusProcedure.INPROGRESS;
@@ -604,7 +619,15 @@ export class TreatmentProcessController extends BaseController {
           );
         }
         if (!dataInput.labo.laboId) {
-          const labo = new LaboModel(dataInput.labo);
+          const laboData = {
+            ...dataInput.labo,
+            customerId: customer.id,
+            customerName: customer.firstName,
+            staffId: staff.id,
+            staffName: staff.firstName,
+            laboTypeName: laboType.name
+          };
+          const labo = new LaboModel(laboData);
           dataInput.laboId = labo._id;
           await labo.save();
         } else {
@@ -615,7 +638,6 @@ export class TreatmentProcessController extends BaseController {
               httpStatus.NOT_FOUND
             );
           }
-
           const laboData = {
             ...dataInput.labo,
             customerId: customer.id,
