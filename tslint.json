@@ -23,6 +23,10 @@
     "strict-type-predicates": true,
     "strict-boolean-expressions": [false, "allow-null-union", "allow-undefined-union", "ignore-rhs"],
     "prefer-for-of": false,
-    "object-literal-shorthand": false
+    "object-literal-shorthand": false,
+    "no-unused-variable": [true, { "ignore-pattern": "^_" }],
+    "variable-name": {
+      "options": ["ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"]
+    }
   }
 }
