@@ -361,13 +361,29 @@ export class TreatmentProcessController extends BaseController {
         where: { id: treatmentProcess.createdById },
         attributes: { exclude: ['password'] }
       });
-      treatmentProcess = {
-        ...treatmentProcess._doc,
-        labo: treatmentProcess.laboId ? treatmentProcess.laboId : '',
-        laboId: undefined,
-        createdBy: creator,
-        createdById: undefined
-      };
+      if (treatmentProcess.laboId) {
+        const labo = treatmentProcess.laboId ? treatmentProcess.laboId : '';
+        const laboStaff = await StaffModel.findOne({ where: { id: labo.staffId } });
+        treatmentProcess = {
+          ...treatmentProcess._doc,
+          labo: labo,
+          laboId: undefined,
+          createdBy: creator,
+          createdById: undefined
+        };
+        treatmentProcess.labo = {
+          ...treatmentProcess.labo._doc,
+          staff: laboStaff,
+          staffName: undefined,
+          staffId: undefined
+        };
+      } else {
+        treatmentProcess = {
+          ...treatmentProcess._doc,
+          createdBy: creator,
+          createdById: undefined
+        };
+      }
       for (let i = 0; i < treatmentProcess.procedures.length; i++) {
         const service = await ServiceModel.findOne({
           where: { id: treatmentProcess.procedures[i].procedureId.serviceId },
