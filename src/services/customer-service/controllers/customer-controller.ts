@@ -129,7 +129,7 @@ export class CustomerController {
    *       name: birthDate
    *       type: string
    *     - in: "formData"
-   *       name: passport
+   *       name: passportNumber
    *       type: string
    *     - in: "formData"
    *       name: address

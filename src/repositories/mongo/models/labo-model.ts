@@ -5,6 +5,7 @@ interface ILabo extends mongoose.Document {
   customerName: string;
   staffId: string;
   staffName: string;
+  laboTypeId: string;
   laboTypeName: string;
   sentDate: Date;
   receivedDate: Date;
@@ -19,6 +20,7 @@ const LaboSchema = new mongoose.Schema({
   customerName: { type: String, required: true },
   staffId: { type: String, required: true },
   staffName: { type: String, required: true },
+  laboTypeId: { type: String, required: true },
   laboTypeName: { type: String, required: true },
   sentDate: { type: String, required: false },
   receivedDate: { type: String, required: false },
