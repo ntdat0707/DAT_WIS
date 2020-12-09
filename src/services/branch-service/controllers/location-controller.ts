@@ -905,19 +905,6 @@ export class LocationController {
         }
         data.placeId = body.placeId;
       }
-      if (data.prefixCode) {
-        const prefixCode = await LocationModel.findOne({
-          where: {
-            prefixCode: data.prefixCode
-          }
-        });
-        if (prefixCode) {
-          throw new CustomError(
-            locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
-            HttpStatus.BAD_REQUEST
-          );
-        }
-      }
 
       // start transaction
       transaction = await sequelize.transaction();
@@ -979,7 +966,7 @@ export class LocationController {
         await LocationImageModel.destroy({ where: { id: body.deleteImages }, transaction });
       }
 
-      if (files.length) {
+      if (files && files.length) {
         const images = (files as Express.Multer.File[]).map((x: any, index: number) => ({
           serviceId: location.id,
           path: x.location,
@@ -987,22 +974,25 @@ export class LocationController {
         }));
         await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
-
-      //check prefixCode
-
-      // if (data.prefixCode) {
-      //   const prefixCode = await LocationModel.findOne({
-      //     where: {
-      //       prefixCode: data.prefixCode
-      //     }
-      //   });
-      //   if (prefixCode) {
-      //     throw new CustomError(
-      //       locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
-      //       HttpStatus.BAD_REQUEST
-      //     );
-      //   }
       // }
+      if (data.prefixCode) {
+        const prefixCode = await LocationModel.findOne({
+          where: {
+            prefixCode: data.prefixCode
+          }
+        });
+        if (prefixCode) {
+          throw new CustomError(
+            locationErrorDetails.E_1011(`Prefix code ${data.prefixCode} is existed`),
+            HttpStatus.BAD_REQUEST
+          );
+        }
+      } else {
+        if (data.prefixCode === '') {
+          await LocationModel.update(data.prefixCode, { where: { id: params.locationId }, transaction });
+        }
+      }
+
       await LocationModel.update(data, { where: { id: params.locationId }, transaction });
       //commit transaction
       await transaction.commit();

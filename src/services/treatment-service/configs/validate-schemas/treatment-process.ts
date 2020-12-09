@@ -65,7 +65,7 @@ const createTreatmentProcessSchema = Joi.object({
       })
       .required()
       .label('staffId'),
-    labo: Joi.string().required().label('labo'),
+    laboTypeId: Joi.string().required().label('laboTypeId'),
     sentDate: Joi.date().allow(null).label('sentDate'),
     receivedDate: Joi.date().allow(null).label('sentDate'),
     diagnostic: Joi.string().required().label('diagnostic'),
@@ -143,7 +143,7 @@ const updateTreatmentProcessSchema = Joi.object({
       })
       .required()
       .label('staffId'),
-    labo: Joi.string().required().label('labo'),
+    laboTypeId: Joi.string().required().label('laboTypeId'),
     sentDate: Joi.date().allow(null).label('sentDate'),
     receivedDate: Joi.date().allow(null).label('sentDate'),
     diagnostic: Joi.string().required().label('diagnostic'),

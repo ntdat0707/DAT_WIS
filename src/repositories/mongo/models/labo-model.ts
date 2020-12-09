@@ -2,9 +2,10 @@ import mongoose from 'mongoose';
 
 interface ILabo extends mongoose.Document {
   customerId: string;
+  customerName: string;
   staffId: string;
-  laboType: string;
-  serviceId: string;
+  staffName: string;
+  laboTypeName: string;
   sentDate: Date;
   receivedDate: Date;
   diagnostic: string;
@@ -15,8 +16,10 @@ interface ILabo extends mongoose.Document {
 
 const LaboSchema = new mongoose.Schema({
   customerId: { type: String, required: true },
+  customerName: { type: String, required: true },
   staffId: { type: String, required: true },
-  labo: { type: String, required: true },
+  staffName: { type: String, required: true },
+  laboTypeName: { type: String, required: true },
   sentDate: { type: String, required: false },
   receivedDate: { type: String, required: false },
   diagnostic: { type: String, required: true },

@@ -32,6 +32,7 @@ import { serviceIdSchema } from '../../branch-service/configs/validate-schemas';
 import { TherapeuticTreatmentModel } from '../../../repositories/mongo/models/therapeutic-treatment-model';
 import { EStatusProcedure } from '../../../utils/consts';
 import { ServiceTherapeuticModel } from '../../../repositories/mongo/models/service-therapeutic-model';
+import { LaboTypeModel } from '../../../repositories/postgres/models/labo-type-model';
 
 export class TreatmentProcessController extends BaseController {
   /**
@@ -47,7 +48,7 @@ export class TreatmentProcessController extends BaseController {
    *               type: string
    *           staffId:
    *               type: string
-   *           labo:
+   *           laboTypeId:
    *               type: string
    *           sentDate:
    *               type: string
@@ -213,7 +214,22 @@ export class TreatmentProcessController extends BaseController {
             httpStatus.NOT_FOUND
           );
         }
-        const labo = new LaboModel(treatmentProcessData.labo);
+        const laboType = await LaboTypeModel.findOne({ where: { id: treatmentProcessData.labo.laboTypeId } });
+        if (!laboType) {
+          throw new CustomError(
+            treatmentErrorDetails.E_3915(`Labo type ${treatmentProcessData.labo.laboTypeId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
+        const laboData = {
+          ...treatmentProcessData.labo,
+          customerId: customer.id,
+          customerName: customer.firstName,
+          staffId: staff.id,
+          staffName: staff.firstName,
+          laboTypeName: laboType.name
+        };
+        const labo = new LaboModel(laboData);
         treatmentProcessData.laboId = labo._id;
         await labo.save();
       }
@@ -400,7 +416,7 @@ export class TreatmentProcessController extends BaseController {
    *               type: string
    *           staffId:
    *               type: string
-   *           labo:
+   *           laboTypeId:
    *               type: string
    *           sentDate:
    *               type: string
@@ -580,6 +596,13 @@ export class TreatmentProcessController extends BaseController {
             httpStatus.NOT_FOUND
           );
         }
+        const laboType = await LaboTypeModel.findOne({ where: { id: dataInput.labo.laboTypeId } });
+        if (!laboType) {
+          throw new CustomError(
+            treatmentErrorDetails.E_3915(`Labo type ${dataInput.labo.laboTypeId} not found`),
+            httpStatus.NOT_FOUND
+          );
+        }
         if (!dataInput.labo.laboId) {
           const labo = new LaboModel(dataInput.labo);
           dataInput.laboId = labo._id;
@@ -592,7 +615,16 @@ export class TreatmentProcessController extends BaseController {
               httpStatus.NOT_FOUND
             );
           }
-          await LaboModel.updateOne({ _id: dataInput.labo.laboId }, dataInput.labo).exec();
+
+          const laboData = {
+            ...dataInput.labo,
+            customerId: customer.id,
+            customerName: customer.firstName,
+            staffId: staff.id,
+            staffName: staff.firstName,
+            laboTypeName: laboType.name
+          };
+          await LaboModel.updateOne({ _id: dataInput.labo.laboId }, laboData).exec();
         }
       }
       dataInput.createdById = treatmentProcess.createdById;
@@ -751,6 +783,32 @@ export class TreatmentProcessController extends BaseController {
       await TherapeuticTreatmentModel.findByIdAndDelete(therapeuticId).exec();
       await ServiceTherapeuticModel.deleteMany({ therapeuticId: therapeuticId }).exec();
       return res.status(httpStatus.OK).send();
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * @swagger
+   * /treatment/treatment-process/get-all-labo-type:
+   *   get:
+   *     tags:
+   *       - Treatment Process
+   *     security:
+   *       - Bearer: []
+   *     name: getAllLaboType
+   *     responses:
+   *       200:
+   *         description: success
+   *       400:
+   *         description: bad request
+   *       500:
+   *         description:
+   */
+  public getAllLaboType = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const laboTypes = await LaboTypeModel.findAll({ attributes: ['id', 'name'] });
+      return res.status(httpStatus.OK).send(buildSuccessMessage(laboTypes));
     } catch (error) {
       return next(error);
     }

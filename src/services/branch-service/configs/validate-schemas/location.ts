@@ -176,7 +176,7 @@ const updateLocationSchema = Joi.object({
   placeId: Joi.string().label('placeId'),
   fullAddress: Joi.string().label('fullAddress'),
   addressInfor: Joi.array().items(Joi.object().required()).label('addressInfor'),
-  prefixCode: Joi.string().allow('null').uppercase().label('prefixCode')
+  prefixCode: Joi.string().allow(null, '')
 });
 
 const searchSchema = Joi.object({
