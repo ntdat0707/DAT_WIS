@@ -974,7 +974,6 @@ export class LocationController {
         }));
         await LocationImageModel.bulkCreate(images, { transaction: transaction });
       }
-      // }
       if (data.prefixCode) {
         const prefixCode = await LocationModel.findOne({
           where: {
