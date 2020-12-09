@@ -553,7 +553,7 @@ export class TreatmentProcessController extends BaseController {
               treatmentErrorDetails.E_3913(
                 `Procedure ${inputProcedures} not in this treatment process ${treatmentProcessId}`
               ),
-              httpStatus.BAD_REQUEST
+              httpStatus.NOT_FOUND
             );
           }
         } else {
@@ -563,7 +563,7 @@ export class TreatmentProcessController extends BaseController {
               treatmentErrorDetails.E_3913(
                 `Procedure ${diffProcedure} not in this treatment process ${treatmentProcessId}`
               ),
-              httpStatus.BAD_REQUEST
+              httpStatus.NOT_FOUND
             );
           }
         }
