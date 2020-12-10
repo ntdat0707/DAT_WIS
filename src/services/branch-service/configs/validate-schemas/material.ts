@@ -7,4 +7,18 @@ const createMaterialSchema = Joi.object({
   price: Joi.string().required().label('price')
 });
 
-export { createMaterialSchema };
+const materialIdSchema = Joi.string()
+  .guid({ version: ['uuidv4'] })
+  .label('materialId');
+
+const updateMaterialSchema = Joi.object({
+  materialId: Joi.string()
+    .required()
+    .guid({ version: ['uuidv4'] })
+    .label('materialId'),
+  code: Joi.string().label('code'),
+  name: Joi.string().label('name'),
+  unit: Joi.string().label('unit'),
+  price: Joi.string().label('price')
+});
+export { createMaterialSchema, materialIdSchema, updateMaterialSchema };
