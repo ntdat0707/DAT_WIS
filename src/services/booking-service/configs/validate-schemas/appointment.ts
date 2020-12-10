@@ -52,7 +52,8 @@ const createAppointmentSchema = Joi.object({
     .guid({
       version: ['uuidv4']
     })
-    .label('relatedAppointmentId')
+    .label('relatedAppointmentId'),
+  note: Joi.string().allow('', null).label('note')
 });
 
 const customerCreateAppointmentSchema = Joi.object({
@@ -147,6 +148,7 @@ const updateAppointmentSchema = Joi.object({
     .required()
     .label('locationId'),
   date: Joi.string().isoDate(),
+  note: Joi.string().allow('', null).label('note'),
   createNewAppointmentDetails: Joi.array()
     .items(
       Joi.object({

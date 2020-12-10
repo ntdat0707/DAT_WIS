@@ -111,6 +111,8 @@ export class AppointmentController extends BaseController {
    *               type: array
    *               items:
    *                   $ref: '#/definitions/CreateAppointmentDetail'
+   *           note:
+   *               type: string
    *
    */
 
@@ -156,7 +158,8 @@ export class AppointmentController extends BaseController {
         appointmentDetails: req.body.appointmentDetails,
         bookingSource: req.body.bookingSource ? req.body.bookingSource : EAppointmentBookingSource.SCHEDULED,
         appointmentGroupId: req.body.appointmentGroupId,
-        relatedAppointmentId: req.body.relatedAppointmentId
+        relatedAppointmentId: req.body.relatedAppointmentId,
+        note: req.body.note
       };
       //validate req.body
       const validateErrors = validate(dataInput, createAppointmentSchema);
@@ -834,7 +837,8 @@ export class AppointmentController extends BaseController {
    *               type: array
    *               items:
    *                   $ref: '#/definitions/CreateNewAppointment'
-   *
+   *           note:
+   *               type: string
    */
   /**
    * @swagger
@@ -878,7 +882,8 @@ export class AppointmentController extends BaseController {
         deleteAppointmentDetails: req.body.deleteAppointmentDetails,
         createNewAppointments: req.body.createNewAppointments,
         customerWisereId: req.body.customerWisereId,
-        date: req.body.date
+        date: req.body.date,
+        note: req.body.note
       };
 
       const validateErrors = validate(data, updateAppointmentSchema);
@@ -930,7 +935,7 @@ export class AppointmentController extends BaseController {
       }
       // start transaction
       transaction = await sequelize.transaction();
-
+      //update note on appointment
       let appointmentGroupId = null;
       const appointmentIds = [];
       if (appointment.date !== data.date) {
@@ -1040,7 +1045,8 @@ export class AppointmentController extends BaseController {
       const appointmentData: any = {
         date: data.date,
         customerWisereId: data.customerWisereId ? data.customerWisereId : appointment.customerWisereId,
-        appointmentGroupId: appointmentGroupId
+        appointmentGroupId: appointmentGroupId,
+        note: data.note
       };
       await AppointmentModel.update(appointmentData, { where: { id: data.appointmentId }, transaction });
 
