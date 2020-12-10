@@ -6,6 +6,7 @@ import { MaterialModel } from '../../../repositories/postgres/models';
 import { validate } from '../../../utils/validator';
 import { createMaterialSchema } from '../configs/validate-schemas';
 import { CustomError } from '../../../utils/error-handlers';
+import { materialErrorDetails } from '../../../utils/response-messages/error-details/branch';
 
 export class MaterialController {
   /**
@@ -66,7 +67,7 @@ export class MaterialController {
 
   /**
    * @swagger
-   * /branch/material/get-all-material:
+   * /branch/material/create-material:
    *   post:
    *     tags:
    *       - Material
@@ -77,11 +78,11 @@ export class MaterialController {
    *     - multipart/form-data
    *     parameters:
    *     - in: "formData"
-   *       name: materialId
+   *       name: code
    *       type: string
    *       required: true
    *     - in: "formData"
-   *       name: materailName
+   *       name: name
    *       type: string
    *       required: true
    *     - in: "formData"
@@ -95,6 +96,7 @@ export class MaterialController {
    *     - in: "formData"
    *       name: image
    *       type: file
+   *       required: true
    *     responses:
    *       200:
    *         description:
@@ -107,8 +109,8 @@ export class MaterialController {
    */
   public createMaterial = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const data = {
-        code: req.body.materialId,
+      const data: any = {
+        code: req.body.code,
         name: req.body.name,
         unit: req.body.unit,
         price: req.body.price
@@ -117,6 +119,20 @@ export class MaterialController {
       if (validateErrors) {
         throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
       }
+      if (req.file) {
+        data.path = (req.file as any).location;
+      } else {
+        throw new CustomError(materialErrorDetails.E_1300(`File upload not found`), HttpStatus.NOT_FOUND);
+      }
+      const checkExistCode = await MaterialModel.findOne({ where: { code: data.code } });
+      if (checkExistCode) {
+        throw new CustomError(
+          materialErrorDetails.E_1301(`material code ${data.code} already exists`),
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      const material = await MaterialModel.create(data);
+      return res.status(HttpStatus.OK).send(buildSuccessMessage(material));
     } catch (error) {
       return next(error);
     }
