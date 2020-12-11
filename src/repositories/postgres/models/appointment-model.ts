@@ -17,6 +17,7 @@ class AppointmentModel extends Model {
   public appointmentCode!: string;
   public contentReview: string;
   public numberRating: number;
+  public note: string;
   public readonly createdAt!: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date;
@@ -99,6 +100,11 @@ AppointmentModel.init(
     numberRating: {
       field: 'number_rating',
       type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    note: {
+      field: 'note',
+      type: DataTypes.STRING,
       allowNull: true
     },
     createdAt: {
