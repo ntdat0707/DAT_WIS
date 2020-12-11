@@ -19,5 +19,13 @@ export class MaterialRoutes {
       uploadAsMiddleware('image'),
       this.materialController.createMaterial
     );
+    this.router.post('/create-material', isAuthenticated, this.materialController.createMaterial);
+    this.router.delete('/delete-material/:materialId', isAuthenticated, this.materialController.deleteMaterial);
+    this.router.put(
+      '/update-material/:materialId',
+      uploadAsMiddleware('image'),
+      isAuthenticated,
+      this.materialController.updateMaterial
+    );
   }
 }

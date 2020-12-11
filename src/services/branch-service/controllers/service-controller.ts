@@ -1120,7 +1120,7 @@ export class ServiceController {
             materialId: materialId,
             serviceId: service.id
           }));
-          await ServiceMaterialModel.bulkCreate(materials, { transaction: transaction });
+          await ServiceMaterialModel.bulkCreate(materials, { transaction });
         }
       }
       const data: any = {

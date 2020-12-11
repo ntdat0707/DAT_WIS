@@ -2,12 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatus from 'http-status-codes';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
-import { MaterialModel } from '../../../repositories/postgres/models';
+import { MaterialModel, ServiceMaterialModel } from '../../../repositories/postgres/models';
 import { validate } from '../../../utils/validator';
 import { createMaterialSchema, materialIdSchema, updateMaterialSchema } from '../configs/validate-schemas';
 import { CustomError } from '../../../utils/error-handlers';
 import { materialErrorDetails } from '../../../utils/response-messages/error-details/branch';
-import { Op } from 'sequelize/types';
+import { Op } from 'sequelize';
 
 export class MaterialController {
   /**
@@ -156,7 +156,7 @@ export class MaterialController {
   /**
    * @swagger
    * /branch/material/update-material/{materialId}:
-   *   post:
+   *   put:
    *     tags:
    *       - Material
    *     security:
@@ -230,7 +230,7 @@ export class MaterialController {
   /**
    * @swagger
    * /branch/material/delete-material/{materialId}:
-   *   get:
+   *   delete:
    *     tags:
    *       - Material
    *     security:
@@ -262,6 +262,7 @@ export class MaterialController {
         throw new CustomError(materialErrorDetails.E_1302(`Material ${req.params.materialId} not found`));
       }
       await MaterialModel.destroy({ where: { id: req.params.materialId } });
+      await ServiceMaterialModel.destroy({ where: { materialId: req.params.materialId } });
       return res.status(HttpStatus.OK).send();
     } catch (error) {
       return next(error);
