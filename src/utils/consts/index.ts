@@ -287,3 +287,10 @@ export enum ETraceability {
   BY_LOTS = 'BY_LOTS',
   BY_UNIQUE_SERIAL_NUMBER = 'BY_UNIQUE_SERIAL_NUMBER'
 }
+
+export enum EStatusQuotation {
+  NEW = 'new',
+  EXPIRED = 'expired',
+  DECLINED = 'declined',
+  INVOICED = 'invoiced'
+}
