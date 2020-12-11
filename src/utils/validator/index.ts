@@ -8,12 +8,8 @@ function validate(
   schema: Joi.Schema,
   validateOption: Joi.ValidationOptions = { abortEarly: false }
 ): IErrorDetail[] {
-  if (schema) {
-    const dataValidate: any = {};
-    for (const [key] of (schema as any)._ids._byKey.entries()) {
-      dataValidate[key] = data[key];
-    }
-    const { error } = schema.validate(dataValidate, validateOption);
+  if (schema) { 
+    const { error } = schema.validate(data, validateOption);
     if (error) {
       const e = format(error);
       return e;
