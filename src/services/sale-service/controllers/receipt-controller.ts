@@ -467,7 +467,7 @@ export class ReceiptController {
       const companyId = res.locals.staffPayload.companyId;
       const paymentMethod = await PaymentMethodModel.findAll({
         where: { companyId: companyId },
-        order: [['updatedAt', 'DESC']]
+        order: [['createdAt', 'DESC']]
       });
       return res.status(HttpStatus.OK).send(buildSuccessMessage(paymentMethod));
     } catch (error) {
