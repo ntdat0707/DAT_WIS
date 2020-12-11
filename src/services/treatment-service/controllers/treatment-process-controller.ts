@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { CustomError } from '../../../utils/error-handlers';
-import { validate } from '../../../utils/validator';
+import { validate, baseValidateSchemas } from '../../../utils/validator';
 import { BaseController } from '../../../services/booking-service/controllers/base-controller';
 import {
   TreatmentProcessModel,
@@ -33,6 +33,7 @@ import { TherapeuticTreatmentModel } from '../../../repositories/mongo/models/th
 import { EStatusProcedure } from '../../../utils/consts';
 import { ServiceTherapeuticModel } from '../../../repositories/mongo/models/service-therapeutic-model';
 import { LaboTypeModel } from '../../../repositories/postgres/models/labo-type-model';
+import {paginateMongo} from '../../../utils/paginator';
 
 export class TreatmentProcessController extends BaseController {
   /**
@@ -247,9 +248,18 @@ export class TreatmentProcessController extends BaseController {
    *   get:
    *     tags:
    *       - Treatment Process
-   *     security:
-   *       - Bearer: []
    *     name: getAllMedicine
+   *     parameters:
+   *       - in: query
+   *         name: pageNum
+   *         required: true
+   *         schema:
+   *            type: integer
+   *       - in: query
+   *         name: pageSize
+   *         required: true
+   *         schema:
+   *            type: integer
    *     responses:
    *       200:
    *         description: success
@@ -260,7 +270,23 @@ export class TreatmentProcessController extends BaseController {
    */
   public getAllMedicine = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const medicines = await MedicineModel.find({}).exec();
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) {
+        throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+      }
+
+      const queryMedicine = {};
+      const medicines = await paginateMongo(
+        MedicineModel,
+        queryMedicine,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
       return res.status(httpStatus.OK).send(buildSuccessMessage(medicines));
     } catch (error) {
       return next(error);
@@ -727,7 +753,7 @@ export class TreatmentProcessController extends BaseController {
    *       500:
    *         description:
    */
-  public getAllTherapeutic = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllTherapeutic = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const therapeutic = await TherapeuticTreatmentModel.find().select('name therapeuticId').exec();
       return res.status(httpStatus.OK).send(buildSuccessMessage(therapeutic));
@@ -841,7 +867,7 @@ export class TreatmentProcessController extends BaseController {
    *       500:
    *         description:
    */
-  public getAllLaboType = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllLaboType = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const laboTypes = await LaboTypeModel.findAll({ attributes: ['id', 'name'] });
       return res.status(httpStatus.OK).send(buildSuccessMessage(laboTypes));

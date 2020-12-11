@@ -1,9 +1,12 @@
-import { Model } from 'sequelize';
+import { Model as ModelSequelize} from 'sequelize';
+import { Model as ModelMongo, FilterQuery } from 'mongoose';
 // import { Client, SearchParams } from 'elasticsearch';
 import { Client } from '@elastic/elasticsearch';
+
 type NonAbstract<T> = { [P in keyof T]: T[P] };
 type Constructor<T> = new () => T;
-type NonAbstractTypeOfModel<T> = Constructor<T> & NonAbstract<typeof Model>;
+type NonAbstractTypeOfModelSequelize<T> = Constructor<T> & NonAbstract<typeof ModelSequelize>;
+type NonAbstractTypeOfModelMongo<T> = Constructor<T> & NonAbstract<typeof ModelMongo>;
 
 interface IPaginateOptions {
   pageNum: number;
@@ -25,9 +28,90 @@ interface IPagination {
   };
   _isPagination: boolean;
 }
+
 // /query
-const paginate = async <T extends Model<T>>(
-  model: NonAbstractTypeOfModel<T>,
+const paginateMongo = async <T>(
+  model: NonAbstractTypeOfModelMongo<T>,
+  query: FilterQuery<T>,
+  paginateOptions: IPaginateOptions,
+  currentUrl: string
+): Promise<IPagination> => {
+  try {
+    //  clone query to find all
+    const queryFindData: { [key: string]: any } = { ...query };
+    const skip = paginateOptions.pageSize * (paginateOptions.pageNum - 1);
+    const limit = paginateOptions.pageSize;
+    // queryFindData.distinct = true;
+
+    // Count meta totalPages
+    const totalRecords: number = await model.count(queryFindData).exec();
+    const totalPages: number = Math.ceil(totalRecords / paginateOptions.pageSize);
+
+    // get data
+    const data = await model.find(queryFindData).skip(skip).limit(limit).exec();
+
+    // calculate links
+    let firstURL: URL = null;
+    let prevURL: URL = null;
+    let nextURL: URL = null;
+    let lastURL: URL = null;
+
+    if (Array.isArray(data) && data.length > 0) {
+      //first
+      firstURL = new URL(currentUrl);
+      const firstPageSize = totalRecords > paginateOptions.pageSize ? paginateOptions.pageSize : totalRecords;
+      firstURL.searchParams.set('pageNum', '1');
+      firstURL.searchParams.set('pageSize', firstPageSize.toString());
+      //prev
+      if (paginateOptions.pageNum > 1) {
+        prevURL = new URL(currentUrl);
+        const prevPageNum = paginateOptions.pageNum - 1;
+        prevURL.searchParams.set('pageNum', prevPageNum.toString());
+        prevURL.searchParams.set('pageSize', paginateOptions.pageSize.toString());
+      }
+
+      // last
+      lastURL = new URL(currentUrl);
+      const lastPageNum = totalPages;
+      const lastPageSize = totalRecords % (totalPages - 1) ? totalRecords % (totalPages - 1) : paginateOptions.pageSize;
+      lastURL.searchParams.set('pageNum', lastPageNum.toString());
+      lastURL.searchParams.set('pageSize', lastPageSize.toString());
+
+      //next
+      if (paginateOptions.pageNum < totalPages) {
+        nextURL = new URL(currentUrl);
+        const nextPageNum = paginateOptions.pageNum + 1;
+        const nextPageSize = nextPageNum === totalPages ? lastPageSize : paginateOptions.pageSize;
+        nextURL.searchParams.set('pageNum', nextPageNum.toString());
+        nextURL.searchParams.set('pageSize', nextPageSize.toString());
+      }
+    }
+
+    //prev
+    const result: IPagination = {
+      meta: {
+        totalPages,
+        totalRecords
+      },
+      data,
+      links: {
+        self: currentUrl,
+        first: firstURL ? firstURL.href : null,
+        prev: prevURL ? prevURL.href : null,
+        next: nextURL ? nextURL.href : null,
+        last: lastURL ? lastURL.href : null
+      },
+      _isPagination: true
+    };
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+const paginate = async <T extends ModelSequelize<T>>(
+  model: NonAbstractTypeOfModelSequelize<T>,
   query: { [key: string]: any },
   paginateOptions: IPaginateOptions,
   currentUrl: string
@@ -109,7 +193,7 @@ const paginate = async <T extends Model<T>>(
   }
 };
 
-const paginateRawData = <T extends Model<T>>(
+const paginateRawData = (
   dataRaw: any[],
   paginateOptions: IPaginateOptions,
   currentUrl: string
@@ -184,7 +268,7 @@ const paginateRawData = <T extends Model<T>>(
   }
 };
 
-const paginateElasticSearch = async <T extends Model<T>>(
+const paginateElasticSearch = async (
   client: Client,
   searchParams: any,
   paginateOptions: IPaginateOptions,
@@ -273,4 +357,12 @@ const paginateElasticSearch = async <T extends Model<T>>(
   }
 };
 
-export { paginate, paginateRawData, paginateElasticSearch, IPagination, IPaginateOptions };
+export {
+  paginate,
+  paginateMongo,
+  paginateRawData,
+  paginateElasticSearch,
+  IPagination,
+  IPaginateOptions
+};
+
