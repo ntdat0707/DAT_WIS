@@ -239,6 +239,9 @@ InvoiceModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as
 LocationModel.hasMany(InvoiceModel, { foreignKey: 'locationId', sourceKey: 'id', as: 'invoices' });
 InvoiceModel.belongsTo(LocationModel, { foreignKey: 'locationId', as: 'location' });
 
+AppointmentModel.hasMany(InvoiceModel, { foreignKey: 'appointmentId', sourceKey: 'id', as: 'invoices' });
+InvoiceModel.belongsTo(AppointmentModel, { foreignKey: 'appointmentId', as: 'appointment' });
+
 CustomerWisereModel.hasMany(ReceiptModel, { foreignKey: 'customerWisereId', sourceKey: 'id', as: 'receipts' });
 ReceiptModel.belongsTo(CustomerWisereModel, { foreignKey: 'customerWisereId', as: 'customerWisere' });
 
