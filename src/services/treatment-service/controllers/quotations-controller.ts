@@ -77,7 +77,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/create-quotations:
    *   post:
    *     tags:
-   *       - Treatment
+   *       - Quotation
    *     security:
    *       - Bearer: []
    *     name: createQuotations
@@ -207,7 +207,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/get-quotations/{treatmentId}:
    *   get:
    *     tags:
-   *       - Treatment
+   *       - Quotation
    *     security:
    *       - Bearer: []
    *     name: getQuotationsDental
@@ -333,7 +333,7 @@ export class QuotationsController extends BaseController {
    * /treatment/quotations/update-quotations-dental/{quotationsId}:
    *   put:
    *     tags:
-   *       - Treatment
+   *       - Quotation
    *     security:
    *       - Bearer: []
    *     name: updateQuotationsDental
@@ -481,4 +481,126 @@ export class QuotationsController extends BaseController {
       return next(error);
     }
   };
+
+  // /**
+  //  * @swagger
+  //  * /treatment/quotations/get-all-quotations:
+  //  *   get:
+  //  *     tags:
+  //  *       - Quotation
+  //  *     security:
+  //  *       - Bearer: []
+  //  *     name: getAllQuotations
+  //  *     parameters:
+  //  *       - in: query
+  //  *         name: fromDate
+  //  *         schema:
+  //  *            type: string
+  //  *       - in: query
+  //  *         name: toDate
+  //  *         schema:
+  //  *            type: string
+  //  *       - in: query
+  //  *         name: status
+  //  *         schema:
+  //  *            type: array
+  //  *            items:
+  //  *                type: string
+  //  *       - in: query
+  //  *         name: locationId
+  //  *         schema:
+  //  *            type: string
+  //  *       - in: query
+  //  *         name: pageNum
+  //  *         required: true
+  //  *         schema:
+  //  *            type: integer
+  //  *       - in: query
+  //  *         name: pageSize
+  //  *         required: true
+  //  *         schema:
+  //  *            type: integer
+  //  *     responses:
+  //  *       200:
+  //  *         description: success
+  //  *       400:
+  //  *         description: bad request
+  //  *       500:
+  //  *         description:
+  //  */
+  // public getAllQuotations = async (req: Request, res: Response, next: NextFunction) => {
+  //   try {
+  //     const conditions = {
+  //       fromDate: req.query.fromDate,
+  //       toDate: req.query.toDate,
+  //       status: req.query.status,
+  //       locationId: req.query.locationId
+  //     };
+  //     let validateErrors;
+  //     validateErrors = validate(conditions, filterQuotationSchema);
+  //     if (validateErrors) {
+  //       throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+  //     }
+  //     const fullPath = req.headers['x-base-url'] + req.originalUrl;
+  //     const paginateOptions = {
+  //       pageNum: req.query.pageNum,
+  //       pageSize: req.query.pageSize
+  //     };
+  //     validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+  //     if (validateErrors) {
+  //       throw new CustomError(validateErrors, httpStatus.BAD_REQUEST);
+  //     }
+  //     const { workingLocationIds } = res.locals.staffPayload;
+  //     const query: FindOptions = {
+  //       include: [
+  //         {
+  //           model: CustomerWisereModel,
+  //           as: 'customerWisere',
+  //           required: false
+  //         }
+  //       ],
+  //       order: [['createdAt', 'DESC']]
+  //     };
+  //     if (conditions.fromDate || conditions.toDate) {
+  //       const createdAt: any = {};
+  //       if (conditions.fromDate) {
+  //         createdAt[Op.gte] = conditions.fromDate;
+  //       }
+  //       if (conditions.toDate) {
+  //         createdAt[Op.lte] = conditions.toDate;
+  //       }
+  //       query.where = {
+  //         ...query.where,
+  //         createdAt
+  //       };
+  //     }
+  //     if (conditions.status) {
+  //       query.where = {
+  //         ...query.where,
+  //         status: conditions.status
+  //       };
+  //     }
+  //     const conditionLocationId = conditions.locationId
+  //       ? {
+  //           model: LocationModel,
+  //           as: 'location',
+  //           where: { id: conditions.locationId }
+  //         }
+  //       : {
+  //           model: LocationModel,
+  //           as: 'location',
+  //           where: { id: workingLocationIds }
+  //         };
+  //     query.include.push(conditionLocationId);
+  //     const invoices = await paginate(
+  //       InvoiceModel,
+  //       query,
+  //       { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+  //       fullPath
+  //     );
+  //     return res.status(httpStatus.OK).send(buildSuccessMessage(invoices));
+  //   } catch (error) {
+  //     return next(error);
+  //   }
+  // };
 }

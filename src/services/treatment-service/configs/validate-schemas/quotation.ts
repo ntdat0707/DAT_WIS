@@ -1,5 +1,6 @@
 import Joi from 'joi';
-import { EQuotationDiscountType, EQuotationCurrencyUnit, ETeeth } from '../../../../utils/consts';
+import { values } from 'lodash';
+import { EQuotationDiscountType, EQuotationCurrencyUnit, ETeeth, EStatusQuotation } from '../../../../utils/consts';
 import { TEETH_2H, TEETH_ADULT, TEETH_CHILD } from '../consts';
 
 const quotationsDentalDetailSchema = Joi.object({
@@ -41,7 +42,7 @@ const quotationsDentalDetailSchema = Joi.object({
 });
 
 const createQuotationsDentalSchema = Joi.object({
-  treatmentId: Joi.string().required().label('treatmentId'),
+  treatmentId: Joi.string().label('treatmentId'),
   locationId: Joi.string()
     .guid({
       version: ['uuidv4']
@@ -83,9 +84,24 @@ const quotationDentalIdSchema = Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
   .label('quotationDentalSchema');
 
+const filterQuotationSchema = Joi.object({
+  fromDate: Joi.string().isoDate().allow(null).label('fromDate'),
+  toDate: Joi.string().isoDate().allow(null).label('toDate'),
+  status: Joi.array()
+    .items(Joi.string().valid(...Object(values(EStatusQuotation))))
+    .allow(null)
+    .label('status'),
+  locationId: Joi.string()
+    .guid({
+      version: ['uuidv4']
+    })
+    .allow(null)
+    .label('locationId')
+});
 export {
   createQuotationsDentalSchema,
   updateQuotationsDentalSchema,
   quotationsDentalDetailSchema,
-  quotationDentalIdSchema
+  quotationDentalIdSchema,
+  filterQuotationSchema
 };
