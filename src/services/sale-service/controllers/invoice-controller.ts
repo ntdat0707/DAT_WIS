@@ -4,6 +4,7 @@ import { CustomError } from '../../../utils/error-handlers';
 import { baseValidateSchemas, validate } from '../../../utils/validator';
 import { createInvoiceSchema, invoiceIdSchema, filterInvoiceSchema } from '../configs/validate-schemas';
 import {
+  AppointmentDetailModel,
   AppointmentModel,
   CustomerWisereModel,
   DiscountModel,
@@ -524,6 +525,19 @@ export class InvoiceController {
             model: StaffModel,
             as: 'staff',
             attributes: ['id', 'firstName', 'lastName']
+          },
+          {
+            model: AppointmentModel,
+            as: 'appointment',
+            attributes: ['id'],
+            required: false,
+            include: [
+              {
+                model: AppointmentDetailModel,
+                as: 'appointmentDetails',
+                attributes: ['duration']
+              }
+            ]
           }
         ]
       });
