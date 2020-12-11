@@ -248,6 +248,8 @@ export class TreatmentProcessController extends BaseController {
    *   get:
    *     tags:
    *       - Treatment Process
+   *     security:
+   *       - Bearer: []
    *     name: getAllMedicine
    *     parameters:
    *       - in: query
