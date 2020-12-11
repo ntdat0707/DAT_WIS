@@ -89,7 +89,7 @@ export class TeamController {
             required: true
           }
         ],
-        order: [['updatedAt', 'DESC']]
+        order: [['createdAt', 'DESC']]
       };
       if (req.query.locationIds) {
         const diffLocation = _.difference(
@@ -212,15 +212,14 @@ export class TeamController {
           where: {
             teamId: req.params.parentId
           },
-          order: [['updatedAt', 'DESC']]
+          order: [['createdAt', 'DESC']]
         })
       ).map((subTeamId: any) => subTeamId.teamSubId);
       const query: FindOptions = {
         where: {
           id: { [Op.in]: subTeamIds }
         },
-        attributes: { exclude: ['createdAt', 'updatedAt', 'deletedAt'] },
-        order: [['updatedAt', 'DESC']]
+        order: [['createdAt', 'DESC']]
       };
 
       if (req.query.searchValue) {

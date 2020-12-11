@@ -3,11 +3,12 @@ import HttpStatus from 'http-status-codes';
 import { buildSuccessMessage } from '../../../utils/response-messages';
 
 import { MaterialModel, ServiceMaterialModel } from '../../../repositories/postgres/models';
-import { validate } from '../../../utils/validator';
+import { baseValidateSchemas, validate } from '../../../utils/validator';
 import { createMaterialSchema, materialIdSchema, updateMaterialSchema } from '../configs/validate-schemas';
 import { CustomError } from '../../../utils/error-handlers';
 import { materialErrorDetails } from '../../../utils/response-messages/error-details/branch';
-import { Op } from 'sequelize';
+import { FindOptions, Op } from 'sequelize';
+import { paginate } from '../../../utils/paginator';
 
 export class MaterialController {
   /**
@@ -19,6 +20,17 @@ export class MaterialController {
    *     security:
    *       - Bearer: []
    *     name: getMaterial
+   *     parameters:
+   *     - in: query
+   *       name: pageNum
+   *       required: true
+   *       schema:
+   *          type: integer
+   *     - in: query
+   *       name: pageSize
+   *       required: true
+   *       schema:
+   *          type: integer
    *     responses:
    *       200:
    *         description:
@@ -31,7 +43,24 @@ export class MaterialController {
    */
   public getAllMaterial = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const materials = await MaterialModel.findAll();
+      const paginateOptions = {
+        pageNum: req.query.pageNum,
+        pageSize: req.query.pageSize
+      };
+      const validateErrors = validate(paginateOptions, baseValidateSchemas.paginateOption);
+      if (validateErrors) throw new CustomError(validateErrors, HttpStatus.BAD_REQUEST);
+      const fullPath = req.headers['x-base-url'] + req.originalUrl;
+      const query: FindOptions = {
+        where: {
+          id: { [Op.ne]: null }
+        }
+      };
+      const materials = await paginate(
+        MaterialModel,
+        query,
+        { pageNum: Number(paginateOptions.pageNum), pageSize: Number(paginateOptions.pageSize) },
+        fullPath
+      );
       return res.status(HttpStatus.OK).send(buildSuccessMessage(materials));
     } catch (error) {
       return next(error);
