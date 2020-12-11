@@ -59,7 +59,7 @@ export class DealController {
    *       500:
    *         description: Internal server errors
    */
-  public getAllPipeline = async (req: Request, res: Response, next: NextFunction) => {
+  public getAllPipeline = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const staffId = res.locals.staffPayload.id;
       const pipelines = await PipelineModel.findAll({
@@ -99,7 +99,7 @@ export class DealController {
    *       200:
    *         description: success
    *       400:
-   *         description: Bad requets - input invalid format, header is invalid
+   *         description: Bad request - input invalid format, header is invalid
    *       500:
    *         description: Internal server errors
    */
