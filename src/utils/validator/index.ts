@@ -6,9 +6,9 @@ import { baseValidateSchemas } from './base-validate-schemas';
 function validate(
   data: any,
   schema: Joi.Schema,
-  validateOption: Joi.ValidationOptions = { abortEarly: false }
+  validateOption: Joi.ValidationOptions = { abortEarly: false, allowUnknown: true}
 ): IErrorDetail[] {
-  if (schema) { 
+  if (schema) {
     const { error } = schema.validate(data, validateOption);
     if (error) {
       const e = format(error);
