@@ -4,7 +4,6 @@ import sequelize from '../configs/db-connector';
 class MaterialModel extends Model {
   public id: string;
   public code!: string;
-  public nameVi: string;
   public name: string;
   public path: string;
   public unit!: string;
@@ -25,11 +24,6 @@ MaterialModel.init(
     code: {
       field: 'code',
       type: DataTypes.STRING,
-      allowNull: true
-    },
-    nameVi: {
-      field: 'name_vi',
-      type: DataTypes.STRING(255),
       allowNull: true
     },
     name: {

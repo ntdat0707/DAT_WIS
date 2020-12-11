@@ -19,7 +19,8 @@ import {
   LocationModel,
   sequelize,
   ResourceModel,
-  CompanyModel
+  CompanyModel,
+  ServiceMaterialModel
 } from '../../../repositories/postgres/models';
 import { Unaccent } from '../../../utils/unaccent';
 import { ServiceStaffModel } from '../../../repositories/postgres/models/service-staff';
@@ -119,6 +120,16 @@ export class ServiceController {
    *       type: array
    *       items:
    *          type: string
+   *     - in: "formData"
+   *       name: materials
+   *       type: array
+   *       items:
+   *            type: object
+   *            properties:
+   *                 materialId:
+   *                     type: string
+   *                 depreciation:
+   *                     type: number
    *     responses:
    *       200:
    *         description:
@@ -217,14 +228,14 @@ export class ServiceController {
       }
 
       // create service material
-      // if (body.materials) {
-      //   const materials = (body.materials as []).map((material: any) => ({
-      //     serviceId: service.id,
-      //     materialId: material.materialId,
-      //     depreciation: material.depreciation
-      //   }));
-      //   await ServiceMaterialModel.bulkCreate(materials, { transaction });
-      // }
+      if (body.materials) {
+        const materials = (body.materials as []).map((material: any) => ({
+          serviceId: service.id,
+          materialId: material.materialId,
+          depreciation: +material.depreciation
+        }));
+        await ServiceMaterialModel.bulkCreate(materials, { transaction });
+      }
 
       /**
        * Prepare location service
@@ -929,6 +940,16 @@ export class ServiceController {
    *       type: array
    *       items:
    *           type: string
+   *     - in: "formData"
+   *       name: materials
+   *       type: array
+   *       items:
+   *           type: object
+   *           properties:
+   *              materialId:
+   *                    type: string
+   *              depreciation:
+   *                    type: number
    *     responses:
    *       200:
    *         description:
@@ -1081,27 +1102,27 @@ export class ServiceController {
         await ServiceTherapeuticModel.insertMany(therapeutics);
       }
       // check materials
-      // if (body.materials) {
-      //   const currMaterials = await ServiceMaterialModel.findAll({
-      //     where: { serviceId: service.id },
-      //     attributes: ['material_id', 'depreciation']
-      //   });
-      //   const removeMaterials: any = _.difference(currMaterials, body.materials);
-      //   if (removeMaterials.length > 0) {
-      //     await ServiceMaterialModel.destroy({
-      //       where: { serviceId: service.id, materialId: removeMaterials },
-      //       transaction
-      //     });
-      //   }
-      //   const addMaterials: any = _.difference(body.materials, currMaterials);
-      //   if (addMaterials.length > 0) {
-      //     const materials = (addMaterials as []).map((materialId: string) => ({
-      //       materialId: materialId,
-      //       serviceId: service.id
-      //     }));
-      //     await ServiceMaterialModel.bulkCreate(materials, { transaction: transaction });
-      //   }
-      // }
+      if (body.materials) {
+        const currMaterials = await ServiceMaterialModel.findAll({
+          where: { serviceId: service.id },
+          attributes: ['material_id', 'depreciation']
+        });
+        const removeMaterials: any = _.difference(currMaterials, body.materials);
+        if (removeMaterials.length > 0) {
+          await ServiceMaterialModel.destroy({
+            where: { serviceId: service.id, materialId: removeMaterials },
+            transaction
+          });
+        }
+        const addMaterials: any = _.difference(body.materials, currMaterials);
+        if (addMaterials.length > 0) {
+          const materials = (addMaterials as []).map((materialId: string) => ({
+            materialId: materialId,
+            serviceId: service.id
+          }));
+          await ServiceMaterialModel.bulkCreate(materials, { transaction });
+        }
+      }
       const data: any = {
         description: body.description,
         salePrice: !isNaN(parseInt(body.salePrice, 10)) ? body.salePrice : service.salePrice,

@@ -8,7 +8,7 @@ function validate(
   schema: Joi.Schema,
   validateOption: Joi.ValidationOptions = { abortEarly: false }
 ): IErrorDetail[] {
-  if (schema) {
+  if (schema) { 
     const { error } = schema.validate(data, validateOption);
     if (error) {
       const e = format(error);
